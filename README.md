@@ -19,6 +19,7 @@
 - Tích hợp các công nghệ hiện đại để tối ưu hóa trải nghiệm người dùng (Next.js 15, Supabase, AI).
 - Triển khai sản phẩm thực tế trên môi trường production.
 - Đạt các tiêu chuẩn về hiệu năng, bảo mật và khả năng mở rộng.
+- Web e-learning + IoT fingerprint attendance + AI face recognition attendance.
 
 ## 🚀 Công nghệ sử dụng
 
