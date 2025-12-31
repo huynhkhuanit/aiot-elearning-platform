@@ -130,10 +130,9 @@ export default function Header() {
             />
           </Link>
           <div className="hidden sm:block">
-            <Link href="/" className="text-2xl font-[900] text-foreground transition-colors duration-200 hover:text-primary">
-              LearnX
+            <Link href="/" className="transition-colors duration-200 hover:opacity-80">
+              <p className="text-small font-[700] text-black">Học lập trình thông minh với AI & IoT</p>
             </Link>
-            <p className="text-small text-muted-foreground">Nền tảng học lập trình trực tuyến</p>
           </div>
         </div>
 
