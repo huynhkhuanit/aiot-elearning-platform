@@ -1,7 +1,60 @@
+/**
+ * Supabase Database Inspector Script
+ * 
+ * This script inspects all tables in the Supabase database and displays
+ * their structure and sample data.
+ * 
+ * SECURITY NOTES:
+ * - Never hardcode credentials in source code
+ * - All credentials must be provided via environment variables
+ * - Service Role Key has full database access - keep it secure!
+ * - Never commit credentials to version control (Git)
+ * - Add .env files to .gitignore
+ * 
+ * Usage:
+ *   export NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+ *   export SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+ *   node scripts/inspect-supabase.js
+ * 
+ * Or use dotenv:
+ *   node -r dotenv/config scripts/inspect-supabase.js
+ */
+
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dtwooouoathntzzgmxir.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0d29vb3VvYXRobnR6emdteGlyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjU5NDEyOCwiZXhwIjoyMDc4MTcwMTI4fQ._KdCN5Dp6P42F4-pWMimjhiZUusxXjrijYfOwBx03tA';
+// Security: Never hardcode credentials in source code
+// All credentials must be provided via environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Validate required environment variables
+if (!supabaseUrl || !supabaseKey) {
+  console.error('\n❌ SECURITY ERROR: Missing required environment variables!');
+  console.error('\n📋 Required environment variables:');
+  console.error('   - NEXT_PUBLIC_SUPABASE_URL');
+  console.error('   - SUPABASE_SERVICE_ROLE_KEY');
+  console.error('\n💡 Please set these variables before running this script:');
+  console.error('   Example:');
+  console.error('   export NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"');
+  console.error('   export SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"');
+  console.error('\n⚠️  WARNING: Service Role Key has full database access.');
+  console.error('   Never commit credentials to version control!\n');
+  process.exit(1);
+}
+
+// Validate URL format
+if (!supabaseUrl.startsWith('https://') || !supabaseUrl.includes('.supabase.co')) {
+  console.error('\n❌ ERROR: Invalid Supabase URL format');
+  console.error('   Expected format: https://your-project.supabase.co\n');
+  process.exit(1);
+}
+
+// Validate key format (JWT tokens start with 'eyJ')
+if (!supabaseKey.startsWith('eyJ')) {
+  console.error('\n❌ ERROR: Invalid Supabase Service Role Key format');
+  console.error('   Service Role Key should be a JWT token\n');
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -163,7 +216,8 @@ async function listAllTables() {
 
 async function main() {
   console.log('🔍 Supabase Database Inspector - Complete Database Analysis');
-  console.log(`📍 URL: ${supabaseUrl}`);
+  console.log(`📍 URL: ${supabaseUrl.replace(/\/$/, '')}`);
+  console.log(`🔑 Using Service Role Key (masked): ${supabaseKey.substring(0, 20)}...`);
   console.log(`📊 Inspecting ${ALL_TABLES.length} tables...\n`);
 
   // List all tables first
