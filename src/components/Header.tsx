@@ -179,7 +179,7 @@ export default function Header() {
                 className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-[400px] overflow-y-auto"
               >
                 {isLoadingCourses ? (
-                  <div className="p-4 text-center text-gray-500 text-sm">
+                  <div className="p-4 text-center text-gray-500" style={{ fontSize: '14px' }}>
                     Đang tải...
                   </div>
                 ) : searchResults.length > 0 ? (
@@ -197,7 +197,7 @@ export default function Header() {
                           setSearchValue("");
                         }}
                       >
-                        <div className="relative w-12 h-8 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                        <div className="relative w-12 h-12 flex-shrink-0 rounded-full overflow-hidden bg-gray-100">
                           {course.thumbnailUrl ? (
                             <img
                               src={course.thumbnailUrl}
@@ -206,23 +206,23 @@ export default function Header() {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary">
-                              <FileText className="w-4 h-4" />
+                              <FileText className="w-5 h-5" />
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium text-gray-900 truncate">
+                          <h4 className="font-medium text-gray-900 truncate" style={{ fontSize: '14px' }}>
                             {course.title}
                           </h4>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-2 text-gray-500 mt-1">
                             {course.instructor?.avatar && (
                               <img
                                 src={course.instructor.avatar}
                                 alt={course.instructor.name}
-                                className="w-4 h-4 rounded-full"
+                                className="w-5 h-5 rounded-full object-cover flex-shrink-0"
                               />
                             )}
-                            <span className="truncate">{course.instructor?.name}</span>
+                            <span className="truncate" style={{ fontSize: '14px' }}>{course.instructor?.name}</span>
                           </div>
                         </div>
                       </Link>
@@ -233,12 +233,12 @@ export default function Header() {
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
                       <Search className="w-6 h-6 text-gray-400" />
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-gray-600" style={{ fontSize: '14px' }}>
                       Không tìm thấy kết quả cho "{searchValue}"
                     </p>
                   </div>
                 ) : (
-                   <div className="p-4 text-center text-gray-500 text-sm">
+                   <div className="p-4 text-center text-gray-500" style={{ fontSize: '14px' }}>
                     Nhập từ khóa để tìm kiếm
                   </div>
                 )}
