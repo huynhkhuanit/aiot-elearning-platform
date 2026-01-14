@@ -137,8 +137,8 @@ export default function Header() {
         </div>
 
         {/* Search Section */}
-        <div className="flex-1 max-w-2xl mx-4 hidden lg:block relative" ref={searchContainerRef}>
-          <div className="relative">
+        <div className="hidden md:block relative mx-2 lg:mx-4" ref={searchContainerRef} style={{ width: '420px', maxWidth: '100%' }}>
+          <div className="relative w-full">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
@@ -176,7 +176,7 @@ export default function Header() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-[400px] overflow-y-auto"
+                className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-[400px] overflow-y-auto"
               >
                 {isLoadingCourses ? (
                   <div className="p-4 text-center text-gray-500 text-sm">
