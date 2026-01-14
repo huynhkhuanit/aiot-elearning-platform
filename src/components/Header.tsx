@@ -153,8 +153,8 @@ export default function Header() {
               }}
               onKeyDown={handleKeyDown}
               aria-label="Tìm kiếm"
-              className="w-full pl-12 pr-12 py-3 border border-border rounded-full text-card-foreground text-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-              style={{ backgroundColor: '#ffffff' }}
+              className="w-full pl-12 pr-12 py-3 border border-border rounded-full text-card-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+              style={{ backgroundColor: '#ffffff', fontSize: '14px' }}
             />
             {searchValue && (
               <span
@@ -184,20 +184,20 @@ export default function Header() {
                   </div>
                 ) : searchResults.length > 0 ? (
                   <div className="py-2">
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <div className="px-4 py-2 font-semibold text-black-500 uppercase tracking-wider" style={{ fontSize: '14px' }}>
                       Khóa học ({searchResults.length})
                     </div>
                     {searchResults.map((course) => (
                       <Link
                         key={course.id}
                         href={`/learn/${course.slug}`}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 px-4 py-1.5 hover:bg-gray-50 transition-colors"
                         onClick={() => {
                           setShowResults(false);
                           setSearchValue("");
                         }}
                       >
-                        <div className="relative w-12 h-12 flex-shrink-0 rounded-full overflow-hidden bg-gray-100">
+                        <div className="relative w-8 h-8 flex-shrink-0 rounded-full overflow-hidden bg-gray-100">
                           {course.thumbnailUrl ? (
                             <img
                               src={course.thumbnailUrl}
@@ -211,19 +211,9 @@ export default function Header() {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-gray-900 truncate" style={{ fontSize: '14px' }}>
+                          <p className="text-black-500 truncate" style={{ fontSize: '14px' }}>
                             {course.title}
-                          </h4>
-                          <div className="flex items-center gap-2 text-gray-500 mt-1">
-                            {course.instructor?.avatar && (
-                              <img
-                                src={course.instructor.avatar}
-                                alt={course.instructor.name}
-                                className="w-5 h-5 rounded-full object-cover flex-shrink-0"
-                              />
-                            )}
-                            <span className="truncate" style={{ fontSize: '14px' }}>{course.instructor?.name}</span>
-                          </div>
+                          </p>
                         </div>
                       </Link>
                     ))}
