@@ -8,7 +8,7 @@ export function usePageTitle(title: string) {
   useEffect(() => {
     document.title = title;
     return () => {
-      document.title = 'DHV LearnX';
+      document.title = 'CodeSense AIoT';
     };
   }, [title]);
 }

@@ -37,9 +37,9 @@ export default function Footer() {
       }}
     >
       <div className="w-full px-6 md:px-12 py-12 pointer-events-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Company Info */}
-          <div className="space-y-4">
+          <div className="space-y-4 lg:col-span-2">
             <div className="flex items-center gap-3">
               <Link 
                 href="/" 
@@ -48,7 +48,7 @@ export default function Footer() {
               >
                 <img
                   src="/assets/img/logo.png" 
-                  alt="DHV LearnX Logo" 
+                  alt="CodeSense AIoT Logo" 
                   width={38}
                   height={38}
                   style={{ objectFit: 'contain' }}
@@ -86,9 +86,9 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* About DHV LearnX */}
+          {/* About CodeSense AIoT */}
           <div>
-            <h4 className="font-semibold text-base mb-4 text-white">Về DHV LearnX</h4>
+            <h4 className="font-semibold text-base mb-4 text-white">Về CodeSense AIoT</h4>
             <ul className="space-y-2">
               <li>
                 <Link 
@@ -171,10 +171,7 @@ export default function Footer() {
         {/* Bottom Section */}
         <div className="border-t border-gray-800 mt-8 pt-6 flex flex-col md:flex-row items-center justify-between pointer-events-auto">
           <div className="flex items-center space-x-2 text-gray-400 text-xs mb-3 md:mb-0">
-            <div className="w-5 h-5 rounded-full bg-gray-700 flex items-center justify-center">
-              <Volume2 className="w-3 h-3" />
-            </div>
-            <span>© 2025 DHV LearnX. All rights reserved.</span>
+            <span>© 2025 CodeSense AIoT. All rights reserved.</span>
           </div>
           
           <div className="flex space-x-4 text-xs">

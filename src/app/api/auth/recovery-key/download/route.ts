@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Format recovery keys for download (similar to GitHub format)
-    const content = `DHVLearnX Recovery Keys
+    const content = `CodeSense AIoT Recovery Keys
 =====================
 
 Lưu ý: Hãy lưu trữ file này ở nơi an toàn. Mỗi recovery key chỉ có thể sử dụng một lần để khôi phục mật khẩu.
@@ -107,7 +107,7 @@ Bảo mật:
       status: 200,
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Content-Disposition': `attachment; filename="dhvlearnx-recovery-keys-${Date.now()}.txt"`,
+        'Content-Disposition': `attachment; filename="codesense-aiot-recovery-keys-${Date.now()}.txt"`,
       },
     });
   } catch (error: any) {
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Format recovery keys for download (similar to GitHub format)
-    const content = `DHVLearnX Recovery Keys
+    const content = `CodeSense AIoT Recovery Keys
 =====================
 
 Lưu ý: Hãy lưu trữ file này ở nơi an toàn. Mỗi recovery key chỉ có thể sử dụng một lần để khôi phục mật khẩu.
@@ -198,7 +198,7 @@ Bảo mật:
       status: 200,
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Content-Disposition': `attachment; filename="dhvlearnx-recovery-keys-${Date.now()}.txt"`,
+        'Content-Disposition': `attachment; filename="codesense-aiot-recovery-keys-${Date.now()}.txt"`,
       },
     });
   } catch (error: any) {
