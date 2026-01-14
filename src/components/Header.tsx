@@ -368,14 +368,16 @@ export default function Header() {
               <>
                 <button
                   onClick={() => setShowRegisterModal(true)}
-                  className="px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary transition-all duration-200 rounded-full cursor-pointer"
+                  className="font-medium text-black hover:text-primary transition-all duration-200 rounded-full cursor-pointer whitespace-nowrap"
+                  style={{ padding: '9px 20px', fontSize: '14px' }}
                 >
                   Đăng ký
                 </button>
 
                 <button
                   onClick={() => setShowLoginModal(true)}
-                  className="px-6 py-2.5 text-sm font-medium bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all duration-200 shadow-lg cursor-pointer"
+                  className="font-medium bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all duration-200 shadow-lg cursor-pointer whitespace-nowrap"
+                  style={{ padding: '9px 20px', fontSize: '14px' }}
                 >
                   Đăng nhập
                 </button>
