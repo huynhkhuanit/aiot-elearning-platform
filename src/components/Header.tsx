@@ -153,8 +153,8 @@ export default function Header() {
               }}
               onKeyDown={handleKeyDown}
               aria-label="Tìm kiếm"
-              className="w-full pl-12 pr-12 py-3 border border-border rounded-full text-card-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-              style={{ backgroundColor: '#ffffff', fontSize: '14px' }}
+              className="w-full pl-12 pr-12 border border-border rounded-full text-card-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+              style={{ backgroundColor: '#ffffff', fontSize: '14px', height: '40px' }}
             />
             {searchValue && (
               <span
