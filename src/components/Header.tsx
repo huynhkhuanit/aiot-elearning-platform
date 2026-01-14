@@ -130,16 +130,15 @@ export default function Header() {
             />
           </Link>
           <div className="hidden sm:block">
-            <Link href="/" className="text-2xl font-[900] text-foreground transition-colors duration-200 hover:text-primary">
-              LearnX
+            <Link href="/" className="transition-colors duration-200 hover:opacity-80">
+              <p className="text-small font-[700] text-black">Học lập trình thông minh với AI & IoT</p>
             </Link>
-            <p className="text-small text-muted-foreground">Nền tảng học lập trình trực tuyến</p>
           </div>
         </div>
 
         {/* Search Section */}
-        <div className="flex-1 max-w-2xl mx-4 hidden lg:block relative" ref={searchContainerRef}>
-          <div className="relative">
+        <div className="hidden md:block relative mx-2 lg:mx-4" ref={searchContainerRef} style={{ width: '420px', maxWidth: '100%' }}>
+          <div className="relative w-full">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
@@ -154,8 +153,8 @@ export default function Header() {
               }}
               onKeyDown={handleKeyDown}
               aria-label="Tìm kiếm"
-              className="w-full pl-12 pr-12 py-3 border border-border rounded-full text-card-foreground text-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-              style={{ backgroundColor: '#ffffff' }}
+              className="w-full pl-12 pr-12 border border-border rounded-full text-card-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+              style={{ backgroundColor: '#ffffff', fontSize: '14px', height: '40px' }}
             />
             {searchValue && (
               <span
@@ -177,28 +176,28 @@ export default function Header() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-[400px] overflow-y-auto"
+                className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-[400px] overflow-y-auto"
               >
                 {isLoadingCourses ? (
-                  <div className="p-4 text-center text-gray-500 text-sm">
+                  <div className="p-4 text-center text-gray-500" style={{ fontSize: '14px' }}>
                     Đang tải...
                   </div>
                 ) : searchResults.length > 0 ? (
                   <div className="py-2">
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <div className="px-4 py-2 font-semibold text-black-500 uppercase tracking-wider" style={{ fontSize: '14px' }}>
                       Khóa học ({searchResults.length})
                     </div>
                     {searchResults.map((course) => (
                       <Link
                         key={course.id}
                         href={`/learn/${course.slug}`}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 px-4 py-1.5 hover:bg-gray-50 transition-colors"
                         onClick={() => {
                           setShowResults(false);
                           setSearchValue("");
                         }}
                       >
-                        <div className="relative w-12 h-8 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                        <div className="relative w-8 h-8 flex-shrink-0 rounded-full overflow-hidden bg-gray-100">
                           {course.thumbnailUrl ? (
                             <img
                               src={course.thumbnailUrl}
@@ -207,24 +206,14 @@ export default function Header() {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary">
-                              <FileText className="w-4 h-4" />
+                              <FileText className="w-5 h-5" />
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium text-gray-900 truncate">
+                          <p className="text-black-500 truncate" style={{ fontSize: '14px' }}>
                             {course.title}
-                          </h4>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            {course.instructor?.avatar && (
-                              <img
-                                src={course.instructor.avatar}
-                                alt={course.instructor.name}
-                                className="w-4 h-4 rounded-full"
-                              />
-                            )}
-                            <span className="truncate">{course.instructor?.name}</span>
-                          </div>
+                          </p>
                         </div>
                       </Link>
                     ))}
@@ -234,12 +223,12 @@ export default function Header() {
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
                       <Search className="w-6 h-6 text-gray-400" />
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-gray-600" style={{ fontSize: '14px' }}>
                       Không tìm thấy kết quả cho "{searchValue}"
                     </p>
                   </div>
                 ) : (
-                   <div className="p-4 text-center text-gray-500 text-sm">
+                   <div className="p-4 text-center text-gray-500" style={{ fontSize: '14px' }}>
                     Nhập từ khóa để tìm kiếm
                   </div>
                 )}
@@ -369,14 +358,16 @@ export default function Header() {
               <>
                 <button
                   onClick={() => setShowRegisterModal(true)}
-                  className="px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary transition-all duration-200 rounded-full cursor-pointer"
+                  className="font-medium text-black hover:text-primary transition-all duration-200 rounded-full cursor-pointer whitespace-nowrap"
+                  style={{ padding: '9px 20px', fontSize: '14px' }}
                 >
                   Đăng ký
                 </button>
 
                 <button
                   onClick={() => setShowLoginModal(true)}
-                  className="px-6 py-2.5 text-sm font-medium bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all duration-200 shadow-lg cursor-pointer"
+                  className="font-medium bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all duration-200 shadow-lg cursor-pointer whitespace-nowrap"
+                  style={{ padding: '9px 20px', fontSize: '14px' }}
                 >
                   Đăng nhập
                 </button>
