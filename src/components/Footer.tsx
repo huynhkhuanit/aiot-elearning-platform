@@ -1,20 +1,16 @@
 "use client";
 
-import { Mail, Phone, MapPin, Facebook, Twitter, Youtube, Github } from "lucide-react";
+import { Mail, Phone, MapPin, Facebook, Twitter, Youtube, Github, Volume2 } from "lucide-react";
 import Link from "next/link";
 
 const footerLinks = {
-  courses: [
-    { name: "Frontend Developer", href: "/roadmap" },
-    { name: "Backend Developer", href: "/roadmap" },
-    { name: "Mobile Developer", href: "/roadmap" },
-    { name: "Data Science", href: "/roadmap" },
-  ],
-  resources: [
-    { name: "Bài viết", href: "/articles" },
-    { name: "Hỏi đáp", href: "/qa" },
-    { name: "Tài liệu", href: "#" },
-    { name: "Blog", href: "#" },
+  tools: [
+    { name: "Tạo CV xin việc", href: "#" },
+    { name: "Rút gọn liên kết", href: "#" },
+    { name: "Clip-path maker", href: "#" },
+    { name: "Snippet generator", href: "#" },
+    { name: "CSS Grid generator", href: "#" },
+    { name: "Cảnh báo sờ tay lên mặt", href: "#" },
   ],
   community: [
     { name: "Discord", href: "https://discord.com/invite/a6pe69KkPd" },
@@ -44,8 +40,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Company Info */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Link href="/" className="flex items-center justify-center transition-all duration-200 cursor-pointer">
+            <div className="flex items-center gap-3">
+              <Link 
+                href="/" 
+                className="flex items-center justify-center cursor-pointer"
+                style={{ transition: 'all .2s ease' }}
+              >
                 <img
                   src="/assets/img/logo.png" 
                   alt="DHV LearnX Logo" 
@@ -55,9 +55,14 @@ export default function Footer() {
                   className="w-[38px] h-[38px] rounded-lg"
                 />
               </Link>
-              <div>
-                <Link href="/" className="text-2xl font-[900]">LearnX</Link>
-                <p className="text-gray-400 text-small">Nền tảng học lập trình trực tuyến</p>
+              <div className="hidden sm:block">
+                <Link 
+                  href="/" 
+                  className="hover:opacity-80"
+                  style={{ transition: 'all .2s ease' }}
+                >
+                  <p className="text-small font-[700] text-white">Học lập trình thông minh với AI & IoT</p>
+                </Link>
               </div>
             </div>
             
@@ -67,15 +72,15 @@ export default function Footer() {
             
             <div className="space-y-2">
               <div className="flex items-center space-x-2 text-gray-400 text-sm">
-                <Mail className="w-3.5 h-3.5" />
+                <Mail className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>huynhkhuanit@gmail.com</span>
               </div>
               <div className="flex items-center space-x-2 text-gray-400 text-sm">
-                <Phone className="w-3.5 h-3.5" />
+                <Phone className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>1900-xxxx</span>
               </div>
               <div className="flex items-center space-x-2 text-gray-400 text-sm">
-                <MapPin className="w-3.5 h-3.5" />
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>Hồ Chí Minh, Việt Nam</span>
               </div>
             </div>
@@ -83,42 +88,40 @@ export default function Footer() {
 
           {/* About DHV LearnX */}
           <div>
-            <h4 className="font-semibold text-base mb-4">Về DHV LearnX</h4>
+            <h4 className="font-semibold text-base mb-4 text-white">Về DHV LearnX</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/about" className="text-gray-400 hover:text-white transition-colors duration-200">
+                <Link 
+                  href="/about" 
+                  className="text-gray-400 hover:text-white inline-block hover:translate-x-[4px]"
+                  style={{ transition: 'all .2s ease' }}
+                >
                   Giới thiệu
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-gray-400 hover:text-white transition-colors duration-200">
+                <Link 
+                  href="/contact" 
+                  className="text-gray-400 hover:text-white inline-block hover:translate-x-[4px]"
+                  style={{ transition: 'all .2s ease' }}
+                >
                   Liên hệ
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Courses */}
+          {/* Công cụ */}
           <div>
-            <h4 className="font-semibold text-base mb-4">Lộ trình học</h4>
+            <h4 className="font-semibold text-base mb-4 text-white">Công cụ</h4>
             <ul className="space-y-2">
-              {footerLinks.courses.map((link, index) => (
+              {footerLinks.tools.map((link, index) => (
                 <li key={index}>
-                  <Link href={link.href} className="text-gray-400 hover:text-white transition-colors duration-200">
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div>
-            <h4 className="font-semibold text-base mb-4">Tài nguyên</h4>
-            <ul className="space-y-2">
-              {footerLinks.resources.map((link, index) => (
-                <li key={index}>
-                  <Link href={link.href} className="text-gray-400 text-sm hover:text-white transition-colors duration-200">
+                  <Link 
+                    href={link.href} 
+                    className="text-gray-400 hover:text-white inline-block hover:translate-x-[4px]"
+                    style={{ transition: 'all .2s ease' }}
+                  >
                     {link.name}
                   </Link>
                 </li>
@@ -128,13 +131,14 @@ export default function Footer() {
 
           {/* Community */}
           <div>
-            <h4 className="font-semibold text-base mb-4">Cộng đồng</h4>
+            <h4 className="font-semibold text-base mb-4 text-white">Cộng đồng</h4>
             <ul className="space-y-2 mb-4">
               {footerLinks.community.map((link, index) => (
                 <li key={index}>
                   <Link 
                     href={link.href} 
-                    className="text-gray-400 text-sm hover:text-white transition-colors duration-200"
+                    className="text-gray-400 hover:text-white inline-block hover:translate-x-[4px]"
+                    style={{ transition: 'all .2s ease' }}
                     {...(link.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                   >
                     {link.name}
@@ -151,29 +155,48 @@ export default function Footer() {
                   href={social.href}
                   aria-label={social.label}
                   {...(social.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                  className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-all duration-200"
+                  className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700"
+                  style={{ transition: 'all .2s ease' }}
                 >
                   <social.icon className="w-4 h-4" />
                 </a>
               ))}
             </div>
           </div>
+
+          {/* Empty Column 5 */}
+          <div></div>
         </div>
 
         {/* Bottom Section */}
         <div className="border-t border-gray-800 mt-8 pt-6 flex flex-col md:flex-row items-center justify-between pointer-events-auto">
-          <div className="text-gray-400 text-xs mb-3 md:mb-0">
-            © 2025 DHV LearnX. All rights reserved.
+          <div className="flex items-center space-x-2 text-gray-400 text-xs mb-3 md:mb-0">
+            <div className="w-5 h-5 rounded-full bg-gray-700 flex items-center justify-center">
+              <Volume2 className="w-3 h-3" />
+            </div>
+            <span>© 2025 DHV LearnX. All rights reserved.</span>
           </div>
           
           <div className="flex space-x-4 text-xs">
-            <Link href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
+            <Link 
+              href="#" 
+              className="text-gray-400 hover:text-white inline-block hover:translate-x-[4px]"
+              style={{ transition: 'all .2s ease' }}
+            >
               Điều khoản sử dụng
             </Link>
-            <Link href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
+            <Link 
+              href="#" 
+              className="text-gray-400 hover:text-white inline-block hover:translate-x-[4px]"
+              style={{ transition: 'all .2s ease' }}
+            >
               Chính sách bảo mật
             </Link>
-            <Link href="/contact" className="text-gray-400 hover:text-white transition-colors duration-200">
+            <Link 
+              href="/contact" 
+              className="text-gray-400 hover:text-white inline-block hover:translate-x-[4px]"
+              style={{ transition: 'all .2s ease' }}
+            >
               Liên hệ
             </Link>
           </div>
