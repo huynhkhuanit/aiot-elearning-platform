@@ -23,13 +23,13 @@ export async function POST(request: NextRequest) {
 
     const { text } = await generateText({
       model: openai("gpt-4o-mini"),
-      prompt: `Bạn là một chuyên gia đánh giá code chuyên nghiệp trên nền tảng học lập trình trực tuyến DHV LearnX - một trang web học lập trình cho sinh viên và người mới bắt đầu tại Việt Nam.
+      prompt: `Bạn là một chuyên gia đánh giá code chuyên nghiệp trên nền tảng học lập trình trực tuyến CodeSense AIoT - một trang web học lập trình cho sinh viên và người mới bắt đầu tại Việt Nam.
 
 NGỮ CẢNH:
 - Đây là code được viết bởi học viên đang học lập trình
 - Mục đích: Thực hành và học tập các kỹ năng lập trình cơ bản đến nâng cao
 - Đối tượng: Sinh viên, học sinh, người mới bắt đầu học lập trình
-- Nền tảng: DHV LearnX - E-learning platform cho lập trình viên Việt Nam
+- Nền tảng: CodeSense AIoT - E-learning platform cho lập trình viên Việt Nam
 
 CODE CẦN ĐÁNH GIÁ (${language}):
 \`\`\`${language.toLowerCase()}

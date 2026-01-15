@@ -20,7 +20,7 @@ export default function RecoveryKeysModal({ isOpen, onClose, recoveryKeys }: Rec
   const handleDownload = async () => {
     try {
       // Create download link
-      const content = `DHVLearnX Recovery Keys
+      const content = `CodeSense AIoT Recovery Keys
 =====================
 
 Lưu ý: Hãy lưu trữ file này ở nơi an toàn. Mỗi recovery key chỉ có thể sử dụng một lần để khôi phục mật khẩu.
@@ -48,7 +48,7 @@ Bảo mật:
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `dhvlearnx-recovery-keys-${Date.now()}.txt`;
+      link.download = `codesense-aiot-recovery-keys-${Date.now()}.txt`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

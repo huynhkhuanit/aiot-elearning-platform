@@ -20,7 +20,7 @@ export default function AboutPage() {
               </span>
             </h1>
             <p className="text-xl md:text-2xl text-blue-100 leading-relaxed max-w-2xl mx-auto mb-10">
-              DHV LearnX không chỉ là nơi học tập, mà là cộng đồng những người đam mê công nghệ, cùng nhau chinh phục những đỉnh cao mới.
+              CodeSense AIoT không chỉ là nơi học tập, mà là cộng đồng những người đam mê công nghệ, cùng nhau chinh phục những đỉnh cao mới.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link 
@@ -77,7 +77,7 @@ export default function AboutPage() {
               <span className="text-[#6366f1]">Giáo dục công nghệ</span> hàng đầu
             </h2>
             <p className="text-lg text-gray-600 leading-relaxed">
-              Tại DHV LearnX, chúng tôi tin rằng mọi người đều có khả năng trở thành một lập trình viên xuất sắc nếu được hướng dẫn đúng cách. Sứ mệnh của chúng tôi là xóa bỏ rào cản trong việc tiếp cận kiến thức công nghệ.
+              Tại CodeSense AIoT, chúng tôi tin rằng mọi người đều có khả năng trở thành một lập trình viên xuất sắc nếu được hướng dẫn đúng cách. Sứ mệnh của chúng tôi là xóa bỏ rào cản trong việc tiếp cận kiến thức công nghệ.
             </p>
             
             <div className="space-y-4">
@@ -121,7 +121,7 @@ export default function AboutPage() {
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-[900] text-gray-900 mb-6">Giá trị cốt lõi</h2>
             <p className="text-lg text-gray-600">
-              Những nguyên tắc định hình văn hóa và cách chúng tôi làm việc tại DHV LearnX.
+              Những nguyên tắc định hình văn hóa và cách chúng tôi làm việc tại CodeSense AIoT.
             </p>
           </div>
 

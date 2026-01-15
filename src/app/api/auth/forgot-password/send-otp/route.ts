@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
         // Send email with OTP
         await sendEmail({
           to: email,
-          subject: 'Mã xác thực đặt lại mật khẩu - DHV LearnX',
+          subject: 'Mã xác thực đặt lại mật khẩu - CodeSense AIoT',
           html: generateOTPEmailHTML(otp, userName),
           text: generateOTPEmailText(otp, userName),
         });
