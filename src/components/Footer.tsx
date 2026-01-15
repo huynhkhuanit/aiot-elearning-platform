@@ -171,7 +171,7 @@ export default function Footer() {
         {/* Bottom Section */}
         <div className="border-t border-gray-800 mt-8 pt-6 flex flex-col md:flex-row items-center justify-between pointer-events-auto">
           <div className="flex items-center space-x-2 text-gray-400 text-xs mb-3 md:mb-0">
-            <span>© 2025 CodeSense AIoT. All rights reserved.</span>
+            <span>© 2025 - 2026 CodeSense AIoT. All rights reserved.</span>
           </div>
           
           <div className="flex space-x-4 text-xs">
