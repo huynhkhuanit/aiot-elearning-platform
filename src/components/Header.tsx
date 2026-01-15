@@ -21,6 +21,7 @@ export default function Header() {
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchPlaceholder, setSearchPlaceholder] = useState("Tìm kiếm");
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const { theme, setTheme } = useTheme();
@@ -31,6 +32,26 @@ export default function Header() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Thay đổi placeholder dựa trên kích thước màn hình
+  useEffect(() => {
+    const updatePlaceholder = () => {
+      if (window.innerWidth >= 1024) {
+        // Desktop (lg breakpoint)
+        setSearchPlaceholder("Tìm kiếm khóa học, bài viết, video...");
+      } else {
+        // Mobile và Tablet
+        setSearchPlaceholder("Tìm kiếm");
+      }
+    };
+
+    updatePlaceholder();
+    window.addEventListener('resize', updatePlaceholder);
+
+    return () => {
+      window.removeEventListener('resize', updatePlaceholder);
+    };
+  }, []);
 
   // Đóng menu khi click bên ngoài
   useEffect(() => {
@@ -116,9 +137,9 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-30 w-full bg-white border-b border-gray-200">
-      <div className="mx-auto px-[28px] h-[66px] flex items-center justify-between" style={{ backgroundColor: '#ffffff' }}>
+      <div className="mx-auto px-4 md:px-[28px] h-[66px] flex items-center justify-between gap-2 relative" style={{ backgroundColor: '#ffffff' }}>
         {/* Logo Section */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-shrink-0 z-10">
           <Link href="/" className="flex items-center justify-center transition-all duration-200 cursor-pointer">
             <img 
               src="/assets/img/logo.png" 
@@ -129,20 +150,20 @@ export default function Header() {
               className="w-[38px] h-[38px] rounded-lg"
             />
           </Link>
-          <div className="hidden sm:block">
+          <div className="hidden lg:block">
             <Link href="/" className="transition-colors duration-200 hover:opacity-80">
               <p className="text-small font-[700] text-black">Học lập trình thông minh với AI & IoT</p>
             </Link>
           </div>
         </div>
 
-        {/* Search Section */}
-        <div className="hidden md:block relative mx-2 lg:mx-4" ref={searchContainerRef} style={{ width: '420px', maxWidth: '100%' }}>
-          <div className="relative w-full">
+        {/* Search Section - Centered on desktop */}
+        <div className="flex-1 lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 relative mx-2 lg:mx-0" ref={searchContainerRef} style={{ maxWidth: '100%', width: '100%' }}>
+          <div className="relative w-full lg:w-[420px] lg:mx-auto" style={{ maxWidth: '100%' }}>
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Tìm kiếm khóa học, bài viết, video..."
+              placeholder={searchPlaceholder}
               value={searchValue}
               onChange={handleSearchChange}
               onFocus={() => {
@@ -176,7 +197,7 @@ export default function Header() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-[400px] overflow-y-auto"
+                className="fixed md:absolute top-[66px] left-0 md:top-full md:left-0 w-full md:w-full mt-0 md:mt-2 bg-white md:rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-[calc(100vh-66px)] md:max-h-[400px] overflow-y-auto px-4 md:px-0"
               >
                 {isLoadingCourses ? (
                   <div className="p-4 text-center text-gray-500" style={{ fontSize: '14px' }}>
@@ -184,14 +205,14 @@ export default function Header() {
                   </div>
                 ) : searchResults.length > 0 ? (
                   <div className="py-2">
-                    <div className="px-4 py-2 font-semibold text-black-500 uppercase tracking-wider" style={{ fontSize: '14px' }}>
+                    <div className="px-0 md:px-4 py-2 font-semibold text-black-500 uppercase tracking-wider" style={{ fontSize: '14px' }}>
                       Khóa học ({searchResults.length})
                     </div>
                     {searchResults.map((course) => (
                       <Link
                         key={course.id}
                         href={`/learn/${course.slug}`}
-                        className="flex items-center gap-3 px-4 py-1.5 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 md:px-4 py-1.5 hover:bg-gray-50 transition-colors rounded-lg"
                         onClick={() => {
                           setShowResults(false);
                           setSearchValue("");
@@ -238,14 +259,9 @@ export default function Header() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
-          {/* Mobile search button */}
-          <Link href="#" className="lg:hidden p-2 rounded-xl text-muted-foreground hover:bg-muted transition-all duration-200 cursor-pointer">
-            <Search className="h-5 w-5" />
-          </Link>
-
+        <div className="flex items-center gap-3 flex-shrink-0 z-10">
           {/* Auth Buttons */}
-          <div className="hidden sm:flex items-center gap-2">
+          <div className="flex items-center gap-2">
             {isLoading ? (
               // Loading skeleton - tránh flash
               <div className="flex items-center gap-2">
@@ -263,7 +279,7 @@ export default function Header() {
                     isPro={user?.membership_type === 'PRO'}
                     size="xs"
                   />
-                  <span className="text-sm font-medium text-gray-700">{user?.username}</span>
+                  <span className="hidden sm:inline text-sm font-medium text-gray-700">{user?.username}</span>
                 </button>
 
                 <AnimatePresence>
@@ -356,14 +372,16 @@ export default function Header() {
               </div>
             ) : (
               <>
+                {/* Đăng ký button - hiển thị trên tablet và desktop */}
                 <button
                   onClick={() => setShowRegisterModal(true)}
-                  className="font-medium text-black hover:text-primary transition-all duration-200 rounded-full cursor-pointer whitespace-nowrap"
+                  className="hidden md:block font-medium text-black hover:text-primary transition-all duration-200 rounded-full cursor-pointer whitespace-nowrap"
                   style={{ padding: '9px 20px', fontSize: '14px' }}
                 >
                   Đăng ký
                 </button>
 
+                {/* Đăng nhập button - hiển thị trên tất cả màn hình */}
                 <button
                   onClick={() => setShowLoginModal(true)}
                   className="font-medium bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all duration-200 shadow-lg cursor-pointer whitespace-nowrap"
