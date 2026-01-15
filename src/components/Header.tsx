@@ -116,9 +116,9 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-30 w-full bg-white border-b border-gray-200">
-      <div className="mx-auto px-[28px] h-[66px] flex items-center justify-between" style={{ backgroundColor: '#ffffff' }}>
+      <div className="mx-auto px-4 md:px-[28px] h-[66px] flex items-center justify-between gap-2" style={{ backgroundColor: '#ffffff' }}>
         {/* Logo Section */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-shrink-0">
           <Link href="/" className="flex items-center justify-center transition-all duration-200 cursor-pointer">
             <img 
               src="/assets/img/logo.png" 
@@ -129,7 +129,7 @@ export default function Header() {
               className="w-[38px] h-[38px] rounded-lg"
             />
           </Link>
-          <div className="hidden sm:block">
+          <div className="hidden lg:block">
             <Link href="/" className="transition-colors duration-200 hover:opacity-80">
               <p className="text-small font-[700] text-black">Học lập trình thông minh với AI & IoT</p>
             </Link>
@@ -137,12 +137,12 @@ export default function Header() {
         </div>
 
         {/* Search Section */}
-        <div className="hidden md:block relative mx-2 lg:mx-4" ref={searchContainerRef} style={{ width: '420px', maxWidth: '100%' }}>
-          <div className="relative w-full">
+        <div className="flex-1 lg:flex-none relative mx-2 lg:mx-4" ref={searchContainerRef} style={{ maxWidth: '100%', width: '100%' }}>
+          <div className="relative w-full lg:w-[420px]" style={{ maxWidth: '100%' }}>
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Tìm kiếm khóa học, bài viết, video..."
+              placeholder="Tìm kiếm"
               value={searchValue}
               onChange={handleSearchChange}
               onFocus={() => {
@@ -238,14 +238,9 @@ export default function Header() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
-          {/* Mobile search button */}
-          <Link href="#" className="lg:hidden p-2 rounded-xl text-muted-foreground hover:bg-muted transition-all duration-200 cursor-pointer">
-            <Search className="h-5 w-5" />
-          </Link>
-
+        <div className="flex items-center gap-3 flex-shrink-0">
           {/* Auth Buttons */}
-          <div className="hidden sm:flex items-center gap-2">
+          <div className="flex items-center gap-2">
             {isLoading ? (
               // Loading skeleton - tránh flash
               <div className="flex items-center gap-2">
@@ -263,7 +258,7 @@ export default function Header() {
                     isPro={user?.membership_type === 'PRO'}
                     size="xs"
                   />
-                  <span className="text-sm font-medium text-gray-700">{user?.username}</span>
+                  <span className="hidden sm:inline text-sm font-medium text-gray-700">{user?.username}</span>
                 </button>
 
                 <AnimatePresence>
@@ -356,14 +351,16 @@ export default function Header() {
               </div>
             ) : (
               <>
+                {/* Đăng ký button - ẩn trên mobile */}
                 <button
                   onClick={() => setShowRegisterModal(true)}
-                  className="font-medium text-black hover:text-primary transition-all duration-200 rounded-full cursor-pointer whitespace-nowrap"
+                  className="hidden sm:block font-medium text-black hover:text-primary transition-all duration-200 rounded-full cursor-pointer whitespace-nowrap"
                   style={{ padding: '9px 20px', fontSize: '14px' }}
                 >
                   Đăng ký
                 </button>
 
+                {/* Đăng nhập button - hiển thị trên tất cả màn hình */}
                 <button
                   onClick={() => setShowLoginModal(true)}
                   className="font-medium bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all duration-200 shadow-lg cursor-pointer whitespace-nowrap"
