@@ -21,6 +21,7 @@ export default function Header() {
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchPlaceholder, setSearchPlaceholder] = useState("Tìm kiếm");
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const { theme, setTheme } = useTheme();
@@ -31,6 +32,26 @@ export default function Header() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Thay đổi placeholder dựa trên kích thước màn hình
+  useEffect(() => {
+    const updatePlaceholder = () => {
+      if (window.innerWidth >= 1024) {
+        // Desktop (lg breakpoint)
+        setSearchPlaceholder("Tìm kiếm khóa học, bài viết, video...");
+      } else {
+        // Mobile và Tablet
+        setSearchPlaceholder("Tìm kiếm");
+      }
+    };
+
+    updatePlaceholder();
+    window.addEventListener('resize', updatePlaceholder);
+
+    return () => {
+      window.removeEventListener('resize', updatePlaceholder);
+    };
+  }, []);
 
   // Đóng menu khi click bên ngoài
   useEffect(() => {
@@ -142,7 +163,7 @@ export default function Header() {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Tìm kiếm"
+              placeholder={searchPlaceholder}
               value={searchValue}
               onChange={handleSearchChange}
               onFocus={() => {
