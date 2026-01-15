@@ -116,9 +116,9 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-30 w-full bg-white border-b border-gray-200">
-      <div className="mx-auto px-4 md:px-[28px] h-[66px] flex items-center justify-between gap-2" style={{ backgroundColor: '#ffffff' }}>
+      <div className="mx-auto px-4 md:px-[28px] h-[66px] flex items-center justify-between gap-2 relative" style={{ backgroundColor: '#ffffff' }}>
         {/* Logo Section */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-3 flex-shrink-0 z-10">
           <Link href="/" className="flex items-center justify-center transition-all duration-200 cursor-pointer">
             <img 
               src="/assets/img/logo.png" 
@@ -136,9 +136,9 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Search Section */}
-        <div className="flex-1 lg:flex-none relative mx-2 lg:mx-4" ref={searchContainerRef} style={{ maxWidth: '100%', width: '100%' }}>
-          <div className="relative w-full lg:w-[420px]" style={{ maxWidth: '100%' }}>
+        {/* Search Section - Centered on desktop */}
+        <div className="flex-1 lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 relative mx-2 lg:mx-0" ref={searchContainerRef} style={{ maxWidth: '100%', width: '100%' }}>
+          <div className="relative w-full lg:w-[420px] lg:mx-auto" style={{ maxWidth: '100%' }}>
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
@@ -238,7 +238,7 @@ export default function Header() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-3 flex-shrink-0 z-10">
           {/* Auth Buttons */}
           <div className="flex items-center gap-2">
             {isLoading ? (
@@ -351,10 +351,10 @@ export default function Header() {
               </div>
             ) : (
               <>
-                {/* Đăng ký button - ẩn trên mobile */}
+                {/* Đăng ký button - hiển thị trên tablet và desktop */}
                 <button
                   onClick={() => setShowRegisterModal(true)}
-                  className="hidden sm:block font-medium text-black hover:text-primary transition-all duration-200 rounded-full cursor-pointer whitespace-nowrap"
+                  className="hidden md:block font-medium text-black hover:text-primary transition-all duration-200 rounded-full cursor-pointer whitespace-nowrap"
                   style={{ padding: '9px 20px', fontSize: '14px' }}
                 >
                   Đăng ký
