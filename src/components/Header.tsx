@@ -176,7 +176,7 @@ export default function Header() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-[400px] overflow-y-auto"
+                className="fixed md:absolute top-[66px] left-0 md:top-full md:left-0 w-full md:w-full mt-0 md:mt-2 bg-white md:rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-[calc(100vh-66px)] md:max-h-[400px] overflow-y-auto px-4 md:px-0"
               >
                 {isLoadingCourses ? (
                   <div className="p-4 text-center text-gray-500" style={{ fontSize: '14px' }}>
@@ -184,14 +184,14 @@ export default function Header() {
                   </div>
                 ) : searchResults.length > 0 ? (
                   <div className="py-2">
-                    <div className="px-4 py-2 font-semibold text-black-500 uppercase tracking-wider" style={{ fontSize: '14px' }}>
+                    <div className="px-0 md:px-4 py-2 font-semibold text-black-500 uppercase tracking-wider" style={{ fontSize: '14px' }}>
                       Khóa học ({searchResults.length})
                     </div>
                     {searchResults.map((course) => (
                       <Link
                         key={course.id}
                         href={`/learn/${course.slug}`}
-                        className="flex items-center gap-3 px-4 py-1.5 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 md:px-4 py-1.5 hover:bg-gray-50 transition-colors rounded-lg"
                         onClick={() => {
                           setShowResults(false);
                           setSearchValue("");
