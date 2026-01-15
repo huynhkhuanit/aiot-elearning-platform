@@ -165,7 +165,7 @@ export function generateOTPEmailHTML(otp: string, userName?: string): string {
         <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
           <tr>
             <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #6366f1 0%, #9333ea 100%); border-radius: 8px 8px 0 0;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">DHV LearnX</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">CodeSense AIoT</h1>
             </td>
           </tr>
           <tr>
@@ -195,7 +195,7 @@ export function generateOTPEmailHTML(otp: string, userName?: string): string {
             <td style="padding: 20px 40px; background-color: #f9fafb; border-radius: 0 0 8px 8px; text-align: center;">
               <p style="margin: 0; color: #6b7280; font-size: 12px;">
                 Email này được gửi tự động, vui lòng không trả lời.<br>
-                © ${new Date().getFullYear()} DHV LearnX. All rights reserved.
+                © ${new Date().getFullYear()} CodeSense AIoT. All rights reserved.
               </p>
             </td>
           </tr>
@@ -210,7 +210,7 @@ export function generateOTPEmailHTML(otp: string, userName?: string): string {
 
 export function generateOTPEmailText(otp: string, userName?: string): string {
   return `
-DHV LearnX - Mã xác thực OTP
+CodeSense AIoT - Mã xác thực OTP
 
 ${userName ? `Xin chào ${userName},` : 'Xin chào,'}
 
@@ -223,6 +223,6 @@ Lưu ý:
 - Không chia sẻ mã này với bất kỳ ai
 - Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này
 
-© ${new Date().getFullYear()} DHV LearnX. All rights reserved.
+© ${new Date().getFullYear()} CodeSense AIoT. All rights reserved.
   `.trim();
 }

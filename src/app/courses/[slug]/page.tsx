@@ -638,7 +638,7 @@ export default function CourseDetailPage() {
                   Đăng ký cho đội ngũ của bạn truy cập vào khóa học này và hơn 500+ khóa học khác.
                 </p>
                 <button className="w-full border border-gray-900 text-gray-900 font-bold py-2 px-4 rounded hover:bg-gray-50 transition-colors text-sm">
-                  DHVLearnX Business
+                  CodeSense AIoT Business
                 </button>
               </div>
             </div>

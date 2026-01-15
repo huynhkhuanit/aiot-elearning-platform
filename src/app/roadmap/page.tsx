@@ -207,7 +207,7 @@ export default function RoadmapPage() {
       <div className="bg-white py-20 border-t border-gray-100">
         <PageContainer size="lg">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Tại sao chọn DHVLearnX?</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Tại sao chọn CodeSense AIoT?</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Chúng tôi không chỉ cung cấp kiến thức, mà còn đồng hành cùng bạn trên con đường phát triển sự nghiệp.
             </p>

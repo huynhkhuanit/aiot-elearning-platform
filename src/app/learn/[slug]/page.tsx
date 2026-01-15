@@ -98,7 +98,7 @@ export default function LearnCoursePage() {
   const toast = useToast();
   
   // Update page title when course changes
-  usePageTitle(course ? `${course.title} - DHV LearnX` : "DHV LearnX");
+  usePageTitle(course ? `${course.title} - CodeSense AIoT` : "CodeSense AIoT");
   
   // Load markdown content when current lesson changes
   const markdownContent = useLessonContent(currentLesson?.id || "");
@@ -491,7 +491,7 @@ export default function LearnCoursePage() {
           >
             <img 
               src="/assets/img/logo.png" 
-              alt="DHVLearnX Logo" 
+              alt="CodeSense AIoT Logo" 
               className="h-8 w-8 rounded"
             />
           </button>

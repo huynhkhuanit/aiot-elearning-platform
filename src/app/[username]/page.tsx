@@ -850,7 +850,7 @@ export default function UserProfilePage() {
                                       studentName: profile.full_name || profile.username,
                                       courseName: course.title,
                                       completionDate: new Date(course.completed_at || Date.now()).toLocaleDateString('vi-VN'),
-                                      instructorName: "DHVLearnX Instructor",
+                                      instructorName: "CodeSense AIoT Instructor",
                                       courseDuration: "Unknown Duration"
                                     });
                                   }}
@@ -906,7 +906,7 @@ export default function UserProfilePage() {
                                 studentName: profile.full_name || profile.username,
                                 courseName: course.title,
                                 completionDate: new Date(course.completed_at || Date.now()).toLocaleDateString('vi-VN'),
-                                instructorName: "DHVLearnX Instructor",
+                                instructorName: "CodeSense AIoT Instructor",
                                 courseDuration: "Unknown Duration"
                               });
                             }}
@@ -939,7 +939,7 @@ export default function UserProfilePage() {
                                     studentName: profile.full_name || profile.username,
                                     courseName: course.title,
                                     completionDate: new Date(course.completed_at || Date.now()).toLocaleDateString('vi-VN'),
-                                    instructorName: "DHVLearnX Instructor",
+                                    instructorName: "CodeSense AIoT Instructor",
                                     courseDuration: "Unknown Duration"
                                   });
                                 }}

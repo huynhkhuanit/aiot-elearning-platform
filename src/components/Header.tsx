@@ -122,7 +122,7 @@ export default function Header() {
           <Link href="/" className="flex items-center justify-center transition-all duration-200 cursor-pointer">
             <img 
               src="/assets/img/logo.png" 
-              alt="DHV LearnX Logo" 
+              alt="CodeSense AIoT Logo" 
               width={38}
               height={38}
               style={{ objectFit: 'contain' }}

@@ -311,6 +311,6 @@ async function sendSMSViaConsole(options: SendSMSOptions): Promise<void> {
  * Generate OTP SMS message
  */
 export function generateOTPSMSMessage(otp: string): string {
-  return `Mã OTP của bạn là: ${otp}. Mã có hiệu lực trong 10 phút. Không chia sẻ mã này với bất kỳ ai. - DHV LearnX`;
+  return `Mã OTP của bạn là: ${otp}. Mã có hiệu lực trong 10 phút. Không chia sẻ mã này với bất kỳ ai. - CodeSense AIoT`;
 }
 
