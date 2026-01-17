@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, BookOpen, SettingsIcon, Map } from "lucide-react";
+import { Home, BookOpen, SettingsIcon, Map, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,6 +31,12 @@ const publicMenuItems: MenuItem[] = [
     label: "Bài viết",
     href: "/articles",
   },
+  {
+    id: "qa",
+    icon: MessageCircle,
+    label: "Hỏi Đáp",
+    href: "/qa",
+  },
 ];
 
 const adminMenuItem: MenuItem = {
@@ -48,7 +54,7 @@ export default function Menu() {
   const userRole = user?.role?.toLowerCase();
   const isAdmin = userRole === 'admin' || userRole === 'teacher';
   
-  // Mobile bottom navigation - chỉ hiển thị 3 items chính
+  // Mobile bottom navigation - hiển thị tất cả items công khai
   const mobileMenuItems = publicMenuItems;
   
   // Desktop sidebar - hiển thị tất cả items
@@ -64,6 +70,8 @@ export default function Menu() {
           zIndex: 40,
           pointerEvents: 'auto',
           justifyContent: 'space-evenly',
+          paddingLeft: '8px',
+          paddingRight: '8px',
         }}
       >
         {mobileMenuItems.map((item: MenuItem) => {
@@ -74,7 +82,7 @@ export default function Menu() {
             <Link
               key={item.id}
               href={item.href}
-              className="flex flex-col items-center justify-center flex-1 h-full transition-all duration-200 cursor-pointer pointer-events-auto"
+              className="flex flex-col items-center justify-center flex-1 h-full transition-all duration-200 cursor-pointer pointer-events-auto max-w-[80px]"
               title={item.label}
             >
               <Icon
