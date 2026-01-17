@@ -36,7 +36,7 @@ export default function Footer() {
         zIndex: 30,
       }}
     >
-      <div className="w-full px-6 md:px-12 py-12 pointer-events-auto">
+      <div className="w-full px-6 md:px-12 py-12 pb-24 md:pb-12 pointer-events-auto">
         {/* Mobile & Tablet Layout */}
         <div className="block md:block lg:hidden space-y-8">
           {/* Company Info - Full width on tablet */}
