@@ -54,10 +54,10 @@ export default function Menu() {
   const userRole = user?.role?.toLowerCase();
   const isAdmin = userRole === 'admin' || userRole === 'teacher';
   
-  // Mobile bottom navigation - hiển thị tất cả items công khai
-  const mobileMenuItems = publicMenuItems;
+  // Mobile bottom navigation - chỉ hiển thị 3 items chính (không có Hỏi Đáp)
+  const mobileMenuItems = publicMenuItems.filter(item => item.id !== 'qa');
   
-  // Desktop sidebar - hiển thị tất cả items
+  // Desktop/Tablet sidebar - hiển thị tất cả items (bao gồm Hỏi Đáp)
   const desktopMenuItems = isAdmin ? [...publicMenuItems, adminMenuItem] : publicMenuItems;
 
   return (
@@ -69,12 +69,11 @@ export default function Menu() {
           height: '60px',
           zIndex: 40,
           pointerEvents: 'auto',
-          justifyContent: 'space-evenly',
-          paddingLeft: '8px',
-          paddingRight: '8px',
+          justifyContent: 'center',
+          gap: '0',
         }}
       >
-        {mobileMenuItems.map((item: MenuItem) => {
+        {mobileMenuItems.map((item: MenuItem, index: number) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
 
@@ -82,7 +81,13 @@ export default function Menu() {
             <Link
               key={item.id}
               href={item.href}
-              className="flex flex-col items-center justify-center flex-1 h-full transition-all duration-200 cursor-pointer pointer-events-auto max-w-[80px]"
+              className="flex flex-col items-center justify-center h-full transition-all duration-200 cursor-pointer pointer-events-auto"
+              style={{
+                flex: '1',
+                minWidth: '0',
+                paddingLeft: index === 0 ? '16px' : '8px',
+                paddingRight: index === mobileMenuItems.length - 1 ? '16px' : '8px',
+              }}
               title={item.label}
             >
               <Icon
