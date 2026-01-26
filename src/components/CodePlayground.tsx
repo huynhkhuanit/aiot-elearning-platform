@@ -1,7 +1,53 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react"
-import { X, Play, Copy, Download, RotateCcw, Code2, Eye, EyeOff, Sun, Moon, Sparkles } from "lucide-react"
+import { X, Play, Copy, Download, RotateCcw, Code2, Eye, EyeOff, Sun, Moon, Sparkles, Globe, FileCode } from "lucide-react"
+import Editor, { OnMount } from "@monaco-editor/react"
+import type { editor } from "monaco-editor"
+
+// VSCode-like File Icons
+const FileIcon = ({ type, className = "w-4 h-4" }: { type: "html" | "css" | "javascript" | "cpp", className?: string }) => {
+  switch (type) {
+    case "html":
+      return (
+        <svg className={className} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5.902 27.201L3.655 2h24.69l-2.25 25.197L15.985 30L5.902 27.201z" fill="#E44D26"/>
+          <path d="M16 27.858l8.17-2.265 1.922-21.532H16v23.797z" fill="#F16529"/>
+          <path d="M16 13.407h4.09l.282-3.165H16V7.151h7.75l-.074.83-.759 8.517H16v-3.091z" fill="#EBEBEB"/>
+          <path d="M16 21.434l-.014.004-3.442-.929-.22-2.465H9.221l.433 4.852 6.332 1.758.014-.004v-3.216z" fill="#EBEBEB"/>
+          <path d="M19.82 16.498l-.372 4.166-3.434.927v3.216l6.318-1.751.046-.522.537-6.036h-3.095z" fill="#FFF"/>
+          <path d="M16.003 13.407v3.091h-3.399l-.199-2.232-.045-.83-.074-.829h3.717z" fill="#FFF"/>
+        </svg>
+      )
+    case "css":
+      return (
+        <svg className={className} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5.902 27.201L3.656 2h24.688l-2.249 25.197L15.985 30L5.902 27.201z" fill="#1572B6"/>
+          <path d="M16 27.858l8.17-2.265 1.922-21.532H16v23.797z" fill="#33A9DC"/>
+          <path d="M16 13.191h4.09l.282-3.165H16V6.935h7.75l-.074.829-.759 8.518H16v-3.091z" fill="#FFF"/>
+          <path d="M16.019 21.218l-.014.004-3.442-.93-.22-2.465H9.24l.433 4.853 6.331 1.758.015-.004v-3.216z" fill="#EBEBEB"/>
+          <path d="M19.827 16.151l-.372 4.139-3.426.925v3.216l6.292-1.743.046-.522.726-8.015h-7.749v3h4.483z" fill="#FFF"/>
+          <path d="M16.011 6.935v3.091h-7.611l-.062-.695-.141-1.567-.074-.829h7.888z" fill="#EBEBEB"/>
+          <path d="M16 13.191v3.091H9.567l-.062-.695-.141-1.567-.074-.829H16z" fill="#EBEBEB"/>
+        </svg>
+      )
+    case "javascript":
+      return (
+        <svg className={className} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="2" fill="#F7DF1E"/>
+          <path d="M20.83 23.371c.443.737 1.021 1.278 2.042 1.278.857 0 1.401-.428 1.401-1.021 0-.709-.561-0.96-1.501-1.373l-.515-.221c-1.489-.634-2.478-1.429-2.478-3.109 0-1.547 1.178-2.726 3.021-2.726 1.312 0 2.255.457 2.933 1.655l-1.606.031c-.354-.634-.737-.884-1.327-.884-.604 0-.987.383-.987.884 0 .619.383.87 1.268 1.254l.515.221c1.753.751 2.743 1.517 2.743 3.238 0 1.855-1.458 2.876-3.415 2.876-1.914 0-3.151-.912-3.756-2.109l1.662-.994zM11.539 23.519c.325.576.619 1.062 1.327 1.062.678 0 1.105-.265 1.105-1.295v-7.003h2.042v7.042c0 2.134-1.25 3.107-3.074 3.107-1.647 0-2.602-.853-3.091-1.879l1.691-1.034z" fill="#000"/>
+        </svg>
+      )
+    case "cpp":
+      return (
+        <svg className={className} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 2L3 9v14l13 7 13-7V9L16 2z" fill="#00599C"/>
+          <path d="M16 2v28l13-7V9L16 2z" fill="#004482"/>
+          <path d="M16 10.5c-1.933 0-3.5 1.567-3.5 3.5s1.567 3.5 3.5 3.5c.816 0 1.565-.28 2.157-.748l-1.407-2.002a1.5 1.5 0 11-.75-2.798V10.5zm5 1v1.5h1.5V14h-1.5v1.5H19V14h-1.5v-1.5H19v-1.5h1.5zm4 0v1.5H26V14h-1v1.5h-1.5V14H22v-1.5h1.5v-1.5H25z" fill="#FFF"/>
+        </svg>
+      )
+  }
+}
 
 interface CodePlaygroundProps {
   isOpen: boolean
@@ -62,7 +108,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   const [isLoadingReview, setIsLoadingReview] = useState(false)
   const [showEmptyCodeModal, setShowEmptyCodeModal] = useState(false)
 
-  const codeEditorRef = useRef<HTMLTextAreaElement>(null)
+  const codeEditorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const autoSaveStatusTimerRef = useRef<NodeJS.Timeout | null>(null) // Track status display timer
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -128,7 +174,8 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   }, [code, lessonId, isOpen])
 
   const previewHTML = useMemo(() => {
-    const htmlCode = activeLanguage === "html" ? code.html : ""
+    // Always use all code for preview, regardless of active tab
+    const htmlCode = code.html
     const cssCode = code.css
     const jsCode = code.javascript
 
@@ -212,7 +259,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
       </body>
       </html>
     `
-  }, [code, activeLanguage])
+  }, [code])
 
   // Reset execution ID when playground opens/closes
   useEffect(() => {
@@ -246,8 +293,8 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
       
       // Execute code regardless of which tab is active (browser or console)
       if (iframeRef.current?.contentWindow) {
-        // Calculate previewHTML here to avoid double dependency trigger
-        const htmlCode = activeLanguage === "html" ? code.html : ""
+        // Always use all code for preview, regardless of active tab
+        const htmlCode = code.html
         const cssCode = code.css
         const jsCode = code.javascript
 
@@ -384,16 +431,188 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
     return () => window.removeEventListener("message", handleMessage)
   }, [preserveLog, isCodeExecuting])
 
-  // Calculate line numbers
-  const lineNumbers = useMemo(() => {
-    const lines = code[activeLanguage].split("\n").length
-    return Array.from({ length: lines }, (_, i) => i + 1)
-  }, [code, activeLanguage])
+  // Handle Monaco Editor mount
+  const handleEditorDidMount: OnMount = (editor: editor.IStandaloneCodeEditor, monaco: any) => {
+    codeEditorRef.current = editor
 
-  const handleCodeChange = (value: string) => {
+    // Define custom VSCode-like dark theme
+    monaco.editor.defineTheme("codeplayground-dark", {
+      base: "vs-dark",
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "6A9955", fontStyle: "italic" },
+        { token: "keyword", foreground: "569CD6" },
+        { token: "string", foreground: "CE9178" },
+        { token: "number", foreground: "B5CEA8" },
+        { token: "type", foreground: "4EC9B0" },
+        { token: "class", foreground: "4EC9B0" },
+        { token: "function", foreground: "DCDCAA" },
+      ],
+      colors: {
+        "editor.background": "#1e1e1e",
+        "editor.foreground": "#D4D4D4",
+        "editor.lineHighlightBackground": "#282828",
+        "editor.selectionBackground": "#264f78",
+        "editor.inactiveSelectionBackground": "#3a3d41",
+        "editorIndentGuide.background": "#404040",
+        "editorIndentGuide.activeBackground": "#707070",
+        "editor.lineNumber.foreground": "#858585",
+        "editor.lineNumber.activeForeground": "#c6c6c6",
+        "editorCursor.foreground": "#ffffff",
+        "editorWhitespace.foreground": "#3B3A32",
+        "editorBracketMatch.background": "#0064001a",
+        "editorBracketMatch.border": "#888888",
+      },
+    })
+
+    // Define custom light theme
+    monaco.editor.defineTheme("codeplayground-light", {
+      base: "vs",
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "008000", fontStyle: "italic" },
+        { token: "keyword", foreground: "0000FF" },
+        { token: "string", foreground: "A31515" },
+        { token: "number", foreground: "098658" },
+        { token: "type", foreground: "267F99" },
+        { token: "class", foreground: "267F99" },
+        { token: "function", foreground: "795E26" },
+      ],
+      colors: {
+        "editor.background": "#FFFFFF",
+        "editor.foreground": "#000000",
+        "editor.lineHighlightBackground": "#f5f5f5",
+        "editor.selectionBackground": "#ADD6FF",
+        "editor.inactiveSelectionBackground": "#E5EBF1",
+        "editorIndentGuide.background": "#D3D3D3",
+        "editorIndentGuide.activeBackground": "#939393",
+        "editor.lineNumber.foreground": "#237893",
+        "editor.lineNumber.activeForeground": "#0B216F",
+        "editorCursor.foreground": "#000000",
+        "editorWhitespace.foreground": "#BFBFBF",
+        "editorBracketMatch.background": "#0064001a",
+        "editorBracketMatch.border": "#888888",
+      },
+    })
+
+    // Set the theme
+    monaco.editor.setTheme(theme === "dark" ? "codeplayground-dark" : "codeplayground-light")
+
+    // Configure IntelliSense for HTML
+    monaco.languages.html.htmlDefaults.setOptions({
+      format: {
+        indentInnerHtml: true,
+        wrapLineLength: 120,
+        wrapAttributes: "auto",
+      },
+      suggest: {
+        html5: true,
+        angular1: false,
+        ionic: false,
+      },
+    })
+
+    // Configure IntelliSense for CSS
+    monaco.languages.css.cssDefaults.setOptions({
+      validate: true,
+      lint: {
+        compatibleVendorPrefixes: "ignore",
+        vendorPrefix: "warning",
+        duplicateProperties: "warning",
+        emptyRules: "warning",
+        importStatement: "ignore",
+        boxModel: "ignore",
+        universalSelector: "ignore",
+        zeroUnits: "ignore",
+        fontFaceProperties: "warning",
+        hexColorLength: "error",
+        argumentsInColorFunction: "error",
+        unknownProperties: "warning",
+        ieHack: "ignore",
+        unknownVendorSpecificProperties: "ignore",
+        propertyIgnoredDueToDisplay: "warning",
+        important: "ignore",
+        float: "ignore",
+        idSelector: "ignore",
+      },
+    })
+
+    // Configure IntelliSense for JavaScript
+    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ES2020,
+      allowNonTsExtensions: true,
+      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+      module: monaco.languages.typescript.ModuleKind.ESNext,
+      noEmit: true,
+      esModuleInterop: true,
+      jsx: monaco.languages.typescript.JsxEmit.React,
+      reactNamespace: "React",
+      allowJs: true,
+      typeRoots: ["node_modules/@types"],
+    })
+
+    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: false,
+      noSyntaxValidation: false,
+    })
+
+    // Add extra libraries for better IntelliSense
+    monaco.languages.typescript.javascriptDefaults.setExtraLibs([
+      {
+        content: `
+          declare global {
+            interface Window {
+              // Browser APIs
+            }
+            interface Document {
+              // DOM APIs
+            }
+            interface Console {
+              log(...args: any[]): void;
+              error(...args: any[]): void;
+              warn(...args: any[]): void;
+              info(...args: any[]): void;
+            }
+          }
+        `,
+      },
+    ])
+
+    // Configure IntelliSense for C++
+    monaco.languages.register({ id: "cpp" })
+    monaco.languages.setMonarchTokensProvider("cpp", {
+      tokenizer: {
+        root: [
+          [/\/\/.*$/, "comment"],
+          [/\/\*[\s\S]*?\*\//, "comment"],
+          [/[a-z_$][\w$]*/, "identifier"],
+          [/[A-Z][\w\$]*/, "type.identifier"],
+          [/\d*\.\d+([eE][\-+]?\d+)?[fFdD]?/, "number.float"],
+          [/0[xX][0-9a-fA-F]+[Ll]?/, "number.hex"],
+          [/\d+[lL]?/, "number"],
+          [/[;,.]/, "delimiter"],
+          [/[{}()\[\]]/, "delimiter.bracket"],
+          [/[=+\-*/%]/, "operator"],
+          [/["'].*?["']/, "string"],
+        ],
+      },
+    })
+  }
+
+  // Update theme when theme changes
+  useEffect(() => {
+    if (codeEditorRef.current) {
+      const monaco = (window as any).monaco
+      if (monaco) {
+        monaco.editor.setTheme(theme === "dark" ? "codeplayground-dark" : "codeplayground-light")
+      }
+    }
+  }, [theme])
+
+  const handleCodeChange = (value: string | undefined) => {
     setCode((prev) => ({
       ...prev,
-      [activeLanguage]: value,
+      [activeLanguage]: value || "",
     }))
   }
 
@@ -416,7 +635,8 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   }
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(code[activeLanguage])
+    const codeToCopy = codeEditorRef.current?.getValue() || code[activeLanguage]
+    navigator.clipboard.writeText(codeToCopy)
     const btn = document.getElementById("copy-btn")
     if (btn) {
       btn.textContent = "✓ Copied!"
@@ -520,11 +740,11 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   return (
     <div className={`code-playground ${isOpen ? 'open' : ''} ${sidebarOpen ? 'sidebar-open' : ''}`}>
       <div className={`code-playground-content ${bgPrimary} h-full shadow-2xl flex flex-col overflow-hidden border-l ${borderColor}`}>
-        {/* Header - VS Code Style */}
-        <div className={`flex items-center justify-between px-4 py-2 ${bgSecondary} border-b ${borderColor}`}>
+        {/* Title Bar - VS Code Style */}
+        <div className={`flex items-center justify-between px-4 py-2.5 ${theme === "dark" ? "bg-[#323233]" : "bg-[#f3f3f3]"} border-b ${borderColor}`}>
           <div className="flex items-center space-x-3">
-            <Code2 className={`w-5 h-5 ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`} />
-            <h2 className={`text-sm font-semibold ${textPrimary}`}>Code Playground</h2>
+            <Code2 className={`w-4 h-4 ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`} />
+            <h2 className={`text-xs font-medium ${textPrimary}`}>Code Playground</h2>
 
             {/* Auto-save status */}
             {autoSaveStatus && (
@@ -555,24 +775,24 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
           <div className="flex items-center space-x-1">
             <button
               onClick={toggleTheme}
-              className={`p-2 ${hoverBg} rounded transition-colors ${textSecondary}`}
+              className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary}`}
               title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             >
-              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
             </button>
 
             <button
               onClick={onClose}
-              className={`p-2 ${hoverBg} rounded transition-colors ${textSecondary} hover:text-red-500`}
+              className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary} hover:text-red-500`}
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {/* Tab Bar - VS Code Style */}
-        <div className={`flex items-center justify-between ${bgTertiary} border-b ${borderColor}`}>
-          <div className="flex">
+        {/* Tab Bar - VS Code Style with File Names */}
+        <div className={`flex items-center justify-between ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor}`}>
+          <div className="flex overflow-x-auto">
             {(Object.keys(LANGUAGE_LABELS) as Array<keyof CodeState>).map((lang) => (
               <button
                 key={lang}
@@ -584,27 +804,29 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                     setConsoleLogs([])
                   }
                 }}
-                className={`px-4 py-2 text-sm font-medium transition-all border-r ${borderColor} relative ${
+                className={`group flex items-center space-x-2 px-3 py-2 text-xs font-normal transition-colors border-r ${borderColor} relative ${
                   activeLanguage === lang
-                    ? `${activeBg} ${textPrimary} ${theme === "dark" ? "border-t-2 border-t-blue-500" : "border-t-2 border-t-blue-600"}`
+                    ? `${theme === "dark" ? "bg-[#1e1e1e]" : "bg-white"} ${textPrimary} border-t-2 ${theme === "dark" ? "border-t-[#007acc]" : "border-t-[#0078d4]"} -mb-[1px]`
                     : `${textSecondary} ${hoverBg}`
                 }`}
               >
-                {LANGUAGE_LABELS[lang]}
+                <FileIcon type={lang} className="w-4 h-4 flex-shrink-0" />
+                <span className={`whitespace-nowrap ${activeLanguage === lang ? "font-medium" : ""}`}>
+                  {lang === "javascript" ? "JS" : LANGUAGE_LABELS[lang]}
+                </span>
               </button>
             ))}
           </div>
 
           {/* Toolbar Actions */}
-          <div className="flex items-center space-x-1 px-2">
+          <div className="flex items-center space-x-0.5 px-2 py-1">
             {showSplitView && (
               <button
                 onClick={() => setShowPreview(!showPreview)}
                 className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary} text-xs flex items-center space-x-1`}
                 title={showPreview ? "Hide Preview" : "Show Preview"}
               >
-                {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                <span className="hidden sm:inline">{showPreview ? "Hide" : "Show"}</span>
+                {showPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
             )}
 
@@ -612,9 +834,9 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               <button
                 onClick={handleRunCppCode}
                 disabled={isRunning}
-                className={`px-3 py-1.5 ${theme === "dark" ? "bg-green-600 hover:bg-green-700" : "bg-green-500 hover:bg-green-600"} text-white rounded text-xs font-medium flex items-center space-x-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
+                className={`px-2.5 py-1.5 ${theme === "dark" ? "bg-[#16825d] hover:bg-[#1a9870]" : "bg-[#16825d] hover:bg-[#1a9870]"} text-white rounded text-xs font-medium flex items-center space-x-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
               >
-                <Play className="w-3.5 h-3.5" />
+                <Play className="w-3 h-3" />
                 <span>{isRunning ? "Running..." : "Run"}</span>
               </button>
             )}
@@ -624,7 +846,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary} relative group`}
               title="Copy Code"
             >
-              <Copy className="w-4 h-4" />
+              <Copy className="w-3.5 h-3.5" />
               <span
                 id="copy-btn"
                 className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
@@ -636,7 +858,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary}`}
               title="Download Code"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-3.5 h-3.5" />
             </button>
 
             <button
@@ -644,20 +866,20 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary}`}
               title="Reset Code"
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-3.5 h-3.5" />
             </button>
 
             <button
               onClick={handleAIReview}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 transition-all ${
+              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 transition-all ${
                 theme === "dark"
                   ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-purple-500/50"
                   : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-purple-400/50"
               }`}
               title="Nhận xét của AI"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Nhận xét AI</span>
+              <Sparkles className="w-3 h-3" />
+              <span className="hidden lg:inline">AI Review</span>
             </button>
           </div>
         </div>
@@ -669,44 +891,98 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               {/* Code Editor with Line Numbers - TOP */}
               <div className={`flex-1 flex flex-col border-b ${borderColor} overflow-hidden`}>
                 <div
-                  className={`px-3 py-1.5 ${bgTertiary} border-b ${borderColor} text-xs ${textTertiary} font-mono flex items-center justify-between`}
+                  className={`px-4 py-1.5 ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor} text-xs flex items-center justify-between`}
                 >
-                  <span>
-                    {LANGUAGE_LABELS[activeLanguage].toLowerCase()}.
-                    {activeLanguage === "javascript" ? "js" : activeLanguage}
+                  <div className="flex items-center space-x-2">
+                    <FileIcon type={activeLanguage} className="w-4 h-4" />
+                    <span className={`${textSecondary} font-medium`}>
+                      {activeLanguage === "javascript" ? "JS" : LANGUAGE_LABELS[activeLanguage]}
+                    </span>
+                  </div>
+                  <span className={`${textTertiary} text-xs`}>
+                    {code[activeLanguage].split("\n").length} {code[activeLanguage].split("\n").length === 1 ? "line" : "lines"}
                   </span>
-                  <span>{code[activeLanguage].split("\n").length} lines</span>
                 </div>
-                <div className="flex-1 overflow-auto flex">
-                  {/* Line Numbers */}
-                  <div
-                    className={`${lineNumberBg} ${lineNumberText} text-right py-4 px-3 font-mono text-sm select-none border-r ${borderColor} min-w-[50px]`}
-                  >
-                    {lineNumbers.map((num) => (
-                      <div key={num} className="leading-6">
-                        {num}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Code Editor */}
-                  <div className="flex-1 overflow-auto">
-                    <textarea
-                      ref={codeEditorRef}
-                      value={code[activeLanguage]}
-                      onChange={(e) => handleCodeChange(e.target.value)}
-                      className={`w-full h-full p-4 ${bgPrimary} ${textPrimary} font-mono text-sm resize-none focus:outline-none`}
-                      style={{
-                        fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
-                        lineHeight: "1.5",
-                        tabSize: 2,
-                      }}
-                      spellCheck={false}
-                      autoComplete="off"
-                      autoCorrect="off"
-                      autoCapitalize="off"
-                    />
-                  </div>
+                {/* Monaco Editor */}
+                <div className="flex-1 overflow-hidden">
+                  <Editor
+                    height="100%"
+                    language={
+                      activeLanguage === "javascript" 
+                        ? "javascript" 
+                        : activeLanguage === "cpp" 
+                        ? "cpp" 
+                        : activeLanguage === "html"
+                        ? "html"
+                        : "css"
+                    }
+                    value={code[activeLanguage]}
+                    onChange={handleCodeChange}
+                    theme={theme === "dark" ? "codeplayground-dark" : "codeplayground-light"}
+                    onMount={handleEditorDidMount}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace",
+                      wordWrap: "on",
+                      automaticLayout: true,
+                      padding: { top: 16, bottom: 16 },
+                      scrollBeyondLastLine: false,
+                      lineNumbersMinChars: 3,
+                      lineDecorationsWidth: 0,
+                      lineNumbers: "on",
+                      renderLineHighlight: "all",
+                      selectOnLineNumbers: true,
+                      roundedSelection: false,
+                      readOnly: false,
+                      cursorStyle: "line",
+                      cursorBlinking: "smooth",
+                      cursorSmoothCaretAnimation: "on",
+                      tabSize: 2,
+                      insertSpaces: true,
+                      detectIndentation: false,
+                      formatOnPaste: true,
+                      formatOnType: true,
+                      suggestOnTriggerCharacters: true,
+                      acceptSuggestionOnCommitCharacter: true,
+                      acceptSuggestionOnEnter: "on",
+                      snippetSuggestions: "top",
+                      tabCompletion: "on",
+                      wordBasedSuggestions: "allDocuments",
+                      quickSuggestions: {
+                        other: true,
+                        comments: true,
+                        strings: true,
+                      },
+                      suggestSelection: "first",
+                      parameterHints: {
+                        enabled: true,
+                        cycle: true,
+                      },
+                      hover: {
+                        enabled: true,
+                        delay: 300,
+                      },
+                      colorDecorators: true,
+                      bracketPairColorization: {
+                        enabled: true,
+                      },
+                      guides: {
+                        bracketPairs: true,
+                        indentation: true,
+                      },
+                      matchBrackets: "always",
+                      folding: true,
+                      foldingStrategy: "auto",
+                      showFoldingControls: "always",
+                      unfoldOnClickAfterEndOfLine: false,
+                      links: true,
+                      contextmenu: true,
+                      mouseWheelZoom: false,
+                      multiCursorModifier: "ctrlCmd",
+                      accessibilitySupport: "auto",
+                    }}
+                  />
                 </div>
               </div>
 
@@ -714,53 +990,55 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               {showPreview && (
                 <div className="h-[35vh] flex flex-col overflow-hidden">
                   <div
-                    className={`flex items-center ${theme === "dark" ? "bg-[#252526]" : "bg-gray-100"} border-b ${borderColor}`}
+                    className={`flex items-center ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor} px-2`}
                   >
                     <button
                       onClick={() => setPreviewTab("browser")}
-                      className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      className={`px-3 py-1.5 text-xs font-medium transition-colors rounded-t flex items-center space-x-1.5 ${
                         previewTab === "browser"
-                          ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"} border-b-2 ${theme === "dark" ? "border-blue-500" : "border-blue-600"}`
+                          ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"}`
                           : `${textSecondary} ${hoverBg}`
                       }`}
                     >
-                      Browser
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>Browser</span>
                     </button>
                     <button
                       onClick={() => setPreviewTab("console")}
-                      className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      className={`px-3 py-1.5 text-xs font-medium transition-colors rounded-t flex items-center space-x-1.5 ${
                         previewTab === "console"
-                          ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"} border-b-2 ${theme === "dark" ? "border-blue-500" : "border-blue-600"}`
+                          ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"}`
                           : `${textSecondary} ${hoverBg}`
                       }`}
                     >
-                      Console
+                      <FileCode className="w-3.5 h-3.5" />
+                      <span>Console</span>
                       {consoleLogs.length > 0 && (
-                        <span className="ml-1.5 px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+                        <span className={`ml-1 px-1.5 py-0.5 ${theme === "dark" ? "bg-[#007acc]" : "bg-[#0078d4]"} text-white text-[10px] rounded-full font-semibold`}>
                           {consoleLogs.length}
                         </span>
                       )}
                     </button>
 
                     {previewTab === "console" && (
-                      <div className="ml-auto flex items-center space-x-3 px-3">
-                        <label className="flex items-center space-x-2 text-xs cursor-pointer">
+                      <div className="ml-auto flex items-center space-x-2">
+                        <label className="flex items-center space-x-1.5 text-xs cursor-pointer">
                           <input
                             type="checkbox"
                             checked={preserveLog}
                             onChange={(e) => setPreserveLog(e.target.checked)}
-                            className="w-3.5 h-3.5"
+                            className="w-3 h-3"
                           />
-                          <span className={`${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
+                          <span className={`${textSecondary}`}>
                             Preserve log
                           </span>
                         </label>
                         <button
                           onClick={() => setConsoleLogs([])}
-                          className={`text-xs ${textSecondary} ${hoverBg} px-2 py-1 rounded transition-colors`}
+                          className={`text-xs ${textSecondary} ${hoverBg} p-1.5 rounded transition-colors`}
                           title="Clear console"
                         >
-                          <RotateCcw className="w-3.5 h-3.5" />
+                          <RotateCcw className="w-3 h-3" />
                         </button>
                       </div>
                     )}
@@ -815,39 +1093,88 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               {/* Code Editor with Line Numbers - TOP */}
               <div className={`flex-1 flex flex-col border-b ${borderColor} overflow-hidden`}>
                 <div
-                  className={`px-3 py-1.5 ${bgTertiary} border-b ${borderColor} text-xs ${textTertiary} font-mono flex items-center justify-between`}
+                  className={`px-4 py-1.5 ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor} text-xs flex items-center justify-between`}
                 >
-                  <span>main.cpp</span>
-                  <span>{code.cpp.split("\n").length} lines</span>
+                  <div className="flex items-center space-x-2">
+                    <FileIcon type="cpp" className="w-4 h-4" />
+                    <span className={`${textSecondary} font-medium`}>C++</span>
+                  </div>
+                  <span className={`${textTertiary} text-xs`}>
+                    {code.cpp.split("\n").length} {code.cpp.split("\n").length === 1 ? "line" : "lines"}
+                  </span>
                 </div>
-                <div className="flex-1 overflow-auto flex">
-                  {/* Line Numbers */}
-                  <div
-                    className={`${lineNumberBg} ${lineNumberText} text-right py-4 px-3 font-mono text-sm select-none border-r ${borderColor} min-w-[50px]`}
-                  >
-                    {lineNumbers.map((num) => (
-                      <div key={num} className="leading-6">
-                        {num}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Code Editor */}
-                  <div className="flex-1 overflow-auto">
-                    <textarea
-                      ref={codeEditorRef}
-                      value={code.cpp}
-                      onChange={(e) => handleCodeChange(e.target.value)}
-                      className={`w-full h-full p-4 ${bgPrimary} ${textPrimary} font-mono text-sm resize-none focus:outline-none`}
-                      style={{
-                        fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
-                        lineHeight: "1.5",
-                        tabSize: 2,
-                      }}
-                      spellCheck={false}
-                      autoComplete="off"
-                    />
-                  </div>
+                {/* Monaco Editor */}
+                <div className="flex-1 overflow-hidden">
+                  <Editor
+                    height="100%"
+                    language="cpp"
+                    value={code.cpp}
+                    onChange={handleCodeChange}
+                    theme={theme === "dark" ? "codeplayground-dark" : "codeplayground-light"}
+                    onMount={handleEditorDidMount}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace",
+                      wordWrap: "on",
+                      automaticLayout: true,
+                      padding: { top: 16, bottom: 16 },
+                      scrollBeyondLastLine: false,
+                      lineNumbersMinChars: 3,
+                      lineDecorationsWidth: 0,
+                      lineNumbers: "on",
+                      renderLineHighlight: "all",
+                      selectOnLineNumbers: true,
+                      roundedSelection: false,
+                      readOnly: false,
+                      cursorStyle: "line",
+                      cursorBlinking: "smooth",
+                      cursorSmoothCaretAnimation: "on",
+                      tabSize: 2,
+                      insertSpaces: true,
+                      detectIndentation: false,
+                      formatOnPaste: true,
+                      formatOnType: true,
+                      suggestOnTriggerCharacters: true,
+                      acceptSuggestionOnCommitCharacter: true,
+                      acceptSuggestionOnEnter: "on",
+                      snippetSuggestions: "top",
+                      tabCompletion: "on",
+                      wordBasedSuggestions: "allDocuments",
+                      quickSuggestions: {
+                        other: true,
+                        comments: true,
+                        strings: true,
+                      },
+                      suggestSelection: "first",
+                      parameterHints: {
+                        enabled: true,
+                        cycle: true,
+                      },
+                      hover: {
+                        enabled: true,
+                        delay: 300,
+                      },
+                      colorDecorators: true,
+                      bracketPairColorization: {
+                        enabled: true,
+                      },
+                      guides: {
+                        bracketPairs: true,
+                        indentation: true,
+                      },
+                      matchBrackets: "always",
+                      folding: true,
+                      foldingStrategy: "auto",
+                      showFoldingControls: "always",
+                      unfoldOnClickAfterEndOfLine: false,
+                      links: true,
+                      contextmenu: true,
+                      mouseWheelZoom: false,
+                      multiCursorModifier: "ctrlCmd",
+                      accessibilitySupport: "auto",
+                    }}
+                  />
                 </div>
               </div>
 
@@ -856,18 +1183,25 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                 className={`h-[35vh] flex flex-col overflow-hidden ${theme === "dark" ? "bg-[#1e1e1e]" : "bg-gray-900"}`}
               >
                 <div
-                  className={`px-3 py-1.5 ${theme === "dark" ? "bg-[#252526]" : "bg-gray-800"} border-b ${theme === "dark" ? "border-gray-700" : "border-gray-700"} text-xs text-gray-400 font-mono flex items-center justify-between`}
+                  className={`px-4 py-1.5 ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor} text-xs flex items-center justify-between`}
                 >
-                  <span>⚡ output</span>
+                  <div className="flex items-center space-x-2">
+                    <FileCode className="w-3.5 h-3.5 text-gray-500" />
+                    <span className={`${textSecondary} font-medium`}>Terminal</span>
+                  </div>
                   {cppOutput && (
-                    <button onClick={() => setCppOutput("")} className="text-xs hover:text-white transition-colors">
-                      Clear
+                    <button 
+                      onClick={() => setCppOutput("")} 
+                      className={`text-xs ${textSecondary} ${hoverBg} px-2 py-1 rounded transition-colors flex items-center space-x-1`}
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Clear</span>
                     </button>
                   )}
                 </div>
                 <div className="flex-1 overflow-auto p-4">
                   <pre className="text-gray-100 font-mono text-sm whitespace-pre-wrap leading-relaxed">
-                    {cppOutput || "Click 'Run' to execute your C++ code..."}
+                    {cppOutput || "$ Click 'Run' to execute your C++ code..."}
                   </pre>
                 </div>
               </div>
@@ -877,23 +1211,27 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
 
         {/* Status Bar - VS Code Style */}
         <div
-          className={`px-3 py-1 ${bgSecondary} border-t ${borderColor} text-xs ${textSecondary} flex items-center justify-between`}
+          className={`px-3 py-0.5 ${theme === "dark" ? "bg-[#007acc]" : "bg-[#0078d4]"} text-xs text-white flex items-center justify-between font-medium`}
         >
           <div className="flex items-center space-x-4">
-            <span className="flex items-center space-x-1">
-              <span className={theme === "dark" ? "text-blue-400" : "text-blue-600"}>●</span>
+            <span className="flex items-center space-x-1.5 bg-white/10 px-2 py-0.5 rounded">
+              <FileIcon type={activeLanguage} className="w-3 h-3" />
               <span>{LANGUAGE_LABELS[activeLanguage]}</span>
             </span>
-            <span>UTF-8</span>
-            <span>Ln {code[activeLanguage].split("\n").length}, Col 1</span>
+            <span className="opacity-90">UTF-8</span>
+            <span className="opacity-90">
+              Ln {codeEditorRef.current?.getPosition()?.lineNumber || code[activeLanguage].split("\n").length}, 
+              Col {codeEditorRef.current?.getPosition()?.column || 1}
+            </span>
+            <span className="opacity-90">Spaces: 2</span>
           </div>
           <div className="flex items-center space-x-3">
-            <span
-              className={`${autoSaveStatus === "saved" ? "text-green-500" : autoSaveStatus === "saving" ? "text-yellow-500" : ""}`}
-            >
-              {autoSaveStatus === "saved" ? "✓ Auto-saved" : autoSaveStatus === "saving" ? "Saving..." : ""}
-            </span>
-            <span className={textTertiary}>Lesson: {lessonId}</span>
+            {autoSaveStatus && (
+              <span className="bg-white/10 px-2 py-0.5 rounded">
+                {autoSaveStatus === "saved" ? "✓ Saved" : "Saving..."}
+              </span>
+            )}
+            <span className="opacity-90">Lesson {lessonId}</span>
           </div>
         </div>
       </div>
