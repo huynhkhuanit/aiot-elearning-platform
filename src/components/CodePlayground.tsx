@@ -406,15 +406,17 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
       colors: {
         "editor.background": "#1e1e1e",
         "editor.foreground": "#D4D4D4",
-        "editor.lineHighlightBackground": "#2a2d2e",
+        "editor.lineHighlightBackground": "#282828",
         "editor.selectionBackground": "#264f78",
         "editor.inactiveSelectionBackground": "#3a3d41",
         "editorIndentGuide.background": "#404040",
         "editorIndentGuide.activeBackground": "#707070",
         "editor.lineNumber.foreground": "#858585",
         "editor.lineNumber.activeForeground": "#c6c6c6",
-        "editorCursor.foreground": "#AEAFAD",
+        "editorCursor.foreground": "#ffffff",
         "editorWhitespace.foreground": "#3B3A32",
+        "editorBracketMatch.background": "#0064001a",
+        "editorBracketMatch.border": "#888888",
       },
     })
 
@@ -434,7 +436,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
       colors: {
         "editor.background": "#FFFFFF",
         "editor.foreground": "#000000",
-        "editor.lineHighlightBackground": "#F0F0F0",
+        "editor.lineHighlightBackground": "#f5f5f5",
         "editor.selectionBackground": "#ADD6FF",
         "editor.inactiveSelectionBackground": "#E5EBF1",
         "editorIndentGuide.background": "#D3D3D3",
@@ -443,6 +445,8 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
         "editor.lineNumber.activeForeground": "#0B216F",
         "editorCursor.foreground": "#000000",
         "editorWhitespace.foreground": "#BFBFBF",
+        "editorBracketMatch.background": "#0064001a",
+        "editorBracketMatch.border": "#888888",
       },
     })
 
@@ -688,14 +692,34 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   const lineNumberBg = theme === "dark" ? "bg-[#1e1e1e]" : "bg-gray-50"
   const lineNumberText = theme === "dark" ? "text-gray-600" : "text-gray-400"
 
+  const getFileIcon = (lang: keyof CodeState) => {
+    const icons = {
+      html: "🌐",
+      css: "🎨",
+      javascript: "⚡",
+      cpp: "⚙️"
+    }
+    return icons[lang]
+  }
+
+  const getFileExtension = (lang: keyof CodeState) => {
+    const extensions = {
+      html: ".html",
+      css: ".css",
+      javascript: ".js",
+      cpp: ".cpp"
+    }
+    return extensions[lang]
+  }
+
   return (
     <div className={`code-playground ${isOpen ? 'open' : ''} ${sidebarOpen ? 'sidebar-open' : ''}`}>
       <div className={`code-playground-content ${bgPrimary} h-full shadow-2xl flex flex-col overflow-hidden border-l ${borderColor}`}>
-        {/* Header - VS Code Style */}
-        <div className={`flex items-center justify-between px-4 py-2 ${bgSecondary} border-b ${borderColor}`}>
+        {/* Title Bar - VS Code Style */}
+        <div className={`flex items-center justify-between px-4 py-2.5 ${theme === "dark" ? "bg-[#323233]" : "bg-[#f3f3f3]"} border-b ${borderColor}`}>
           <div className="flex items-center space-x-3">
-            <Code2 className={`w-5 h-5 ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`} />
-            <h2 className={`text-sm font-semibold ${textPrimary}`}>Code Playground</h2>
+            <Code2 className={`w-4 h-4 ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`} />
+            <h2 className={`text-xs font-medium ${textPrimary}`}>Code Playground</h2>
 
             {/* Auto-save status */}
             {autoSaveStatus && (
@@ -726,24 +750,24 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
           <div className="flex items-center space-x-1">
             <button
               onClick={toggleTheme}
-              className={`p-2 ${hoverBg} rounded transition-colors ${textSecondary}`}
+              className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary}`}
               title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             >
-              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
             </button>
 
             <button
               onClick={onClose}
-              className={`p-2 ${hoverBg} rounded transition-colors ${textSecondary} hover:text-red-500`}
+              className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary} hover:text-red-500`}
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {/* Tab Bar - VS Code Style */}
-        <div className={`flex items-center justify-between ${bgTertiary} border-b ${borderColor}`}>
-          <div className="flex">
+        {/* Tab Bar - VS Code Style with File Names */}
+        <div className={`flex items-center justify-between ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor}`}>
+          <div className="flex overflow-x-auto">
             {(Object.keys(LANGUAGE_LABELS) as Array<keyof CodeState>).map((lang) => (
               <button
                 key={lang}
@@ -755,27 +779,32 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                     setConsoleLogs([])
                   }
                 }}
-                className={`px-4 py-2 text-sm font-medium transition-all border-r ${borderColor} relative ${
+                className={`group flex items-center space-x-2 px-3 py-2 text-xs font-normal transition-all border-r ${borderColor} relative min-w-fit ${
                   activeLanguage === lang
-                    ? `${activeBg} ${textPrimary} ${theme === "dark" ? "border-t-2 border-t-blue-500" : "border-t-2 border-t-blue-600"}`
+                    ? `${theme === "dark" ? "bg-[#1e1e1e]" : "bg-white"} ${textPrimary} border-t-2 ${theme === "dark" ? "border-t-[#007acc]" : "border-t-[#0078d4]"} -mb-[1px]`
                     : `${textSecondary} ${hoverBg}`
                 }`}
               >
-                {LANGUAGE_LABELS[lang]}
+                <span className="text-base">{getFileIcon(lang)}</span>
+                <span className={activeLanguage === lang ? "font-medium" : ""}>
+                  {lang === "cpp" ? "main" : "index"}{getFileExtension(lang)}
+                </span>
+                {code[lang] && (
+                  <span className={`w-1.5 h-1.5 rounded-full ${activeLanguage === lang ? "bg-white" : "bg-gray-500"} opacity-0 group-hover:opacity-100 transition-opacity`}></span>
+                )}
               </button>
             ))}
           </div>
 
           {/* Toolbar Actions */}
-          <div className="flex items-center space-x-1 px-2">
+          <div className="flex items-center space-x-0.5 px-2 py-1">
             {showSplitView && (
               <button
                 onClick={() => setShowPreview(!showPreview)}
                 className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary} text-xs flex items-center space-x-1`}
                 title={showPreview ? "Hide Preview" : "Show Preview"}
               >
-                {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                <span className="hidden sm:inline">{showPreview ? "Hide" : "Show"}</span>
+                {showPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
             )}
 
@@ -783,9 +812,9 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               <button
                 onClick={handleRunCppCode}
                 disabled={isRunning}
-                className={`px-3 py-1.5 ${theme === "dark" ? "bg-green-600 hover:bg-green-700" : "bg-green-500 hover:bg-green-600"} text-white rounded text-xs font-medium flex items-center space-x-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
+                className={`px-2.5 py-1.5 ${theme === "dark" ? "bg-[#16825d] hover:bg-[#1a9870]" : "bg-[#16825d] hover:bg-[#1a9870]"} text-white rounded text-xs font-medium flex items-center space-x-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
               >
-                <Play className="w-3.5 h-3.5" />
+                <Play className="w-3 h-3" />
                 <span>{isRunning ? "Running..." : "Run"}</span>
               </button>
             )}
@@ -795,7 +824,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary} relative group`}
               title="Copy Code"
             >
-              <Copy className="w-4 h-4" />
+              <Copy className="w-3.5 h-3.5" />
               <span
                 id="copy-btn"
                 className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
@@ -807,7 +836,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary}`}
               title="Download Code"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-3.5 h-3.5" />
             </button>
 
             <button
@@ -815,20 +844,20 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary}`}
               title="Reset Code"
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-3.5 h-3.5" />
             </button>
 
             <button
               onClick={handleAIReview}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 transition-all ${
+              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 transition-all ${
                 theme === "dark"
                   ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-purple-500/50"
                   : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-purple-400/50"
               }`}
               title="Nhận xét của AI"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Nhận xét AI</span>
+              <Sparkles className="w-3 h-3" />
+              <span className="hidden lg:inline">AI Review</span>
             </button>
           </div>
         </div>
@@ -840,13 +869,17 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               {/* Code Editor with Line Numbers - TOP */}
               <div className={`flex-1 flex flex-col border-b ${borderColor} overflow-hidden`}>
                 <div
-                  className={`px-3 py-1.5 ${bgTertiary} border-b ${borderColor} text-xs ${textTertiary} font-mono flex items-center justify-between`}
+                  className={`px-4 py-1.5 ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor} text-xs flex items-center justify-between`}
                 >
-                  <span>
-                    {LANGUAGE_LABELS[activeLanguage].toLowerCase()}.
-                    {activeLanguage === "javascript" ? "js" : activeLanguage}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base">{getFileIcon(activeLanguage)}</span>
+                    <span className={`${textSecondary} font-mono`}>
+                      {activeLanguage === "cpp" ? "main" : "index"}{getFileExtension(activeLanguage)}
+                    </span>
+                  </div>
+                  <span className={`${textTertiary} text-xs`}>
+                    {code[activeLanguage].split("\n").length} {code[activeLanguage].split("\n").length === 1 ? "line" : "lines"}
                   </span>
-                  <span>{code[activeLanguage].split("\n").length} lines</span>
                 </div>
                 {/* Monaco Editor */}
                 <div className="flex-1 overflow-hidden">
@@ -935,53 +968,55 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               {showPreview && (
                 <div className="h-[35vh] flex flex-col overflow-hidden">
                   <div
-                    className={`flex items-center ${theme === "dark" ? "bg-[#252526]" : "bg-gray-100"} border-b ${borderColor}`}
+                    className={`flex items-center ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor} px-2`}
                   >
                     <button
                       onClick={() => setPreviewTab("browser")}
-                      className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      className={`px-3 py-1.5 text-xs font-medium transition-colors rounded-t flex items-center space-x-1.5 ${
                         previewTab === "browser"
-                          ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"} border-b-2 ${theme === "dark" ? "border-blue-500" : "border-blue-600"}`
+                          ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"}`
                           : `${textSecondary} ${hoverBg}`
                       }`}
                     >
-                      Browser
+                      <span>🌐</span>
+                      <span>Browser</span>
                     </button>
                     <button
                       onClick={() => setPreviewTab("console")}
-                      className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      className={`px-3 py-1.5 text-xs font-medium transition-colors rounded-t flex items-center space-x-1.5 ${
                         previewTab === "console"
-                          ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"} border-b-2 ${theme === "dark" ? "border-blue-500" : "border-blue-600"}`
+                          ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"}`
                           : `${textSecondary} ${hoverBg}`
                       }`}
                     >
-                      Console
+                      <span>💻</span>
+                      <span>Console</span>
                       {consoleLogs.length > 0 && (
-                        <span className="ml-1.5 px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+                        <span className={`ml-1 px-1.5 py-0.5 ${theme === "dark" ? "bg-[#007acc]" : "bg-[#0078d4]"} text-white text-[10px] rounded-full font-semibold`}>
                           {consoleLogs.length}
                         </span>
                       )}
                     </button>
 
                     {previewTab === "console" && (
-                      <div className="ml-auto flex items-center space-x-3 px-3">
-                        <label className="flex items-center space-x-2 text-xs cursor-pointer">
+                      <div className="ml-auto flex items-center space-x-2">
+                        <label className="flex items-center space-x-1.5 text-xs cursor-pointer">
                           <input
                             type="checkbox"
                             checked={preserveLog}
                             onChange={(e) => setPreserveLog(e.target.checked)}
-                            className="w-3.5 h-3.5"
+                            className="w-3 h-3"
                           />
-                          <span className={`${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
+                          <span className={`${textSecondary}`}>
                             Preserve log
                           </span>
                         </label>
                         <button
                           onClick={() => setConsoleLogs([])}
-                          className={`text-xs ${textSecondary} ${hoverBg} px-2 py-1 rounded transition-colors`}
+                          className={`text-xs ${textSecondary} ${hoverBg} p-1.5 rounded transition-colors`}
                           title="Clear console"
                         >
-                          <RotateCcw className="w-3.5 h-3.5" />
+                          <RotateCcw className="w-3 h-3" />
                         </button>
                       </div>
                     )}
@@ -1036,10 +1071,15 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               {/* Code Editor with Line Numbers - TOP */}
               <div className={`flex-1 flex flex-col border-b ${borderColor} overflow-hidden`}>
                 <div
-                  className={`px-3 py-1.5 ${bgTertiary} border-b ${borderColor} text-xs ${textTertiary} font-mono flex items-center justify-between`}
+                  className={`px-4 py-1.5 ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor} text-xs flex items-center justify-between`}
                 >
-                  <span>main.cpp</span>
-                  <span>{code.cpp.split("\n").length} lines</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base">⚙️</span>
+                    <span className={`${textSecondary} font-mono`}>main.cpp</span>
+                  </div>
+                  <span className={`${textTertiary} text-xs`}>
+                    {code.cpp.split("\n").length} {code.cpp.split("\n").length === 1 ? "line" : "lines"}
+                  </span>
                 </div>
                 {/* Monaco Editor */}
                 <div className="flex-1 overflow-hidden">
@@ -1121,18 +1161,25 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                 className={`h-[35vh] flex flex-col overflow-hidden ${theme === "dark" ? "bg-[#1e1e1e]" : "bg-gray-900"}`}
               >
                 <div
-                  className={`px-3 py-1.5 ${theme === "dark" ? "bg-[#252526]" : "bg-gray-800"} border-b ${theme === "dark" ? "border-gray-700" : "border-gray-700"} text-xs text-gray-400 font-mono flex items-center justify-between`}
+                  className={`px-4 py-1.5 ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor} text-xs flex items-center justify-between`}
                 >
-                  <span>⚡ output</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm">💻</span>
+                    <span className={`${textSecondary} font-medium`}>Terminal</span>
+                  </div>
                   {cppOutput && (
-                    <button onClick={() => setCppOutput("")} className="text-xs hover:text-white transition-colors">
-                      Clear
+                    <button 
+                      onClick={() => setCppOutput("")} 
+                      className={`text-xs ${textSecondary} ${hoverBg} px-2 py-1 rounded transition-colors flex items-center space-x-1`}
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Clear</span>
                     </button>
                   )}
                 </div>
                 <div className="flex-1 overflow-auto p-4">
                   <pre className="text-gray-100 font-mono text-sm whitespace-pre-wrap leading-relaxed">
-                    {cppOutput || "Click 'Run' to execute your C++ code..."}
+                    {cppOutput || "$ Click 'Run' to execute your C++ code..."}
                   </pre>
                 </div>
               </div>
@@ -1142,26 +1189,27 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
 
         {/* Status Bar - VS Code Style */}
         <div
-          className={`px-3 py-1 ${bgSecondary} border-t ${borderColor} text-xs ${textSecondary} flex items-center justify-between`}
+          className={`px-3 py-0.5 ${theme === "dark" ? "bg-[#007acc]" : "bg-[#0078d4]"} text-xs text-white flex items-center justify-between font-medium`}
         >
           <div className="flex items-center space-x-4">
-            <span className="flex items-center space-x-1">
-              <span className={theme === "dark" ? "text-blue-400" : "text-blue-600"}>●</span>
+            <span className="flex items-center space-x-1.5 bg-white/10 px-2 py-0.5 rounded">
+              <span className="text-xs">{getFileIcon(activeLanguage)}</span>
               <span>{LANGUAGE_LABELS[activeLanguage]}</span>
             </span>
-            <span>UTF-8</span>
-            <span>
+            <span className="opacity-90">UTF-8</span>
+            <span className="opacity-90">
               Ln {codeEditorRef.current?.getPosition()?.lineNumber || code[activeLanguage].split("\n").length}, 
               Col {codeEditorRef.current?.getPosition()?.column || 1}
             </span>
+            <span className="opacity-90">Spaces: 2</span>
           </div>
           <div className="flex items-center space-x-3">
-            <span
-              className={`${autoSaveStatus === "saved" ? "text-green-500" : autoSaveStatus === "saving" ? "text-yellow-500" : ""}`}
-            >
-              {autoSaveStatus === "saved" ? "✓ Auto-saved" : autoSaveStatus === "saving" ? "Saving..." : ""}
-            </span>
-            <span className={textTertiary}>Lesson: {lessonId}</span>
+            {autoSaveStatus && (
+              <span className="bg-white/10 px-2 py-0.5 rounded">
+                {autoSaveStatus === "saved" ? "✓ Saved" : "Saving..."}
+              </span>
+            )}
+            <span className="opacity-90">Lesson {lessonId}</span>
           </div>
         </div>
       </div>
