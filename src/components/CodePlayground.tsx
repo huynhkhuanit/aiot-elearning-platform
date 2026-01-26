@@ -737,16 +737,6 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   const lineNumberBg = theme === "dark" ? "bg-[#1e1e1e]" : "bg-gray-50"
   const lineNumberText = theme === "dark" ? "text-gray-600" : "text-gray-400"
 
-  const getFileExtension = (lang: keyof CodeState) => {
-    const extensions = {
-      html: ".html",
-      css: ".css",
-      javascript: ".js",
-      cpp: ".cpp"
-    }
-    return extensions[lang]
-  }
-
   return (
     <div className={`code-playground ${isOpen ? 'open' : ''} ${sidebarOpen ? 'sidebar-open' : ''}`}>
       <div className={`code-playground-content ${bgPrimary} h-full shadow-2xl flex flex-col overflow-hidden border-l ${borderColor}`}>
@@ -822,11 +812,8 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               >
                 <FileIcon type={lang} className="w-4 h-4 flex-shrink-0" />
                 <span className={`whitespace-nowrap ${activeLanguage === lang ? "font-medium" : ""}`}>
-                  {lang === "cpp" ? "main" : "index"}{getFileExtension(lang)}
+                  {lang === "javascript" ? "JS" : LANGUAGE_LABELS[lang]}
                 </span>
-                {code[lang] && (
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${activeLanguage === lang ? "bg-white" : "bg-gray-500"} ${code[lang] ? "opacity-100" : "opacity-0"}`}></span>
-                )}
               </button>
             ))}
           </div>
@@ -908,8 +895,8 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                 >
                   <div className="flex items-center space-x-2">
                     <FileIcon type={activeLanguage} className="w-4 h-4" />
-                    <span className={`${textSecondary} font-mono`}>
-                      {activeLanguage === "cpp" ? "main" : "index"}{getFileExtension(activeLanguage)}
+                    <span className={`${textSecondary} font-medium`}>
+                      {activeLanguage === "javascript" ? "JS" : LANGUAGE_LABELS[activeLanguage]}
                     </span>
                   </div>
                   <span className={`${textTertiary} text-xs`}>
@@ -1110,7 +1097,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                 >
                   <div className="flex items-center space-x-2">
                     <FileIcon type="cpp" className="w-4 h-4" />
-                    <span className={`${textSecondary} font-mono`}>main.cpp</span>
+                    <span className={`${textSecondary} font-medium`}>C++</span>
                   </div>
                   <span className={`${textTertiary} text-xs`}>
                     {code.cpp.split("\n").length} {code.cpp.split("\n").length === 1 ? "line" : "lines"}
