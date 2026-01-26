@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.59",
+    "@monaco-editor/react": "^4.7.0",
     "@reduxjs/toolkit": "^2.9.0",
     "@supabase/supabase-js": "^2.45.4",
     "@tanstack/react-query": "^5.90.2",

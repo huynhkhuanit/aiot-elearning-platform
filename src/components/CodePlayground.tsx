@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useMemo } from "react"
 import { X, Play, Copy, Download, RotateCcw, Code2, Eye, EyeOff, Sun, Moon, Sparkles } from "lucide-react"
+import Editor, { OnMount } from "@monaco-editor/react"
+import type { editor } from "monaco-editor"
 
 interface CodePlaygroundProps {
   isOpen: boolean
@@ -62,7 +64,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   const [isLoadingReview, setIsLoadingReview] = useState(false)
   const [showEmptyCodeModal, setShowEmptyCodeModal] = useState(false)
 
-  const codeEditorRef = useRef<HTMLTextAreaElement>(null)
+  const codeEditorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const autoSaveStatusTimerRef = useRef<NodeJS.Timeout | null>(null) // Track status display timer
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -384,16 +386,184 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
     return () => window.removeEventListener("message", handleMessage)
   }, [preserveLog, isCodeExecuting])
 
-  // Calculate line numbers
-  const lineNumbers = useMemo(() => {
-    const lines = code[activeLanguage].split("\n").length
-    return Array.from({ length: lines }, (_, i) => i + 1)
-  }, [code, activeLanguage])
+  // Handle Monaco Editor mount
+  const handleEditorDidMount: OnMount = (editor: editor.IStandaloneCodeEditor, monaco: any) => {
+    codeEditorRef.current = editor
 
-  const handleCodeChange = (value: string) => {
+    // Define custom VSCode-like dark theme
+    monaco.editor.defineTheme("codeplayground-dark", {
+      base: "vs-dark",
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "6A9955", fontStyle: "italic" },
+        { token: "keyword", foreground: "569CD6" },
+        { token: "string", foreground: "CE9178" },
+        { token: "number", foreground: "B5CEA8" },
+        { token: "type", foreground: "4EC9B0" },
+        { token: "class", foreground: "4EC9B0" },
+        { token: "function", foreground: "DCDCAA" },
+      ],
+      colors: {
+        "editor.background": "#1e1e1e",
+        "editor.foreground": "#D4D4D4",
+        "editor.lineHighlightBackground": "#2a2d2e",
+        "editor.selectionBackground": "#264f78",
+        "editor.inactiveSelectionBackground": "#3a3d41",
+        "editorIndentGuide.background": "#404040",
+        "editorIndentGuide.activeBackground": "#707070",
+        "editor.lineNumber.foreground": "#858585",
+        "editor.lineNumber.activeForeground": "#c6c6c6",
+        "editorCursor.foreground": "#AEAFAD",
+        "editorWhitespace.foreground": "#3B3A32",
+      },
+    })
+
+    // Define custom light theme
+    monaco.editor.defineTheme("codeplayground-light", {
+      base: "vs",
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "008000", fontStyle: "italic" },
+        { token: "keyword", foreground: "0000FF" },
+        { token: "string", foreground: "A31515" },
+        { token: "number", foreground: "098658" },
+        { token: "type", foreground: "267F99" },
+        { token: "class", foreground: "267F99" },
+        { token: "function", foreground: "795E26" },
+      ],
+      colors: {
+        "editor.background": "#FFFFFF",
+        "editor.foreground": "#000000",
+        "editor.lineHighlightBackground": "#F0F0F0",
+        "editor.selectionBackground": "#ADD6FF",
+        "editor.inactiveSelectionBackground": "#E5EBF1",
+        "editorIndentGuide.background": "#D3D3D3",
+        "editorIndentGuide.activeBackground": "#939393",
+        "editor.lineNumber.foreground": "#237893",
+        "editor.lineNumber.activeForeground": "#0B216F",
+        "editorCursor.foreground": "#000000",
+        "editorWhitespace.foreground": "#BFBFBF",
+      },
+    })
+
+    // Set the theme
+    monaco.editor.setTheme(theme === "dark" ? "codeplayground-dark" : "codeplayground-light")
+
+    // Configure IntelliSense for HTML
+    monaco.languages.html.htmlDefaults.setOptions({
+      format: {
+        indentInnerHtml: true,
+        wrapLineLength: 120,
+        wrapAttributes: "auto",
+      },
+      suggest: {
+        html5: true,
+        angular1: false,
+        ionic: false,
+      },
+    })
+
+    // Configure IntelliSense for CSS
+    monaco.languages.css.cssDefaults.setOptions({
+      validate: true,
+      lint: {
+        compatibleVendorPrefixes: "ignore",
+        vendorPrefix: "warning",
+        duplicateProperties: "warning",
+        emptyRules: "warning",
+        importStatement: "ignore",
+        boxModel: "ignore",
+        universalSelector: "ignore",
+        zeroUnits: "ignore",
+        fontFaceProperties: "warning",
+        hexColorLength: "error",
+        argumentsInColorFunction: "error",
+        unknownProperties: "warning",
+        ieHack: "ignore",
+        unknownVendorSpecificProperties: "ignore",
+        propertyIgnoredDueToDisplay: "warning",
+        important: "ignore",
+        float: "ignore",
+        idSelector: "ignore",
+      },
+    })
+
+    // Configure IntelliSense for JavaScript
+    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ES2020,
+      allowNonTsExtensions: true,
+      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+      module: monaco.languages.typescript.ModuleKind.ESNext,
+      noEmit: true,
+      esModuleInterop: true,
+      jsx: monaco.languages.typescript.JsxEmit.React,
+      reactNamespace: "React",
+      allowJs: true,
+      typeRoots: ["node_modules/@types"],
+    })
+
+    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: false,
+      noSyntaxValidation: false,
+    })
+
+    // Add extra libraries for better IntelliSense
+    monaco.languages.typescript.javascriptDefaults.setExtraLibs([
+      {
+        content: `
+          declare global {
+            interface Window {
+              // Browser APIs
+            }
+            interface Document {
+              // DOM APIs
+            }
+            interface Console {
+              log(...args: any[]): void;
+              error(...args: any[]): void;
+              warn(...args: any[]): void;
+              info(...args: any[]): void;
+            }
+          }
+        `,
+      },
+    ])
+
+    // Configure IntelliSense for C++
+    monaco.languages.register({ id: "cpp" })
+    monaco.languages.setMonarchTokensProvider("cpp", {
+      tokenizer: {
+        root: [
+          [/\/\/.*$/, "comment"],
+          [/\/\*[\s\S]*?\*\//, "comment"],
+          [/[a-z_$][\w$]*/, "identifier"],
+          [/[A-Z][\w\$]*/, "type.identifier"],
+          [/\d*\.\d+([eE][\-+]?\d+)?[fFdD]?/, "number.float"],
+          [/0[xX][0-9a-fA-F]+[Ll]?/, "number.hex"],
+          [/\d+[lL]?/, "number"],
+          [/[;,.]/, "delimiter"],
+          [/[{}()\[\]]/, "delimiter.bracket"],
+          [/[=+\-*/%]/, "operator"],
+          [/["'].*?["']/, "string"],
+        ],
+      },
+    })
+  }
+
+  // Update theme when theme changes
+  useEffect(() => {
+    if (codeEditorRef.current) {
+      const monaco = (window as any).monaco
+      if (monaco) {
+        monaco.editor.setTheme(theme === "dark" ? "codeplayground-dark" : "codeplayground-light")
+      }
+    }
+  }, [theme])
+
+  const handleCodeChange = (value: string | undefined) => {
     setCode((prev) => ({
       ...prev,
-      [activeLanguage]: value,
+      [activeLanguage]: value || "",
     }))
   }
 
@@ -416,7 +586,8 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   }
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(code[activeLanguage])
+    const codeToCopy = codeEditorRef.current?.getValue() || code[activeLanguage]
+    navigator.clipboard.writeText(codeToCopy)
     const btn = document.getElementById("copy-btn")
     if (btn) {
       btn.textContent = "✓ Copied!"
@@ -677,36 +848,86 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                   </span>
                   <span>{code[activeLanguage].split("\n").length} lines</span>
                 </div>
-                <div className="flex-1 overflow-auto flex">
-                  {/* Line Numbers */}
-                  <div
-                    className={`${lineNumberBg} ${lineNumberText} text-right py-4 px-3 font-mono text-sm select-none border-r ${borderColor} min-w-[50px]`}
-                  >
-                    {lineNumbers.map((num) => (
-                      <div key={num} className="leading-6">
-                        {num}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Code Editor */}
-                  <div className="flex-1 overflow-auto">
-                    <textarea
-                      ref={codeEditorRef}
-                      value={code[activeLanguage]}
-                      onChange={(e) => handleCodeChange(e.target.value)}
-                      className={`w-full h-full p-4 ${bgPrimary} ${textPrimary} font-mono text-sm resize-none focus:outline-none`}
-                      style={{
-                        fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
-                        lineHeight: "1.5",
-                        tabSize: 2,
-                      }}
-                      spellCheck={false}
-                      autoComplete="off"
-                      autoCorrect="off"
-                      autoCapitalize="off"
-                    />
-                  </div>
+                {/* Monaco Editor */}
+                <div className="flex-1 overflow-hidden">
+                  <Editor
+                    height="100%"
+                    language={
+                      activeLanguage === "javascript" 
+                        ? "javascript" 
+                        : activeLanguage === "cpp" 
+                        ? "cpp" 
+                        : activeLanguage === "html"
+                        ? "html"
+                        : "css"
+                    }
+                    value={code[activeLanguage]}
+                    onChange={handleCodeChange}
+                    theme={theme === "dark" ? "codeplayground-dark" : "codeplayground-light"}
+                    onMount={handleEditorDidMount}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace",
+                      wordWrap: "on",
+                      automaticLayout: true,
+                      padding: { top: 16, bottom: 16 },
+                      scrollBeyondLastLine: false,
+                      lineNumbersMinChars: 3,
+                      lineDecorationsWidth: 0,
+                      lineNumbers: "on",
+                      renderLineHighlight: "all",
+                      selectOnLineNumbers: true,
+                      roundedSelection: false,
+                      readOnly: false,
+                      cursorStyle: "line",
+                      cursorBlinking: "smooth",
+                      cursorSmoothCaretAnimation: "on",
+                      tabSize: 2,
+                      insertSpaces: true,
+                      detectIndentation: false,
+                      formatOnPaste: true,
+                      formatOnType: true,
+                      suggestOnTriggerCharacters: true,
+                      acceptSuggestionOnCommitCharacter: true,
+                      acceptSuggestionOnEnter: "on",
+                      snippetSuggestions: "top",
+                      tabCompletion: "on",
+                      wordBasedSuggestions: "allDocuments",
+                      quickSuggestions: {
+                        other: true,
+                        comments: true,
+                        strings: true,
+                      },
+                      suggestSelection: "first",
+                      parameterHints: {
+                        enabled: true,
+                        cycle: true,
+                      },
+                      hover: {
+                        enabled: true,
+                        delay: 300,
+                      },
+                      colorDecorators: true,
+                      bracketPairColorization: {
+                        enabled: true,
+                      },
+                      guides: {
+                        bracketPairs: true,
+                        indentation: true,
+                      },
+                      matchBrackets: "always",
+                      folding: true,
+                      foldingStrategy: "auto",
+                      showFoldingControls: "always",
+                      unfoldOnClickAfterEndOfLine: false,
+                      links: true,
+                      contextmenu: true,
+                      mouseWheelZoom: false,
+                      multiCursorModifier: "ctrlCmd",
+                      accessibilitySupport: "auto",
+                    }}
+                  />
                 </div>
               </div>
 
@@ -820,34 +1041,78 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                   <span>main.cpp</span>
                   <span>{code.cpp.split("\n").length} lines</span>
                 </div>
-                <div className="flex-1 overflow-auto flex">
-                  {/* Line Numbers */}
-                  <div
-                    className={`${lineNumberBg} ${lineNumberText} text-right py-4 px-3 font-mono text-sm select-none border-r ${borderColor} min-w-[50px]`}
-                  >
-                    {lineNumbers.map((num) => (
-                      <div key={num} className="leading-6">
-                        {num}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Code Editor */}
-                  <div className="flex-1 overflow-auto">
-                    <textarea
-                      ref={codeEditorRef}
-                      value={code.cpp}
-                      onChange={(e) => handleCodeChange(e.target.value)}
-                      className={`w-full h-full p-4 ${bgPrimary} ${textPrimary} font-mono text-sm resize-none focus:outline-none`}
-                      style={{
-                        fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
-                        lineHeight: "1.5",
-                        tabSize: 2,
-                      }}
-                      spellCheck={false}
-                      autoComplete="off"
-                    />
-                  </div>
+                {/* Monaco Editor */}
+                <div className="flex-1 overflow-hidden">
+                  <Editor
+                    height="100%"
+                    language="cpp"
+                    value={code.cpp}
+                    onChange={handleCodeChange}
+                    theme={theme === "dark" ? "codeplayground-dark" : "codeplayground-light"}
+                    onMount={handleEditorDidMount}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace",
+                      wordWrap: "on",
+                      automaticLayout: true,
+                      padding: { top: 16, bottom: 16 },
+                      scrollBeyondLastLine: false,
+                      lineNumbersMinChars: 3,
+                      lineDecorationsWidth: 0,
+                      lineNumbers: "on",
+                      renderLineHighlight: "all",
+                      selectOnLineNumbers: true,
+                      roundedSelection: false,
+                      readOnly: false,
+                      cursorStyle: "line",
+                      cursorBlinking: "smooth",
+                      cursorSmoothCaretAnimation: "on",
+                      tabSize: 2,
+                      insertSpaces: true,
+                      detectIndentation: false,
+                      formatOnPaste: true,
+                      formatOnType: true,
+                      suggestOnTriggerCharacters: true,
+                      acceptSuggestionOnCommitCharacter: true,
+                      acceptSuggestionOnEnter: "on",
+                      snippetSuggestions: "top",
+                      tabCompletion: "on",
+                      wordBasedSuggestions: "allDocuments",
+                      quickSuggestions: {
+                        other: true,
+                        comments: true,
+                        strings: true,
+                      },
+                      suggestSelection: "first",
+                      parameterHints: {
+                        enabled: true,
+                        cycle: true,
+                      },
+                      hover: {
+                        enabled: true,
+                        delay: 300,
+                      },
+                      colorDecorators: true,
+                      bracketPairColorization: {
+                        enabled: true,
+                      },
+                      guides: {
+                        bracketPairs: true,
+                        indentation: true,
+                      },
+                      matchBrackets: "always",
+                      folding: true,
+                      foldingStrategy: "auto",
+                      showFoldingControls: "always",
+                      unfoldOnClickAfterEndOfLine: false,
+                      links: true,
+                      contextmenu: true,
+                      mouseWheelZoom: false,
+                      multiCursorModifier: "ctrlCmd",
+                      accessibilitySupport: "auto",
+                    }}
+                  />
                 </div>
               </div>
 
@@ -885,7 +1150,10 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
               <span>{LANGUAGE_LABELS[activeLanguage]}</span>
             </span>
             <span>UTF-8</span>
-            <span>Ln {code[activeLanguage].split("\n").length}, Col 1</span>
+            <span>
+              Ln {codeEditorRef.current?.getPosition()?.lineNumber || code[activeLanguage].split("\n").length}, 
+              Col {codeEditorRef.current?.getPosition()?.column || 1}
+            </span>
           </div>
           <div className="flex items-center space-x-3">
             <span
