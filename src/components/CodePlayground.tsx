@@ -110,6 +110,8 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   const [aiReviewData, setAiReviewData] = useState<AIReviewData | null>(null)
   const [isLoadingReview, setIsLoadingReview] = useState(false)
   const [showEmptyCodeModal, setShowEmptyCodeModal] = useState(false)
+  const [showProblems, setShowProblems] = useState(false) // VSCode-style Problems panel
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]) // Store validation errors
 
   const codeEditorRef = useRef<MonacoEditor | null>(null)
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -117,6 +119,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const executionTimerRef = useRef<NodeJS.Timeout | null>(null)
   const executionIdRef = useRef<number>(0) // Track unique execution ID
+  const validationTimerRef = useRef<NodeJS.Timeout | null>(null) // Debounce validation
 
   // Load saved code and theme from localStorage on mount
   useEffect(() => {
@@ -260,34 +263,63 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
     return () => window.removeEventListener("message", handleMessage)
   }, [preserveLog, isCodeExecuting])
 
-  // Validate code and set Monaco markers (VSCode-style error display)
+  // Validate code and set Monaco markers (VSCode-style error display) - Debounced for performance
   useEffect(() => {
     if (!codeEditorRef.current || !isOpen) return
 
-    const monaco = (window as any).monaco
-    if (!monaco) return
-
-    const model = codeEditorRef.current.getModel()
-    if (!model) return
-
-    let validationErrors: ValidationError[] = []
-
-    // Validate based on active language
-    if (activeLanguage === "html") {
-      const result = validateHTML(code[activeLanguage])
-      validationErrors = result.errors
-    } else if (activeLanguage === "css") {
-      const result = validateCSS(code[activeLanguage])
-      validationErrors = result.errors
+    // Clear previous validation timer
+    if (validationTimerRef.current) {
+      clearTimeout(validationTimerRef.current)
     }
 
-    // Create Monaco markers from validation errors
-    if (validationErrors.length > 0) {
-      const markers = createMonacoMarkerData(validationErrors)
-      monaco.editor.setModelMarkers(model, "validation", markers)
-    } else {
-      // Clear markers if no errors
-      monaco.editor.setModelMarkers(model, "validation", [])
+    // Debounce validation to avoid lag while typing
+    validationTimerRef.current = setTimeout(() => {
+      const monaco = (window as any).monaco
+      if (!monaco || !codeEditorRef.current) return
+
+      const model = codeEditorRef.current.getModel()
+      if (!model) return
+
+      let validationErrors: ValidationError[] = []
+
+      // Validate based on active language
+      if (activeLanguage === "html") {
+        const result = validateHTML(code[activeLanguage])
+        validationErrors = result.errors
+      } else if (activeLanguage === "css") {
+        const result = validateCSS(code[activeLanguage])
+        validationErrors = result.errors
+      }
+
+      // Store errors in state for Problems panel
+      setValidationErrors(validationErrors)
+      
+      // Auto-open Problems panel when errors first appear (user-friendly)
+      if (validationErrors.length > 0 && !showProblems) {
+        // Only auto-open if user hasn't manually closed it before
+        const problemsClosed = sessionStorage.getItem(`problems_closed_${lessonId}`)
+        if (!problemsClosed) {
+          setShowProblems(true)
+        }
+      } else if (validationErrors.length === 0) {
+        // Clear the closed flag when errors are fixed
+        sessionStorage.removeItem(`problems_closed_${lessonId}`)
+      }
+
+      // Create Monaco markers from validation errors
+      if (validationErrors.length > 0) {
+        const markers = createMonacoMarkerData(validationErrors)
+        monaco.editor.setModelMarkers(model, "validation", markers)
+      } else {
+        // Clear markers if no errors
+        monaco.editor.setModelMarkers(model, "validation", [])
+      }
+    }, 300) // 300ms debounce - fast enough for good UX, slow enough to avoid lag
+
+    return () => {
+      if (validationTimerRef.current) {
+        clearTimeout(validationTimerRef.current)
+      }
     }
   }, [code, activeLanguage, isOpen])
 
@@ -1020,6 +1052,23 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
 
           {/* Toolbar Actions */}
           <div className="flex items-center space-x-0.5 px-2 py-1">
+            {/* Problems Button - VSCode Style */}
+            {(activeLanguage === "html" || activeLanguage === "css") && validationErrors.length > 0 && (
+              <button
+                onClick={() => setShowProblems(!showProblems)}
+                className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary} text-xs flex items-center space-x-1 relative`}
+                title={showProblems ? "Hide Problems" : "Show Problems"}
+              >
+                <FileCode className="w-3.5 h-3.5" />
+                <span className="text-[10px]">{validationErrors.length}</span>
+                {showProblems && (
+                  <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${
+                    theme === "dark" ? "bg-[#007acc]" : "bg-[#0078d4]"
+                  }`} />
+                )}
+              </button>
+            )}
+            
             {showSplitView && (
               <button
                 onClick={() => setShowPreview(!showPreview)}
@@ -1251,6 +1300,73 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
                   />
                 </div>
               </div>
+
+              {/* Problems Panel - VSCode Style (Simple & Optimized) */}
+              {showProblems && validationErrors.length > 0 && (
+                <div className={`border-t ${borderColor} ${theme === "dark" ? "bg-[#1e1e1e]" : "bg-white"}`} style={{ height: "200px", display: "flex", flexDirection: "column" }}>
+                  <div className={`flex items-center justify-between px-3 py-1.5 ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor}`}>
+                    <div className="flex items-center space-x-2">
+                      <FileCode className={`w-3.5 h-3.5 ${textSecondary}`} />
+                      <span className={`text-xs font-medium ${textPrimary}`}>Problems</span>
+                      <span className={`text-xs ${textTertiary}`}>({validationErrors.length})</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowProblems(false)
+                        sessionStorage.setItem(`problems_closed_${lessonId}`, "true")
+                      }}
+                      className={`p-1 ${hoverBg} rounded transition-colors ${textSecondary}`}
+                      title="Close Problems"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-auto">
+                    {validationErrors.map((error, index) => (
+                      <div
+                        key={index}
+                        className={`px-3 py-1.5 border-b ${borderColor} ${theme === "dark" ? "hover:bg-[#2a2d2e]" : "hover:bg-gray-50"} cursor-pointer transition-colors`}
+                        onClick={() => {
+                          if (codeEditorRef.current) {
+                            codeEditorRef.current.setPosition({ lineNumber: error.line, column: error.column })
+                            codeEditorRef.current.revealLineInCenter(error.line)
+                            codeEditorRef.current.focus()
+                          }
+                        }}
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className={`mt-0.5 flex-shrink-0 ${
+                            error.severity === "error" ? "text-red-500" : 
+                            error.severity === "warning" ? "text-yellow-500" : 
+                            "text-blue-500"
+                          }`}>
+                            {error.severity === "error" ? "●" : error.severity === "warning" ? "⚠" : "ℹ"}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                              <span className={`text-xs font-mono ${textSecondary}`}>
+                                {activeLanguage.toUpperCase()}
+                              </span>
+                              <span className={`text-xs ${textTertiary}`}>
+                                {error.line}:{error.column}
+                              </span>
+                              {error.code && (
+                                <>
+                                  <span className={`text-xs ${textTertiary}`}>•</span>
+                                  <span className={`text-xs ${textTertiary} font-mono`}>{error.code}</span>
+                                </>
+                              )}
+                            </div>
+                            <div className={`text-xs ${textPrimary} leading-relaxed`}>
+                              {error.message}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Preview with Browser/Console Tabs - BOTTOM */}
               {showPreview && (
@@ -1558,6 +1674,16 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
             <span className="opacity-90">Spaces: 2</span>
           </div>
           <div className="flex items-center space-x-3">
+            {validationErrors.length > 0 && (
+              <button
+                onClick={() => setShowProblems(!showProblems)}
+                className="bg-white/10 px-2 py-0.5 rounded hover:bg-white/20 transition-colors flex items-center gap-1.5 cursor-pointer"
+                title="Show Problems"
+              >
+                <span className="text-red-300">●</span>
+                <span>{validationErrors.length} {validationErrors.length === 1 ? "error" : "errors"}</span>
+              </button>
+            )}
             {autoSaveStatus && (
               <span className="bg-white/10 px-2 py-0.5 rounded">
                 {autoSaveStatus === "saved" ? "✓ Saved" : "Saving..."}

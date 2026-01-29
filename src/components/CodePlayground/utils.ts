@@ -371,7 +371,7 @@ export function generatePreviewHTML(
   // Sanitize HTML
   const safeHTML = sanitizeHTML(htmlCode)
 
-  // Build error message if there are validation errors (VSCode-style)
+  // Simple, minimal error indicator (VSCode-style) - only show if errors exist
   let errorHTML = ""
   const allErrors = [
     ...htmlValidation.errors.map(e => ({ ...e, source: "HTML" })),
@@ -379,9 +379,7 @@ export function generatePreviewHTML(
   ]
   
   if (allErrors.length > 0) {
-    const errorCount = allErrors.length
-    const errorText = errorCount === 1 ? "error" : "errors"
-    
+    // Simple, unobtrusive error indicator - VSCode style
     errorHTML = `
       <div style="
         position: fixed;
@@ -390,63 +388,19 @@ export function generatePreviewHTML(
         right: 0;
         background: #1e1e1e;
         border-bottom: 1px solid #ff4444;
-        color: #ffffff;
-        padding: 8px 16px;
+        color: #cccccc;
+        padding: 4px 12px;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-size: 13px;
+        font-size: 12px;
         z-index: 10000;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
       ">
-        <div style="
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          color: #ff4444;
-          font-weight: 600;
-        ">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM7 4a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0V4zm1 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
-          </svg>
-          <span>${errorCount} ${errorText}</span>
-        </div>
-        <div style="flex: 1; overflow-x: auto;">
-          <div style="display: flex; gap: 16px; white-space: nowrap;">
-            ${allErrors.slice(0, 5).map(err => `
-              <div style="
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                padding: 4px 8px;
-                background: rgba(255, 68, 68, 0.1);
-                border-radius: 4px;
-                border-left: 3px solid #ff4444;
-              ">
-                <span style="color: #858585; font-size: 11px;">${err.source}</span>
-                <span style="color: #858585;">:</span>
-                <span style="color: #858585; font-size: 11px;">${err.line}:${err.column}</span>
-                <span style="color: #ffffff;">${escapeHTML(err.message)}</span>
-              </div>
-            `).join("")}
-            ${allErrors.length > 5 ? `<span style="color: #858585;">+${allErrors.length - 5} more</span>` : ""}
-          </div>
-        </div>
-        <button onclick="this.parentElement.style.display='none'" style="
-          background: transparent;
-          border: none;
-          color: #858585;
-          cursor: pointer;
-          padding: 4px;
-          display: flex;
-          align-items: center;
-          border-radius: 4px;
-        " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-            <path d="M14 1.41L12.59 0 7 5.59 1.41 0 0 1.41 5.59 7 0 12.59 1.41 14 7 8.41 12.59 14 14 12.59 8.41 7 14 1.41z"/>
-          </svg>
-        </button>
+        <span style="color: #ff4444;">●</span>
+        <span>${allErrors.length} ${allErrors.length === 1 ? 'error' : 'errors'}</span>
+        <span style="color: #858585;">|</span>
+        <span style="color: #858585; font-size: 11px;">Check Problems panel for details</span>
       </div>
     `
   }
