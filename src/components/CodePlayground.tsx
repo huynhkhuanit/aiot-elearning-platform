@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { X, Play, Copy, Download, RotateCcw, Code2, Eye, EyeOff, Sun, Moon, Sparkles, Globe, FileCode } from "lucide-react"
 import Editor, { OnMount } from "@monaco-editor/react"
-import type { editor } from "monaco-editor"
+
+// Extract editor type from OnMount callback
+type MonacoEditor = Parameters<OnMount>[0]
 
 // VSCode-like File Icons
 const FileIcon = ({ type, className = "w-4 h-4" }: { type: "html" | "css" | "javascript" | "cpp", className?: string }) => {
@@ -108,7 +110,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   const [isLoadingReview, setIsLoadingReview] = useState(false)
   const [showEmptyCodeModal, setShowEmptyCodeModal] = useState(false)
 
-  const codeEditorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
+  const codeEditorRef = useRef<MonacoEditor | null>(null)
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const autoSaveStatusTimerRef = useRef<NodeJS.Timeout | null>(null) // Track status display timer
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -432,7 +434,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   }, [preserveLog, isCodeExecuting])
 
   // Handle Monaco Editor mount
-  const handleEditorDidMount: OnMount = (editor: editor.IStandaloneCodeEditor, monaco: any) => {
+  const handleEditorDidMount: OnMount = (editor: MonacoEditor, monaco: any) => {
     codeEditorRef.current = editor
 
     // Define custom VSCode-like dark theme
@@ -910,11 +912,11 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                     language={
                       activeLanguage === "javascript" 
                         ? "javascript" 
-                        : activeLanguage === "cpp" 
-                        ? "cpp" 
                         : activeLanguage === "html"
                         ? "html"
-                        : "css"
+                        : activeLanguage === "css"
+                        ? "css"
+                        : "cpp"
                     }
                     value={code[activeLanguage]}
                     onChange={handleCodeChange}
