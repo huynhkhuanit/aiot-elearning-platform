@@ -3,7 +3,10 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { X, Play, Copy, Download, RotateCcw, Code2, Eye, EyeOff, Sun, Moon, Sparkles, Globe, FileCode } from "lucide-react"
 import Editor, { OnMount } from "@monaco-editor/react"
-import type { editor } from "monaco-editor"
+import { generatePreviewHTML, validateHTML, validateCSS, createMonacoMarkerData, type ValidationError } from "./CodePlayground/utils"
+
+// Extract editor type from OnMount callback
+type MonacoEditor = Parameters<OnMount>[0]
 
 // VSCode-like File Icons
 const FileIcon = ({ type, className = "w-4 h-4" }: { type: "html" | "css" | "javascript" | "cpp", className?: string }) => {
@@ -99,7 +102,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   const [cppOutput, setCppOutput] = useState<string>("")
   const [autoSaveStatus, setAutoSaveStatus] = useState<"saved" | "saving" | "">("")
   const [theme, setTheme] = useState<"light" | "dark">("dark")
-  const [previewTab, setPreviewTab] = useState<"browser" | "console">("browser")
+  const [previewTab, setPreviewTab] = useState<"browser" | "console" | "problems">("browser")
   const [consoleLogs, setConsoleLogs] = useState<ConsoleLog[]>([])
   const [preserveLog, setPreserveLog] = useState(true) // Default to true to prevent flicker
   const [isCodeExecuting, setIsCodeExecuting] = useState(false) // Track if code is currently executing
@@ -107,13 +110,15 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   const [aiReviewData, setAiReviewData] = useState<AIReviewData | null>(null)
   const [isLoadingReview, setIsLoadingReview] = useState(false)
   const [showEmptyCodeModal, setShowEmptyCodeModal] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]) // Store validation errors
 
-  const codeEditorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
+  const codeEditorRef = useRef<MonacoEditor | null>(null)
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const autoSaveStatusTimerRef = useRef<NodeJS.Timeout | null>(null) // Track status display timer
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const executionTimerRef = useRef<NodeJS.Timeout | null>(null)
   const executionIdRef = useRef<number>(0) // Track unique execution ID
+  const validationTimerRef = useRef<NodeJS.Timeout | null>(null) // Debounce validation
 
   // Load saved code and theme from localStorage on mount
   useEffect(() => {
@@ -173,92 +178,9 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
     }
   }, [code, lessonId, isOpen])
 
-  const previewHTML = useMemo(() => {
-    // Always use all code for preview, regardless of active tab
-    const htmlCode = code.html
-    const cssCode = code.css
-    const jsCode = code.javascript
-
-    return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          /* No default styles - render exactly as browser would */
-          ${cssCode}
-        </style>
-      </head>
-      <body>
-        ${htmlCode}
-        <script>
-          // Capture console logs and send to parent
-          (function() {
-            const originalLog = console.log;
-            const originalError = console.error;
-            const originalWarn = console.warn;
-            const originalInfo = console.info;
-            
-            console.log = function(...args) {
-              originalLog.apply(console, args);
-              window.parent.postMessage({
-                type: 'console',
-                level: 'log',
-                message: args.map(arg => {
-                  if (typeof arg === 'object') {
-                    try {
-                      return JSON.stringify(arg, null, 2);
-                    } catch (e) {
-                      return String(arg);
-                    }
-                  }
-                  return String(arg);
-                }).join(' ')
-              }, '*');
-            };
-            
-            console.error = function(...args) {
-              originalError.apply(console, args);
-              window.parent.postMessage({
-                type: 'console',
-                level: 'error',
-                message: args.map(arg => String(arg)).join(' ')
-              }, '*');
-            };
-            
-            console.warn = function(...args) {
-              originalWarn.apply(console, args);
-              window.parent.postMessage({
-                type: 'console',
-                level: 'warn',
-                message: args.map(arg => String(arg)).join(' ')
-              }, '*');
-            };
-            
-            console.info = function(...args) {
-              originalInfo.apply(console, args);
-              window.parent.postMessage({
-                type: 'console',
-                level: 'info',
-                message: args.map(arg => String(arg)).join(' ')
-              }, '*');
-            };
-            
-            window.addEventListener('error', function(e) {
-              console.error('Error:', e.message);
-            });
-          })();
-          
-          try {
-            ${jsCode}
-          } catch (error) {
-            console.error('JavaScript Error:', error.message);
-          }
-        </script>
-      </body>
-      </html>
-    `
+  // Generate initial preview HTML (will be updated by useEffect)
+  const previewHTML: string = useMemo(() => {
+    return generatePreviewHTML(code, 0)
   }, [code])
 
   // Reset execution ID when playground opens/closes
@@ -293,99 +215,8 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
       
       // Execute code regardless of which tab is active (browser or console)
       if (iframeRef.current?.contentWindow) {
-        // Always use all code for preview, regardless of active tab
-        const htmlCode = code.html
-        const cssCode = code.css
-        const jsCode = code.javascript
-
-        const html = `
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-              /* No default styles - render exactly as browser would */
-              ${cssCode}
-            </style>
-          </head>
-          <body>
-            ${htmlCode}
-            <script>
-              // Send execution ID with each message
-              const EXECUTION_ID = ${currentExecutionId};
-              
-              // Capture console logs and send to parent
-              (function() {
-                const originalLog = console.log;
-                const originalError = console.error;
-                const originalWarn = console.warn;
-                const originalInfo = console.info;
-                
-                console.log = function(...args) {
-                  originalLog.apply(console, args);
-                  window.parent.postMessage({
-                    type: 'console',
-                    level: 'log',
-                    executionId: EXECUTION_ID,
-                    message: args.map(arg => {
-                      if (typeof arg === 'object') {
-                        try {
-                          return JSON.stringify(arg, null, 2);
-                        } catch (e) {
-                          return String(arg);
-                        }
-                      }
-                      return String(arg);
-                    }).join(' ')
-                  }, '*');
-                };
-                
-                console.error = function(...args) {
-                  originalError.apply(console, args);
-                  window.parent.postMessage({
-                    type: 'console',
-                    level: 'error',
-                    executionId: EXECUTION_ID,
-                    message: args.map(arg => String(arg)).join(' ')
-                  }, '*');
-                };
-                
-                console.warn = function(...args) {
-                  originalWarn.apply(console, args);
-                  window.parent.postMessage({
-                    type: 'console',
-                    level: 'warn',
-                    executionId: EXECUTION_ID,
-                    message: args.map(arg => String(arg)).join(' ')
-                  }, '*');
-                };
-                
-                console.info = function(...args) {
-                  originalInfo.apply(console, args);
-                  window.parent.postMessage({
-                    type: 'console',
-                    level: 'info',
-                    executionId: EXECUTION_ID,
-                    message: args.map(arg => String(arg)).join(' ')
-                  }, '*');
-                };
-                
-                window.addEventListener('error', function(e) {
-                  console.error('Error:', e.message);
-                });
-              })();
-              
-              try {
-                ${jsCode}
-              } catch (error) {
-                console.error('JavaScript Error:', error.message);
-              }
-            </script>
-          </body>
-          </html>
-        `
-        
+        // Use generatePreviewHTML from utils - includes validation and error handling
+        const html = generatePreviewHTML(code, currentExecutionId)
         iframeRef.current.srcdoc = html
       }
       
@@ -424,6 +255,12 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
             setConsoleLogs((prev) => [...prev, newLog])
           }
         }
+      } else if (event.data.type === "openProblems") {
+        // Handle click on "Check Problems panel for details" in error banner
+        setShowPreview(true)
+        setPreviewTab("problems")
+        // Clear the closed flag so it can auto-open next time
+        sessionStorage.removeItem(`problems_closed_${lessonId}`)
       }
     }
 
@@ -431,8 +268,70 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
     return () => window.removeEventListener("message", handleMessage)
   }, [preserveLog, isCodeExecuting])
 
+  // Validate code and set Monaco markers (VSCode-style error display) - Debounced for performance
+  useEffect(() => {
+    if (!codeEditorRef.current || !isOpen) return
+
+    // Clear previous validation timer
+    if (validationTimerRef.current) {
+      clearTimeout(validationTimerRef.current)
+    }
+
+    // Debounce validation to avoid lag while typing
+    validationTimerRef.current = setTimeout(() => {
+      const monaco = (window as any).monaco
+      if (!monaco || !codeEditorRef.current) return
+
+      const model = codeEditorRef.current.getModel()
+      if (!model) return
+
+      let validationErrors: ValidationError[] = []
+
+      // Validate based on active language
+      if (activeLanguage === "html") {
+        const result = validateHTML(code[activeLanguage])
+        validationErrors = result.errors
+      } else if (activeLanguage === "css") {
+        const result = validateCSS(code[activeLanguage])
+        validationErrors = result.errors
+      }
+
+      // Store errors in state for Problems panel
+      setValidationErrors(validationErrors)
+      
+      // Auto-switch to Problems tab when errors first appear (if preview is visible)
+      if (validationErrors.length > 0 && showPreview && previewTab !== "problems") {
+        // Only auto-switch if user hasn't manually closed Problems tab before
+        const problemsClosed = sessionStorage.getItem(`problems_closed_${lessonId}`)
+        if (!problemsClosed) {
+          setPreviewTab("problems")
+        }
+      } else if (validationErrors.length === 0 && previewTab === "problems") {
+        // Switch back to Browser tab when errors are fixed
+        setPreviewTab("browser")
+        // Clear the closed flag when errors are fixed
+        sessionStorage.removeItem(`problems_closed_${lessonId}`)
+      }
+
+      // Create Monaco markers from validation errors
+      if (validationErrors.length > 0) {
+        const markers = createMonacoMarkerData(validationErrors)
+        monaco.editor.setModelMarkers(model, "validation", markers)
+      } else {
+        // Clear markers if no errors
+        monaco.editor.setModelMarkers(model, "validation", [])
+      }
+    }, 300) // 300ms debounce - fast enough for good UX, slow enough to avoid lag
+
+    return () => {
+      if (validationTimerRef.current) {
+        clearTimeout(validationTimerRef.current)
+      }
+    }
+  }, [code, activeLanguage, isOpen])
+
   // Handle Monaco Editor mount
-  const handleEditorDidMount: OnMount = (editor: editor.IStandaloneCodeEditor, monaco: any) => {
+  const handleEditorDidMount: OnMount = (editor: MonacoEditor, monaco: any) => {
     codeEditorRef.current = editor
 
     // Define custom VSCode-like dark theme
@@ -498,32 +397,89 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
     // Set the theme
     monaco.editor.setTheme(theme === "dark" ? "codeplayground-dark" : "codeplayground-light")
 
-    // Configure IntelliSense for HTML
+    // ===== ENHANCED HTML INTELLISENSE =====
     monaco.languages.html.htmlDefaults.setOptions({
       format: {
         indentInnerHtml: true,
         wrapLineLength: 120,
         wrapAttributes: "auto",
+        indentHandlebars: false,
+        endWithNewline: true,
+        extraLiners: "head, body, /html",
+        maxPreserveNewLines: 2,
       },
       suggest: {
         html5: true,
         angular1: false,
         ionic: false,
       },
+      data: {
+        // Add custom HTML data for better suggestions
+        useDefaultDataProvider: true,
+      },
     })
 
-    // Configure IntelliSense for CSS
+    // Register HTML completion provider for better suggestions
+    monaco.languages.registerCompletionItemProvider("html", {
+      triggerCharacters: ["<", " ", "=", '"', "'"],
+      provideCompletionItems: (model: any, position: any) => {
+        const suggestions: any[] = []
+        const word = model.getWordUntilPosition(position)
+        const range = {
+          startLineNumber: position.lineNumber,
+          endLineNumber: position.lineNumber,
+          startColumn: word.startColumn,
+          endColumn: word.endColumn,
+        }
+
+        // Common HTML5 tags with snippets
+        const htmlTags = [
+          { label: "div", insertText: '<div class="$1">$2</div>', detail: "Container element" },
+          { label: "span", insertText: '<span class="$1">$2</span>', detail: "Inline container" },
+          { label: "button", insertText: '<button type="button" class="$1">$2</button>', detail: "Button element" },
+          { label: "input", insertText: '<input type="$1" placeholder="$2" />', detail: "Input field" },
+          { label: "form", insertText: '<form action="$1" method="$2">\n  $3\n</form>', detail: "Form element" },
+          { label: "a", insertText: '<a href="$1">$2</a>', detail: "Anchor link" },
+          { label: "img", insertText: '<img src="$1" alt="$2" />', detail: "Image element" },
+          { label: "ul", insertText: '<ul>\n  <li>$1</li>\n</ul>', detail: "Unordered list" },
+          { label: "ol", insertText: '<ol>\n  <li>$1</li>\n</ol>', detail: "Ordered list" },
+          { label: "table", insertText: '<table>\n  <thead>\n    <tr>\n      <th>$1</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>$2</td>\n    </tr>\n  </tbody>\n</table>', detail: "Table element" },
+          { label: "section", insertText: '<section class="$1">\n  $2\n</section>', detail: "Section element" },
+          { label: "article", insertText: '<article class="$1">\n  $2\n</article>', detail: "Article element" },
+          { label: "header", insertText: '<header class="$1">\n  $2\n</header>', detail: "Header element" },
+          { label: "footer", insertText: '<footer class="$1">\n  $2\n</footer>', detail: "Footer element" },
+          { label: "nav", insertText: '<nav class="$1">\n  $2\n</nav>', detail: "Navigation element" },
+          { label: "main", insertText: '<main class="$1">\n  $2\n</main>', detail: "Main content element" },
+        ]
+
+        htmlTags.forEach((tag) => {
+          suggestions.push({
+            label: tag.label,
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: tag.insertText,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            detail: tag.detail,
+            documentation: `HTML ${tag.label} element`,
+            range: range,
+          })
+        })
+
+        return { suggestions }
+      },
+    })
+
+    // ===== ENHANCED CSS INTELLISENSE =====
     monaco.languages.css.cssDefaults.setOptions({
       validate: true,
       lint: {
-        compatibleVendorPrefixes: "ignore",
+        compatibleVendorPrefixes: "warning",
         vendorPrefix: "warning",
         duplicateProperties: "warning",
         emptyRules: "warning",
         importStatement: "ignore",
-        boxModel: "ignore",
+        boxModel: "warning",
         universalSelector: "ignore",
-        zeroUnits: "ignore",
+        zeroUnits: "warning",
         fontFaceProperties: "warning",
         hexColorLength: "error",
         argumentsInColorFunction: "error",
@@ -531,13 +487,59 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
         ieHack: "ignore",
         unknownVendorSpecificProperties: "ignore",
         propertyIgnoredDueToDisplay: "warning",
-        important: "ignore",
-        float: "ignore",
-        idSelector: "ignore",
+        important: "warning",
+        float: "warning",
+        idSelector: "warning",
+      },
+      data: {
+        // Use default CSS data provider
+        useDefaultDataProvider: true,
       },
     })
 
-    // Configure IntelliSense for JavaScript
+    // Register CSS completion provider for modern properties
+    monaco.languages.registerCompletionItemProvider("css", {
+      triggerCharacters: [" ", ":", "-"],
+      provideCompletionItems: (model: any, position: any) => {
+        const suggestions: any[] = []
+        const word = model.getWordUntilPosition(position)
+        const range = {
+          startLineNumber: position.lineNumber,
+          endLineNumber: position.lineNumber,
+          startColumn: word.startColumn,
+          endColumn: word.endColumn,
+        }
+
+        // Modern CSS properties and snippets
+        const cssSnippets = [
+          { label: "flexbox", insertText: "display: flex;\njustify-content: $1;\nalign-items: $2;", detail: "Flexbox layout" },
+          { label: "grid", insertText: "display: grid;\ngrid-template-columns: $1;\ngap: $2;", detail: "Grid layout" },
+          { label: "transition", insertText: "transition: all ${1:0.3s} ${2:ease};", detail: "Transition effect" },
+          { label: "transform", insertText: "transform: ${1:translate}($2);", detail: "Transform property" },
+          { label: "animation", insertText: "animation: ${1:name} ${2:1s} ${3:ease} ${4:infinite};", detail: "Animation" },
+          { label: "box-shadow", insertText: "box-shadow: ${1:0} ${2:4px} ${3:6px} rgba(0, 0, 0, ${4:0.1});", detail: "Box shadow" },
+          { label: "gradient", insertText: "background: linear-gradient(${1:to right}, ${2:#fff}, ${3:#000});", detail: "Linear gradient" },
+          { label: "border-radius", insertText: "border-radius: ${1:8px};", detail: "Border radius" },
+          { label: "media-query", insertText: "@media (max-width: ${1:768px}) {\n  $2\n}", detail: "Media query" },
+        ]
+
+        cssSnippets.forEach((snippet) => {
+          suggestions.push({
+            label: snippet.label,
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: snippet.insertText,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            detail: snippet.detail,
+            documentation: `CSS ${snippet.label}`,
+            range: range,
+          })
+        })
+
+        return { suggestions }
+      },
+    })
+
+    // ===== ENHANCED JAVASCRIPT INTELLISENSE =====
     monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
       target: monaco.languages.typescript.ScriptTarget.ES2020,
       allowNonTsExtensions: true,
@@ -548,33 +550,270 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
       jsx: monaco.languages.typescript.JsxEmit.React,
       reactNamespace: "React",
       allowJs: true,
+      checkJs: false,
+      lib: ["ES2020", "DOM", "DOM.Iterable"],
       typeRoots: ["node_modules/@types"],
     })
 
     monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: false,
       noSyntaxValidation: false,
+      diagnosticCodesToIgnore: [1108, 1005], // Ignore some common errors in playground
     })
 
-    // Add extra libraries for better IntelliSense
+    // Enhanced type definitions with full DOM and Browser APIs
     monaco.languages.typescript.javascriptDefaults.setExtraLibs([
       {
         content: `
-          declare global {
-            interface Window {
-              // Browser APIs
-            }
-            interface Document {
-              // DOM APIs
-            }
-            interface Console {
-              log(...args: any[]): void;
-              error(...args: any[]): void;
-              warn(...args: any[]): void;
-              info(...args: any[]): void;
-            }
-          }
+// ===== ENHANCED DOM & BROWSER API TYPE DEFINITIONS =====
+
+// Console API
+interface Console {
+  log(...data: any[]): void;
+  error(...data: any[]): void;
+  warn(...data: any[]): void;
+  info(...data: any[]): void;
+  debug(...data: any[]): void;
+  table(data: any): void;
+  clear(): void;
+  time(label?: string): void;
+  timeEnd(label?: string): void;
+  count(label?: string): void;
+  group(...data: any[]): void;
+  groupEnd(): void;
+  assert(condition?: boolean, ...data: any[]): void;
+}
+
+declare const console: Console;
+
+// Document API
+interface Document {
+  getElementById(id: string): HTMLElement | null;
+  getElementsByClassName(className: string): HTMLCollectionOf<Element>;
+  getElementsByTagName(tagName: string): HTMLCollectionOf<Element>;
+  querySelector(selector: string): Element | null;
+  querySelectorAll(selector: string): NodeListOf<Element>;
+  createElement(tagName: string): HTMLElement;
+  createTextNode(data: string): Text;
+  body: HTMLElement;
+  head: HTMLElement;
+  title: string;
+  addEventListener(type: string, listener: EventListener): void;
+  removeEventListener(type: string, listener: EventListener): void;
+  cookie: string;
+  readyState: string;
+}
+
+declare const document: Document;
+
+// HTMLElement API
+interface HTMLElement extends Element {
+  innerHTML: string;
+  innerText: string;
+  textContent: string;
+  style: CSSStyleDeclaration;
+  className: string;
+  classList: DOMTokenList;
+  id: string;
+  dataset: DOMStringMap;
+  hidden: boolean;
+  offsetWidth: number;
+  offsetHeight: number;
+  scrollTop: number;
+  scrollLeft: number;
+  clientWidth: number;
+  clientHeight: number;
+  addEventListener(type: string, listener: EventListener, options?: boolean | AddEventListenerOptions): void;
+  removeEventListener(type: string, listener: EventListener, options?: boolean | EventListenerOptions): void;
+  click(): void;
+  focus(): void;
+  blur(): void;
+  scrollIntoView(options?: boolean | ScrollIntoViewOptions): void;
+  setAttribute(name: string, value: string): void;
+  getAttribute(name: string): string | null;
+  removeAttribute(name: string): void;
+  hasAttribute(name: string): boolean;
+  appendChild(child: Node): Node;
+  removeChild(child: Node): Node;
+  replaceChild(newChild: Node, oldChild: Node): Node;
+  insertBefore(newNode: Node, referenceNode: Node | null): Node;
+  cloneNode(deep?: boolean): Node;
+  contains(other: Node | null): boolean;
+}
+
+// Event API
+interface Event {
+  type: string;
+  target: EventTarget | null;
+  currentTarget: EventTarget | null;
+  preventDefault(): void;
+  stopPropagation(): void;
+  stopImmediatePropagation(): void;
+  bubbles: boolean;
+  cancelable: boolean;
+  defaultPrevented: boolean;
+}
+
+interface MouseEvent extends Event {
+  clientX: number;
+  clientY: number;
+  pageX: number;
+  pageY: number;
+  screenX: number;
+  screenY: number;
+  button: number;
+  buttons: number;
+  altKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  metaKey: boolean;
+}
+
+interface KeyboardEvent extends Event {
+  key: string;
+  code: string;
+  keyCode: number;
+  altKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  metaKey: boolean;
+}
+
+// Window API
+interface Window {
+  document: Document;
+  console: Console;
+  alert(message?: any): void;
+  confirm(message?: string): boolean;
+  prompt(message?: string, defaultValue?: string): string | null;
+  setTimeout(handler: TimerHandler, timeout?: number, ...arguments: any[]): number;
+  clearTimeout(id: number): void;
+  setInterval(handler: TimerHandler, timeout?: number, ...arguments: any[]): number;
+  clearInterval(id: number): void;
+  requestAnimationFrame(callback: FrameRequestCallback): number;
+  cancelAnimationFrame(handle: number): void;
+  innerWidth: number;
+  innerHeight: number;
+  outerWidth: number;
+  outerHeight: number;
+  scrollX: number;
+  scrollY: number;
+  location: Location;
+  history: History;
+  localStorage: Storage;
+  sessionStorage: Storage;
+  navigator: Navigator;
+  fetch(input: RequestInfo, init?: RequestInit): Promise<Response>;
+  addEventListener(type: string, listener: EventListener): void;
+  removeEventListener(type: string, listener: EventListener): void;
+}
+
+declare const window: Window;
+
+// Array methods (ES6+)
+interface Array<T> {
+  map<U>(callbackfn: (value: T, index: number, array: T[]) => U): U[];
+  filter(predicate: (value: T, index: number, array: T[]) => boolean): T[];
+  reduce<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U;
+  forEach(callbackfn: (value: T, index: number, array: T[]) => void): void;
+  find(predicate: (value: T, index: number, obj: T[]) => boolean): T | undefined;
+  findIndex(predicate: (value: T, index: number, obj: T[]) => boolean): number;
+  some(predicate: (value: T, index: number, array: T[]) => boolean): boolean;
+  every(predicate: (value: T, index: number, array: T[]) => boolean): boolean;
+  includes(searchElement: T, fromIndex?: number): boolean;
+  indexOf(searchElement: T, fromIndex?: number): number;
+  slice(start?: number, end?: number): T[];
+  splice(start: number, deleteCount?: number, ...items: T[]): T[];
+  push(...items: T[]): number;
+  pop(): T | undefined;
+  shift(): T | undefined;
+  unshift(...items: T[]): number;
+  reverse(): T[];
+  sort(compareFn?: (a: T, b: T) => number): T[];
+  join(separator?: string): string;
+  concat(...items: (T | T[])[]): T[];
+  length: number;
+}
+
+// Promise API
+interface Promise<T> {
+  then<TResult1 = T, TResult2 = never>(
+    onfulfilled?: ((value: T) => TResult1 | Promise<TResult1>) | null,
+    onrejected?: ((reason: any) => TResult2 | Promise<TResult2>) | null
+  ): Promise<TResult1 | TResult2>;
+  catch<TResult = never>(onrejected?: ((reason: any) => TResult | Promise<TResult>) | null): Promise<T | TResult>;
+  finally(onfinally?: (() => void) | null): Promise<T>;
+}
+
+// Fetch API
+interface Response {
+  ok: boolean;
+  status: number;
+  statusText: string;
+  headers: Headers;
+  json(): Promise<any>;
+  text(): Promise<string>;
+  blob(): Promise<Blob>;
+}
+
+// String methods
+interface String {
+  charAt(pos: number): string;
+  charCodeAt(index: number): number;
+  concat(...strings: string[]): string;
+  indexOf(searchString: string, position?: number): number;
+  lastIndexOf(searchString: string, position?: number): number;
+  slice(start?: number, end?: number): string;
+  substring(start: number, end?: number): string;
+  toLowerCase(): string;
+  toUpperCase(): string;
+  trim(): string;
+  split(separator: string | RegExp, limit?: number): string[];
+  replace(searchValue: string | RegExp, replaceValue: string): string;
+  match(regexp: RegExp): RegExpMatchArray | null;
+  search(regexp: RegExp): number;
+  includes(searchString: string, position?: number): boolean;
+  startsWith(searchString: string, position?: number): boolean;
+  endsWith(searchString: string, length?: number): boolean;
+  repeat(count: number): string;
+  padStart(targetLength: number, padString?: string): string;
+  padEnd(targetLength: number, padString?: string): string;
+  length: number;
+}
+
+// Math API
+declare namespace Math {
+  const E: number;
+  const PI: number;
+  function abs(x: number): number;
+  function ceil(x: number): number;
+  function floor(x: number): number;
+  function round(x: number): number;
+  function max(...values: number[]): number;
+  function min(...values: number[]): number;
+  function random(): number;
+  function sqrt(x: number): number;
+  function pow(x: number, y: number): number;
+  function sin(x: number): number;
+  function cos(x: number): number;
+  function tan(x: number): number;
+}
+
+// JSON API
+declare namespace JSON {
+  function parse(text: string): any;
+  function stringify(value: any, replacer?: (key: string, value: any) => any, space?: string | number): string;
+}
+
+// Common global functions
+declare function parseInt(string: string, radix?: number): number;
+declare function parseFloat(string: string): number;
+declare function isNaN(number: number): boolean;
+declare function isFinite(number: number): boolean;
+declare function encodeURIComponent(uriComponent: string): string;
+declare function decodeURIComponent(encodedURIComponent: string): string;
         `,
+        filePath: "ts:filename/browser-apis.d.ts",
       },
     ])
 
@@ -910,17 +1149,18 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                     language={
                       activeLanguage === "javascript" 
                         ? "javascript" 
-                        : activeLanguage === "cpp" 
-                        ? "cpp" 
                         : activeLanguage === "html"
                         ? "html"
-                        : "css"
+                        : activeLanguage === "css"
+                        ? "css"
+                        : "cpp"
                     }
                     value={code[activeLanguage]}
                     onChange={handleCodeChange}
                     theme={theme === "dark" ? "codeplayground-dark" : "codeplayground-light"}
                     onMount={handleEditorDidMount}
                     options={{
+                      // Display & Layout
                       minimap: { enabled: false },
                       fontSize: 14,
                       fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace",
@@ -935,65 +1175,136 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                       selectOnLineNumbers: true,
                       roundedSelection: false,
                       readOnly: false,
+                      
+                      // Cursor & Selection
                       cursorStyle: "line",
                       cursorBlinking: "smooth",
                       cursorSmoothCaretAnimation: "on",
+                      
+                      // Indentation & Formatting
                       tabSize: 2,
                       insertSpaces: true,
                       detectIndentation: false,
                       formatOnPaste: true,
                       formatOnType: true,
+                      autoIndent: "full",
+                      
+                      // Auto-closing features
+                      autoClosingBrackets: "always",
+                      autoClosingQuotes: "always",
+                      autoClosingDelete: "always",
+                      autoClosingOvertype: "always",
+                      autoSurround: "languageDefined",
+                      
+                      // IntelliSense & Suggestions - OPTIMIZED
+                      quickSuggestions: {
+                        other: true,
+                        comments: false,
+                        strings: true,
+                      },
+                      quickSuggestionsDelay: 50, // Faster suggestions
                       suggestOnTriggerCharacters: true,
                       acceptSuggestionOnCommitCharacter: true,
                       acceptSuggestionOnEnter: "on",
                       snippetSuggestions: "top",
                       tabCompletion: "on",
-                      wordBasedSuggestions: "allDocuments",
-                      quickSuggestions: {
-                        other: true,
-                        comments: true,
-                        strings: true,
-                      },
+                      wordBasedSuggestions: "matchingDocuments",
                       suggestSelection: "first",
+                      suggest: {
+                        showWords: true,
+                        showSnippets: true,
+                        showClasses: true,
+                        showFunctions: true,
+                        showVariables: true,
+                        showModules: true,
+                        showProperties: true,
+                        showEvents: true,
+                        showOperators: true,
+                        showUnits: true,
+                        showValues: true,
+                        showConstants: true,
+                        showEnums: true,
+                        showEnumMembers: true,
+                        showKeywords: true,
+                        showColors: true,
+                        showFiles: true,
+                        showReferences: true,
+                        showFolders: true,
+                        showTypeParameters: true,
+                        showIssues: true,
+                        showUsers: true,
+                        filterGraceful: true,
+                        snippetsPreventQuickSuggestions: false,
+                        localityBonus: true,
+                        shareSuggestSelections: true,
+                        showInlineDetails: true,
+                        showStatusBar: true,
+                      },
+                      
+                      // Parameter hints
                       parameterHints: {
                         enabled: true,
                         cycle: true,
                       },
+                      
+                      // Hover
                       hover: {
                         enabled: true,
-                        delay: 300,
+                        delay: 150, // Faster hover
+                        sticky: true,
                       },
+                      
+                      // Decorators & Visualization
                       colorDecorators: true,
                       bracketPairColorization: {
                         enabled: true,
                       },
                       guides: {
                         bracketPairs: true,
+                        bracketPairsHorizontal: true,
                         indentation: true,
+                        highlightActiveIndentation: true,
                       },
                       matchBrackets: "always",
+                      
+                      // Code folding
                       folding: true,
                       foldingStrategy: "auto",
+                      foldingHighlight: true,
                       showFoldingControls: "always",
                       unfoldOnClickAfterEndOfLine: false,
+                      
+                      // Links & Context menu
                       links: true,
                       contextmenu: true,
+                      
+                      // Other features
                       mouseWheelZoom: false,
                       multiCursorModifier: "ctrlCmd",
                       accessibilitySupport: "auto",
+                      smoothScrolling: true,
+                      
+                      // Validation & Linting
+                      renderValidationDecorations: "on",
                     }}
                   />
                 </div>
               </div>
 
-              {/* Preview with Browser/Console Tabs - BOTTOM */}
+              {/* Preview with Browser/Console/Problems Tabs - BOTTOM */}
               {showPreview && (
                 <div className="h-[35vh] flex flex-col overflow-hidden">
                   <div
                     className={`flex items-center ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor} px-2`}
                   >
                     <button
-                      onClick={() => setPreviewTab("browser")}
+                      onClick={() => {
+                        // Remember that user manually switched away from Problems tab
+                        if (previewTab === "problems") {
+                          sessionStorage.setItem(`problems_closed_${lessonId}`, "true")
+                        }
+                        setPreviewTab("browser")
+                      }}
                       className={`px-3 py-1.5 text-xs font-medium transition-colors rounded-t flex items-center space-x-1.5 ${
                         previewTab === "browser"
                           ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"}`
@@ -1004,7 +1315,13 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                       <span>Browser</span>
                     </button>
                     <button
-                      onClick={() => setPreviewTab("console")}
+                      onClick={() => {
+                        // Remember that user manually switched away from Problems tab
+                        if (previewTab === "problems") {
+                          sessionStorage.setItem(`problems_closed_${lessonId}`, "true")
+                        }
+                        setPreviewTab("console")
+                      }}
                       className={`px-3 py-1.5 text-xs font-medium transition-colors rounded-t flex items-center space-x-1.5 ${
                         previewTab === "console"
                           ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"}`
@@ -1019,6 +1336,28 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                         </span>
                       )}
                     </button>
+
+                    {/* Problems Tab - Only show when there are errors */}
+                    {(activeLanguage === "html" || activeLanguage === "css") && validationErrors.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setPreviewTab("problems")
+                          // Clear closed flag when user manually opens Problems tab
+                          sessionStorage.removeItem(`problems_closed_${lessonId}`)
+                        }}
+                        className={`px-3 py-1.5 text-xs font-medium transition-colors rounded-t flex items-center space-x-1.5 ${
+                          previewTab === "problems"
+                            ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"}`
+                            : `${textSecondary} ${hoverBg}`
+                        }`}
+                      >
+                        <FileCode className="w-3.5 h-3.5" />
+                        <span>Problems</span>
+                        <span className={`ml-1 px-1.5 py-0.5 ${theme === "dark" ? "bg-red-600" : "bg-red-500"} text-white text-[10px] rounded-full font-semibold`}>
+                          {validationErrors.length}
+                        </span>
+                      </button>
+                    )}
 
                     {previewTab === "console" && (
                       <div className="ml-auto flex items-center space-x-2">
@@ -1084,6 +1423,62 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                       )}
                     </div>
                   )}
+
+                  {/* Problems Panel Display - VSCode Style */}
+                  {previewTab === "problems" && validationErrors.length > 0 && (
+                    <div className={`flex-1 overflow-auto ${theme === "dark" ? "bg-[#1e1e1e]" : "bg-white"}`}>
+                      {validationErrors.length === 0 ? (
+                        <div className={`text-sm font-mono p-4 ${textSecondary}`}>
+                          No problems detected.
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-gray-700">
+                          {validationErrors.map((error, index) => (
+                            <div
+                              key={index}
+                              className={`px-3 py-2 border-b ${borderColor} ${theme === "dark" ? "hover:bg-[#2a2d2e]" : "hover:bg-gray-50"} cursor-pointer transition-colors`}
+                              onClick={() => {
+                                if (codeEditorRef.current) {
+                                  codeEditorRef.current.setPosition({ lineNumber: error.line, column: error.column })
+                                  codeEditorRef.current.revealLineInCenter(error.line)
+                                  codeEditorRef.current.focus()
+                                }
+                              }}
+                            >
+                              <div className="flex items-start gap-2">
+                                <div className={`mt-0.5 flex-shrink-0 ${
+                                  error.severity === "error" ? "text-red-500" : 
+                                  error.severity === "warning" ? "text-yellow-500" : 
+                                  "text-blue-500"
+                                }`}>
+                                  {error.severity === "error" ? "●" : error.severity === "warning" ? "⚠" : "ℹ"}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                                    <span className={`text-xs font-mono ${textSecondary}`}>
+                                      {activeLanguage.toUpperCase()}
+                                    </span>
+                                    <span className={`text-xs ${textTertiary}`}>
+                                      {error.line}:{error.column}
+                                    </span>
+                                    {error.code && (
+                                      <>
+                                        <span className={`text-xs ${textTertiary}`}>•</span>
+                                        <span className={`text-xs ${textTertiary} font-mono`}>{error.code}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                  <div className={`text-xs ${textPrimary} leading-relaxed`}>
+                                    {error.message}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -1113,6 +1508,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                     theme={theme === "dark" ? "codeplayground-dark" : "codeplayground-light"}
                     onMount={handleEditorDidMount}
                     options={{
+                      // Display & Layout
                       minimap: { enabled: false },
                       fontSize: 14,
                       fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace",
@@ -1127,52 +1523,117 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                       selectOnLineNumbers: true,
                       roundedSelection: false,
                       readOnly: false,
+                      
+                      // Cursor & Selection
                       cursorStyle: "line",
                       cursorBlinking: "smooth",
                       cursorSmoothCaretAnimation: "on",
+                      
+                      // Indentation & Formatting
                       tabSize: 2,
                       insertSpaces: true,
                       detectIndentation: false,
                       formatOnPaste: true,
                       formatOnType: true,
+                      autoIndent: "full",
+                      
+                      // Auto-closing features
+                      autoClosingBrackets: "always",
+                      autoClosingQuotes: "always",
+                      autoClosingDelete: "always",
+                      autoClosingOvertype: "always",
+                      autoSurround: "languageDefined",
+                      
+                      // IntelliSense & Suggestions - OPTIMIZED
+                      quickSuggestions: {
+                        other: true,
+                        comments: false,
+                        strings: true,
+                      },
+                      quickSuggestionsDelay: 50, // Faster suggestions
                       suggestOnTriggerCharacters: true,
                       acceptSuggestionOnCommitCharacter: true,
                       acceptSuggestionOnEnter: "on",
                       snippetSuggestions: "top",
                       tabCompletion: "on",
-                      wordBasedSuggestions: "allDocuments",
-                      quickSuggestions: {
-                        other: true,
-                        comments: true,
-                        strings: true,
-                      },
+                      wordBasedSuggestions: "matchingDocuments",
                       suggestSelection: "first",
+                      suggest: {
+                        showWords: true,
+                        showSnippets: true,
+                        showClasses: true,
+                        showFunctions: true,
+                        showVariables: true,
+                        showModules: true,
+                        showProperties: true,
+                        showEvents: true,
+                        showOperators: true,
+                        showUnits: true,
+                        showValues: true,
+                        showConstants: true,
+                        showEnums: true,
+                        showEnumMembers: true,
+                        showKeywords: true,
+                        showColors: true,
+                        showFiles: true,
+                        showReferences: true,
+                        showFolders: true,
+                        showTypeParameters: true,
+                        showIssues: true,
+                        showUsers: true,
+                        filterGraceful: true,
+                        snippetsPreventQuickSuggestions: false,
+                        localityBonus: true,
+                        shareSuggestSelections: true,
+                        showInlineDetails: true,
+                        showStatusBar: true,
+                      },
+                      
+                      // Parameter hints
                       parameterHints: {
                         enabled: true,
                         cycle: true,
                       },
+                      
+                      // Hover
                       hover: {
                         enabled: true,
-                        delay: 300,
+                        delay: 150, // Faster hover
+                        sticky: true,
                       },
+                      
+                      // Decorators & Visualization
                       colorDecorators: true,
                       bracketPairColorization: {
                         enabled: true,
                       },
                       guides: {
                         bracketPairs: true,
+                        bracketPairsHorizontal: true,
                         indentation: true,
+                        highlightActiveIndentation: true,
                       },
                       matchBrackets: "always",
+                      
+                      // Code folding
                       folding: true,
                       foldingStrategy: "auto",
+                      foldingHighlight: true,
                       showFoldingControls: "always",
                       unfoldOnClickAfterEndOfLine: false,
+                      
+                      // Links & Context menu
                       links: true,
                       contextmenu: true,
+                      
+                      // Other features
                       mouseWheelZoom: false,
                       multiCursorModifier: "ctrlCmd",
                       accessibilitySupport: "auto",
+                      smoothScrolling: true,
+                      
+                      // Validation & Linting
+                      renderValidationDecorations: "on",
                     }}
                   />
                 </div>
@@ -1226,6 +1687,19 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
             <span className="opacity-90">Spaces: 2</span>
           </div>
           <div className="flex items-center space-x-3">
+            {validationErrors.length > 0 && (
+              <button
+                onClick={() => {
+                  setShowPreview(true)
+                  setPreviewTab("problems")
+                }}
+                className="bg-white/10 px-2 py-0.5 rounded hover:bg-white/20 transition-colors flex items-center gap-1.5 cursor-pointer"
+                title="Show Problems"
+              >
+                <span className="text-red-300">●</span>
+                <span>{validationErrors.length} {validationErrors.length === 1 ? "error" : "errors"}</span>
+              </button>
+            )}
             {autoSaveStatus && (
               <span className="bg-white/10 px-2 py-0.5 rounded">
                 {autoSaveStatus === "saved" ? "✓ Saved" : "Saving..."}

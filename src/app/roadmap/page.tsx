@@ -3,7 +3,7 @@
 import { 
   Code, Database, Layout, Smartphone, Server, Cloud, 
   ArrowRight, Star, Users, Clock, Zap, CheckCircle,
-  Trophy, Target, Shield, Globe
+  Trophy, Target, Shield, Globe, Brain, Sparkles
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -134,20 +134,67 @@ export default function RoadmapPage() {
             </p>
             
             <div className="flex flex-wrap justify-center gap-4">
-              <button className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:shadow-indigo-500/30 flex items-center">
-                <Zap className="w-5 h-5 mr-2" />
-                Khám phá ngay
-              </button>
-              <button className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-all duration-300 backdrop-blur-sm border border-white/10">
-                Tư vấn lộ trình
-              </button>
+              <Link href="/roadmap/generate">
+                <button className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:shadow-indigo-500/30 flex items-center">
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Tạo lộ trình AI
+                </button>
+              </Link>
+              <Link href="/roadmap/my">
+                <button className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-all duration-300 backdrop-blur-sm border border-white/10 flex items-center">
+                  <Brain className="w-5 h-5 mr-2" />
+                  Lộ trình của tôi
+                </button>
+              </Link>
             </div>
           </motion.div>
         </PageContainer>
       </div>
 
+      {/* AI Roadmap Feature Card */}
+      <PageContainer size="lg" className="py-12 -mt-10 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <Link href="/roadmap/generate">
+            <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 text-white relative overflow-hidden group cursor-pointer hover:shadow-2xl transition-shadow">
+              <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32 group-hover:scale-110 transition-transform"></div>
+              
+              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform">
+                    <Brain className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-5 h-5 text-yellow-300" />
+                      <span className="text-sm font-semibold text-indigo-200">Tính năng mới</span>
+                    </div>
+                    <h3 className="text-2xl font-bold mb-1">AI Personalized Roadmap</h3>
+                    <p className="text-indigo-100">AI sẽ tạo lộ trình học tập riêng cho bạn dựa trên mục tiêu và trình độ</p>
+                  </div>
+                </div>
+                <button className="px-6 py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition-colors flex items-center gap-2 whitespace-nowrap">
+                  Bắt đầu ngay
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+      </PageContainer>
+
       {/* Roadmaps Grid */}
-      <PageContainer size="lg" className="py-20 -mt-10 relative z-10">
+      <PageContainer size="lg" className="py-12 relative z-10">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Lộ trình chuẩn</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Các lộ trình được thiết kế sẵn bởi các chuyên gia, phù hợp cho từng vị trí công việc
+          </p>
+        </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {roadmaps.map((roadmap, index) => (
             <motion.div

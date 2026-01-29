@@ -1,6 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# ==========================
+# 1. CORE NEXT.JS & NODE
+# ==========================
 /node_modules
 /.pnp
 .pnp.*
@@ -20,9 +22,14 @@
 # production
 /build
 
-# misc
+# ==========================
+# 2. GENERAL MISC & OS
+# ==========================
 .DS_Store
 *.pem
+Thumbs.db
+.idea/
+.vscode/
 
 # debug
 npm-debug.log*
@@ -30,7 +37,16 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# ==========================
+# 3. ENVIRONMENT SECRETS (CRITICAL)
+# ==========================
+# Ignored all .env files in root and subfolders (like ai-service/.env)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
 .env*
 
 # vercel
@@ -44,3 +60,66 @@ next-env.d.ts
 /public/videos/
 /public/videos/*
 !public/videos/.gitkeep
+
+# ==========================
+# 4. PYTHON AI SERVICE (EXPANDED)
+# ==========================
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Jupyter Notebook checkpoints (If you use notebooks for testing AI)
+.ipynb_checkpoints
+
+# ==========================
+# 5. AI MODELS & DATA (VERY IMPORTANT)
+# ==========================
+# Ignore large model files (HuggingFace/Ollama/PyTorch weights)
+*.gguf
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.h5
+*.onnx
+
+# Ignore local vector databases (for RAG feature)
+chroma_db/
+chroma/
+faiss_index/
+vectordb/
+
+# Ignore raw data folders if you download datasets
+/ai-service/data/
+/data/
+!/ai-service/data/.gitkeep
+
+# Ignore Log files specific to AI
+*.log
+celerybeat-schedule
