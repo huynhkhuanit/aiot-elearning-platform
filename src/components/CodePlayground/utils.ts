@@ -379,7 +379,7 @@ export function generatePreviewHTML(
   ]
   
   if (allErrors.length > 0) {
-    // Simple, unobtrusive error indicator - VSCode style
+    // Simple, unobtrusive error indicator - VSCode style with clickable link
     errorHTML = `
       <div style="
         position: fixed;
@@ -400,7 +400,20 @@ export function generatePreviewHTML(
         <span style="color: #ff4444;">●</span>
         <span>${allErrors.length} ${allErrors.length === 1 ? 'error' : 'errors'}</span>
         <span style="color: #858585;">|</span>
-        <span style="color: #858585; font-size: 11px;">Check Problems panel for details</span>
+        <span 
+          style="
+            color: #4a9eff; 
+            font-size: 11px; 
+            cursor: pointer; 
+            text-decoration: underline;
+            text-underline-offset: 2px;
+          "
+          onclick="window.parent.postMessage({ type: 'openProblems' }, '*')"
+          onmouseover="this.style.color='#6ab3ff'"
+          onmouseout="this.style.color='#4a9eff'"
+        >
+          Check Problems panel for details
+        </span>
       </div>
     `
   }

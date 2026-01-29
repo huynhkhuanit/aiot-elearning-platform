@@ -102,7 +102,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   const [cppOutput, setCppOutput] = useState<string>("")
   const [autoSaveStatus, setAutoSaveStatus] = useState<"saved" | "saving" | "">("")
   const [theme, setTheme] = useState<"light" | "dark">("dark")
-  const [previewTab, setPreviewTab] = useState<"browser" | "console">("browser")
+  const [previewTab, setPreviewTab] = useState<"browser" | "console" | "problems">("browser")
   const [consoleLogs, setConsoleLogs] = useState<ConsoleLog[]>([])
   const [preserveLog, setPreserveLog] = useState(true) // Default to true to prevent flicker
   const [isCodeExecuting, setIsCodeExecuting] = useState(false) // Track if code is currently executing
@@ -110,7 +110,6 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   const [aiReviewData, setAiReviewData] = useState<AIReviewData | null>(null)
   const [isLoadingReview, setIsLoadingReview] = useState(false)
   const [showEmptyCodeModal, setShowEmptyCodeModal] = useState(false)
-  const [showProblems, setShowProblems] = useState(false) // VSCode-style Problems panel
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]) // Store validation errors
 
   const codeEditorRef = useRef<MonacoEditor | null>(null)
@@ -256,6 +255,12 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
             setConsoleLogs((prev) => [...prev, newLog])
           }
         }
+      } else if (event.data.type === "openProblems") {
+        // Handle click on "Check Problems panel for details" in error banner
+        setShowPreview(true)
+        setPreviewTab("problems")
+        // Clear the closed flag so it can auto-open next time
+        sessionStorage.removeItem(`problems_closed_${lessonId}`)
       }
     }
 
@@ -294,14 +299,16 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
       // Store errors in state for Problems panel
       setValidationErrors(validationErrors)
       
-      // Auto-open Problems panel when errors first appear (user-friendly)
-      if (validationErrors.length > 0 && !showProblems) {
-        // Only auto-open if user hasn't manually closed it before
+      // Auto-switch to Problems tab when errors first appear (if preview is visible)
+      if (validationErrors.length > 0 && showPreview && previewTab !== "problems") {
+        // Only auto-switch if user hasn't manually closed Problems tab before
         const problemsClosed = sessionStorage.getItem(`problems_closed_${lessonId}`)
         if (!problemsClosed) {
-          setShowProblems(true)
+          setPreviewTab("problems")
         }
-      } else if (validationErrors.length === 0) {
+      } else if (validationErrors.length === 0 && previewTab === "problems") {
+        // Switch back to Browser tab when errors are fixed
+        setPreviewTab("browser")
         // Clear the closed flag when errors are fixed
         sessionStorage.removeItem(`problems_closed_${lessonId}`)
       }
@@ -1052,23 +1059,6 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
 
           {/* Toolbar Actions */}
           <div className="flex items-center space-x-0.5 px-2 py-1">
-            {/* Problems Button - VSCode Style */}
-            {(activeLanguage === "html" || activeLanguage === "css") && validationErrors.length > 0 && (
-              <button
-                onClick={() => setShowProblems(!showProblems)}
-                className={`p-1.5 ${hoverBg} rounded transition-colors ${textSecondary} text-xs flex items-center space-x-1 relative`}
-                title={showProblems ? "Hide Problems" : "Show Problems"}
-              >
-                <FileCode className="w-3.5 h-3.5" />
-                <span className="text-[10px]">{validationErrors.length}</span>
-                {showProblems && (
-                  <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${
-                    theme === "dark" ? "bg-[#007acc]" : "bg-[#0078d4]"
-                  }`} />
-                )}
-              </button>
-            )}
-            
             {showSplitView && (
               <button
                 onClick={() => setShowPreview(!showPreview)}
@@ -1301,81 +1291,20 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
                 </div>
               </div>
 
-              {/* Problems Panel - VSCode Style (Simple & Optimized) */}
-              {showProblems && validationErrors.length > 0 && (
-                <div className={`border-t ${borderColor} ${theme === "dark" ? "bg-[#1e1e1e]" : "bg-white"}`} style={{ height: "200px", display: "flex", flexDirection: "column" }}>
-                  <div className={`flex items-center justify-between px-3 py-1.5 ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor}`}>
-                    <div className="flex items-center space-x-2">
-                      <FileCode className={`w-3.5 h-3.5 ${textSecondary}`} />
-                      <span className={`text-xs font-medium ${textPrimary}`}>Problems</span>
-                      <span className={`text-xs ${textTertiary}`}>({validationErrors.length})</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setShowProblems(false)
-                        sessionStorage.setItem(`problems_closed_${lessonId}`, "true")
-                      }}
-                      className={`p-1 ${hoverBg} rounded transition-colors ${textSecondary}`}
-                      title="Close Problems"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="flex-1 overflow-auto">
-                    {validationErrors.map((error, index) => (
-                      <div
-                        key={index}
-                        className={`px-3 py-1.5 border-b ${borderColor} ${theme === "dark" ? "hover:bg-[#2a2d2e]" : "hover:bg-gray-50"} cursor-pointer transition-colors`}
-                        onClick={() => {
-                          if (codeEditorRef.current) {
-                            codeEditorRef.current.setPosition({ lineNumber: error.line, column: error.column })
-                            codeEditorRef.current.revealLineInCenter(error.line)
-                            codeEditorRef.current.focus()
-                          }
-                        }}
-                      >
-                        <div className="flex items-start gap-2">
-                          <div className={`mt-0.5 flex-shrink-0 ${
-                            error.severity === "error" ? "text-red-500" : 
-                            error.severity === "warning" ? "text-yellow-500" : 
-                            "text-blue-500"
-                          }`}>
-                            {error.severity === "error" ? "●" : error.severity === "warning" ? "⚠" : "ℹ"}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                              <span className={`text-xs font-mono ${textSecondary}`}>
-                                {activeLanguage.toUpperCase()}
-                              </span>
-                              <span className={`text-xs ${textTertiary}`}>
-                                {error.line}:{error.column}
-                              </span>
-                              {error.code && (
-                                <>
-                                  <span className={`text-xs ${textTertiary}`}>•</span>
-                                  <span className={`text-xs ${textTertiary} font-mono`}>{error.code}</span>
-                                </>
-                              )}
-                            </div>
-                            <div className={`text-xs ${textPrimary} leading-relaxed`}>
-                              {error.message}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Preview with Browser/Console Tabs - BOTTOM */}
+              {/* Preview with Browser/Console/Problems Tabs - BOTTOM */}
               {showPreview && (
                 <div className="h-[35vh] flex flex-col overflow-hidden">
                   <div
                     className={`flex items-center ${theme === "dark" ? "bg-[#252526]" : "bg-[#f3f3f3]"} border-b ${borderColor} px-2`}
                   >
                     <button
-                      onClick={() => setPreviewTab("browser")}
+                      onClick={() => {
+                        // Remember that user manually switched away from Problems tab
+                        if (previewTab === "problems") {
+                          sessionStorage.setItem(`problems_closed_${lessonId}`, "true")
+                        }
+                        setPreviewTab("browser")
+                      }}
                       className={`px-3 py-1.5 text-xs font-medium transition-colors rounded-t flex items-center space-x-1.5 ${
                         previewTab === "browser"
                           ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"}`
@@ -1386,7 +1315,13 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
                       <span>Browser</span>
                     </button>
                     <button
-                      onClick={() => setPreviewTab("console")}
+                      onClick={() => {
+                        // Remember that user manually switched away from Problems tab
+                        if (previewTab === "problems") {
+                          sessionStorage.setItem(`problems_closed_${lessonId}`, "true")
+                        }
+                        setPreviewTab("console")
+                      }}
                       className={`px-3 py-1.5 text-xs font-medium transition-colors rounded-t flex items-center space-x-1.5 ${
                         previewTab === "console"
                           ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"}`
@@ -1401,6 +1336,28 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
                         </span>
                       )}
                     </button>
+
+                    {/* Problems Tab - Only show when there are errors */}
+                    {(activeLanguage === "html" || activeLanguage === "css") && validationErrors.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setPreviewTab("problems")
+                          // Clear closed flag when user manually opens Problems tab
+                          sessionStorage.removeItem(`problems_closed_${lessonId}`)
+                        }}
+                        className={`px-3 py-1.5 text-xs font-medium transition-colors rounded-t flex items-center space-x-1.5 ${
+                          previewTab === "problems"
+                            ? `${theme === "dark" ? "bg-[#1e1e1e] text-gray-100" : "bg-white text-gray-900"}`
+                            : `${textSecondary} ${hoverBg}`
+                        }`}
+                      >
+                        <FileCode className="w-3.5 h-3.5" />
+                        <span>Problems</span>
+                        <span className={`ml-1 px-1.5 py-0.5 ${theme === "dark" ? "bg-red-600" : "bg-red-500"} text-white text-[10px] rounded-full font-semibold`}>
+                          {validationErrors.length}
+                        </span>
+                      </button>
+                    )}
 
                     {previewTab === "console" && (
                       <div className="ml-auto flex items-center space-x-2">
@@ -1460,6 +1417,62 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
                               }`}
                             >
                               {log.message}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Problems Panel Display - VSCode Style */}
+                  {previewTab === "problems" && validationErrors.length > 0 && (
+                    <div className={`flex-1 overflow-auto ${theme === "dark" ? "bg-[#1e1e1e]" : "bg-white"}`}>
+                      {validationErrors.length === 0 ? (
+                        <div className={`text-sm font-mono p-4 ${textSecondary}`}>
+                          No problems detected.
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-gray-700">
+                          {validationErrors.map((error, index) => (
+                            <div
+                              key={index}
+                              className={`px-3 py-2 border-b ${borderColor} ${theme === "dark" ? "hover:bg-[#2a2d2e]" : "hover:bg-gray-50"} cursor-pointer transition-colors`}
+                              onClick={() => {
+                                if (codeEditorRef.current) {
+                                  codeEditorRef.current.setPosition({ lineNumber: error.line, column: error.column })
+                                  codeEditorRef.current.revealLineInCenter(error.line)
+                                  codeEditorRef.current.focus()
+                                }
+                              }}
+                            >
+                              <div className="flex items-start gap-2">
+                                <div className={`mt-0.5 flex-shrink-0 ${
+                                  error.severity === "error" ? "text-red-500" : 
+                                  error.severity === "warning" ? "text-yellow-500" : 
+                                  "text-blue-500"
+                                }`}>
+                                  {error.severity === "error" ? "●" : error.severity === "warning" ? "⚠" : "ℹ"}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                                    <span className={`text-xs font-mono ${textSecondary}`}>
+                                      {activeLanguage.toUpperCase()}
+                                    </span>
+                                    <span className={`text-xs ${textTertiary}`}>
+                                      {error.line}:{error.column}
+                                    </span>
+                                    {error.code && (
+                                      <>
+                                        <span className={`text-xs ${textTertiary}`}>•</span>
+                                        <span className={`text-xs ${textTertiary} font-mono`}>{error.code}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                  <div className={`text-xs ${textPrimary} leading-relaxed`}>
+                                    {error.message}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1676,7 +1689,10 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
           <div className="flex items-center space-x-3">
             {validationErrors.length > 0 && (
               <button
-                onClick={() => setShowProblems(!showProblems)}
+                onClick={() => {
+                  setShowPreview(true)
+                  setPreviewTab("problems")
+                }}
                 className="bg-white/10 px-2 py-0.5 rounded hover:bg-white/20 transition-colors flex items-center gap-1.5 cursor-pointer"
                 title="Show Problems"
               >
