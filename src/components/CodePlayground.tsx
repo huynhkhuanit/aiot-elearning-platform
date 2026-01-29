@@ -500,32 +500,89 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
     // Set the theme
     monaco.editor.setTheme(theme === "dark" ? "codeplayground-dark" : "codeplayground-light")
 
-    // Configure IntelliSense for HTML
+    // ===== ENHANCED HTML INTELLISENSE =====
     monaco.languages.html.htmlDefaults.setOptions({
       format: {
         indentInnerHtml: true,
         wrapLineLength: 120,
         wrapAttributes: "auto",
+        indentHandlebars: false,
+        endWithNewline: true,
+        extraLiners: "head, body, /html",
+        maxPreserveNewLines: 2,
       },
       suggest: {
         html5: true,
         angular1: false,
         ionic: false,
       },
+      data: {
+        // Add custom HTML data for better suggestions
+        useDefaultDataProvider: true,
+      },
     })
 
-    // Configure IntelliSense for CSS
+    // Register HTML completion provider for better suggestions
+    monaco.languages.registerCompletionItemProvider("html", {
+      triggerCharacters: ["<", " ", "=", '"', "'"],
+      provideCompletionItems: (model: any, position: any) => {
+        const suggestions: any[] = []
+        const word = model.getWordUntilPosition(position)
+        const range = {
+          startLineNumber: position.lineNumber,
+          endLineNumber: position.lineNumber,
+          startColumn: word.startColumn,
+          endColumn: word.endColumn,
+        }
+
+        // Common HTML5 tags with snippets
+        const htmlTags = [
+          { label: "div", insertText: '<div class="$1">$2</div>', detail: "Container element" },
+          { label: "span", insertText: '<span class="$1">$2</span>', detail: "Inline container" },
+          { label: "button", insertText: '<button type="button" class="$1">$2</button>', detail: "Button element" },
+          { label: "input", insertText: '<input type="$1" placeholder="$2" />', detail: "Input field" },
+          { label: "form", insertText: '<form action="$1" method="$2">\n  $3\n</form>', detail: "Form element" },
+          { label: "a", insertText: '<a href="$1">$2</a>', detail: "Anchor link" },
+          { label: "img", insertText: '<img src="$1" alt="$2" />', detail: "Image element" },
+          { label: "ul", insertText: '<ul>\n  <li>$1</li>\n</ul>', detail: "Unordered list" },
+          { label: "ol", insertText: '<ol>\n  <li>$1</li>\n</ol>', detail: "Ordered list" },
+          { label: "table", insertText: '<table>\n  <thead>\n    <tr>\n      <th>$1</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>$2</td>\n    </tr>\n  </tbody>\n</table>', detail: "Table element" },
+          { label: "section", insertText: '<section class="$1">\n  $2\n</section>', detail: "Section element" },
+          { label: "article", insertText: '<article class="$1">\n  $2\n</article>', detail: "Article element" },
+          { label: "header", insertText: '<header class="$1">\n  $2\n</header>', detail: "Header element" },
+          { label: "footer", insertText: '<footer class="$1">\n  $2\n</footer>', detail: "Footer element" },
+          { label: "nav", insertText: '<nav class="$1">\n  $2\n</nav>', detail: "Navigation element" },
+          { label: "main", insertText: '<main class="$1">\n  $2\n</main>', detail: "Main content element" },
+        ]
+
+        htmlTags.forEach((tag) => {
+          suggestions.push({
+            label: tag.label,
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: tag.insertText,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            detail: tag.detail,
+            documentation: `HTML ${tag.label} element`,
+            range: range,
+          })
+        })
+
+        return { suggestions }
+      },
+    })
+
+    // ===== ENHANCED CSS INTELLISENSE =====
     monaco.languages.css.cssDefaults.setOptions({
       validate: true,
       lint: {
-        compatibleVendorPrefixes: "ignore",
+        compatibleVendorPrefixes: "warning",
         vendorPrefix: "warning",
         duplicateProperties: "warning",
         emptyRules: "warning",
         importStatement: "ignore",
-        boxModel: "ignore",
+        boxModel: "warning",
         universalSelector: "ignore",
-        zeroUnits: "ignore",
+        zeroUnits: "warning",
         fontFaceProperties: "warning",
         hexColorLength: "error",
         argumentsInColorFunction: "error",
@@ -533,13 +590,59 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
         ieHack: "ignore",
         unknownVendorSpecificProperties: "ignore",
         propertyIgnoredDueToDisplay: "warning",
-        important: "ignore",
-        float: "ignore",
-        idSelector: "ignore",
+        important: "warning",
+        float: "warning",
+        idSelector: "warning",
+      },
+      data: {
+        // Use default CSS data provider
+        useDefaultDataProvider: true,
       },
     })
 
-    // Configure IntelliSense for JavaScript
+    // Register CSS completion provider for modern properties
+    monaco.languages.registerCompletionItemProvider("css", {
+      triggerCharacters: [" ", ":", "-"],
+      provideCompletionItems: (model: any, position: any) => {
+        const suggestions: any[] = []
+        const word = model.getWordUntilPosition(position)
+        const range = {
+          startLineNumber: position.lineNumber,
+          endLineNumber: position.lineNumber,
+          startColumn: word.startColumn,
+          endColumn: word.endColumn,
+        }
+
+        // Modern CSS properties and snippets
+        const cssSnippets = [
+          { label: "flexbox", insertText: "display: flex;\njustify-content: $1;\nalign-items: $2;", detail: "Flexbox layout" },
+          { label: "grid", insertText: "display: grid;\ngrid-template-columns: $1;\ngap: $2;", detail: "Grid layout" },
+          { label: "transition", insertText: "transition: all ${1:0.3s} ${2:ease};", detail: "Transition effect" },
+          { label: "transform", insertText: "transform: ${1:translate}($2);", detail: "Transform property" },
+          { label: "animation", insertText: "animation: ${1:name} ${2:1s} ${3:ease} ${4:infinite};", detail: "Animation" },
+          { label: "box-shadow", insertText: "box-shadow: ${1:0} ${2:4px} ${3:6px} rgba(0, 0, 0, ${4:0.1});", detail: "Box shadow" },
+          { label: "gradient", insertText: "background: linear-gradient(${1:to right}, ${2:#fff}, ${3:#000});", detail: "Linear gradient" },
+          { label: "border-radius", insertText: "border-radius: ${1:8px};", detail: "Border radius" },
+          { label: "media-query", insertText: "@media (max-width: ${1:768px}) {\n  $2\n}", detail: "Media query" },
+        ]
+
+        cssSnippets.forEach((snippet) => {
+          suggestions.push({
+            label: snippet.label,
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: snippet.insertText,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            detail: snippet.detail,
+            documentation: `CSS ${snippet.label}`,
+            range: range,
+          })
+        })
+
+        return { suggestions }
+      },
+    })
+
+    // ===== ENHANCED JAVASCRIPT INTELLISENSE =====
     monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
       target: monaco.languages.typescript.ScriptTarget.ES2020,
       allowNonTsExtensions: true,
@@ -550,33 +653,270 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
       jsx: monaco.languages.typescript.JsxEmit.React,
       reactNamespace: "React",
       allowJs: true,
+      checkJs: false,
+      lib: ["ES2020", "DOM", "DOM.Iterable"],
       typeRoots: ["node_modules/@types"],
     })
 
     monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: false,
       noSyntaxValidation: false,
+      diagnosticCodesToIgnore: [1108, 1005], // Ignore some common errors in playground
     })
 
-    // Add extra libraries for better IntelliSense
+    // Enhanced type definitions with full DOM and Browser APIs
     monaco.languages.typescript.javascriptDefaults.setExtraLibs([
       {
         content: `
-          declare global {
-            interface Window {
-              // Browser APIs
-            }
-            interface Document {
-              // DOM APIs
-            }
-            interface Console {
-              log(...args: any[]): void;
-              error(...args: any[]): void;
-              warn(...args: any[]): void;
-              info(...args: any[]): void;
-            }
-          }
+// ===== ENHANCED DOM & BROWSER API TYPE DEFINITIONS =====
+
+// Console API
+interface Console {
+  log(...data: any[]): void;
+  error(...data: any[]): void;
+  warn(...data: any[]): void;
+  info(...data: any[]): void;
+  debug(...data: any[]): void;
+  table(data: any): void;
+  clear(): void;
+  time(label?: string): void;
+  timeEnd(label?: string): void;
+  count(label?: string): void;
+  group(...data: any[]): void;
+  groupEnd(): void;
+  assert(condition?: boolean, ...data: any[]): void;
+}
+
+declare const console: Console;
+
+// Document API
+interface Document {
+  getElementById(id: string): HTMLElement | null;
+  getElementsByClassName(className: string): HTMLCollectionOf<Element>;
+  getElementsByTagName(tagName: string): HTMLCollectionOf<Element>;
+  querySelector(selector: string): Element | null;
+  querySelectorAll(selector: string): NodeListOf<Element>;
+  createElement(tagName: string): HTMLElement;
+  createTextNode(data: string): Text;
+  body: HTMLElement;
+  head: HTMLElement;
+  title: string;
+  addEventListener(type: string, listener: EventListener): void;
+  removeEventListener(type: string, listener: EventListener): void;
+  cookie: string;
+  readyState: string;
+}
+
+declare const document: Document;
+
+// HTMLElement API
+interface HTMLElement extends Element {
+  innerHTML: string;
+  innerText: string;
+  textContent: string;
+  style: CSSStyleDeclaration;
+  className: string;
+  classList: DOMTokenList;
+  id: string;
+  dataset: DOMStringMap;
+  hidden: boolean;
+  offsetWidth: number;
+  offsetHeight: number;
+  scrollTop: number;
+  scrollLeft: number;
+  clientWidth: number;
+  clientHeight: number;
+  addEventListener(type: string, listener: EventListener, options?: boolean | AddEventListenerOptions): void;
+  removeEventListener(type: string, listener: EventListener, options?: boolean | EventListenerOptions): void;
+  click(): void;
+  focus(): void;
+  blur(): void;
+  scrollIntoView(options?: boolean | ScrollIntoViewOptions): void;
+  setAttribute(name: string, value: string): void;
+  getAttribute(name: string): string | null;
+  removeAttribute(name: string): void;
+  hasAttribute(name: string): boolean;
+  appendChild(child: Node): Node;
+  removeChild(child: Node): Node;
+  replaceChild(newChild: Node, oldChild: Node): Node;
+  insertBefore(newNode: Node, referenceNode: Node | null): Node;
+  cloneNode(deep?: boolean): Node;
+  contains(other: Node | null): boolean;
+}
+
+// Event API
+interface Event {
+  type: string;
+  target: EventTarget | null;
+  currentTarget: EventTarget | null;
+  preventDefault(): void;
+  stopPropagation(): void;
+  stopImmediatePropagation(): void;
+  bubbles: boolean;
+  cancelable: boolean;
+  defaultPrevented: boolean;
+}
+
+interface MouseEvent extends Event {
+  clientX: number;
+  clientY: number;
+  pageX: number;
+  pageY: number;
+  screenX: number;
+  screenY: number;
+  button: number;
+  buttons: number;
+  altKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  metaKey: boolean;
+}
+
+interface KeyboardEvent extends Event {
+  key: string;
+  code: string;
+  keyCode: number;
+  altKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  metaKey: boolean;
+}
+
+// Window API
+interface Window {
+  document: Document;
+  console: Console;
+  alert(message?: any): void;
+  confirm(message?: string): boolean;
+  prompt(message?: string, defaultValue?: string): string | null;
+  setTimeout(handler: TimerHandler, timeout?: number, ...arguments: any[]): number;
+  clearTimeout(id: number): void;
+  setInterval(handler: TimerHandler, timeout?: number, ...arguments: any[]): number;
+  clearInterval(id: number): void;
+  requestAnimationFrame(callback: FrameRequestCallback): number;
+  cancelAnimationFrame(handle: number): void;
+  innerWidth: number;
+  innerHeight: number;
+  outerWidth: number;
+  outerHeight: number;
+  scrollX: number;
+  scrollY: number;
+  location: Location;
+  history: History;
+  localStorage: Storage;
+  sessionStorage: Storage;
+  navigator: Navigator;
+  fetch(input: RequestInfo, init?: RequestInit): Promise<Response>;
+  addEventListener(type: string, listener: EventListener): void;
+  removeEventListener(type: string, listener: EventListener): void;
+}
+
+declare const window: Window;
+
+// Array methods (ES6+)
+interface Array<T> {
+  map<U>(callbackfn: (value: T, index: number, array: T[]) => U): U[];
+  filter(predicate: (value: T, index: number, array: T[]) => boolean): T[];
+  reduce<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U;
+  forEach(callbackfn: (value: T, index: number, array: T[]) => void): void;
+  find(predicate: (value: T, index: number, obj: T[]) => boolean): T | undefined;
+  findIndex(predicate: (value: T, index: number, obj: T[]) => boolean): number;
+  some(predicate: (value: T, index: number, array: T[]) => boolean): boolean;
+  every(predicate: (value: T, index: number, array: T[]) => boolean): boolean;
+  includes(searchElement: T, fromIndex?: number): boolean;
+  indexOf(searchElement: T, fromIndex?: number): number;
+  slice(start?: number, end?: number): T[];
+  splice(start: number, deleteCount?: number, ...items: T[]): T[];
+  push(...items: T[]): number;
+  pop(): T | undefined;
+  shift(): T | undefined;
+  unshift(...items: T[]): number;
+  reverse(): T[];
+  sort(compareFn?: (a: T, b: T) => number): T[];
+  join(separator?: string): string;
+  concat(...items: (T | T[])[]): T[];
+  length: number;
+}
+
+// Promise API
+interface Promise<T> {
+  then<TResult1 = T, TResult2 = never>(
+    onfulfilled?: ((value: T) => TResult1 | Promise<TResult1>) | null,
+    onrejected?: ((reason: any) => TResult2 | Promise<TResult2>) | null
+  ): Promise<TResult1 | TResult2>;
+  catch<TResult = never>(onrejected?: ((reason: any) => TResult | Promise<TResult>) | null): Promise<T | TResult>;
+  finally(onfinally?: (() => void) | null): Promise<T>;
+}
+
+// Fetch API
+interface Response {
+  ok: boolean;
+  status: number;
+  statusText: string;
+  headers: Headers;
+  json(): Promise<any>;
+  text(): Promise<string>;
+  blob(): Promise<Blob>;
+}
+
+// String methods
+interface String {
+  charAt(pos: number): string;
+  charCodeAt(index: number): number;
+  concat(...strings: string[]): string;
+  indexOf(searchString: string, position?: number): number;
+  lastIndexOf(searchString: string, position?: number): number;
+  slice(start?: number, end?: number): string;
+  substring(start: number, end?: number): string;
+  toLowerCase(): string;
+  toUpperCase(): string;
+  trim(): string;
+  split(separator: string | RegExp, limit?: number): string[];
+  replace(searchValue: string | RegExp, replaceValue: string): string;
+  match(regexp: RegExp): RegExpMatchArray | null;
+  search(regexp: RegExp): number;
+  includes(searchString: string, position?: number): boolean;
+  startsWith(searchString: string, position?: number): boolean;
+  endsWith(searchString: string, length?: number): boolean;
+  repeat(count: number): string;
+  padStart(targetLength: number, padString?: string): string;
+  padEnd(targetLength: number, padString?: string): string;
+  length: number;
+}
+
+// Math API
+declare namespace Math {
+  const E: number;
+  const PI: number;
+  function abs(x: number): number;
+  function ceil(x: number): number;
+  function floor(x: number): number;
+  function round(x: number): number;
+  function max(...values: number[]): number;
+  function min(...values: number[]): number;
+  function random(): number;
+  function sqrt(x: number): number;
+  function pow(x: number, y: number): number;
+  function sin(x: number): number;
+  function cos(x: number): number;
+  function tan(x: number): number;
+}
+
+// JSON API
+declare namespace JSON {
+  function parse(text: string): any;
+  function stringify(value: any, replacer?: (key: string, value: any) => any, space?: string | number): string;
+}
+
+// Common global functions
+declare function parseInt(string: string, radix?: number): number;
+declare function parseFloat(string: string): number;
+declare function isNaN(number: number): boolean;
+declare function isFinite(number: number): boolean;
+declare function encodeURIComponent(uriComponent: string): string;
+declare function decodeURIComponent(encodedURIComponent: string): string;
         `,
+        filePath: "ts:filename/browser-apis.d.ts",
       },
     ])
 
@@ -923,6 +1263,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                     theme={theme === "dark" ? "codeplayground-dark" : "codeplayground-light"}
                     onMount={handleEditorDidMount}
                     options={{
+                      // Display & Layout
                       minimap: { enabled: false },
                       fontSize: 14,
                       fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace",
@@ -937,52 +1278,117 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                       selectOnLineNumbers: true,
                       roundedSelection: false,
                       readOnly: false,
+                      
+                      // Cursor & Selection
                       cursorStyle: "line",
                       cursorBlinking: "smooth",
                       cursorSmoothCaretAnimation: "on",
+                      
+                      // Indentation & Formatting
                       tabSize: 2,
                       insertSpaces: true,
                       detectIndentation: false,
                       formatOnPaste: true,
                       formatOnType: true,
+                      autoIndent: "full",
+                      
+                      // Auto-closing features
+                      autoClosingBrackets: "always",
+                      autoClosingQuotes: "always",
+                      autoClosingDelete: "always",
+                      autoClosingOvertype: "always",
+                      autoSurround: "languageDefined",
+                      
+                      // IntelliSense & Suggestions - OPTIMIZED
+                      quickSuggestions: {
+                        other: true,
+                        comments: false,
+                        strings: true,
+                      },
+                      quickSuggestionsDelay: 50, // Faster suggestions
                       suggestOnTriggerCharacters: true,
                       acceptSuggestionOnCommitCharacter: true,
                       acceptSuggestionOnEnter: "on",
                       snippetSuggestions: "top",
                       tabCompletion: "on",
-                      wordBasedSuggestions: "allDocuments",
-                      quickSuggestions: {
-                        other: true,
-                        comments: true,
-                        strings: true,
-                      },
+                      wordBasedSuggestions: "matchingDocuments",
                       suggestSelection: "first",
+                      suggest: {
+                        showWords: true,
+                        showSnippets: true,
+                        showClasses: true,
+                        showFunctions: true,
+                        showVariables: true,
+                        showModules: true,
+                        showProperties: true,
+                        showEvents: true,
+                        showOperators: true,
+                        showUnits: true,
+                        showValues: true,
+                        showConstants: true,
+                        showEnums: true,
+                        showEnumMembers: true,
+                        showKeywords: true,
+                        showColors: true,
+                        showFiles: true,
+                        showReferences: true,
+                        showFolders: true,
+                        showTypeParameters: true,
+                        showIssues: true,
+                        showUsers: true,
+                        filterGraceful: true,
+                        snippetsPreventQuickSuggestions: false,
+                        localityBonus: true,
+                        shareSuggestSelections: true,
+                        showInlineDetails: true,
+                        showStatusBar: true,
+                      },
+                      
+                      // Parameter hints
                       parameterHints: {
                         enabled: true,
                         cycle: true,
                       },
+                      
+                      // Hover
                       hover: {
                         enabled: true,
-                        delay: 300,
+                        delay: 150, // Faster hover
+                        sticky: true,
                       },
+                      
+                      // Decorators & Visualization
                       colorDecorators: true,
                       bracketPairColorization: {
                         enabled: true,
                       },
                       guides: {
                         bracketPairs: true,
+                        bracketPairsHorizontal: true,
                         indentation: true,
+                        highlightActiveIndentation: true,
                       },
                       matchBrackets: "always",
+                      
+                      // Code folding
                       folding: true,
                       foldingStrategy: "auto",
+                      foldingHighlight: true,
                       showFoldingControls: "always",
                       unfoldOnClickAfterEndOfLine: false,
+                      
+                      // Links & Context menu
                       links: true,
                       contextmenu: true,
+                      
+                      // Other features
                       mouseWheelZoom: false,
                       multiCursorModifier: "ctrlCmd",
                       accessibilitySupport: "auto",
+                      smoothScrolling: true,
+                      
+                      // Validation & Linting
+                      renderValidationDecorations: "on",
                     }}
                   />
                 </div>
@@ -1115,6 +1521,7 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                     theme={theme === "dark" ? "codeplayground-dark" : "codeplayground-light"}
                     onMount={handleEditorDidMount}
                     options={{
+                      // Display & Layout
                       minimap: { enabled: false },
                       fontSize: 14,
                       fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace",
@@ -1129,52 +1536,117 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
                       selectOnLineNumbers: true,
                       roundedSelection: false,
                       readOnly: false,
+                      
+                      // Cursor & Selection
                       cursorStyle: "line",
                       cursorBlinking: "smooth",
                       cursorSmoothCaretAnimation: "on",
+                      
+                      // Indentation & Formatting
                       tabSize: 2,
                       insertSpaces: true,
                       detectIndentation: false,
                       formatOnPaste: true,
                       formatOnType: true,
+                      autoIndent: "full",
+                      
+                      // Auto-closing features
+                      autoClosingBrackets: "always",
+                      autoClosingQuotes: "always",
+                      autoClosingDelete: "always",
+                      autoClosingOvertype: "always",
+                      autoSurround: "languageDefined",
+                      
+                      // IntelliSense & Suggestions - OPTIMIZED
+                      quickSuggestions: {
+                        other: true,
+                        comments: false,
+                        strings: true,
+                      },
+                      quickSuggestionsDelay: 50, // Faster suggestions
                       suggestOnTriggerCharacters: true,
                       acceptSuggestionOnCommitCharacter: true,
                       acceptSuggestionOnEnter: "on",
                       snippetSuggestions: "top",
                       tabCompletion: "on",
-                      wordBasedSuggestions: "allDocuments",
-                      quickSuggestions: {
-                        other: true,
-                        comments: true,
-                        strings: true,
-                      },
+                      wordBasedSuggestions: "matchingDocuments",
                       suggestSelection: "first",
+                      suggest: {
+                        showWords: true,
+                        showSnippets: true,
+                        showClasses: true,
+                        showFunctions: true,
+                        showVariables: true,
+                        showModules: true,
+                        showProperties: true,
+                        showEvents: true,
+                        showOperators: true,
+                        showUnits: true,
+                        showValues: true,
+                        showConstants: true,
+                        showEnums: true,
+                        showEnumMembers: true,
+                        showKeywords: true,
+                        showColors: true,
+                        showFiles: true,
+                        showReferences: true,
+                        showFolders: true,
+                        showTypeParameters: true,
+                        showIssues: true,
+                        showUsers: true,
+                        filterGraceful: true,
+                        snippetsPreventQuickSuggestions: false,
+                        localityBonus: true,
+                        shareSuggestSelections: true,
+                        showInlineDetails: true,
+                        showStatusBar: true,
+                      },
+                      
+                      // Parameter hints
                       parameterHints: {
                         enabled: true,
                         cycle: true,
                       },
+                      
+                      // Hover
                       hover: {
                         enabled: true,
-                        delay: 300,
+                        delay: 150, // Faster hover
+                        sticky: true,
                       },
+                      
+                      // Decorators & Visualization
                       colorDecorators: true,
                       bracketPairColorization: {
                         enabled: true,
                       },
                       guides: {
                         bracketPairs: true,
+                        bracketPairsHorizontal: true,
                         indentation: true,
+                        highlightActiveIndentation: true,
                       },
                       matchBrackets: "always",
+                      
+                      // Code folding
                       folding: true,
                       foldingStrategy: "auto",
+                      foldingHighlight: true,
                       showFoldingControls: "always",
                       unfoldOnClickAfterEndOfLine: false,
+                      
+                      // Links & Context menu
                       links: true,
                       contextmenu: true,
+                      
+                      // Other features
                       mouseWheelZoom: false,
                       multiCursorModifier: "ctrlCmd",
                       accessibilitySupport: "auto",
+                      smoothScrolling: true,
+                      
+                      // Validation & Linting
+                      renderValidationDecorations: "on",
                     }}
                   />
                 </div>
