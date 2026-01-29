@@ -4,6 +4,7 @@ import type { CodeState } from "./types"
 
 /**
  * Validate HTML syntax and return validation result
+ * Detects incomplete tags (like <p without >), unclosed tags, and other syntax errors
  */
 export function validateHTML(html: string): { isValid: boolean; errors: string[] } {
   if (!html.trim()) return { isValid: true, errors: [] }
@@ -11,7 +12,58 @@ export function validateHTML(html: string): { isValid: boolean; errors: string[]
   const errors: string[] = []
   
   try {
-    // Use DOMParser to validate HTML
+    // Check for incomplete tags (tags without closing >)
+    // This is the main issue: when user types <p without >, it breaks HTML structure
+    const lines = html.split('\n')
+    const incompleteMatches: string[] = []
+    
+    lines.forEach((line, lineIndex) => {
+      // Check if line contains <tagName pattern without closing >
+      // Pattern: <tagName followed by whitespace or end of line, but no >
+      const incompletePattern = /<(\w+)(?:\s+[^>]*)?(?<!>)$/gm
+      let lineMatch
+      
+      // More specific: check if line ends with <tagName or <tagName with attributes but no >
+      const trimmedLine = line.trim()
+      if (trimmedLine.includes('<') && !trimmedLine.includes('>')) {
+        // Line has < but no > - likely incomplete tag
+        const tagMatch = trimmedLine.match(/<(\w+)/)
+        if (tagMatch) {
+          const tagName = tagMatch[1].toLowerCase()
+          const selfClosing = ["br", "hr", "img", "input", "meta", "link", "area", "base", "col", "embed", "param", "source", "track", "wbr"]
+          
+          if (!selfClosing.includes(tagName)) {
+            incompleteMatches.push(`Incomplete tag at line ${lineIndex + 1}: <${tagName}`)
+          }
+        }
+      }
+      
+      // Also check for <tagName patterns in the middle of line that don't have >
+      const tagMatches = line.matchAll(/<(\w+)(?:\s+[^>]*)?/g)
+      for (const tagMatch of tagMatches) {
+        const fullMatch = tagMatch[0]
+        const tagName = tagMatch[1].toLowerCase()
+        const selfClosing = ["br", "hr", "img", "input", "meta", "link", "area", "base", "col", "embed", "param", "source", "track", "wbr"]
+        
+        if (selfClosing.includes(tagName)) continue
+        
+        // Check if this tag match is followed by > in the same line
+        const afterMatch = line.substring(tagMatch.index! + fullMatch.length)
+        if (!afterMatch.includes('>') || afterMatch.indexOf('<') < afterMatch.indexOf('>')) {
+          // No > found after this tag, or next < comes before >
+          incompleteMatches.push(`Incomplete tag at line ${lineIndex + 1}: <${tagName}`)
+          break // Only report once per line
+        }
+      }
+    })
+    
+    // Remove duplicates
+    const uniqueIncompleteMatches = [...new Set(incompleteMatches)]
+    if (uniqueIncompleteMatches.length > 0) {
+      errors.push(...uniqueIncompleteMatches)
+    }
+
+    // Use DOMParser to validate HTML structure
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, "text/html")
     
@@ -19,15 +71,19 @@ export function validateHTML(html: string): { isValid: boolean; errors: string[]
     const parserErrors = doc.querySelectorAll("parsererror")
     if (parserErrors.length > 0) {
       parserErrors.forEach((error) => {
-        errors.push(error.textContent || "HTML parsing error")
+        const errorText = error.textContent || "HTML parsing error"
+        // Only add if not already detected as incomplete tag
+        if (!errorText.includes("Incomplete tag")) {
+          errors.push(errorText)
+        }
       })
     }
 
     // Basic validation: check for common unclosed tags
     const openTags: string[] = []
     const tagRegex = /<\/?(\w+)[^>]*>/g
-    let match
-
+    let match: RegExpExecArray | null = null
+    
     while ((match = tagRegex.exec(html)) !== null) {
       const fullTag = match[0]
       const tagName = match[1].toLowerCase()

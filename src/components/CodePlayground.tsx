@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { X, Play, Copy, Download, RotateCcw, Code2, Eye, EyeOff, Sun, Moon, Sparkles, Globe, FileCode } from "lucide-react"
 import Editor, { OnMount } from "@monaco-editor/react"
+import { generatePreviewHTML } from "./CodePlayground/utils"
 
 // Extract editor type from OnMount callback
 type MonacoEditor = Parameters<OnMount>[0]
@@ -175,92 +176,9 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
     }
   }, [code, lessonId, isOpen])
 
-  const previewHTML = useMemo(() => {
-    // Always use all code for preview, regardless of active tab
-    const htmlCode = code.html
-    const cssCode = code.css
-    const jsCode = code.javascript
-
-    return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          /* No default styles - render exactly as browser would */
-          ${cssCode}
-        </style>
-      </head>
-      <body>
-        ${htmlCode}
-        <script>
-          // Capture console logs and send to parent
-          (function() {
-            const originalLog = console.log;
-            const originalError = console.error;
-            const originalWarn = console.warn;
-            const originalInfo = console.info;
-            
-            console.log = function(...args) {
-              originalLog.apply(console, args);
-              window.parent.postMessage({
-                type: 'console',
-                level: 'log',
-                message: args.map(arg => {
-                  if (typeof arg === 'object') {
-                    try {
-                      return JSON.stringify(arg, null, 2);
-                    } catch (e) {
-                      return String(arg);
-                    }
-                  }
-                  return String(arg);
-                }).join(' ')
-              }, '*');
-            };
-            
-            console.error = function(...args) {
-              originalError.apply(console, args);
-              window.parent.postMessage({
-                type: 'console',
-                level: 'error',
-                message: args.map(arg => String(arg)).join(' ')
-              }, '*');
-            };
-            
-            console.warn = function(...args) {
-              originalWarn.apply(console, args);
-              window.parent.postMessage({
-                type: 'console',
-                level: 'warn',
-                message: args.map(arg => String(arg)).join(' ')
-              }, '*');
-            };
-            
-            console.info = function(...args) {
-              originalInfo.apply(console, args);
-              window.parent.postMessage({
-                type: 'console',
-                level: 'info',
-                message: args.map(arg => String(arg)).join(' ')
-              }, '*');
-            };
-            
-            window.addEventListener('error', function(e) {
-              console.error('Error:', e.message);
-            });
-          })();
-          
-          try {
-            ${jsCode}
-          } catch (error) {
-            console.error('JavaScript Error:', error.message);
-          }
-        </script>
-      </body>
-      </html>
-    `
+  // Generate initial preview HTML (will be updated by useEffect)
+  const previewHTML: string = useMemo(() => {
+    return generatePreviewHTML(code, 0)
   }, [code])
 
   // Reset execution ID when playground opens/closes
@@ -295,99 +213,8 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
       
       // Execute code regardless of which tab is active (browser or console)
       if (iframeRef.current?.contentWindow) {
-        // Always use all code for preview, regardless of active tab
-        const htmlCode = code.html
-        const cssCode = code.css
-        const jsCode = code.javascript
-
-        const html = `
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-              /* No default styles - render exactly as browser would */
-              ${cssCode}
-            </style>
-          </head>
-          <body>
-            ${htmlCode}
-            <script>
-              // Send execution ID with each message
-              const EXECUTION_ID = ${currentExecutionId};
-              
-              // Capture console logs and send to parent
-              (function() {
-                const originalLog = console.log;
-                const originalError = console.error;
-                const originalWarn = console.warn;
-                const originalInfo = console.info;
-                
-                console.log = function(...args) {
-                  originalLog.apply(console, args);
-                  window.parent.postMessage({
-                    type: 'console',
-                    level: 'log',
-                    executionId: EXECUTION_ID,
-                    message: args.map(arg => {
-                      if (typeof arg === 'object') {
-                        try {
-                          return JSON.stringify(arg, null, 2);
-                        } catch (e) {
-                          return String(arg);
-                        }
-                      }
-                      return String(arg);
-                    }).join(' ')
-                  }, '*');
-                };
-                
-                console.error = function(...args) {
-                  originalError.apply(console, args);
-                  window.parent.postMessage({
-                    type: 'console',
-                    level: 'error',
-                    executionId: EXECUTION_ID,
-                    message: args.map(arg => String(arg)).join(' ')
-                  }, '*');
-                };
-                
-                console.warn = function(...args) {
-                  originalWarn.apply(console, args);
-                  window.parent.postMessage({
-                    type: 'console',
-                    level: 'warn',
-                    executionId: EXECUTION_ID,
-                    message: args.map(arg => String(arg)).join(' ')
-                  }, '*');
-                };
-                
-                console.info = function(...args) {
-                  originalInfo.apply(console, args);
-                  window.parent.postMessage({
-                    type: 'console',
-                    level: 'info',
-                    executionId: EXECUTION_ID,
-                    message: args.map(arg => String(arg)).join(' ')
-                  }, '*');
-                };
-                
-                window.addEventListener('error', function(e) {
-                  console.error('Error:', e.message);
-                });
-              })();
-              
-              try {
-                ${jsCode}
-              } catch (error) {
-                console.error('JavaScript Error:', error.message);
-              }
-            </script>
-          </body>
-          </html>
-        `
-        
+        // Use generatePreviewHTML from utils - includes validation and error handling
+        const html = generatePreviewHTML(code, currentExecutionId)
         iframeRef.current.srcdoc = html
       }
       
