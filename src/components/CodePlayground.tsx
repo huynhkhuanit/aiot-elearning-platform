@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { X, Play, Copy, Download, RotateCcw, Code2, Eye, EyeOff, Sun, Moon, Sparkles, Globe, FileCode } from "lucide-react"
 import Editor, { OnMount } from "@monaco-editor/react"
-import { generatePreviewHTML } from "./CodePlayground/utils"
+import { generatePreviewHTML, validateHTML, validateCSS, createMonacoMarkerData, type ValidationError } from "./CodePlayground/utils"
 
 // Extract editor type from OnMount callback
 type MonacoEditor = Parameters<OnMount>[0]
@@ -259,6 +259,37 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
     window.addEventListener("message", handleMessage)
     return () => window.removeEventListener("message", handleMessage)
   }, [preserveLog, isCodeExecuting])
+
+  // Validate code and set Monaco markers (VSCode-style error display)
+  useEffect(() => {
+    if (!codeEditorRef.current || !isOpen) return
+
+    const monaco = (window as any).monaco
+    if (!monaco) return
+
+    const model = codeEditorRef.current.getModel()
+    if (!model) return
+
+    let validationErrors: ValidationError[] = []
+
+    // Validate based on active language
+    if (activeLanguage === "html") {
+      const result = validateHTML(code[activeLanguage])
+      validationErrors = result.errors
+    } else if (activeLanguage === "css") {
+      const result = validateCSS(code[activeLanguage])
+      validationErrors = result.errors
+    }
+
+    // Create Monaco markers from validation errors
+    if (validationErrors.length > 0) {
+      const markers = createMonacoMarkerData(validationErrors)
+      monaco.editor.setModelMarkers(model, "validation", markers)
+    } else {
+      // Clear markers if no errors
+      monaco.editor.setModelMarkers(model, "validation", [])
+    }
+  }, [code, activeLanguage, isOpen])
 
   // Handle Monaco Editor mount
   const handleEditorDidMount: OnMount = (editor: MonacoEditor, monaco: any) => {

@@ -5,7 +5,15 @@ export { default } from "./CodePlayground"
 export type { CodePlaygroundProps, CodeState, ConsoleLog, AIReviewData, LanguageType } from "./types"
 
 // Export utilities
-export { validateHTML, validateCSS, generatePreviewHTML, downloadCode } from "./utils"
+export { 
+  validateHTML, 
+  validateCSS, 
+  generatePreviewHTML, 
+  downloadCode,
+  createMonacoMarkerData,
+  type ValidationError,
+  type ValidationResult
+} from "./utils"
 
 // Export components
 export { FileIcon } from "./FileIcon"

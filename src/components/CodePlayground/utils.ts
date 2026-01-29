@@ -3,26 +3,40 @@
 import type { CodeState } from "./types"
 
 /**
- * Validate HTML syntax and return validation result
+ * Error information with position details (VSCode-style)
+ */
+export interface ValidationError {
+  message: string
+  line: number
+  column: number
+  endLine?: number
+  endColumn?: number
+  severity: "error" | "warning" | "info"
+  code?: string
+}
+
+/**
+ * Validation result with detailed error information
+ */
+export interface ValidationResult {
+  isValid: boolean
+  errors: ValidationError[]
+}
+
+/**
+ * Validate HTML syntax and return validation result (VSCode-style with line/column info)
  * Detects incomplete tags (like <p without >), unclosed tags, and other syntax errors
  */
-export function validateHTML(html: string): { isValid: boolean; errors: string[] } {
+export function validateHTML(html: string): ValidationResult {
   if (!html.trim()) return { isValid: true, errors: [] }
 
-  const errors: string[] = []
+  const errors: ValidationError[] = []
+  const lines = html.split('\n')
   
   try {
     // Check for incomplete tags (tags without closing >)
     // This is the main issue: when user types <p without >, it breaks HTML structure
-    const lines = html.split('\n')
-    const incompleteMatches: string[] = []
-    
     lines.forEach((line, lineIndex) => {
-      // Check if line contains <tagName pattern without closing >
-      // Pattern: <tagName followed by whitespace or end of line, but no >
-      const incompletePattern = /<(\w+)(?:\s+[^>]*)?(?<!>)$/gm
-      let lineMatch
-      
       // More specific: check if line ends with <tagName or <tagName with attributes but no >
       const trimmedLine = line.trim()
       if (trimmedLine.includes('<') && !trimmedLine.includes('>')) {
@@ -33,7 +47,17 @@ export function validateHTML(html: string): { isValid: boolean; errors: string[]
           const selfClosing = ["br", "hr", "img", "input", "meta", "link", "area", "base", "col", "embed", "param", "source", "track", "wbr"]
           
           if (!selfClosing.includes(tagName)) {
-            incompleteMatches.push(`Incomplete tag at line ${lineIndex + 1}: <${tagName}`)
+            const column = line.indexOf('<') + 1
+            const endColumn = column + tagMatch[0].length
+            errors.push({
+              message: `Tag is not closed: <${tagName}`,
+              line: lineIndex + 1,
+              column: column,
+              endLine: lineIndex + 1,
+              endColumn: endColumn,
+              severity: "error",
+              code: "HTML_INCOMPLETE_TAG"
+            })
           }
         }
       }
@@ -49,19 +73,23 @@ export function validateHTML(html: string): { isValid: boolean; errors: string[]
         
         // Check if this tag match is followed by > in the same line
         const afterMatch = line.substring(tagMatch.index! + fullMatch.length)
-        if (!afterMatch.includes('>') || afterMatch.indexOf('<') < afterMatch.indexOf('>')) {
+        if (!afterMatch.includes('>') || (afterMatch.indexOf('<') !== -1 && afterMatch.indexOf('<') < afterMatch.indexOf('>'))) {
           // No > found after this tag, or next < comes before >
-          incompleteMatches.push(`Incomplete tag at line ${lineIndex + 1}: <${tagName}`)
+          const column = (tagMatch.index || 0) + 1
+          const endColumn = column + fullMatch.length
+          errors.push({
+            message: `Tag is not closed: <${tagName}`,
+            line: lineIndex + 1,
+            column: column,
+            endLine: lineIndex + 1,
+            endColumn: endColumn,
+            severity: "error",
+            code: "HTML_INCOMPLETE_TAG"
+          })
           break // Only report once per line
         }
       }
     })
-    
-    // Remove duplicates
-    const uniqueIncompleteMatches = [...new Set(incompleteMatches)]
-    if (uniqueIncompleteMatches.length > 0) {
-      errors.push(...uniqueIncompleteMatches)
-    }
 
     // Use DOMParser to validate HTML structure
     const parser = new DOMParser()
@@ -73,20 +101,36 @@ export function validateHTML(html: string): { isValid: boolean; errors: string[]
       parserErrors.forEach((error) => {
         const errorText = error.textContent || "HTML parsing error"
         // Only add if not already detected as incomplete tag
-        if (!errorText.includes("Incomplete tag")) {
-          errors.push(errorText)
+        if (!errorText.includes("Tag is not closed")) {
+          // Try to extract line number from error message
+          const lineMatch = errorText.match(/line (\d+)/i)
+          const line = lineMatch ? parseInt(lineMatch[1]) : 1
+          errors.push({
+            message: errorText,
+            line: line,
+            column: 1,
+            severity: "error",
+            code: "HTML_PARSE_ERROR"
+          })
         }
       })
     }
 
     // Basic validation: check for common unclosed tags
-    const openTags: string[] = []
+    const openTags: Array<{ tag: string; line: number; column: number }> = []
     const tagRegex = /<\/?(\w+)[^>]*>/g
     let match: RegExpExecArray | null = null
     
     while ((match = tagRegex.exec(html)) !== null) {
       const fullTag = match[0]
       const tagName = match[1].toLowerCase()
+      
+      // Calculate line and column from match index
+      const matchIndex = match.index!
+      const textBeforeMatch = html.substring(0, matchIndex)
+      const lineNumber = textBeforeMatch.split('\n').length
+      const lastNewlineIndex = textBeforeMatch.lastIndexOf('\n')
+      const columnNumber = matchIndex - lastNewlineIndex
       
       // Self-closing tags
       const selfClosing = ["br", "hr", "img", "input", "meta", "link", "area", "base", "col", "embed", "param", "source", "track", "wbr"]
@@ -95,26 +139,44 @@ export function validateHTML(html: string): { isValid: boolean; errors: string[]
       
       if (fullTag.startsWith("</")) {
         // Closing tag
-        if (openTags.length === 0 || openTags[openTags.length - 1] !== tagName) {
-          errors.push(`Unexpected closing tag: </${tagName}>`)
+        if (openTags.length === 0 || openTags[openTags.length - 1].tag !== tagName) {
+          errors.push({
+            message: `Unexpected closing tag: </${tagName}>`,
+            line: lineNumber,
+            column: columnNumber,
+            endLine: lineNumber,
+            endColumn: columnNumber + fullTag.length,
+            severity: "error",
+            code: "HTML_UNEXPECTED_CLOSING_TAG"
+          })
         } else {
           openTags.pop()
         }
       } else if (!fullTag.endsWith("/>")) {
         // Opening tag (not self-closing with />)
-        openTags.push(tagName)
+        openTags.push({ tag: tagName, line: lineNumber, column: columnNumber })
       }
     }
 
     // Check for unclosed tags
-    if (openTags.length > 0) {
-      openTags.forEach((tag) => {
-        errors.push(`Unclosed tag: <${tag}>`)
+    openTags.forEach(({ tag, line, column }) => {
+      errors.push({
+        message: `Unclosed tag: <${tag}>`,
+        line: line,
+        column: column,
+        severity: "error",
+        code: "HTML_UNCLOSED_TAG"
       })
-    }
+    })
 
   } catch (error) {
-    errors.push("Failed to parse HTML")
+    errors.push({
+      message: "Failed to parse HTML",
+      line: 1,
+      column: 1,
+      severity: "error",
+      code: "HTML_PARSE_FAILED"
+    })
   }
 
   return {
@@ -124,45 +186,139 @@ export function validateHTML(html: string): { isValid: boolean; errors: string[]
 }
 
 /**
- * Validate CSS syntax
+ * Validate CSS syntax (VSCode-style with line/column info)
  */
-export function validateCSS(css: string): { isValid: boolean; errors: string[] } {
+export function validateCSS(css: string): ValidationResult {
   if (!css.trim()) return { isValid: true, errors: [] }
 
-  const errors: string[] = []
+  const errors: ValidationError[] = []
+  const lines = css.split('\n')
 
   try {
-    // Basic CSS validation
     // Check for unclosed braces
-    const openBraces = (css.match(/{/g) || []).length
-    const closeBraces = (css.match(/}/g) || []).length
+    let braceCount = 0
+    let lastOpenBraceLine = 0
+    let lastOpenBraceColumn = 0
+    
+    lines.forEach((line, lineIndex) => {
+      for (let i = 0; i < line.length; i++) {
+        if (line[i] === '{') {
+          braceCount++
+          lastOpenBraceLine = lineIndex + 1
+          lastOpenBraceColumn = i + 1
+        } else if (line[i] === '}') {
+          braceCount--
+          if (braceCount < 0) {
+            errors.push({
+              message: "Unexpected closing brace '}'",
+              line: lineIndex + 1,
+              column: i + 1,
+              severity: "error",
+              code: "CSS_UNEXPECTED_CLOSING_BRACE"
+            })
+            braceCount = 0
+          }
+        }
+      }
+    })
 
-    if (openBraces !== closeBraces) {
-      errors.push(`Mismatched braces: ${openBraces} opening, ${closeBraces} closing`)
+    if (braceCount > 0) {
+      errors.push({
+        message: `Unclosed brace '{' (${braceCount} unclosed)`,
+        line: lastOpenBraceLine,
+        column: lastOpenBraceColumn,
+        severity: "error",
+        code: "CSS_UNCLOSED_BRACE"
+      })
     }
 
     // Check for unclosed strings
-    const singleQuotes = (css.match(/'/g) || []).length
-    const doubleQuotes = (css.match(/"/g) || []).length
-
-    if (singleQuotes % 2 !== 0) {
-      errors.push("Unclosed single quote in CSS")
-    }
-
-    if (doubleQuotes % 2 !== 0) {
-      errors.push("Unclosed double quote in CSS")
-    }
+    lines.forEach((line, lineIndex) => {
+      let inSingleQuote = false
+      let inDoubleQuote = false
+      let singleQuoteStart = 0
+      let doubleQuoteStart = 0
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i]
+        const prevChar = i > 0 ? line[i - 1] : ''
+        
+        // Skip escaped quotes
+        if (prevChar === '\\') continue
+        
+        if (char === "'" && !inDoubleQuote) {
+          if (inSingleQuote) {
+            inSingleQuote = false
+          } else {
+            inSingleQuote = true
+            singleQuoteStart = i + 1
+          }
+        } else if (char === '"' && !inSingleQuote) {
+          if (inDoubleQuote) {
+            inDoubleQuote = false
+          } else {
+            inDoubleQuote = true
+            doubleQuoteStart = i + 1
+          }
+        }
+      }
+      
+      if (inSingleQuote) {
+        errors.push({
+          message: "Unclosed single quote",
+          line: lineIndex + 1,
+          column: singleQuoteStart,
+          severity: "error",
+          code: "CSS_UNCLOSED_QUOTE"
+        })
+      }
+      
+      if (inDoubleQuote) {
+        errors.push({
+          message: "Unclosed double quote",
+          line: lineIndex + 1,
+          column: doubleQuoteStart,
+          severity: "error",
+          code: "CSS_UNCLOSED_QUOTE"
+        })
+      }
+    })
 
     // Check for unclosed comments
-    const commentStarts = (css.match(/\/\*/g) || []).length
-    const commentEnds = (css.match(/\*\//g) || []).length
+    let inComment = false
+    let commentStartLine = 0
+    let commentStartColumn = 0
+    
+    lines.forEach((line, lineIndex) => {
+      for (let i = 0; i < line.length - 1; i++) {
+        if (line[i] === '/' && line[i + 1] === '*') {
+          inComment = true
+          commentStartLine = lineIndex + 1
+          commentStartColumn = i + 1
+        } else if (line[i] === '*' && line[i + 1] === '/' && inComment) {
+          inComment = false
+        }
+      }
+    })
 
-    if (commentStarts !== commentEnds) {
-      errors.push("Unclosed CSS comment")
+    if (inComment) {
+      errors.push({
+        message: "Unclosed CSS comment",
+        line: commentStartLine,
+        column: commentStartColumn,
+        severity: "error",
+        code: "CSS_UNCLOSED_COMMENT"
+      })
     }
 
   } catch (error) {
-    errors.push("Failed to parse CSS")
+    errors.push({
+      message: "Failed to parse CSS",
+      line: 1,
+      column: 1,
+      severity: "error",
+      code: "CSS_PARSE_FAILED"
+    })
   }
 
   return {
@@ -215,13 +371,16 @@ export function generatePreviewHTML(
   // Sanitize HTML
   const safeHTML = sanitizeHTML(htmlCode)
 
-  // Build error message if there are validation errors
+  // Build error message if there are validation errors (VSCode-style)
   let errorHTML = ""
-  if (!htmlValidation.isValid || !cssValidation.isValid) {
-    const allErrors = [
-      ...htmlValidation.errors.map(e => `HTML: ${e}`),
-      ...cssValidation.errors.map(e => `CSS: ${e}`)
-    ]
+  const allErrors = [
+    ...htmlValidation.errors.map(e => ({ ...e, source: "HTML" })),
+    ...cssValidation.errors.map(e => ({ ...e, source: "CSS" }))
+  ]
+  
+  if (allErrors.length > 0) {
+    const errorCount = allErrors.length
+    const errorText = errorCount === 1 ? "error" : "errors"
     
     errorHTML = `
       <div style="
@@ -229,18 +388,65 @@ export function generatePreviewHTML(
         top: 0;
         left: 0;
         right: 0;
-        background: #ff4444;
-        color: white;
-        padding: 12px 16px;
-        font-family: monospace;
+        background: #1e1e1e;
+        border-bottom: 1px solid #ff4444;
+        color: #ffffff;
+        padding: 8px 16px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         font-size: 13px;
         z-index: 10000;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        gap: 12px;
       ">
-        <strong>⚠️ Syntax Errors Detected:</strong>
-        <ul style="margin: 8px 0 0 0; padding-left: 20px;">
-          ${allErrors.map(err => `<li>${escapeHTML(err)}</li>`).join("")}
-        </ul>
+        <div style="
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #ff4444;
+          font-weight: 600;
+        ">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM7 4a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0V4zm1 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+          </svg>
+          <span>${errorCount} ${errorText}</span>
+        </div>
+        <div style="flex: 1; overflow-x: auto;">
+          <div style="display: flex; gap: 16px; white-space: nowrap;">
+            ${allErrors.slice(0, 5).map(err => `
+              <div style="
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 8px;
+                background: rgba(255, 68, 68, 0.1);
+                border-radius: 4px;
+                border-left: 3px solid #ff4444;
+              ">
+                <span style="color: #858585; font-size: 11px;">${err.source}</span>
+                <span style="color: #858585;">:</span>
+                <span style="color: #858585; font-size: 11px;">${err.line}:${err.column}</span>
+                <span style="color: #ffffff;">${escapeHTML(err.message)}</span>
+              </div>
+            `).join("")}
+            ${allErrors.length > 5 ? `<span style="color: #858585;">+${allErrors.length - 5} more</span>` : ""}
+          </div>
+        </div>
+        <button onclick="this.parentElement.style.display='none'" style="
+          background: transparent;
+          border: none;
+          color: #858585;
+          cursor: pointer;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          border-radius: 4px;
+        " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+            <path d="M14 1.41L12.59 0 7 5.59 1.41 0 0 1.41 5.59 7 0 12.59 1.41 14 7 8.41 12.59 14 14 12.59 8.41 7 14 1.41z"/>
+          </svg>
+        </button>
       </div>
     `
   }
@@ -359,6 +565,45 @@ export function escapeHTML(text: string): string {
   const div = document.createElement("div")
   div.textContent = text
   return div.innerHTML
+}
+
+/**
+ * Convert ValidationError to Monaco Editor Marker format (VSCode-style)
+ * Returns marker data that can be used with monaco.editor.setModelMarkers
+ */
+export function createMonacoMarkerData(errors: ValidationError[]): Array<{
+  severity: number
+  startLineNumber: number
+  startColumn: number
+  endLineNumber: number
+  endColumn: number
+  message: string
+  code?: string
+  source: string
+}> {
+  // Monaco MarkerSeverity values
+  const MarkerSeverity = {
+    Error: 8,
+    Warning: 4,
+    Info: 2,
+  }
+
+  const severityMap = {
+    error: MarkerSeverity.Error,
+    warning: MarkerSeverity.Warning,
+    info: MarkerSeverity.Info,
+  }
+
+  return errors.map((error) => ({
+    severity: severityMap[error.severity],
+    startLineNumber: error.line,
+    startColumn: error.column,
+    endLineNumber: error.endLine || error.line,
+    endColumn: error.endColumn || error.column + 1,
+    message: error.message,
+    code: error.code,
+    source: "Validation",
+  }))
 }
 
 /**
