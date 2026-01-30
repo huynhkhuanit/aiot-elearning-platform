@@ -53,11 +53,25 @@
   --roadmap-removed-border: #c4c4c4;
   
   /* Edge Colors */
-  --roadmap-edge: #9ca3af;
+  --roadmap-edge: #cbd5e1;
   --roadmap-edge-animated: #7c3aed;
+  --roadmap-edge-done: #22c55e;
+  
+  /* Layout Constants */
+  --roadmap-tree-gap-x: 30px;
+  --roadmap-tree-gap-y: 100px;
+  --roadmap-max-width: 900px;
 }
 
 /* ========== REACT FLOW OVERRIDES ========== */
+
+/* Roadmap Canvas Container - Max Width Constraint */
+.roadmap-canvas-wrapper {
+  max-width: var(--roadmap-max-width);
+  margin: 0 auto;
+  width: 100%;
+  position: relative;
+}
 
 /* Make ReactFlow container scrollable */
 .react-flow {
@@ -69,6 +83,7 @@
   stroke: var(--roadmap-edge);
   stroke-width: 2px;
   stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .react-flow__edge.selected .react-flow__edge-path {
@@ -155,7 +170,7 @@
 /* Base node - Roadmap.sh inspired */
 .roadmap-node {
   position: relative;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 6px;
   border: 2px solid;
   font-size: 14px;
@@ -164,11 +179,11 @@
   cursor: pointer;
   transition: all 150ms ease;
   user-select: none;
-  min-width: 160px;
-  max-width: 220px;
-  line-height: 1.4;
+  min-width: 180px;
+  max-width: 240px;
+  line-height: 1.5;
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .roadmap-node:hover {

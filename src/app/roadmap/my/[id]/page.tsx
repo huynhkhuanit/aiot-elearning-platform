@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import AIRoadmapViewer from '@/components/AIRoadmap/AIRoadmapViewer';
+import AIRoadmapTreeView from '@/components/AIRoadmap/AIRoadmapTreeView';
 import type { AIGeneratedRoadmap, NodeStatus } from '@/types/ai-roadmap';
 
 export default function AIRoadmapDetailPage() {
@@ -142,14 +142,12 @@ export default function AIRoadmapDetailPage() {
   }
 
   return (
-    <div className="w-full h-screen relative">
-      <AIRoadmapViewer
-        roadmap={roadmap}
-        roadmapId={id}
-        initialProgress={progress}
-        onProgressUpdate={handleProgressUpdate}
-        isTempRoadmap={isTempRoadmap}
-      />
-    </div>
+    <AIRoadmapTreeView
+      roadmap={roadmap}
+      roadmapId={id}
+      initialProgress={progress}
+      onProgressUpdate={handleProgressUpdate}
+      isTempRoadmap={isTempRoadmap}
+    />
   );
 }

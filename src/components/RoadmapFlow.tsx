@@ -326,18 +326,21 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
     });
   }, [reactFlowInstance]);
 
-  // Convert roadmap data to React Flow format - VERTICAL DEPTH LAYOUT
+  // Convert roadmap data to React Flow format - VERTICAL DEPTH LAYOUT (roadmap.sh style)
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
 
-    // Layout constants for vertical depth display
-    const NODE_WIDTH = 180;
-    const NODE_HEIGHT = 40;
-    const HORIZONTAL_GAP = 40;
-    const VERTICAL_GAP = 80;
-    const ROOT_X = 400;
-    const ROOT_Y = 50;
+    // Layout constants for roadmap.sh style vertical tree
+    const NODE_WIDTH = 200;        // Wider nodes for readability
+    const NODE_HEIGHT = 44;        // Slightly taller nodes
+    const HORIZONTAL_GAP = 30;     // Tighter horizontal spacing between siblings
+    const VERTICAL_GAP = 100;      // More vertical space for clean connections
+    const CONTENT_MAX_WIDTH = 900; // Max-width constraint like roadmap.sh
+    const ROOT_Y = 60;             // Starting Y position
+    
+    // Calculate root X to center the tree
+    const ROOT_X = CONTENT_MAX_WIDTH / 2;
 
     /**
      * Calculate the width needed for a subtree
@@ -392,19 +395,25 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
         },
       });
 
-      // Add edge from parent
+      // Add edge from parent - roadmap.sh style step connections
       if (parentId && expandedNodes.has(parentId)) {
         const isAnimated = currentStatus === 'learning' || currentStatus === 'current' || currentStatus === 'in_progress';
+        const isDone = currentStatus === 'done' || currentStatus === 'completed';
+        
         edges.push({
           id: `edge-${parentId}-${node.id}`,
           source: parentId,
           target: node.id,
           type: 'smoothstep',
           style: {
-            stroke: isAnimated ? '#7c3aed' : '#9ca3af',
+            stroke: isDone ? '#22c55e' : isAnimated ? '#7c3aed' : '#cbd5e1',
             strokeWidth: 2,
+            strokeLinecap: 'round',
           },
           animated: isAnimated,
+          pathOptions: {
+            borderRadius: 8,
+          },
         });
       }
 
@@ -563,24 +572,25 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
         </div>
       </motion.div>
 
-      {/* React Flow Container - Full height scrollable */}
+      {/* React Flow Container - Full height scrollable with max-width constraint */}
       <div className="h-[calc(100vh-160px)] roadmap-container">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          nodeTypes={nodeTypes}
-          fitView
-          fitViewOptions={{
-            padding: 0.3,
-            includeHiddenNodes: false,
-            minZoom: 0.4,
-            maxZoom: 1.5,
-            duration: 300,
-          }}
-          defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+        <div className="roadmap-canvas-wrapper h-full">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            nodeTypes={nodeTypes}
+            fitView
+            fitViewOptions={{
+              padding: 0.15,
+              includeHiddenNodes: false,
+              minZoom: 0.5,
+              maxZoom: 1.2,
+              duration: 400,
+            }}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.9 }}
           minZoom={0.2}
           maxZoom={2}
           zoomOnScroll={true}
@@ -700,6 +710,7 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
             </div>
           </Panel>
         </ReactFlow>
+        </div>
       </div>
 
       {/* Context Menu */}
