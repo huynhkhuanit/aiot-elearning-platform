@@ -21,9 +21,9 @@ import 'reactflow/dist/style.css';
 import '@/app/roadmap-nodes.css';
 
 import { 
-  ArrowLeft, BookOpen, Search, X, 
+  ArrowLeft, BookOpen, Grid3X3, List, Search, X, 
   CheckCircle, Eye, RotateCcw, Info,
-  ChevronRight, Home, MousePointer
+  ZoomIn, ZoomOut, Maximize, ChevronRight, Home, MousePointer
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -54,17 +54,7 @@ const nodeTypes = {
   simpleRoadmapNode: SimpleRoadmapNode,
 };
 
-// Layout constants - Optimized for roadmap.sh style
-const LAYOUT = {
-  NODE_WIDTH: 200,      // Fixed node width
-  NODE_HEIGHT: 44,      // Fixed node height
-  HORIZONTAL_GAP: 20,   // Gap between sibling nodes
-  VERTICAL_GAP: 60,     // Gap between levels
-  CONTAINER_WIDTH: 900, // Max container width (like roadmap.sh)
-  PADDING: 40,          // Container padding
-};
-
-// Context Menu Component
+// Context Menu Component (roadmap.sh style)
 const ContextMenu = ({
   x,
   y,
@@ -108,7 +98,9 @@ const ContextMenu = ({
       className="roadmap-context-menu"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="roadmap-context-menu__header">{nodeTitle}</div>
+      <div className="roadmap-context-menu__header">
+        {nodeTitle}
+      </div>
       
       <div className="roadmap-context-menu__item" onClick={onViewDetails}>
         <Eye className="w-4 h-4" />
@@ -187,9 +179,8 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
   
   const reactFlowInstance = useReactFlow();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   
-  // Node status tracking
+  // Node status tracking (roadmap.sh style)
   const [nodeStatuses, setNodeStatuses] = useState<Map<string, string>>(() => {
     const statusMap = new Map<string, string>();
     const collectStatus = (node: RoadmapNode) => {
@@ -254,7 +245,7 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
     return null;
   }, []);
 
-  // Handle status change
+  // Handle status change (roadmap.sh style)
   const handleStatusChange = useCallback((nodeId: string, newStatus: string) => {
     setNodeStatuses(prev => {
       const newMap = new Map(prev);
@@ -308,12 +299,11 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
     const findAndCenterNode = (node: RoadmapNode): boolean => {
       if (node.title.toLowerCase().includes(query.toLowerCase())) {
         const flowNode = nodes.find(n => n.id === node.id);
-        if (flowNode && reactFlowInstance) {
-          reactFlowInstance.setCenter(
-            flowNode.position.x + LAYOUT.NODE_WIDTH / 2, 
-            flowNode.position.y + LAYOUT.NODE_HEIGHT / 2, 
-            { zoom: 1, duration: 500 }
-          );
+        if (flowNode) {
+          reactFlowInstance.setCenter(flowNode.position.x + 100, flowNode.position.y + 25, {
+            zoom: 1.2,
+            duration: 500,
+          });
         }
         return true;
       }
@@ -330,67 +320,49 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
 
   // Reset view
   const handleResetView = useCallback(() => {
-    if (reactFlowInstance) {
-      reactFlowInstance.fitView({
-        padding: 0.1,
-        duration: 500,
-      });
-    }
+    reactFlowInstance.fitView({
+      padding: 0.2,
+      duration: 500,
+    });
   }, [reactFlowInstance]);
 
-  /**
-   * Top-Down Vertical Tree Layout Algorithm
-   * Creates a compact vertical tree that fits within CONTAINER_WIDTH
-   */
-  const { nodes: initialNodes, edges: initialEdges, totalHeight } = useMemo(() => {
+  // Convert roadmap data to React Flow format - VERTICAL DEPTH LAYOUT
+  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
-    
-    // Center X position
-    const centerX = LAYOUT.CONTAINER_WIDTH / 2;
-    
+
+    // Layout constants for vertical depth display
+    const NODE_WIDTH = 180;
+    const NODE_HEIGHT = 40;
+    const HORIZONTAL_GAP = 40;
+    const VERTICAL_GAP = 80;
+    const ROOT_X = 400;
+    const ROOT_Y = 50;
+
     /**
-     * Calculate subtree width (how much horizontal space a node and its children need)
+     * Calculate the width needed for a subtree
      */
     const getSubtreeWidth = (node: RoadmapNode): number => {
       if (!node.children || node.children.length === 0 || !expandedNodes.has(node.id)) {
-        return LAYOUT.NODE_WIDTH;
+        return NODE_WIDTH;
       }
-      
-      const childrenWidths = node.children.map(child => getSubtreeWidth(child));
-      const totalChildrenWidth = childrenWidths.reduce((sum, w) => sum + w, 0);
-      const totalGaps = (node.children.length - 1) * LAYOUT.HORIZONTAL_GAP;
-      
-      return Math.max(LAYOUT.NODE_WIDTH, totalChildrenWidth + totalGaps);
+
+      const childrenWidth = node.children.reduce((acc, child) => {
+        return acc + getSubtreeWidth(child);
+      }, 0);
+
+      const gapsWidth = (node.children.length - 1) * HORIZONTAL_GAP;
+      return Math.max(NODE_WIDTH, childrenWidth + gapsWidth);
     };
-    
+
     /**
-     * Calculate the depth of the tree
-     */
-    const getTreeDepth = (node: RoadmapNode, depth: number = 0): number => {
-      if (!node.children || node.children.length === 0 || !expandedNodes.has(node.id)) {
-        return depth;
-      }
-      
-      let maxChildDepth = depth;
-      for (const child of node.children) {
-        const childDepth = getTreeDepth(child, depth + 1);
-        maxChildDepth = Math.max(maxChildDepth, childDepth);
-      }
-      return maxChildDepth;
-    };
-    
-    let maxY = 0;
-    
-    /**
-     * Process node and its children recursively
+     * Process nodes recursively for vertical depth layout
      */
     const processNode = (
       node: RoadmapNode,
       x: number,
       y: number,
-      parentId?: string,
-      availableWidth?: number
+      parentId?: string
     ): void => {
       // Skip if parent is collapsed
       if (parentId && !expandedNodes.has(parentId)) {
@@ -398,15 +370,12 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
       }
 
       const currentStatus = nodeStatuses.get(node.id) || node.status;
-      
-      // Center the node at x position
-      const nodeX = x - LAYOUT.NODE_WIDTH / 2;
-      
+
       // Add the node
       nodes.push({
         id: node.id,
         type: 'simpleRoadmapNode',
-        position: { x: nodeX, y },
+        position: { x, y },
         data: {
           id: node.id,
           title: node.title,
@@ -422,8 +391,6 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
           onStatusChange: handleStatusChange,
         },
       });
-
-      maxY = Math.max(maxY, y + LAYOUT.NODE_HEIGHT);
 
       // Add edge from parent
       if (parentId && expandedNodes.has(parentId)) {
@@ -441,39 +408,27 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
         });
       }
 
-      // Process children
+      // Process children if expanded
       if (node.children && node.children.length > 0 && expandedNodes.has(node.id)) {
-        const childY = y + LAYOUT.NODE_HEIGHT + LAYOUT.VERTICAL_GAP;
-        
-        // Calculate total width needed for all children
-        const childWidths = node.children.map(child => getSubtreeWidth(child));
-        const totalChildrenWidth = childWidths.reduce((sum, w) => sum + w, 0);
-        const totalGaps = (node.children.length - 1) * LAYOUT.HORIZONTAL_GAP;
-        const totalWidth = totalChildrenWidth + totalGaps;
-        
-        // Start position for first child (centered under parent)
-        let childX = x - totalWidth / 2;
-        
-        node.children.forEach((child, index) => {
-          const childWidth = childWidths[index];
-          const childCenterX = childX + childWidth / 2;
-          
-          processNode(child, childCenterX, childY, node.id, childWidth);
-          
-          childX += childWidth + LAYOUT.HORIZONTAL_GAP;
+        const subtreeWidth = getSubtreeWidth(node);
+        let currentX = x - subtreeWidth / 2 + NODE_WIDTH / 2;
+
+        node.children.forEach((child) => {
+          const childSubtreeWidth = getSubtreeWidth(child);
+          const childX = currentX + childSubtreeWidth / 2 - NODE_WIDTH / 2;
+          const childY = y + NODE_HEIGHT + VERTICAL_GAP;
+
+          processNode(child, childX, childY, node.id);
+
+          currentX += childSubtreeWidth + HORIZONTAL_GAP;
         });
       }
     };
 
-    // Start from root at center top
-    const startY = LAYOUT.PADDING;
-    processNode(roadmapData, centerX, startY);
+    // Start processing from root
+    processNode(roadmapData, ROOT_X, ROOT_Y);
 
-    return { 
-      nodes, 
-      edges,
-      totalHeight: maxY + LAYOUT.PADDING * 2
-    };
+    return { nodes, edges };
   }, [roadmapData, expandedNodes, nodeStatuses, handleNodeClick, handleNodeDoubleClick, handleContextMenu, handleStatusChange]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -514,23 +469,8 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
     return () => clearTimeout(timer);
   }, []);
 
-  // Set initial view to fit content at zoom 1
-  useEffect(() => {
-    if (reactFlowInstance && nodes.length > 0) {
-      // Small delay to ensure nodes are rendered
-      setTimeout(() => {
-        reactFlowInstance.fitView({
-          padding: 0.05,
-          minZoom: 1,
-          maxZoom: 1,
-          duration: 0,
-        });
-      }, 100);
-    }
-  }, [reactFlowInstance, nodes.length]);
-
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -623,132 +563,143 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
         </div>
       </motion.div>
 
-      {/* Roadmap Container - Scrollable with max-width */}
-      <div 
-        ref={containerRef}
-        className="roadmap-scroll-container"
-        style={{
-          height: 'calc(100vh - 160px)',
-          overflow: 'auto',
-          background: '#fafafa',
-        }}
-      >
-        <div 
-          className="roadmap-flow-wrapper"
-          style={{
-            width: '100%',
-            minHeight: Math.max(totalHeight, 600),
-            position: 'relative',
+      {/* React Flow Container - Full height scrollable */}
+      <div className="h-[calc(100vh-160px)] roadmap-container">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          fitView
+          fitViewOptions={{
+            padding: 0.3,
+            includeHiddenNodes: false,
+            minZoom: 0.4,
+            maxZoom: 1.5,
+            duration: 300,
           }}
+          defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+          minZoom={0.2}
+          maxZoom={2}
+          zoomOnScroll={true}
+          zoomOnPinch={true}
+          zoomOnDoubleClick={false}
+          panOnScroll={true}
+          panOnDrag={true}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable={true}
+          selectNodesOnDrag={false}
         >
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            nodeTypes={nodeTypes}
-            fitView={false}
-            defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-            minZoom={0.5}
-            maxZoom={1.5}
-            zoomOnScroll={false}
-            zoomOnPinch={true}
-            zoomOnDoubleClick={false}
-            panOnScroll={false}
-            panOnDrag={true}
-            nodesDraggable={false}
-            nodesConnectable={false}
-            elementsSelectable={true}
-            selectNodesOnDrag={false}
-            translateExtent={[
-              [-100, -50],
-              [LAYOUT.CONTAINER_WIDTH + 100, totalHeight + 100]
-            ]}
-            style={{
-              width: '100%',
-              height: Math.max(totalHeight, 600),
+          <Controls 
+            className="!bg-white !border-gray-200 !shadow-md !rounded-lg"
+            showInteractive={false}
+          />
+
+          <MiniMap
+            className="!bg-white !border !border-gray-200 !rounded-xl !shadow-lg"
+            nodeColor={(node) => {
+              const status = node.data?.status;
+              if (status === 'done' || status === 'completed') return '#22c55e';
+              if (status === 'learning' || status === 'current' || status === 'in_progress') return '#7c3aed';
+              if (status === 'skipped') return '#64748b';
+              
+              switch (node.data?.type) {
+                case 'core': return '#ffff00';
+                case 'optional': return '#ffe599';
+                case 'beginner': return '#d4edda';
+                case 'alternative': return '#f8f9fa';
+                case 'project': return '#fff3cd';
+                default: return '#ffffff';
+              }
             }}
-          >
-            <Background
-              variant={BackgroundVariant.Dots}
-              gap={20}
-              size={1}
-              color="#e5e7eb"
-            />
+            maskColor="rgba(255, 255, 255, 0.85)"
+            maskStrokeColor="#e5e7eb"
+            maskStrokeWidth={2}
+            pannable={true}
+            zoomable={true}
+          />
 
-            {/* Legend Panel - Fixed position */}
-            <Panel position="top-right" className="m-4">
-              <div className="roadmap-legend">
-                <h3 className="roadmap-legend__title">Chú giải</h3>
+          <Background
+            variant={BackgroundVariant.Dots}
+            gap={24}
+            size={1}
+            color="#e5e7eb"
+          />
 
-                <div className="roadmap-legend__section">
-                  <h4 className="roadmap-legend__section-title">Loại nội dung</h4>
-                  <div className="roadmap-legend__item">
-                    <div className="roadmap-legend__color roadmap-legend__color--topic"></div>
-                    <span className="roadmap-legend__label">Chủ đề chính</span>
-                  </div>
-                  <div className="roadmap-legend__item">
-                    <div className="roadmap-legend__color roadmap-legend__color--subtopic"></div>
-                    <span className="roadmap-legend__label">Chủ đề phụ</span>
-                  </div>
-                  <div className="roadmap-legend__item">
-                    <div className="roadmap-legend__color roadmap-legend__color--beginner"></div>
-                    <span className="roadmap-legend__label">Cơ bản</span>
-                  </div>
-                  <div className="roadmap-legend__item">
-                    <div className="roadmap-legend__color roadmap-legend__color--alternative"></div>
-                    <span className="roadmap-legend__label">Thay thế</span>
-                  </div>
+          {/* Legend Panel */}
+          <Panel position="top-right" className="m-4">
+            <div className="roadmap-legend">
+              <h3 className="roadmap-legend__title">Chú giải</h3>
+
+              <div className="roadmap-legend__section">
+                <h4 className="roadmap-legend__section-title">Loại nội dung</h4>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--topic"></div>
+                  <span className="roadmap-legend__label">Cốt lõi (Topic)</span>
                 </div>
-
-                <div className="roadmap-legend__section pt-3 border-t border-gray-100">
-                  <h4 className="roadmap-legend__section-title">Trạng thái</h4>
-                  <div className="roadmap-legend__item">
-                    <div className="roadmap-legend__color roadmap-legend__color--done"></div>
-                    <span className="roadmap-legend__label">Đã hoàn thành</span>
-                  </div>
-                  <div className="roadmap-legend__item">
-                    <div className="roadmap-legend__color roadmap-legend__color--learning"></div>
-                    <span className="roadmap-legend__label">Đang học</span>
-                  </div>
-                  <div className="roadmap-legend__item">
-                    <div className="roadmap-legend__color roadmap-legend__color--skipped"></div>
-                    <span className="roadmap-legend__label">Bỏ qua</span>
-                  </div>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--subtopic"></div>
+                  <span className="roadmap-legend__label">Tùy chọn (Subtopic)</span>
+                </div>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--beginner"></div>
+                  <span className="roadmap-legend__label">Cơ bản</span>
+                </div>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--alternative"></div>
+                  <span className="roadmap-legend__label">Thay thế</span>
                 </div>
               </div>
-            </Panel>
 
-            {/* Instructions Panel */}
-            <AnimatePresence>
-              {showInstructions && (
-                <Panel position="bottom-right" className="m-4">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                  >
-                    <InstructionsPanel />
-                  </motion.div>
-                </Panel>
-              )}
-            </AnimatePresence>
+              <div className="roadmap-legend__section pt-3 border-t border-gray-100">
+                <h4 className="roadmap-legend__section-title">Trạng thái</h4>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--done"></div>
+                  <span className="roadmap-legend__label">Đã hoàn thành</span>
+                </div>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--learning"></div>
+                  <span className="roadmap-legend__label">Đang học</span>
+                </div>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--skipped"></div>
+                  <span className="roadmap-legend__label">Bỏ qua</span>
+                </div>
+              </div>
+            </div>
+          </Panel>
 
-            {/* Controls */}
-            <Panel position="bottom-left" className="m-4">
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={handleResetView}
-                  className="p-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
-                  title="Fit to view"
+          {/* Instructions Panel */}
+          <AnimatePresence>
+            {showInstructions && (
+              <Panel position="bottom-right" className="m-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
                 >
-                  <RotateCcw className="w-4 h-4 text-gray-600" />
-                </button>
-              </div>
-            </Panel>
-          </ReactFlow>
-        </div>
+                  <InstructionsPanel />
+                </motion.div>
+              </Panel>
+            )}
+          </AnimatePresence>
+
+          {/* Reset View Button */}
+          <Panel position="bottom-left" className="m-4">
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleResetView}
+                className="p-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
+                title="Reset view"
+              >
+                <RotateCcw className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+          </Panel>
+        </ReactFlow>
       </div>
 
       {/* Context Menu */}
