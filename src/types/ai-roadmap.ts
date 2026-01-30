@@ -141,7 +141,7 @@ export const TARGET_MONTHS_OPTIONS = [
 // AI Generated Roadmap (Output from AI)
 // ============================================
 
-export type NodeType = 'core' | 'optional' | 'project';
+export type NodeType = 'core' | 'optional' | 'project' | 'alternative';
 export type NodeDifficulty = 'beginner' | 'intermediate' | 'advanced';
 export type NodeStatus = 'pending' | 'in_progress' | 'completed';
 
@@ -150,23 +150,48 @@ export interface LearningResources {
   suggested_type: 'video' | 'doc' | 'project';
 }
 
+// ============================================
+// New roadmap.sh-style structure
+// ============================================
+
+export interface RoadmapSubsection {
+  id: string;
+  name: string;
+  order: number;
+  description?: string;
+}
+
+export interface RoadmapSection {
+  id: string;
+  name: string;
+  order: number;
+  description?: string;
+  subsections?: RoadmapSubsection[];
+}
+
+// Backward compatibility alias
 export interface RoadmapPhase {
   id: string;
   name: string;
   order: number;
 }
 
+// Enhanced node data with prerequisites and learning outcomes
 export interface RoadmapNodeData {
   label: string;
   description: string;
   estimated_hours: number;
   difficulty: NodeDifficulty;
+  prerequisites?: string[];      // NEW: prerequisite topics
+  learning_outcomes?: string[];  // NEW: what you'll learn
   learning_resources: LearningResources;
 }
 
 export interface RoadmapNode {
   id: string;
-  phase_id: string;
+  phase_id?: string;           // Backward compatibility
+  section_id: string;          // NEW: parent section
+  subsection_id?: string;      // NEW: parent subsection (optional)
   type: NodeType;
   data: RoadmapNodeData;
 }
@@ -181,7 +206,8 @@ export interface AIGeneratedRoadmap {
   roadmap_title: string;
   roadmap_description: string;
   total_estimated_hours: number;
-  phases: RoadmapPhase[];
+  sections?: RoadmapSection[];  // NEW: roadmap.sh-style sections
+  phases?: RoadmapPhase[];      // Backward compatibility
   nodes: RoadmapNode[];
   edges: RoadmapEdge[];
 }
@@ -227,7 +253,8 @@ export interface AIGeneratedRoadmapDB {
   title: string;
   description: string | null;
   total_estimated_hours: number;
-  phases: RoadmapPhase[];
+  sections?: RoadmapSection[];  // NEW: support sections
+  phases?: RoadmapPhase[];      // Backward compatibility
   nodes: RoadmapNode[];
   edges: RoadmapEdge[];
   generation_metadata: GenerationMetadata | null;
@@ -290,7 +317,9 @@ import type { Node, Edge } from 'reactflow';
 
 export interface AIRoadmapNodeFlowData extends RoadmapNodeData {
   id: string;
-  phase_id: string;
+  phase_id?: string;           // Backward compatibility
+  section_id: string;          // NEW: parent section
+  subsection_id?: string;      // NEW: parent subsection
   type: NodeType;
   status: NodeStatus;
   onClick?: (nodeId: string) => void;

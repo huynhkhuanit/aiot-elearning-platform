@@ -13,7 +13,7 @@ import ReactFlow, {
   Panel,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { getLayoutedElementsWithPhases } from '@/lib/dagre-layout';
+import { getLayoutedElementsWithPhases, getLayoutedElementsWithSections } from '@/lib/dagre-layout';
 import SimpleRoadmapNode from '@/components/SimpleRoadmapNode';
 import AINodeDetailDrawer from './AINodeDetailDrawer';
 import type { AIGeneratedRoadmap, RoadmapNode, NodeStatus } from '@/types/ai-roadmap';
@@ -79,7 +79,12 @@ export default function AIRoadmapViewer({
       style: { stroke: '#cbd5e1', strokeWidth: 2 }, // Cleaner slate-300 color
     }));
 
-    return getLayoutedElementsWithPhases(flowNodes, flowEdges, roadmap.phases);
+    // Use sections-based layout if sections exist, otherwise fall back to phases
+    if (roadmap.sections && roadmap.sections.length > 0) {
+      return getLayoutedElementsWithSections(flowNodes, flowEdges, roadmap.sections);
+    } else {
+      return getLayoutedElementsWithPhases(flowNodes, flowEdges, roadmap.phases || []);
+    }
   }, [roadmap, nodeProgress, onProgressUpdate]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
