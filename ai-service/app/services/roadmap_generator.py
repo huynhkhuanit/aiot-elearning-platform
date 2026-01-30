@@ -224,6 +224,7 @@ def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
                 section_id=section_id,  # New field
                 subsection_id=subsection_id,  # New field
                 type=normalized_node_type,
+                is_hub=n.get("is_hub", False),  # NEW: parse is_hub field for tree structure
                 data=RoadmapNodeData(
                     label=node_data.get("label", "Unknown Topic"),
                     description=node_data.get("description", ""),

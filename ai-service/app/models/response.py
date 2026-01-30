@@ -53,6 +53,10 @@ class RoadmapNode(BaseModel):
         default="core",
         description="Node type: core (required), optional, project, or alternative (alternative option)"
     )
+    is_hub: bool = Field(
+        default=False,
+        description="True if this is a hub node that branches to multiple children. Hub nodes are central concepts that split into detailed subtopics."
+    )
     data: RoadmapNodeData = Field(..., description="Node data payload")
 
 

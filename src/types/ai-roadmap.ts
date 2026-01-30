@@ -193,6 +193,7 @@ export interface RoadmapNode {
   section_id: string;          // NEW: parent section
   subsection_id?: string;      // NEW: parent subsection (optional)
   type: NodeType;
+  is_hub?: boolean;            // NEW: true if this is a hub node that branches to multiple children
   data: RoadmapNodeData;
 }
 
@@ -321,6 +322,7 @@ export interface AIRoadmapNodeFlowData extends RoadmapNodeData {
   section_id: string;          // NEW: parent section
   subsection_id?: string;      // NEW: parent subsection
   type: NodeType;
+  is_hub?: boolean;            // NEW: mark hub nodes for special styling
   status: NodeStatus;
   onClick?: (nodeId: string) => void;
   onContextMenu?: (nodeId: string, event: React.MouseEvent) => void;
