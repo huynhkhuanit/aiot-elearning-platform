@@ -132,49 +132,48 @@ const SimpleRoadmapNode = ({ data, selected }: NodeProps<SimpleRoadmapNodeData>)
 
   return (
     <div className="relative">
-      {/* Target Handle (Top) - Minimal like roadmap.sh */}
+      {/* Target Handle (Top) */}
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-1.5 !h-1.5 !bg-slate-400 !border-0 !opacity-60"
-        style={{ top: -3 }}
+        className="!w-2 !h-2 !bg-slate-300 !border-0 !-top-1"
       />
 
-      {/* Node Body - Fixed size for consistent roadmap.sh-style display */}
+      {/* Node Body - Ultra-compact sizing for single-screen display like roadmap.sh */}
       <div
         onClick={handleClick}
         onContextMenu={handleContextMenu}
         className={`
-          relative px-3 py-2 rounded-md border-2 text-xs font-medium
-          text-center transition-all duration-150 select-none
-          w-[170px] h-[44px] flex items-center justify-center
+          relative px-3 py-1.5 rounded border-[1.5px] text-xs font-medium
+          text-center transition-all duration-120 select-none
+          min-w-[130px] max-w-[160px]
           ${styles.border} ${styles.bg} ${styles.text} ${styles.hoverBg}
-          ${locked ? 'opacity-50 cursor-not-allowed grayscale' : 'cursor-pointer'}
-          ${selected ? 'ring-2 ring-blue-400 ring-offset-1 shadow-md' : ''}
-          ${active ? 'ring-2 ring-indigo-400 ring-offset-1 shadow-md' : ''}
-          ${completed ? 'ring-2 ring-green-400 ring-offset-1 shadow-md' : ''}
-          hover:shadow-md hover:scale-105
+          ${locked ? 'opacity-60 cursor-not-allowed grayscale' : 'cursor-pointer'}
+          ${selected ? 'ring-1 ring-blue-400' : ''}
+          ${active ? 'ring-1 ring-indigo-400' : ''}
+          ${completed ? 'ring-1 ring-green-400' : ''}
+          hover:shadow-sm
         `}
+        title={displayTitle} // Show full title on hover
       >
-        {/* Title */}
-        <span className="line-clamp-2 leading-tight text-center">
+        {/* Title - single line with ellipsis */}
+        <span className="block truncate leading-tight">
           {displayTitle}
         </span>
 
-        {/* Completed Checkmark */}
+        {/* Completed Checkmark - minimal like roadmap.sh */}
         {completed && (
-          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-md">
-            <Check className="w-3 h-3 text-white" strokeWidth={3} />
+          <div className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-green-500 rounded-full flex items-center justify-center shadow-sm border-2 border-white">
+            <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
           </div>
         )}
       </div>
 
-      {/* Source Handle (Bottom) - Minimal like roadmap.sh */}
+      {/* Source Handle (Bottom) */}
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-1.5 !h-1.5 !bg-slate-400 !border-0 !opacity-60"
-        style={{ bottom: -3 }}
+        className="!w-2 !h-2 !bg-slate-300 !border-0 !-bottom-1"
       />
     </div>
   );

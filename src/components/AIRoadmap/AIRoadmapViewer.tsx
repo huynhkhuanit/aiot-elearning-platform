@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -11,6 +11,7 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   Panel,
+  useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { getLayoutedElementsWithPhases, getLayoutedElementsWithSections } from '@/lib/dagre-layout';
@@ -22,6 +23,43 @@ import type { AIGeneratedRoadmap, RoadmapNode, NodeStatus } from '@/types/ai-roa
 const nodeTypes = {
   simpleRoadmapNode: SimpleRoadmapNode,
 };
+
+// Helper component to trigger fitView when nodes/edges change
+function FitViewHelper() {
+  const { fitView } = useReactFlow();
+  
+  useEffect(() => {
+    // Small delay to ensure nodes are rendered, then fit view
+    const timer = setTimeout(() => {
+      fitView({ 
+        padding: 15,  // Minimal padding to show all nodes
+        maxZoom: 1,
+        minZoom: 1,
+        duration: 300, // Smooth animation
+      });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [fitView]);
+  
+  // Also trigger on window resize to maintain fit
+  useEffect(() => {
+    const handleResize = () => {
+      setTimeout(() => {
+        fitView({ 
+          padding: 15,
+          maxZoom: 1,
+          minZoom: 1,
+          duration: 200,
+        });
+      }, 100);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [fitView]);
+  
+  return null;
+}
 
 interface AIRoadmapViewerProps {
   roadmap: AIGeneratedRoadmap;
@@ -91,7 +129,7 @@ export default function AIRoadmapViewer({
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
 
   // Update nodes when progress changes
-  React.useEffect(() => {
+  useEffect(() => {
     setNodes((nds) =>
       nds.map((node) => ({
         ...node,
@@ -118,78 +156,89 @@ export default function AIRoadmapViewer({
         </div>
       )}
 
-      {/* Full viewport container - no zoom, fixed display like roadmap.sh */}
-      <div className="w-full h-full relative">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          nodeTypes={nodeTypes}
-          fitView
-          fitViewOptions={{ 
-            padding: 0.15,  // More padding for better visibility
-            minZoom: 0.3,
-            maxZoom: 1.0,
-            includeHiddenNodes: false 
+      {/* Full screen ReactFlow - no zoom, fit everything on one screen */}
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        nodeTypes={nodeTypes}
+        fitView
+        fitViewOptions={{ 
+          padding: 20,  // Small padding around edges
+          includeHiddenNodes: false,
+          maxZoom: 1,   // Prevent zooming in
+          minZoom: 1,   // Prevent zooming out - lock at 1x
+        }}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }} // Lock at 1x zoom
+        minZoom={1}    // Disable zoom out
+        maxZoom={1}    // Disable zoom in - completely disable zoom
+        zoomOnScroll={false}  // Disable scroll zoom
+        zoomOnPinch={false}   // Disable pinch zoom
+        zoomOnDoubleClick={false}  // Disable double-click zoom
+        panOnScroll={false}   // Disable pan on scroll
+        panOnDrag={false}     // Disable pan on drag - roadmap.sh style is static
+        nodesDraggable={false}  // Nodes should not be draggable
+        className="bg-gradient-to-br from-slate-50 to-indigo-50"
+      >
+        <FitViewHelper />
+        {/* Remove Controls - no zoom controls needed */}
+        <MiniMap
+          className="bg-white border border-gray-200 rounded-lg shadow-sm"
+          nodeColor={(node) => {
+            // Match SimpleRoadmapNode colors
+            if (node.data?.status === 'completed') return '#22c55e'; // green-500
+            switch (node.data?.type) {
+              case 'core': return '#faf5ff';      // purple-50
+              case 'optional': return '#f9fafb'; // gray-50
+              case 'project': return '#fff7ed';  // orange-50
+              default: return '#f3f4f6';
+            }
           }}
-          defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
-          minZoom={0.3}  // Prevent zooming in too far
-          maxZoom={1.0}  // Prevent zooming out too far - keep roadmap visible
-          zoomOnScroll={false}  // Disable zoom on scroll - like roadmap.sh
-          zoomOnPinch={false}   // Disable pinch zoom
-          zoomOnDoubleClick={false}  // Disable double click zoom
-          panOnDrag={true}  // Allow panning but no zoom
-          panOnScroll={false}  // Disable pan on scroll
-          preventScrolling={true}
-          nodesDraggable={false}  // Nodes are fixed like roadmap.sh
-          nodesConnectable={false}
-          elementsSelectable={true}
-          className="roadmap-viewer"
-        >
-          {/* Hide zoom controls - roadmap.sh doesn't have them */}
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e5e7eb" />
+          pannable={false}
+          zoomable={false}
+        />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e5e7eb" />
 
-            {/* Roadmap Info Panel - Fixed at top, not inside zoom area */}
-            <Panel position="top-left" className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-sm max-w-sm">
-              <h1 className="text-base font-bold text-gray-900 mb-1 line-clamp-1">{roadmap.roadmap_title}</h1>
-              {roadmap.roadmap_description && (
-                <p className="text-xs text-gray-600 mb-2 line-clamp-2">{roadmap.roadmap_description}</p>
-              )}
-              <div className="flex gap-3 text-xs text-gray-500">
-                <span>{roadmap.nodes.length} chủ đề</span>
-                <span>{roadmap.total_estimated_hours}h tổng</span>
-              </div>
-            </Panel>
+        {/* Roadmap Info Panel */}
+        <Panel position="top-left" className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm max-w-sm">
+          <h1 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2">{roadmap.roadmap_title}</h1>
+          {roadmap.roadmap_description && (
+            <p className="text-sm text-gray-600 mb-2 line-clamp-2">{roadmap.roadmap_description}</p>
+          )}
+          <div className="flex gap-4 text-xs text-gray-500">
+            <span>{roadmap.nodes.length} topics</span>
+            <span>{roadmap.total_estimated_hours}h total</span>
+          </div>
+        </Panel>
 
-            {/* Legend Panel - Matching roadmap.sh style, fixed position */}
-            <Panel position="top-right" className="roadmap-legend bg-white/95 backdrop-blur-sm">
-              <h3 className="roadmap-legend__title">Chú giải</h3>
-              <div className="roadmap-legend__section">
-                <h4 className="roadmap-legend__section-title">Loại nội dung</h4>
-                <div className="roadmap-legend__item">
-                  <div className="roadmap-legend__color roadmap-legend__color--core"></div>
-                  <span className="roadmap-legend__label">Cốt lõi</span>
-                </div>
-                <div className="roadmap-legend__item">
-                  <div className="roadmap-legend__color roadmap-legend__color--optional"></div>
-                  <span className="roadmap-legend__label">Tùy chọn</span>
-                </div>
-                <div className="roadmap-legend__item">
-                  <div className="roadmap-legend__color roadmap-legend__color--project"></div>
-                  <span className="roadmap-legend__label">Thực hành</span>
-                </div>
-              </div>
-              <div className="roadmap-legend__section pt-3 border-t border-gray-100">
-                <h4 className="roadmap-legend__section-title">Trạng thái</h4>
-                <div className="roadmap-legend__item">
-                  <div className="roadmap-legend__color roadmap-legend__color--completed"></div>
-                  <span className="roadmap-legend__label">Đã hoàn thành</span>
-                </div>
-              </div>
-            </Panel>
-          </ReactFlow>
-        </div>
+        {/* Legend Panel - Matching roadmap.sh style */}
+        <Panel position="top-right" className="roadmap-legend">
+          <h3 className="roadmap-legend__title">Chú giải</h3>
+          <div className="roadmap-legend__section">
+            <h4 className="roadmap-legend__section-title">Loại nội dung</h4>
+            <div className="roadmap-legend__item">
+              <div className="roadmap-legend__color roadmap-legend__color--core"></div>
+              <span className="roadmap-legend__label">Cốt lõi</span>
+            </div>
+            <div className="roadmap-legend__item">
+              <div className="roadmap-legend__color roadmap-legend__color--optional"></div>
+              <span className="roadmap-legend__label">Tùy chọn</span>
+            </div>
+            <div className="roadmap-legend__item">
+              <div className="roadmap-legend__color roadmap-legend__color--project"></div>
+              <span className="roadmap-legend__label">Thực hành</span>
+            </div>
+          </div>
+          <div className="roadmap-legend__section pt-3 border-t border-gray-100">
+            <h4 className="roadmap-legend__section-title">Trạng thái</h4>
+            <div className="roadmap-legend__item">
+              <div className="roadmap-legend__color roadmap-legend__color--completed"></div>
+              <span className="roadmap-legend__label">Đã hoàn thành</span>
+            </div>
+          </div>
+        </Panel>
+      </ReactFlow>
 
       {selectedNode && (
         <AINodeDetailDrawer
