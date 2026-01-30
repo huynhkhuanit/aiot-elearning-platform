@@ -123,3 +123,5 @@ vectordb/
 # Ignore Log files specific to AI
 *.log
 celerybeat-schedule
+
+.cursor
