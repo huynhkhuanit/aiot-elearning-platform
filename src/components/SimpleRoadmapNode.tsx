@@ -29,25 +29,23 @@ export interface SimpleRoadmapNodeData {
 }
 
 /**
- * Tooltip component with roadmap.sh styling
+ * Tooltip component
  */
 const NodeTooltip = ({ 
   title, 
   description, 
   duration, 
   technologies,
-  status 
 }: {
   title: string;
   description?: string;
   duration?: string;
   technologies?: string[];
-  status?: string;
 }) => (
   <motion.div
-    initial={{ opacity: 0, y: 8, scale: 0.95 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+    initial={{ opacity: 0, y: 6 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: 6 }}
     transition={{ duration: 0.15 }}
     className="roadmap-tooltip"
   >
@@ -55,34 +53,21 @@ const NodeTooltip = ({
     {description && (
       <div className="roadmap-tooltip__description">{description}</div>
     )}
-    <div className="roadmap-tooltip__meta">
-      {duration && (
-        <span className="flex items-center gap-1">
-          <span>⏱</span> {duration}
-        </span>
-      )}
-      {status && (
-        <span className="capitalize">{status}</span>
-      )}
-    </div>
+    {(duration || technologies) && (
+      <div className="roadmap-tooltip__meta">
+        {duration && <span>⏱ {duration}</span>}
+      </div>
+    )}
     {technologies && technologies.length > 0 && (
       <div className="roadmap-tooltip__tech">
         {technologies.slice(0, 4).map((tech, idx) => (
-          <span key={idx} className="roadmap-tooltip__tech-item">
-            {tech}
-          </span>
+          <span key={idx} className="roadmap-tooltip__tech-item">{tech}</span>
         ))}
         {technologies.length > 4 && (
           <span className="roadmap-tooltip__tech-item">+{technologies.length - 4}</span>
         )}
       </div>
     )}
-    <div className="mt-3 pt-3 border-t border-gray-600 text-[10px] text-gray-400">
-      <div>Click: Xem chi tiết</div>
-      <div>Right-click: Đánh dấu hoàn thành</div>
-      <div>Shift+Click: Đang học</div>
-      <div>Alt+Click: Bỏ qua</div>
-    </div>
   </motion.div>
 );
 
@@ -95,15 +80,7 @@ const isSkipped = (status?: string) => status === 'skipped';
 const isLocked = (status?: string) => status === 'locked';
 
 /**
- * SimpleRoadmapNode - Roadmap.sh Inspired Design
- * 
- * Features:
- * - Yellow for core/topic nodes
- * - Cream/beige for subtopic/optional nodes
- * - Gray strikethrough for completed
- * - Purple underline for learning
- * - Dark teal strikethrough for skipped
- * - Multiple interaction modes (click, right-click, shift+click, alt+click)
+ * SimpleRoadmapNode - Fixed width node for vertical tree layout
  */
 const SimpleRoadmapNode = ({ data, selected }: NodeProps<SimpleRoadmapNodeData>) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -117,22 +94,21 @@ const SimpleRoadmapNode = ({ data, selected }: NodeProps<SimpleRoadmapNodeData>)
   const showCheckbox = data.showCheckbox !== false;
 
   /**
-   * Handle click - Open detail modal
+   * Handle click
    */
   const handleClick = useCallback((e: React.MouseEvent) => {
-    // Don't trigger if clicking checkbox
     if ((e.target as HTMLElement).closest('.roadmap-node__checkbox')) {
       return;
     }
     
-    // Shift+Click = Learning status
+    // Shift+Click = Learning
     if (e.shiftKey && data.onStatusChange) {
       e.preventDefault();
       data.onStatusChange(data.id, learning ? 'available' : 'learning');
       return;
     }
     
-    // Alt+Click = Skipped status
+    // Alt+Click = Skipped
     if (e.altKey && data.onStatusChange) {
       e.preventDefault();
       data.onStatusChange(data.id, skipped ? 'available' : 'skipped');
@@ -146,7 +122,7 @@ const SimpleRoadmapNode = ({ data, selected }: NodeProps<SimpleRoadmapNodeData>)
   }, [locked, data, learning, skipped]);
 
   /**
-   * Handle right click - Toggle done status (like roadmap.sh)
+   * Handle right click - Toggle done status
    */
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -179,20 +155,15 @@ const SimpleRoadmapNode = ({ data, selected }: NodeProps<SimpleRoadmapNodeData>)
     }
   }, [data]);
 
-  // Build className based on type and status
+  // Build className
   const getNodeClassName = () => {
     const classes = ['roadmap-node'];
-    
-    // Type class
     classes.push(`roadmap-node--${data.type}`);
-    
-    // Status classes (roadmap.sh style)
     if (completed) classes.push('roadmap-node--done');
     if (learning) classes.push('roadmap-node--learning');
     if (skipped) classes.push('roadmap-node--skipped');
     if (locked) classes.push('roadmap-node--locked');
     if (selected) classes.push('roadmap-node--selected');
-    
     return classes.join(' ');
   };
 
@@ -205,7 +176,7 @@ const SimpleRoadmapNode = ({ data, selected }: NodeProps<SimpleRoadmapNodeData>)
         className="react-flow__handle"
       />
 
-      {/* Tooltip on hover */}
+      {/* Tooltip */}
       <AnimatePresence>
         {isHovered && !locked && (
           <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 pointer-events-none">
@@ -214,7 +185,6 @@ const SimpleRoadmapNode = ({ data, selected }: NodeProps<SimpleRoadmapNodeData>)
               description={data.description}
               duration={data.duration}
               technologies={data.technologies}
-              status={data.status}
             />
           </div>
         )}
@@ -240,26 +210,11 @@ const SimpleRoadmapNode = ({ data, selected }: NodeProps<SimpleRoadmapNodeData>)
         className={getNodeClassName()}
         data-node-id={data.id}
         data-node-type={data.type}
-        data-node-status={data.status}
       >
-        {/* Title with strikethrough/underline based on status */}
-        <span className="roadmap-node__title">
-          {displayTitle}
-        </span>
-
-        {/* Status indicator dots */}
-        {completed && !showCheckbox && (
-          <div className="roadmap-node__status-dot roadmap-node__status-dot--done" />
-        )}
-        {learning && (
-          <div className="roadmap-node__status-dot roadmap-node__status-dot--learning" />
-        )}
-        {skipped && (
-          <div className="roadmap-node__status-dot roadmap-node__status-dot--skipped" />
-        )}
+        <span className="roadmap-node__title">{displayTitle}</span>
       </div>
 
-      {/* Completed checkmark badge */}
+      {/* Completed checkmark */}
       {completed && showCheckbox && (
         <div className="roadmap-node__checkmark">
           <Check className="w-2.5 h-2.5" strokeWidth={3} />
