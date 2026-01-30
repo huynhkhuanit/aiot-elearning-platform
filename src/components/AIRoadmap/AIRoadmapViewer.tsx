@@ -109,7 +109,7 @@ export default function AIRoadmapViewer({
   }, [selectedNodeId, roadmap.nodes]);
 
   return (
-    <div className="w-full h-screen relative overflow-hidden">
+    <div className="w-full h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 to-indigo-50">
       {isTempRoadmap && (
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg shadow-lg">
           <p className="text-sm font-medium">
@@ -118,57 +118,52 @@ export default function AIRoadmapViewer({
         </div>
       )}
 
-      {/* Container to keep roadmap compact and centered */}
-      <div className="w-full h-full flex items-center justify-center relative">
-        <div className="w-full h-full max-w-[1600px] max-h-[900px] relative">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            nodeTypes={nodeTypes}
-            fitView
-            fitViewOptions={{ 
-              padding: 0.05,  // Minimal padding for tight fit
-              minZoom: 0.25,  // Allow slight zoom out to see full roadmap
-              maxZoom: 1.5,   // Limit max zoom
-              includeHiddenNodes: false 
-            }}
-            defaultViewport={{ x: 0, y: 0, zoom: 0.7 }} // Start zoomed out to see full roadmap
-            minZoom={0.2}
-            maxZoom={2}
-            className="bg-gradient-to-br from-slate-50 to-indigo-50 rounded-lg border border-gray-200 shadow-sm"
-          >
-            <Controls className="bg-white border border-gray-200 rounded-lg shadow-sm" />
-            <MiniMap
-              className="bg-white border border-gray-200 rounded-lg shadow-sm"
-              nodeColor={(node) => {
-                // Match SimpleRoadmapNode colors
-                if (node.data?.status === 'completed') return '#22c55e'; // green-500
-                switch (node.data?.type) {
-                  case 'core': return '#faf5ff';      // purple-50
-                  case 'optional': return '#f9fafb'; // gray-50
-                  case 'project': return '#fff7ed';  // orange-50
-                  default: return '#f3f4f6';
-                }
-              }}
-            />
-            <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e5e7eb" />
+      {/* Full viewport container - no zoom, fixed display like roadmap.sh */}
+      <div className="w-full h-full relative">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          nodeTypes={nodeTypes}
+          fitView
+          fitViewOptions={{ 
+            padding: 0.15,  // More padding for better visibility
+            minZoom: 0.3,
+            maxZoom: 1.0,
+            includeHiddenNodes: false 
+          }}
+          defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+          minZoom={0.3}  // Prevent zooming in too far
+          maxZoom={1.0}  // Prevent zooming out too far - keep roadmap visible
+          zoomOnScroll={false}  // Disable zoom on scroll - like roadmap.sh
+          zoomOnPinch={false}   // Disable pinch zoom
+          zoomOnDoubleClick={false}  // Disable double click zoom
+          panOnDrag={true}  // Allow panning but no zoom
+          panOnScroll={false}  // Disable pan on scroll
+          preventScrolling={true}
+          nodesDraggable={false}  // Nodes are fixed like roadmap.sh
+          nodesConnectable={false}
+          elementsSelectable={true}
+          className="roadmap-viewer"
+        >
+          {/* Hide zoom controls - roadmap.sh doesn't have them */}
+          <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e5e7eb" />
 
-            {/* Roadmap Info Panel */}
-            <Panel position="top-left" className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm max-w-sm">
-              <h1 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2">{roadmap.roadmap_title}</h1>
+            {/* Roadmap Info Panel - Fixed at top, not inside zoom area */}
+            <Panel position="top-left" className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-sm max-w-sm">
+              <h1 className="text-base font-bold text-gray-900 mb-1 line-clamp-1">{roadmap.roadmap_title}</h1>
               {roadmap.roadmap_description && (
-                <p className="text-sm text-gray-600 mb-2 line-clamp-2">{roadmap.roadmap_description}</p>
+                <p className="text-xs text-gray-600 mb-2 line-clamp-2">{roadmap.roadmap_description}</p>
               )}
-              <div className="flex gap-4 text-xs text-gray-500">
-                <span>{roadmap.nodes.length} topics</span>
-                <span>{roadmap.total_estimated_hours}h total</span>
+              <div className="flex gap-3 text-xs text-gray-500">
+                <span>{roadmap.nodes.length} chủ đề</span>
+                <span>{roadmap.total_estimated_hours}h tổng</span>
               </div>
             </Panel>
 
-            {/* Legend Panel - Matching roadmap.sh style */}
-            <Panel position="top-right" className="roadmap-legend">
+            {/* Legend Panel - Matching roadmap.sh style, fixed position */}
+            <Panel position="top-right" className="roadmap-legend bg-white/95 backdrop-blur-sm">
               <h3 className="roadmap-legend__title">Chú giải</h3>
               <div className="roadmap-legend__section">
                 <h4 className="roadmap-legend__section-title">Loại nội dung</h4>
@@ -195,7 +190,6 @@ export default function AIRoadmapViewer({
             </Panel>
           </ReactFlow>
         </div>
-      </div>
 
       {selectedNode && (
         <AINodeDetailDrawer

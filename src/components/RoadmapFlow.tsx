@@ -17,7 +17,7 @@ import {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-import { ArrowLeft, BookOpen, Grid3X3, List } from 'lucide-react';
+import { ArrowLeft, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import SimpleRoadmapNode from './SimpleRoadmapNode';
@@ -47,7 +47,6 @@ const nodeTypes = {
 };
 
 export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowProps) {
-  const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>('vertical');
   const [selectedNode, setSelectedNode] = useState<RoadmapNode | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
@@ -118,11 +117,11 @@ export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: Ro
     const edges: Edge[] = [];
     let nodeId = 1;
 
-    // Layout configuration - Optimized for roadmap.sh-style compact nodes
-    const NODE_WIDTH = 180;  // Reduced from 220 for compact display
-    const NODE_HEIGHT = 48;  // Reduced from 100 for minimal nodes
-    const GAP_X = 40;        // Horizontal gap between nodes
-    const GAP_Y = 60;        // Reduced from 80 for tighter layout
+    // Layout configuration - Ultra-compact for single-screen display like roadmap.sh
+    const NODE_WIDTH = 170;  // Fixed compact width
+    const NODE_HEIGHT = 44;  // Fixed compact height
+    const GAP_X = 25;        // Minimal horizontal gap for single-screen fit
+    const GAP_Y = 45;        // Minimal vertical gap for single-screen fit
 
     // Helper to calculate subtree dimensions
     const getSubtreeDimensions = (node: RoadmapNode, isVertical: boolean): number => {
@@ -186,27 +185,19 @@ export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: Ro
       }
 
       if (node.children && node.children.length > 0) {
-        const isVertical = layoutMode === 'vertical';
+        // Always use vertical layout for consistent single-screen display like roadmap.sh
+        const isVertical = true;
         const subtreeSize = getSubtreeDimensions(node, isVertical);
         
-        let currentPos = isVertical 
-          ? x - subtreeSize / 2 
-          : y - subtreeSize / 2;
+        let currentPos = x - subtreeSize / 2;
 
         node.children.forEach((child) => {
           const childSubtreeSize = getSubtreeDimensions(child, isVertical);
           
-          if (isVertical) {
-            const childX = currentPos + childSubtreeSize / 2;
-            const childY = y + NODE_HEIGHT + GAP_Y;
-            processNode(child, childX, childY, currentId);
-            currentPos += childSubtreeSize + GAP_X;
-          } else {
-            const childX = x + NODE_WIDTH + GAP_X;
-            const childY = currentPos + childSubtreeSize / 2;
-            processNode(child, childX, childY, currentId);
-            currentPos += childSubtreeSize + GAP_Y;
-          }
+          const childX = currentPos + childSubtreeSize / 2;
+          const childY = y + NODE_HEIGHT + GAP_Y;
+          processNode(child, childX, childY, currentId);
+          currentPos += childSubtreeSize + GAP_X;
         });
       }
 
@@ -220,7 +211,7 @@ export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: Ro
     processNode(roadmapData, startX, startY);
 
     return { nodes, edges };
-  }, [roadmapData, layoutMode, handleNodeClick, completedNodes]);
+  }, [roadmapData, handleNodeClick, completedNodes]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -292,19 +283,18 @@ export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: Ro
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">{roadmapTitle}</h2>
                   <p className="text-sm text-gray-500">
-                    {nodes.length} kỹ năng • Bố cục {layoutMode === 'vertical' ? 'Dọc' : 'Ngang'}
+                    {nodes.length} kỹ năng • Hiển thị cố định • Kéo để di chuyển
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setLayoutMode(layoutMode === 'vertical' ? 'horizontal' : 'vertical')}
-                  className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  {layoutMode === 'vertical' ? <Grid3X3 className="w-4 h-4" /> : <List className="w-4 h-4" />}
-                  <span>Đổi bố cục</span>
-                </button>
+                <div className="px-3 py-2 text-xs text-gray-500 bg-gray-50 rounded-lg flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
+                  </svg>
+                  <span>Kéo để di chuyển</span>
+                </div>
 
                 <Link href={`/roadmap/${roadmapId}`}>
                   <button className="px-4 py-2 text-sm font-medium text-white bg-[#6366f1] hover:bg-[#5558e3] rounded-lg transition-colors flex items-center gap-2">
@@ -317,7 +307,7 @@ export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: Ro
           </div>
         </motion.div>
 
-        {/* React Flow Container */}
+        {/* React Flow Container - Fixed display like roadmap.sh */}
         <div className="h-[calc(100vh-80px)]">
           <ReactFlow
             nodes={nodes}
@@ -328,44 +318,27 @@ export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: Ro
             nodeTypes={nodeTypes}
             fitView
             fitViewOptions={{
-              padding: 0.2,
+              padding: 0.15,
               includeHiddenNodes: false,
-              minZoom: 0.1,
-              maxZoom: 1.5,
+              minZoom: 0.3,
+              maxZoom: 1.0,
             }}
-            defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
             attributionPosition="bottom-left"
             className="bg-transparent"
-            minZoom={0.1}
-            maxZoom={2}
+            minZoom={0.3}  // Prevent excessive zoom out
+            maxZoom={1.0}  // Prevent zoom in - keep fixed size like roadmap.sh
+            zoomOnScroll={false}  // Disable scroll zoom - like roadmap.sh
+            zoomOnPinch={false}   // Disable pinch zoom
+            zoomOnDoubleClick={false}  // Disable double click zoom
+            panOnDrag={true}  // Allow panning only
+            panOnScroll={false}  // Disable scroll pan
+            preventScrolling={true}
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable={true}
             selectNodesOnDrag={false}
           >
-            <Controls
-              className="bg-white border border-gray-200 rounded-lg shadow-sm"
-              showZoom
-              showFitView
-              showInteractive={false}
-            />
-
-            <MiniMap
-              className="bg-white border border-gray-200 rounded-lg shadow-sm"
-              nodeColor={(node) => {
-                // Match the node type colors from SimpleRoadmapNode
-                if (node.data?.status === 'completed') return '#22c55e'; // green-500
-                switch (node.data?.type) {
-                  case 'core': return '#faf5ff';      // purple-50
-                  case 'optional': return '#f9fafb'; // gray-50
-                  case 'beginner': return '#f0fdf4'; // green-50
-                  case 'project': return '#fff7ed';  // orange-50
-                  case 'alternative': return '#f8fafc'; // slate-50
-                  default: return '#f3f4f6';
-                }
-              }}
-              maskColor="rgba(255, 255, 255, 0.9)"
-            />
 
             <Background
               variant={BackgroundVariant.Dots}
