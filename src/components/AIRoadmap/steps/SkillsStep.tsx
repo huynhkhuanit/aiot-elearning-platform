@@ -24,7 +24,7 @@ export default function SkillsStep({ data, updateData }: SkillsStepProps) {
   const selectedSkills = data.currentSkills || [];
 
   const groupedSkills = useMemo(() => {
-    const groups: Record<string, typeof SKILL_OPTIONS> = {};
+    const groups: Record<string, typeof SKILL_OPTIONS[number][]> = {};
     SKILL_OPTIONS.forEach(skill => {
       if (!groups[skill.category]) {
         groups[skill.category] = [];
@@ -38,7 +38,7 @@ export default function SkillsStep({ data, updateData }: SkillsStepProps) {
     if (!searchQuery) return groupedSkills;
     
     const query = searchQuery.toLowerCase();
-    const filtered: Record<string, typeof SKILL_OPTIONS> = {};
+    const filtered: Record<string, typeof SKILL_OPTIONS[number][]> = {};
     
     Object.entries(groupedSkills).forEach(([category, skills]) => {
       const matchingSkills = skills.filter(

@@ -29,12 +29,13 @@ function FitViewHelper() {
   const { fitView } = useReactFlow();
   
   useEffect(() => {
-    // Small delay to ensure nodes are rendered, then fit view
+    // Small delay to ensure nodes are rendered, then fit view horizontally
+    // Allow vertical scroll to see all nodes by depth
     const timer = setTimeout(() => {
       fitView({ 
-        padding: 15,  // Minimal padding to show all nodes
+        padding: 20,
         maxZoom: 1,
-        minZoom: 1,
+        minZoom: 0.8,
         duration: 300, // Smooth animation
       });
     }, 150);
@@ -46,9 +47,9 @@ function FitViewHelper() {
     const handleResize = () => {
       setTimeout(() => {
         fitView({ 
-          padding: 15,
+          padding: 20,
           maxZoom: 1,
-          minZoom: 1,
+          minZoom: 0.8,
           duration: 200,
         });
       }, 100);
@@ -156,7 +157,7 @@ export default function AIRoadmapViewer({
         </div>
       )}
 
-      {/* Full screen ReactFlow - no zoom, fit everything on one screen */}
+      {/* ReactFlow with vertical scroll - compact layout, scrollable by depth */}
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -165,21 +166,22 @@ export default function AIRoadmapViewer({
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ 
-          padding: 20,  // Small padding around edges
+          padding: 20,  // Padding around edges
           includeHiddenNodes: false,
           maxZoom: 1,   // Prevent zooming in
-          minZoom: 1,   // Prevent zooming out - lock at 1x
+          minZoom: 0.8, // Allow slight zoom out to see more content
         }}
-        defaultViewport={{ x: 0, y: 0, zoom: 1 }} // Lock at 1x zoom
-        minZoom={1}    // Disable zoom out
-        maxZoom={1}    // Disable zoom in - completely disable zoom
-        zoomOnScroll={false}  // Disable scroll zoom
-        zoomOnPinch={false}   // Disable pinch zoom
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }} // Start at 1x zoom
+        minZoom={0.5}   // Allow zoom out to see full roadmap
+        maxZoom={1.5}   // Allow slight zoom in
+        zoomOnScroll={true}   // Enable scroll to zoom (optional)
+        zoomOnPinch={true}    // Enable pinch zoom
         zoomOnDoubleClick={false}  // Disable double-click zoom
-        panOnScroll={false}   // Disable pan on scroll
-        panOnDrag={false}     // Disable pan on drag - roadmap.sh style is static
+        panOnScroll={true}    // Enable pan on scroll - allow vertical scrolling
+        panOnDrag={true}      // Enable pan on drag - allow dragging to navigate
         nodesDraggable={false}  // Nodes should not be draggable
         className="bg-gradient-to-br from-slate-50 to-indigo-50"
+        style={{ width: '100%', height: '100%' }}
       >
         <FitViewHelper />
         {/* Remove Controls - no zoom controls needed */}

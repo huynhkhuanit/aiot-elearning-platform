@@ -7,26 +7,36 @@
 
 import { v2 as cloudinary } from 'cloudinary';
 
-// Validate environment variables
-if (!process.env.CLOUDINARY_CLOUD_NAME) {
-  throw new Error('CLOUDINARY_CLOUD_NAME is not defined in environment variables');
+// Configure Cloudinary only if environment variables are available
+// This allows the app to build even without Cloudinary config
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true, // Always use HTTPS
+  });
 }
 
-if (!process.env.CLOUDINARY_API_KEY) {
-  throw new Error('CLOUDINARY_API_KEY is not defined in environment variables');
+// Helper to ensure Cloudinary is configured
+function ensureCloudinaryConfig() {
+  if (!process.env.CLOUDINARY_CLOUD_NAME) {
+    throw new Error('CLOUDINARY_CLOUD_NAME is not defined in environment variables');
+  }
+  if (!process.env.CLOUDINARY_API_KEY) {
+    throw new Error('CLOUDINARY_API_KEY is not defined in environment variables');
+  }
+  if (!process.env.CLOUDINARY_API_SECRET) {
+    throw new Error('CLOUDINARY_API_SECRET is not defined in environment variables');
+  }
+  // Re-configure if needed
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
 }
-
-if (!process.env.CLOUDINARY_API_SECRET) {
-  throw new Error('CLOUDINARY_API_SECRET is not defined in environment variables');
-}
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true, // Always use HTTPS
-});
 
 /**
  * Upload image to Cloudinary
@@ -48,6 +58,7 @@ export async function uploadImage(
   height: number;
   bytes: number;
 }> {
+  ensureCloudinaryConfig();
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
@@ -89,6 +100,7 @@ export async function uploadImage(
  * @param publicId - Cloudinary public_id (e.g., 'dhvlearnx/avatars/abc123')
  */
 export async function deleteImage(publicId: string): Promise<void> {
+  ensureCloudinaryConfig();
   try {
     await cloudinary.uploader.destroy(publicId);
   } catch (error) {
