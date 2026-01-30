@@ -17,24 +17,10 @@ import {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-// Custom styles for roadmap edges - Smooth & Thick
-const edgeStyles = `
-  .react-flow__edge-path {
-    stroke: #94a3b8;
-    stroke-width: 3;
-    stroke-linecap: round;
-  }
-
-  .react-flow__edge.selected .react-flow__edge-path {
-    stroke: #6366f1;
-    stroke-width: 4;
-  }
-`;
-
 import { ArrowLeft, BookOpen, Grid3X3, List } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import RoadmapNode from './RoadmapNode';
+import SimpleRoadmapNode from './SimpleRoadmapNode';
 import RoadmapDetailModal from './RoadmapDetailModal';
 
 interface RoadmapNode {
@@ -55,9 +41,9 @@ interface RoadmapFlowProps {
   roadmapData: RoadmapNode;
 }
 
-// Node types - Using imported RoadmapNode component
+// Node types - Using SimpleRoadmapNode for clean roadmap.sh-style design
 const nodeTypes = {
-  roadmapNode: RoadmapNode,
+  simpleRoadmapNode: SimpleRoadmapNode,
 };
 
 export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowProps) {
@@ -132,11 +118,11 @@ export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: Ro
     const edges: Edge[] = [];
     let nodeId = 1;
 
-    // Layout configuration
-    const NODE_WIDTH = 220;
-    const NODE_HEIGHT = 100; // Approximate height including content
-    const GAP_X = 40; // Horizontal gap between nodes
-    const GAP_Y = 80; // Vertical gap between levels
+    // Layout configuration - Optimized for roadmap.sh-style compact nodes
+    const NODE_WIDTH = 180;  // Reduced from 220 for compact display
+    const NODE_HEIGHT = 48;  // Reduced from 100 for minimal nodes
+    const GAP_X = 40;        // Horizontal gap between nodes
+    const GAP_Y = 60;        // Reduced from 80 for tighter layout
 
     // Helper to calculate subtree dimensions
     const getSubtreeDimensions = (node: RoadmapNode, isVertical: boolean): number => {
@@ -171,10 +157,9 @@ export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: Ro
 
       nodes.push({
         id: currentId,
-        type: 'roadmapNode',
+        type: 'simpleRoadmapNode',
         position: { x, y },
         data: {
-          ...node,
           id: node.id,
           title: node.title,
           description: node.description,
@@ -193,8 +178,8 @@ export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: Ro
           target: currentId,
           type: 'default',
           style: {
-            stroke: '#94a3b8',
-            strokeWidth: 3,
+            stroke: '#cbd5e1', // slate-300 - cleaner, subtle color
+            strokeWidth: 2,
           },
           animated: actualStatus === 'current',
         });
@@ -288,8 +273,7 @@ export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: Ro
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <style dangerouslySetInnerHTML={{ __html: edgeStyles }} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
       <div className="relative">
         {/* Header */}
         <motion.div
@@ -369,11 +353,14 @@ export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: Ro
             <MiniMap
               className="bg-white border border-gray-200 rounded-lg shadow-sm"
               nodeColor={(node) => {
+                // Match the node type colors from SimpleRoadmapNode
+                if (node.data?.status === 'completed') return '#22c55e'; // green-500
                 switch (node.data?.type) {
-                  case 'core': return '#e0e7ff';
-                  case 'optional': return '#f1f5f9';
-                  case 'beginner': return '#d1fae5';
-                  case 'alternative': return '#fef3c7';
+                  case 'core': return '#faf5ff';      // purple-50
+                  case 'optional': return '#f9fafb'; // gray-50
+                  case 'beginner': return '#f0fdf4'; // green-50
+                  case 'project': return '#fff7ed';  // orange-50
+                  case 'alternative': return '#f8fafc'; // slate-50
                   default: return '#f3f4f6';
                 }
               }}
@@ -387,47 +374,39 @@ export default function RoadmapFlow({ roadmapId, roadmapTitle, roadmapData }: Ro
               color="#e5e7eb"
             />
 
-            {/* Legend Panel */}
-            <Panel position="top-right" className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm max-w-xs">
-              <h3 className="font-medium text-gray-900 mb-3 text-sm">
-                Chú giải
-              </h3>
+            {/* Legend Panel - Matching roadmap.sh style */}
+            <Panel position="top-right" className="roadmap-legend">
+              <h3 className="roadmap-legend__title">Chú giải</h3>
 
-              <div className="space-y-3">
-                <div>
-                  <h4 className="text-xs font-medium text-gray-700 mb-2">Loại nội dung</h4>
-                  <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 border-2 border-indigo-200 rounded"></div>
-                      <span className="text-gray-600">Cốt lõi</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 border-2 border-slate-200 rounded"></div>
-                      <span className="text-gray-600">Tùy chọn</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 border-2 border-emerald-200 rounded"></div>
-                      <span className="text-gray-600">Cơ bản</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 border-2 border-amber-200 rounded"></div>
-                      <span className="text-gray-600">Thay thế</span>
-                    </div>
-                  </div>
+              <div className="roadmap-legend__section">
+                <h4 className="roadmap-legend__section-title">Loại nội dung</h4>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--core"></div>
+                  <span className="roadmap-legend__label">Cốt lõi</span>
                 </div>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--optional"></div>
+                  <span className="roadmap-legend__label">Tùy chọn</span>
+                </div>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--beginner"></div>
+                  <span className="roadmap-legend__label">Cơ bản</span>
+                </div>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--alternative"></div>
+                  <span className="roadmap-legend__label">Thay thế</span>
+                </div>
+              </div>
 
-                <div className="pt-2 border-t border-gray-100">
-                  <h4 className="text-xs font-medium text-gray-700 mb-2">Trạng thái</h4>
-                  <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
-                      <span className="text-gray-600">Đã hoàn thành</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-indigo-100 border-2 border-indigo-200 rounded"></div>
-                      <span className="text-gray-600">Đang học</span>
-                    </div>
-                  </div>
+              <div className="roadmap-legend__section pt-3 border-t border-gray-100">
+                <h4 className="roadmap-legend__section-title">Trạng thái</h4>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--completed"></div>
+                  <span className="roadmap-legend__label">Đã hoàn thành</span>
+                </div>
+                <div className="roadmap-legend__item">
+                  <div className="roadmap-legend__color roadmap-legend__color--active"></div>
+                  <span className="roadmap-legend__label">Đang học</span>
                 </div>
               </div>
             </Panel>

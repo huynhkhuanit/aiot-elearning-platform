@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -14,12 +14,13 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { getLayoutedElementsWithPhases } from '@/lib/dagre-layout';
-import AIRoadmapNode from './AIRoadmapNode';
+import SimpleRoadmapNode from '@/components/SimpleRoadmapNode';
 import AINodeDetailDrawer from './AINodeDetailDrawer';
 import type { AIGeneratedRoadmap, RoadmapNode, NodeStatus } from '@/types/ai-roadmap';
 
+// Use SimpleRoadmapNode for clean roadmap.sh-style design
 const nodeTypes = {
-  aiRoadmapNode: AIRoadmapNode,
+  simpleRoadmapNode: SimpleRoadmapNode,
 };
 
 interface AIRoadmapViewerProps {
@@ -40,17 +41,24 @@ export default function AIRoadmapViewer({
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [nodeProgress, setNodeProgress] = useState<Record<string, NodeStatus>>(initialProgress);
 
-  // Convert roadmap nodes to React Flow nodes
+  // Convert roadmap nodes to React Flow nodes using SimpleRoadmapNode
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
     const flowNodes: Node[] = roadmap.nodes.map((node: RoadmapNode) => ({
       id: node.id,
-      type: 'aiRoadmapNode',
+      type: 'simpleRoadmapNode',
       data: {
-        ...node.data,
+        // Map to SimpleRoadmapNode data interface
         id: node.id,
-        phase_id: node.phase_id,
+        title: node.data.label, // AI roadmap uses 'label' instead of 'title'
+        label: node.data.label,
+        description: node.data.description,
         type: node.type,
         status: nodeProgress[node.id] || 'pending',
+        // Additional data for detail drawer (not shown on node)
+        phase_id: node.phase_id,
+        estimated_hours: node.data.estimated_hours,
+        difficulty: node.data.difficulty,
+        // Callbacks
         onClick: (nodeId: string) => setSelectedNodeId(nodeId),
         onContextMenu: (nodeId: string, event: React.MouseEvent) => {
           event.preventDefault();
@@ -67,8 +75,8 @@ export default function AIRoadmapViewer({
       id: edge.id,
       source: edge.source,
       target: edge.target,
-      animated: true,
-      style: { stroke: '#94a3b8', strokeWidth: 2 },
+      animated: false, // Disable animation for cleaner look
+      style: { stroke: '#cbd5e1', strokeWidth: 2 }, // Cleaner slate-300 color
     }));
 
     return getLayoutedElementsWithPhases(flowNodes, flowEdges, roadmap.phases);
@@ -119,22 +127,54 @@ export default function AIRoadmapViewer({
         <MiniMap
           className="bg-white border border-gray-200 rounded-lg shadow-sm"
           nodeColor={(node) => {
-            const status = node.data?.status || 'pending';
-            if (status === 'completed') return '#10b981';
-            if (status === 'in_progress') return '#3b82f6';
-            return '#e5e7eb';
+            // Match SimpleRoadmapNode colors
+            if (node.data?.status === 'completed') return '#22c55e'; // green-500
+            switch (node.data?.type) {
+              case 'core': return '#faf5ff';      // purple-50
+              case 'optional': return '#f9fafb'; // gray-50
+              case 'project': return '#fff7ed';  // orange-50
+              default: return '#f3f4f6';
+            }
           }}
         />
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e5e7eb" />
 
-        <Panel position="top-left" className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <h1 className="text-xl font-bold text-gray-900 mb-1">{roadmap.roadmap_title}</h1>
+        {/* Roadmap Info Panel */}
+        <Panel position="top-left" className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm max-w-sm">
+          <h1 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2">{roadmap.roadmap_title}</h1>
           {roadmap.roadmap_description && (
-            <p className="text-sm text-gray-600 mb-2">{roadmap.roadmap_description}</p>
+            <p className="text-sm text-gray-600 mb-2 line-clamp-2">{roadmap.roadmap_description}</p>
           )}
           <div className="flex gap-4 text-xs text-gray-500">
             <span>{roadmap.nodes.length} topics</span>
             <span>{roadmap.total_estimated_hours}h total</span>
+          </div>
+        </Panel>
+
+        {/* Legend Panel - Matching roadmap.sh style */}
+        <Panel position="top-right" className="roadmap-legend">
+          <h3 className="roadmap-legend__title">Chú giải</h3>
+          <div className="roadmap-legend__section">
+            <h4 className="roadmap-legend__section-title">Loại nội dung</h4>
+            <div className="roadmap-legend__item">
+              <div className="roadmap-legend__color roadmap-legend__color--core"></div>
+              <span className="roadmap-legend__label">Cốt lõi</span>
+            </div>
+            <div className="roadmap-legend__item">
+              <div className="roadmap-legend__color roadmap-legend__color--optional"></div>
+              <span className="roadmap-legend__label">Tùy chọn</span>
+            </div>
+            <div className="roadmap-legend__item">
+              <div className="roadmap-legend__color roadmap-legend__color--project"></div>
+              <span className="roadmap-legend__label">Thực hành</span>
+            </div>
+          </div>
+          <div className="roadmap-legend__section pt-3 border-t border-gray-100">
+            <h4 className="roadmap-legend__section-title">Trạng thái</h4>
+            <div className="roadmap-legend__item">
+              <div className="roadmap-legend__color roadmap-legend__color--completed"></div>
+              <span className="roadmap-legend__label">Đã hoàn thành</span>
+            </div>
           </div>
         </Panel>
       </ReactFlow>

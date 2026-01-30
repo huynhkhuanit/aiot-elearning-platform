@@ -1,0 +1,339 @@
+/**
+ * Roadmap Node Styles - Following roadmap.sh design patterns
+ * Clean, minimal, and consistent styling for roadmap visualization
+ */
+
+/* ========== REACT FLOW OVERRIDES ========== */
+
+/* Edge styling - Clean, subtle lines */
+.react-flow__edge-path {
+  stroke: #cbd5e1; /* slate-300 */
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #6366f1; /* indigo-500 */
+  stroke-width: 3;
+}
+
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke: #818cf8; /* indigo-400 */
+  stroke-dasharray: 5;
+  animation: edgeFlow 1s linear infinite;
+}
+
+@keyframes edgeFlow {
+  from {
+    stroke-dashoffset: 10;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Handle styling - Minimal dots */
+.react-flow__handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: #cbd5e1 !important;
+  border: none !important;
+  border-radius: 50%;
+}
+
+.react-flow__handle-top {
+  top: -4px !important;
+}
+
+.react-flow__handle-bottom {
+  bottom: -4px !important;
+}
+
+/* MiniMap styling */
+.react-flow__minimap {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Controls styling */
+.react-flow__controls {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.react-flow__controls-button {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.react-flow__controls-button:hover {
+  background: #f8fafc !important;
+}
+
+.react-flow__controls-button svg {
+  fill: #64748b;
+}
+
+/* Background dots */
+.react-flow__background pattern circle {
+  fill: #e2e8f0;
+}
+
+/* ========== SIMPLE ROADMAP NODE STYLES ========== */
+
+/* Base node styling */
+.simple-roadmap-node {
+  padding: 10px 16px;
+  border-radius: 6px;
+  border-width: 2px;
+  border-style: solid;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: all 150ms ease;
+  user-select: none;
+  min-width: 160px;
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+.simple-roadmap-node:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Node type variants */
+.simple-roadmap-node--core {
+  border-color: #a78bfa; /* purple-400 */
+  background-color: #faf5ff; /* purple-50 */
+  color: #581c87; /* purple-900 */
+}
+
+.simple-roadmap-node--core:hover {
+  background-color: #f3e8ff; /* purple-100 */
+}
+
+.simple-roadmap-node--optional {
+  border-color: #d1d5db; /* gray-300 */
+  background-color: #f9fafb; /* gray-50 */
+  color: #374151; /* gray-700 */
+}
+
+.simple-roadmap-node--optional:hover {
+  background-color: #f3f4f6; /* gray-100 */
+}
+
+.simple-roadmap-node--beginner {
+  border-color: #4ade80; /* green-400 */
+  background-color: #f0fdf4; /* green-50 */
+  color: #14532d; /* green-900 */
+}
+
+.simple-roadmap-node--beginner:hover {
+  background-color: #dcfce7; /* green-100 */
+}
+
+.simple-roadmap-node--project {
+  border-color: #fb923c; /* orange-400 */
+  background-color: #fff7ed; /* orange-50 */
+  color: #7c2d12; /* orange-900 */
+}
+
+.simple-roadmap-node--project:hover {
+  background-color: #ffedd5; /* orange-100 */
+}
+
+.simple-roadmap-node--alternative {
+  border-color: #94a3b8; /* slate-400 */
+  background-color: #f8fafc; /* slate-50 */
+  color: #334155; /* slate-700 */
+}
+
+.simple-roadmap-node--alternative:hover {
+  background-color: #f1f5f9; /* slate-100 */
+}
+
+/* Node status variants */
+.simple-roadmap-node--completed {
+  box-shadow: 0 0 0 2px #22c55e, 0 0 0 4px rgba(34, 197, 94, 0.2);
+}
+
+.simple-roadmap-node--active {
+  box-shadow: 0 0 0 2px #6366f1, 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.simple-roadmap-node--locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(50%);
+}
+
+.simple-roadmap-node--selected {
+  box-shadow: 0 0 0 2px #3b82f6, 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+/* Completed checkmark badge */
+.simple-roadmap-node__checkmark {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  background-color: #22c55e; /* green-500 */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.simple-roadmap-node__checkmark svg {
+  width: 12px;
+  height: 12px;
+  color: #ffffff;
+  stroke-width: 3;
+}
+
+/* ========== ROADMAP LEGEND STYLES ========== */
+
+.roadmap-legend {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 12px;
+  max-width: 180px;
+}
+
+.roadmap-legend__title {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.roadmap-legend__section {
+  margin-bottom: 12px;
+}
+
+.roadmap-legend__section:last-child {
+  margin-bottom: 0;
+}
+
+.roadmap-legend__section-title {
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.roadmap-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.roadmap-legend__item:last-child {
+  margin-bottom: 0;
+}
+
+.roadmap-legend__color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border-width: 2px;
+  border-style: solid;
+  flex-shrink: 0;
+}
+
+.roadmap-legend__color--core {
+  border-color: #a78bfa;
+  background-color: #faf5ff;
+}
+
+.roadmap-legend__color--optional {
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+}
+
+.roadmap-legend__color--beginner {
+  border-color: #4ade80;
+  background-color: #f0fdf4;
+}
+
+.roadmap-legend__color--project {
+  border-color: #fb923c;
+  background-color: #fff7ed;
+}
+
+.roadmap-legend__color--alternative {
+  border-color: #94a3b8;
+  background-color: #f8fafc;
+}
+
+.roadmap-legend__color--completed {
+  background-color: #22c55e;
+  border-color: #22c55e;
+  border-radius: 50%;
+}
+
+.roadmap-legend__color--active {
+  background-color: #eef2ff;
+  border-color: #818cf8;
+}
+
+.roadmap-legend__label {
+  color: #64748b;
+}
+
+/* ========== ROADMAP CONTAINER STYLES ========== */
+
+.roadmap-container {
+  width: 100%;
+  height: calc(100vh - 80px);
+  background: linear-gradient(to bottom right, #f8fafc, #eef2ff);
+}
+
+.roadmap-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.roadmap-header__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.roadmap-header__subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* ========== RESPONSIVE ADJUSTMENTS ========== */
+
+@media (max-width: 768px) {
+  .simple-roadmap-node {
+    min-width: 140px;
+    max-width: 180px;
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  .roadmap-legend {
+    max-width: 160px;
+    padding: 12px;
+    font-size: 11px;
+  }
+}
