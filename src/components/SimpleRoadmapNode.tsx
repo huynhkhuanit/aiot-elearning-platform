@@ -27,54 +27,11 @@ export interface SimpleRoadmapNodeData {
 }
 
 /**
- * Get type-based styling classes
- * Minimal color palette following roadmap.sh style
+ * Get CSS class name based on node type
+ * Uses classes from roadmap-nodes.css
  */
-const getTypeStyles = (type: SimpleRoadmapNodeData['type']) => {
-  switch (type) {
-    case 'core':
-      return {
-        border: 'border-purple-400',
-        bg: 'bg-purple-50',
-        text: 'text-purple-900',
-        hoverBg: 'hover:bg-purple-100',
-      };
-    case 'optional':
-      return {
-        border: 'border-gray-300',
-        bg: 'bg-gray-50',
-        text: 'text-gray-700',
-        hoverBg: 'hover:bg-gray-100',
-      };
-    case 'beginner':
-      return {
-        border: 'border-green-400',
-        bg: 'bg-green-50',
-        text: 'text-green-900',
-        hoverBg: 'hover:bg-green-100',
-      };
-    case 'project':
-      return {
-        border: 'border-orange-400',
-        bg: 'bg-orange-50',
-        text: 'text-orange-900',
-        hoverBg: 'hover:bg-orange-100',
-      };
-    case 'alternative':
-      return {
-        border: 'border-slate-400',
-        bg: 'bg-slate-50',
-        text: 'text-slate-700',
-        hoverBg: 'hover:bg-slate-100',
-      };
-    default:
-      return {
-        border: 'border-gray-300',
-        bg: 'bg-white',
-        text: 'text-gray-900',
-        hoverBg: 'hover:bg-gray-50',
-      };
-  }
+const getNodeTypeClass = (type: SimpleRoadmapNodeData['type']): string => {
+  return `simple-roadmap-node--${type}`;
 };
 
 /**
@@ -109,10 +66,10 @@ const isActive = (status?: SimpleRoadmapNodeData['status']) => {
  * - Consistent sizing across all node types
  */
 const SimpleRoadmapNode = ({ data, selected }: NodeProps<SimpleRoadmapNodeData>) => {
-  const styles = getTypeStyles(data.type);
   const completed = isCompleted(data.status);
   const locked = isLocked(data.status);
   const active = isActive(data.status);
+  const typeClass = getNodeTypeClass(data.type);
   
   // Use title or label (for AI roadmap compatibility)
   const displayTitle = data.title || data.label || 'Untitled';
@@ -130,6 +87,16 @@ const SimpleRoadmapNode = ({ data, selected }: NodeProps<SimpleRoadmapNodeData>)
     }
   };
 
+  // Build className array - only include classes when conditions are true
+  const classNameParts = [
+    'simple-roadmap-node',
+    `simple-roadmap-node--${data.type}`,
+    completed && 'simple-roadmap-node--completed',
+    active && 'simple-roadmap-node--active',
+    locked && 'simple-roadmap-node--locked',
+    selected && 'simple-roadmap-node--selected',
+  ].filter(Boolean); // Remove falsy values (false, undefined, null, empty string)
+
   return (
     <div className="relative">
       {/* Target Handle (Top) */}
@@ -139,21 +106,11 @@ const SimpleRoadmapNode = ({ data, selected }: NodeProps<SimpleRoadmapNodeData>)
         className="!w-2 !h-2 !bg-slate-300 !border-0 !-top-1"
       />
 
-      {/* Node Body - Ultra-compact sizing for single-screen display like roadmap.sh */}
+      {/* Node Body - Using CSS classes from roadmap-nodes.css */}
       <div
         onClick={handleClick}
         onContextMenu={handleContextMenu}
-        className={`
-          relative px-3 py-1.5 rounded border-[1.5px] text-xs font-medium
-          text-center transition-all duration-120 select-none
-          min-w-[130px] max-w-[160px]
-          ${styles.border} ${styles.bg} ${styles.text} ${styles.hoverBg}
-          ${locked ? 'opacity-60 cursor-not-allowed grayscale' : 'cursor-pointer'}
-          ${selected ? 'ring-1 ring-blue-400' : ''}
-          ${active ? 'ring-1 ring-indigo-400' : ''}
-          ${completed ? 'ring-1 ring-green-400' : ''}
-          hover:shadow-sm
-        `}
+        className={classNameParts.join(' ')}
         title={displayTitle} // Show full title on hover
       >
         {/* Title - single line with ellipsis */}
@@ -161,9 +118,9 @@ const SimpleRoadmapNode = ({ data, selected }: NodeProps<SimpleRoadmapNodeData>)
           {displayTitle}
         </span>
 
-        {/* Completed Checkmark - minimal like roadmap.sh */}
+        {/* Completed Checkmark - using CSS class from roadmap-nodes.css */}
         {completed && (
-          <div className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-green-500 rounded-full flex items-center justify-center shadow-sm border-2 border-white">
+          <div className="simple-roadmap-node__checkmark">
             <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
           </div>
         )}
