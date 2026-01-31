@@ -158,8 +158,8 @@ export default function Header() {
         </div>
 
         {/* Search Section - Centered on desktop */}
-        <div className="flex-1 lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 relative mx-2 lg:mx-0" ref={searchContainerRef} style={{ maxWidth: '100%', width: '100%' }}>
-          <div className="relative w-full lg:w-[420px] lg:mx-auto" style={{ maxWidth: '100%' }}>
+        <div className="flex-1 lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 relative mx-2 lg:mx-0" ref={searchContainerRef}>
+          <div className="relative w-full lg:w-[420px] lg:mx-auto">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
