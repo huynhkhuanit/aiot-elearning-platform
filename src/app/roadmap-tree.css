@@ -174,7 +174,7 @@
   gap: 0;
   align-items: flex-start;
   position: relative;
-  padding: 16px 0;
+  padding: 24px 0;
   min-height: 80px;
 }
 
@@ -230,7 +230,7 @@
 /* ========== MAIN TOPIC NODE ========== */
 .roadmap-main-node {
   position: relative;
-  padding: 14px 28px;
+  padding: 16px 32px;
   border-radius: 10px;
   border: 2px solid;
   font-size: 15px;
@@ -242,7 +242,7 @@
   min-width: 180px;
   max-width: 240px;
   background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .roadmap-main-node:hover {
@@ -404,11 +404,11 @@
   flex-direction: row;
 }
 
-/* Horizontal connector for sub-topics */
+/* Horizontal connector for sub-topics - DASHED style */
 .roadmap-subtopic__connector {
   width: 24px;
-  height: var(--tree-connector-width);
-  background: var(--tree-connector-color);
+  height: 0;
+  border-top: 2px dashed var(--tree-connector-color);
 }
 
 .roadmap-subtopic-node {
@@ -425,7 +425,7 @@
   min-width: 100px;
   max-width: 160px;
   background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .roadmap-subtopic-node:hover {
