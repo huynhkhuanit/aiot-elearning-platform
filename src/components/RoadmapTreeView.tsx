@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, BookOpen, Search, X, CheckCircle, Eye,
-  RotateCcw, Home, ChevronRight, Clock, Code, Sparkles
+  Home, ChevronRight, Clock, Code, Sparkles, ChevronDown, ChevronUp
 } from 'lucide-react';
 import Link from 'next/link';
 import '@/app/roadmap-tree.css';
@@ -59,7 +59,6 @@ const ContextMenu: React.FC<{
   const isLearning = status === 'learning' || status === 'current';
   const isSkipped = status === 'skipped';
 
-  // Adjust position to not overflow viewport
   const adjustedX = Math.min(x, window.innerWidth - 220);
   const adjustedY = Math.min(y, window.innerHeight - 280);
 
@@ -227,41 +226,93 @@ const Legend: React.FC = () => (
   </div>
 );
 
-// ========== TREE NODE COMPONENT ==========
-const TreeNode: React.FC<{
+// ========== SUB-TOPIC NODE (Small node branching from main topic) ==========
+const SubTopicNode: React.FC<{
   node: RoadmapNodeData;
   nodeStatuses: Map<string, string>;
   onNodeClick: (node: RoadmapNodeData) => void;
   onContextMenu: (node: RoadmapNodeData, e: React.MouseEvent) => void;
   onStatusChange: (nodeId: string, status: string) => void;
-  level: number;
-  isRoot?: boolean;
-}> = ({ node, nodeStatuses, onNodeClick, onContextMenu, onStatusChange, level, isRoot = false }) => {
+  position: 'left' | 'right';
+}> = ({ node, nodeStatuses, onNodeClick, onContextMenu, onStatusChange, position }) => {
   const status = nodeStatuses.get(node.id) || node.status;
-  const hasChildren = node.children && node.children.length > 0;
-
+  
   const getNodeClasses = () => {
-    const classes = ['roadmap-tree__node-box', `roadmap-tree__node-box--${node.type}`];
-    
-    if (status === 'done' || status === 'completed') classes.push('roadmap-tree__node-box--done');
-    if (status === 'learning' || status === 'current') classes.push('roadmap-tree__node-box--learning');
-    if (status === 'skipped') classes.push('roadmap-tree__node-box--skipped');
-    if (status === 'locked') classes.push('roadmap-tree__node-box--locked');
-    
+    const classes = ['roadmap-subtopic-node', `roadmap-subtopic-node--${node.type}`];
+    if (status === 'done' || status === 'completed') classes.push('roadmap-subtopic-node--done');
+    if (status === 'learning' || status === 'current') classes.push('roadmap-subtopic-node--learning');
+    if (status === 'skipped') classes.push('roadmap-subtopic-node--skipped');
     return classes.join(' ');
   };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (e.shiftKey) {
-      const isLearning = status === 'learning' || status === 'current';
-      onStatusChange(node.id, isLearning ? 'available' : 'learning');
-    } else if (e.altKey) {
-      const isSkipped = status === 'skipped';
-      onStatusChange(node.id, isSkipped ? 'available' : 'skipped');
-    } else {
-      onNodeClick(node);
-    }
+    onNodeClick(node);
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onContextMenu(node, e);
+  };
+
+  const isDone = status === 'done' || status === 'completed';
+
+  return (
+    <div className={`roadmap-subtopic ${position === 'left' ? 'roadmap-subtopic--left' : 'roadmap-subtopic--right'}`}>
+      <div className="roadmap-subtopic__connector"></div>
+      <motion.div
+        className={getNodeClasses()}
+        onClick={handleClick}
+        onContextMenu={handleContextMenu}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        <span className="roadmap-subtopic-node__title">{node.title}</span>
+        {isDone && (
+          <CheckCircle className="roadmap-subtopic-node__check" />
+        )}
+      </motion.div>
+    </div>
+  );
+};
+
+// ========== MAIN TOPIC ROW (with horizontal sub-topics) ==========
+const MainTopicRow: React.FC<{
+  node: RoadmapNodeData;
+  nodeStatuses: Map<string, string>;
+  onNodeClick: (node: RoadmapNodeData) => void;
+  onContextMenu: (node: RoadmapNodeData, e: React.MouseEvent) => void;
+  onStatusChange: (nodeId: string, status: string) => void;
+  isFirst: boolean;
+  isLast: boolean;
+}> = ({ node, nodeStatuses, onNodeClick, onContextMenu, onStatusChange, isFirst, isLast }) => {
+  const status = nodeStatuses.get(node.id) || node.status;
+  const hasChildren = node.children && node.children.length > 0;
+  const [isExpanded, setIsExpanded] = useState(true);
+  
+  // Split children into left and right sides
+  const leftChildren = useMemo(() => {
+    if (!node.children) return [];
+    return node.children.filter((_, i) => i % 2 === 0);
+  }, [node.children]);
+  
+  const rightChildren = useMemo(() => {
+    if (!node.children) return [];
+    return node.children.filter((_, i) => i % 2 === 1);
+  }, [node.children]);
+
+  const getNodeClasses = () => {
+    const classes = ['roadmap-main-node', `roadmap-main-node--${node.type}`];
+    if (status === 'done' || status === 'completed') classes.push('roadmap-main-node--done');
+    if (status === 'learning' || status === 'current') classes.push('roadmap-main-node--learning');
+    if (status === 'skipped') classes.push('roadmap-main-node--skipped');
+    return classes.join(' ');
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onNodeClick(node);
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -274,55 +325,93 @@ const TreeNode: React.FC<{
   const isLearning = status === 'learning' || status === 'current';
 
   return (
-    <motion.div 
-      className="roadmap-tree__node"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: level * 0.05 }}
-    >
-      {/* Connector line to parent (except for root) */}
-      {!isRoot && (
-        <div className="roadmap-tree__connector-vertical"></div>
-      )}
+    <div className="roadmap-row">
+      {/* Vertical connector line */}
+      {!isFirst && <div className="roadmap-row__connector-top"></div>}
+      {!isLast && <div className="roadmap-row__connector-bottom"></div>}
       
-      <motion.div
-        className={getNodeClasses()}
-        onClick={handleClick}
-        onContextMenu={handleContextMenu}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-      >
-        <span className="roadmap-tree__node-title">{node.title}</span>
-        
-        {isDone && (
-          <div className="roadmap-tree__status-badge roadmap-tree__status-badge--done">
-            <CheckCircle className="w-2.5 h-2.5 text-white" strokeWidth={3} />
-          </div>
-        )}
-        
-        {isLearning && (
-          <div className="roadmap-tree__status-badge roadmap-tree__status-badge--learning">
-            <Sparkles className="w-2.5 h-2.5 text-white" strokeWidth={3} />
-          </div>
-        )}
-      </motion.div>
-
-      {hasChildren && (
-        <div className="roadmap-tree__children">
-          {node.children!.map((child, index) => (
-            <TreeNode
+      {/* Left sub-topics */}
+      <div className="roadmap-row__left">
+        <AnimatePresence>
+          {isExpanded && leftChildren.map((child, idx) => (
+            <motion.div
               key={child.id}
-              node={child}
-              nodeStatuses={nodeStatuses}
-              onNodeClick={onNodeClick}
-              onContextMenu={onContextMenu}
-              onStatusChange={onStatusChange}
-              level={level + 1}
-            />
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ delay: idx * 0.05 }}
+            >
+              <SubTopicNode
+                node={child}
+                nodeStatuses={nodeStatuses}
+                onNodeClick={onNodeClick}
+                onContextMenu={onContextMenu}
+                onStatusChange={onStatusChange}
+                position="left"
+              />
+            </motion.div>
           ))}
-        </div>
-      )}
-    </motion.div>
+        </AnimatePresence>
+      </div>
+      
+      {/* Main topic node */}
+      <div className="roadmap-row__center">
+        <motion.div
+          className={getNodeClasses()}
+          onClick={handleClick}
+          onContextMenu={handleContextMenu}
+          whileHover={{ scale: 1.03, y: -2 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <span className="roadmap-main-node__title">{node.title}</span>
+          
+          {isDone && (
+            <div className="roadmap-main-node__badge roadmap-main-node__badge--done">
+              <CheckCircle className="w-3 h-3 text-white" strokeWidth={3} />
+            </div>
+          )}
+          
+          {isLearning && (
+            <div className="roadmap-main-node__badge roadmap-main-node__badge--learning">
+              <Sparkles className="w-3 h-3 text-white" strokeWidth={3} />
+            </div>
+          )}
+          
+          {hasChildren && (
+            <button 
+              className="roadmap-main-node__toggle"
+              onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+            >
+              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+          )}
+        </motion.div>
+      </div>
+      
+      {/* Right sub-topics */}
+      <div className="roadmap-row__right">
+        <AnimatePresence>
+          {isExpanded && rightChildren.map((child, idx) => (
+            <motion.div
+              key={child.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ delay: idx * 0.05 }}
+            >
+              <SubTopicNode
+                node={child}
+                nodeStatuses={nodeStatuses}
+                onNodeClick={onNodeClick}
+                onContextMenu={onContextMenu}
+                onStatusChange={onStatusChange}
+                position="right"
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 };
 
@@ -333,6 +422,12 @@ export default function RoadmapTreeView({ roadmapId, roadmapTitle, roadmapData }
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
+
+  // Get main topics (first level children)
+  const mainTopics = useMemo(() => {
+    if (!roadmapData.children) return [roadmapData];
+    return roadmapData.children;
+  }, [roadmapData]);
 
   // Node status tracking
   const [nodeStatuses, setNodeStatuses] = useState<Map<string, string>>(() => {
@@ -506,19 +601,35 @@ export default function RoadmapTreeView({ roadmapId, roadmapTitle, roadmapData }
         </div>
       </div>
 
-      {/* Tree Content */}
-      <div className="roadmap-tree">
-        <div className="roadmap-tree-container">
-          <div className="roadmap-tree__content">
-            <TreeNode
-              node={roadmapData}
-              nodeStatuses={nodeStatuses}
-              onNodeClick={handleNodeClick}
-              onContextMenu={handleContextMenu}
-              onStatusChange={handleStatusChange}
-              level={0}
-              isRoot={true}
-            />
+      {/* Roadmap Title Node */}
+      <div className="roadmap-vertical-tree">
+        <div className="roadmap-vertical-tree__container">
+          {/* Root Node */}
+          <div className="roadmap-vertical-tree__root">
+            <motion.div
+              className="roadmap-root-node"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <span className="roadmap-root-node__title">{roadmapData.title}</span>
+            </motion.div>
+          </div>
+          
+          {/* Main Topics (Vertical) */}
+          <div className="roadmap-vertical-tree__content">
+            {mainTopics.map((topic, index) => (
+              <MainTopicRow
+                key={topic.id}
+                node={topic}
+                nodeStatuses={nodeStatuses}
+                onNodeClick={handleNodeClick}
+                onContextMenu={handleContextMenu}
+                onStatusChange={handleStatusChange}
+                isFirst={index === 0}
+                isLast={index === mainTopics.length - 1}
+              />
+            ))}
           </div>
         </div>
       </div>
