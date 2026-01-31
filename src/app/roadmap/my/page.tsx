@@ -251,25 +251,25 @@ export default function MyRoadmapsPage() {
                       <div className={`bg-white rounded-xl border ${style.border} h-full transition-shadow hover:shadow-md overflow-hidden`}>
                         <div className="p-4">
                           {/* Header */}
-                          <div className="flex items-start gap-3 mb-3">
-                            <div className={`w-10 h-10 rounded-lg ${style.bg} flex items-center justify-center flex-shrink-0`}>
-                              <Icon className={`w-5 h-5 ${style.color}`} />
+                          <div className="flex items-start gap-2.5 mb-3">
+                            <div className={`w-9 h-9 rounded-lg ${style.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                              <Icon className={`w-[18px] h-[18px] ${style.color}`} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+                              <div className="text-[14px] font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors">
                                 {roadmap.title}
-                              </h3>
-                              <p className="text-xs text-gray-500 line-clamp-1">
-                                {roadmap.description || `Lộ trình ${roadmap.title}`}
-                              </p>
+                              </div>
+                              <div className="text-[10px] text-gray-500 truncate mt-0.5 font-medium">
+                                {roadmap.description || `Lộ trình học tập ${roadmap.title}`}
+                              </div>
                             </div>
                           </div>
 
                           {/* Meta */}
-                          <div className="flex items-center gap-3 text-xs text-gray-400 mb-3">
+                          <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-4">
                             <span className="flex items-center gap-1">
                               <Target className="w-3 h-3" />
-                              {roadmap.total_nodes} topics
+                              {roadmap.total_nodes} CHỦ ĐỀ
                             </span>
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
@@ -278,16 +278,16 @@ export default function MyRoadmapsPage() {
                           </div>
 
                           {/* Progress */}
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs text-gray-500">Tiến độ</span>
-                              <span className={`text-xs font-semibold ${style.color}`}>
+                          <div className="mt-auto">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Tiến độ</span>
+                              <span className={`text-[11px] font-bold ${style.color}`}>
                                 {roadmap.progress_percentage}%
                               </span>
                             </div>
-                            <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
                               <div 
-                                className={`h-full ${style.progress} transition-all`} 
+                                className={`h-full ${style.progress} transition-all duration-500`} 
                                 style={{ width: `${roadmap.progress_percentage}%` }}
                               />
                             </div>
