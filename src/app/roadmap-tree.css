@@ -210,12 +210,12 @@
 
 .roadmap-row__left {
   align-items: flex-end;
-  padding-right: 16px;
+  padding-right: 0;
 }
 
 .roadmap-row__right {
   align-items: flex-start;
-  padding-left: 16px;
+  padding-left: 0;
 }
 
 /* Center column for main node */
@@ -397,11 +397,11 @@
 }
 
 .roadmap-subtopic--left {
-  flex-direction: row;
+  flex-direction: row-reverse;
 }
 
 .roadmap-subtopic--right {
-  flex-direction: row-reverse;
+  flex-direction: row;
 }
 
 /* Horizontal connector for sub-topics */
