@@ -1,61 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Megaphone, X, Sparkles, Zap, Bug, ExternalLink } from "lucide-react";
+import { Megaphone, X, ExternalLink, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-
-// Dữ liệu tin tức mẫu - có thể thay bằng API sau
-const bulletinItems = [
-  {
-    id: 1,
-    date: "01/02/2026",
-    type: "new" as const,
-    title: "Ra mắt tính năng AI Roadmap",
-    description: "Tạo lộ trình học tập cá nhân hóa với trí tuệ nhân tạo."
-  },
-  {
-    id: 2,
-    date: "28/01/2026",
-    type: "update" as const,
-    title: "Cập nhật giao diện Roadmap Tree",
-    description: "Giao diện mới trực quan và dễ sử dụng hơn."
-  },
-  {
-    id: 3,
-    date: "25/01/2026",
-    type: "fix" as const,
-    title: "Sửa lỗi video player",
-    description: "Khắc phục lỗi video không tự động chuyển bài."
-  },
-  {
-    id: 4,
-    date: "20/01/2026",
-    type: "new" as const,
-    title: "Thêm Code Playground",
-    description: "Môi trường lập trình trực tiếp trong trình duyệt."
-  }
-];
-
-const typeConfig = {
-  new: {
-    label: "Mới",
-    icon: Sparkles,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50"
-  },
-  update: {
-    label: "Cập nhật",
-    icon: Zap,
-    color: "text-blue-600",
-    bg: "bg-blue-50"
-  },
-  fix: {
-    label: "Sửa lỗi",
-    icon: Bug,
-    color: "text-amber-600",
-    bg: "bg-amber-50"
-  }
-};
+import Link from "next/link";
 
 export default function NewsletterBulletin() {
   const [isOpen, setIsOpen] = useState(false);
@@ -88,7 +36,7 @@ export default function NewsletterBulletin() {
         )}
       </button>
 
-      {/* Custom Modal - Simple Design */}
+      {/* Modal */}
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -114,7 +62,7 @@ export default function NewsletterBulletin() {
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <div className="flex items-center gap-3">
                   <span className="text-xl">📢</span>
-                  <h2 className="text-base font-semibold text-gray-900">Bảng tin cập nhật</h2>
+                  <h2 className="text-base font-semibold text-gray-900">Bảng tin</h2>
                 </div>
                 <button
                   onClick={handleClose}
@@ -125,55 +73,95 @@ export default function NewsletterBulletin() {
                 </button>
               </div>
 
-              {/* Content */}
-              <div className="p-5 overflow-y-auto max-h-[calc(85vh-120px)]">
-                <p className="text-sm text-gray-500 mb-4">
-                  Các cập nhật và tính năng mới nhất của CodeSense AIoT.
-                </p>
+              {/* Content - Markdown Style */}
+              <div className="p-5 overflow-y-auto max-h-[calc(85vh-120px)] prose prose-sm max-w-none">
+                
+                {/* Section: Tin mới */}
+                <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                  Có gì mới?
+                </h3>
+                
+                <ul className="space-y-2 mb-6 text-sm text-gray-600 list-none pl-0">
+                  <li className="flex items-start gap-2">
+                    <ChevronRight className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <span><strong>AI Roadmap</strong> — Tạo lộ trình học tập cá nhân hóa với trí tuệ nhân tạo.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ChevronRight className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <span><strong>Code Playground</strong> — Môi trường lập trình trực tiếp trong trình duyệt.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ChevronRight className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <span><strong>Chứng chỉ khóa học</strong> — Nhận chứng chỉ sau khi hoàn thành khóa học.</span>
+                  </li>
+                </ul>
 
-                {/* Bulletin Cards */}
-                <div className="space-y-3">
-                  {bulletinItems.map((item) => {
-                    const config = typeConfig[item.type];
-                    const IconComponent = config.icon;
-                    
-                    return (
-                      <div
-                        key={item.id}
-                        className="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            {/* Badge + Date */}
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${config.bg} ${config.color}`}>
-                                <IconComponent className="w-3 h-3" />
-                                {config.label}
-                              </span>
-                              <span className="text-xs text-gray-400">{item.date}</span>
-                            </div>
-                            
-                            {/* Title */}
-                            <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                              {item.title}
-                            </h3>
-                            
-                            {/* Description */}
-                            <p className="text-xs text-gray-500 leading-relaxed">
-                              {item.description}
-                            </p>
-                          </div>
-                        </div>
+                {/* Section: Bài viết nổi bật */}
+                <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  Bài viết nổi bật
+                </h3>
+
+                <div className="space-y-3 mb-6">
+                  <Link 
+                    href="/blog/huong-dan-hoc-lap-trinh" 
+                    className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors no-underline"
+                    onClick={handleClose}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-0.5">Hướng dẫn học lập trình hiệu quả</p>
+                        <p className="text-xs text-gray-500">5 phút đọc • 2.5k lượt xem</p>
                       </div>
-                    );
-                  })}
+                      <ExternalLink className="w-4 h-4 text-gray-400" />
+                    </div>
+                  </Link>
+                  
+                  <Link 
+                    href="/blog/roadmap-frontend-2026" 
+                    className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors no-underline"
+                    onClick={handleClose}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-0.5">Roadmap Frontend Developer 2026</p>
+                        <p className="text-xs text-gray-500">8 phút đọc • 4.1k lượt xem</p>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-gray-400" />
+                    </div>
+                  </Link>
                 </div>
+
+                {/* Section: Cập nhật gần đây */}
+                <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                  Cập nhật gần đây
+                </h3>
+
+                <ul className="space-y-1.5 text-xs text-gray-500 list-none pl-0">
+                  <li className="flex items-center gap-2">
+                    <span className="text-gray-400">01/02</span>
+                    <span className="text-gray-300">—</span>
+                    <span>Cải thiện giao diện trang lộ trình</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-gray-400">28/01</span>
+                    <span className="text-gray-300">—</span>
+                    <span>Thêm tính năng Roadmap Tree View</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-gray-400">25/01</span>
+                    <span className="text-gray-300">—</span>
+                    <span>Sửa lỗi video player không chuyển bài</span>
+                  </li>
+                </ul>
               </div>
 
               {/* Footer */}
               <div className="px-5 py-3 border-t border-gray-100 bg-gray-50">
                 <p className="text-xs text-gray-400 text-center">
-                  Cảm ơn bạn đã sử dụng CodeSense AIoT! 🚀
+                  CodeSense AIoT • Học lập trình thông minh 🚀
                 </p>
               </div>
             </motion.div>
@@ -183,4 +171,5 @@ export default function NewsletterBulletin() {
     </>
   );
 }
+
 
