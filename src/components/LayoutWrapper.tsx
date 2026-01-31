@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Menu from "@/components/Menu";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import NewsletterBulletin from "@/components/NewsletterBulletin";
 import { ReactNode, useEffect, useState } from "react";
 
 export default function LayoutWrapper({ children }: { children: ReactNode }) {
@@ -37,6 +38,8 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
         {children}
       </main>
       <Footer />
+      <NewsletterBulletin />
     </div>
   );
 }
+
