@@ -125,3 +125,4 @@ vectordb/
 celerybeat-schedule
 
 .cursor
+.agent

@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, BookOpen, Search, X, CheckCircle, Eye,
-  RotateCcw, Home, ChevronRight, Clock, Code
+  RotateCcw, Home, ChevronRight, Clock, Code, Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import '@/app/roadmap-tree.css';
@@ -59,12 +59,16 @@ const ContextMenu: React.FC<{
   const isLearning = status === 'learning' || status === 'current';
   const isSkipped = status === 'skipped';
 
+  // Adjust position to not overflow viewport
+  const adjustedX = Math.min(x, window.innerWidth - 220);
+  const adjustedY = Math.min(y, window.innerHeight - 280);
+
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      style={{ left: x, top: y }}
+      initial={{ opacity: 0, scale: 0.95, y: -5 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: -5 }}
+      style={{ left: adjustedX, top: adjustedY }}
       className="roadmap-tree__context-menu"
       onClick={(e) => e.stopPropagation()}
     >
@@ -205,7 +209,7 @@ const Legend: React.FC = () => (
       </div>
     </div>
     
-    <div className="roadmap-tree__legend-section" style={{ borderTop: '1px solid #e5e7eb', paddingTop: '12px' }}>
+    <div className="roadmap-tree__legend-section" style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
       <h4 className="roadmap-tree__legend-section-title">Trạng thái</h4>
       <div className="roadmap-tree__legend-item">
         <div className="roadmap-tree__legend-color roadmap-tree__legend-color--done"></div>
@@ -231,7 +235,8 @@ const TreeNode: React.FC<{
   onContextMenu: (node: RoadmapNodeData, e: React.MouseEvent) => void;
   onStatusChange: (nodeId: string, status: string) => void;
   level: number;
-}> = ({ node, nodeStatuses, onNodeClick, onContextMenu, onStatusChange, level }) => {
+  isRoot?: boolean;
+}> = ({ node, nodeStatuses, onNodeClick, onContextMenu, onStatusChange, level, isRoot = false }) => {
   const status = nodeStatuses.get(node.id) || node.status;
   const hasChildren = node.children && node.children.length > 0;
 
@@ -247,6 +252,7 @@ const TreeNode: React.FC<{
   };
 
   const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (e.shiftKey) {
       const isLearning = status === 'learning' || status === 'current';
       onStatusChange(node.id, isLearning ? 'available' : 'learning');
@@ -260,17 +266,31 @@ const TreeNode: React.FC<{
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     onContextMenu(node, e);
   };
 
   const isDone = status === 'done' || status === 'completed';
+  const isLearning = status === 'learning' || status === 'current';
 
   return (
-    <div className="roadmap-tree__node">
-      <div
+    <motion.div 
+      className="roadmap-tree__node"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: level * 0.05 }}
+    >
+      {/* Connector line to parent (except for root) */}
+      {!isRoot && (
+        <div className="roadmap-tree__connector-vertical"></div>
+      )}
+      
+      <motion.div
         className={getNodeClasses()}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
       >
         <span className="roadmap-tree__node-title">{node.title}</span>
         
@@ -279,11 +299,17 @@ const TreeNode: React.FC<{
             <CheckCircle className="w-2.5 h-2.5 text-white" strokeWidth={3} />
           </div>
         )}
-      </div>
+        
+        {isLearning && (
+          <div className="roadmap-tree__status-badge roadmap-tree__status-badge--learning">
+            <Sparkles className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+          </div>
+        )}
+      </motion.div>
 
       {hasChildren && (
         <div className="roadmap-tree__children">
-          {node.children!.map((child) => (
+          {node.children!.map((child, index) => (
             <TreeNode
               key={child.id}
               node={child}
@@ -296,7 +322,7 @@ const TreeNode: React.FC<{
           ))}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 
@@ -397,18 +423,18 @@ export default function RoadmapTreeView({ roadmapId, roadmapTitle, roadmapData }
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="roadmap-tree-page">
       {/* Header */}
       <div className="roadmap-tree-header">
         <div className="roadmap-tree-header__inner">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-            <Link href="/" className="hover:text-blue-600 transition-colors flex items-center gap-1">
+            <Link href="/" className="hover:text-indigo-600 transition-colors flex items-center gap-1">
               <Home className="w-3.5 h-3.5" />
               <span>Trang chủ</span>
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />
-            <Link href="/roadmap" className="hover:text-blue-600 transition-colors">
+            <Link href="/roadmap" className="hover:text-indigo-600 transition-colors">
               Lộ trình
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -427,9 +453,9 @@ export default function RoadmapTreeView({ roadmapId, roadmapTitle, roadmapData }
                 <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
                   <span>{progressStats.total} kỹ năng</span>
                   <span>•</span>
-                  <span className="text-green-600">{progressStats.done} hoàn thành</span>
+                  <span className="text-green-600 font-medium">{progressStats.done} hoàn thành</span>
                   <span>•</span>
-                  <span className="text-purple-600">{progressStats.learning} đang học</span>
+                  <span className="text-purple-600 font-medium">{progressStats.learning} đang học</span>
                 </div>
               </div>
             </div>
@@ -444,12 +470,12 @@ export default function RoadmapTreeView({ roadmapId, roadmapTitle, roadmapData }
                   placeholder="Tìm kiếm (Ctrl+F)..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-60 pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:border-blue-500 focus:outline-none transition-colors"
+                  className="w-60 pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -457,7 +483,7 @@ export default function RoadmapTreeView({ roadmapId, roadmapTitle, roadmapData }
               </div>
 
               <Link href={`/roadmap/${roadmapId}`}>
-                <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2">
+                <button className="px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2">
                   <BookOpen className="w-4 h-4" />
                   <span className="hidden sm:inline">Xem khóa học</span>
                 </button>
@@ -466,11 +492,13 @@ export default function RoadmapTreeView({ roadmapId, roadmapTitle, roadmapData }
           </div>
 
           {/* Progress Bar */}
-          <div className="roadmap-tree-header__progress mt-4">
+          <div className="roadmap-tree-header__progress">
             <div className="roadmap-tree-header__progress-bar">
-              <div
+              <motion.div
                 className="roadmap-tree-header__progress-fill"
-                style={{ width: `${progressStats.percentage}%` }}
+                initial={{ width: 0 }}
+                animate={{ width: `${progressStats.percentage}%` }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
               />
             </div>
             <div className="roadmap-tree-header__progress-text">{progressStats.percentage}%</div>
@@ -489,6 +517,7 @@ export default function RoadmapTreeView({ roadmapId, roadmapTitle, roadmapData }
               onContextMenu={handleContextMenu}
               onStatusChange={handleStatusChange}
               level={0}
+              isRoot={true}
             />
           </div>
         </div>
