@@ -1,12 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { 
   Code, Database, Layout, Smartphone, Server, Cloud, 
   ArrowRight, Star, Users, Clock, Zap, CheckCircle,
-  Trophy, Target, Shield, Globe, Brain, Sparkles
+  Trophy, Target, Shield, Globe, Brain, Sparkles,
+  Plus, X, Map, FolderOpen
 } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import PageContainer from "@/components/PageContainer";
 import Badge from "@/components/Badge";
 
@@ -101,6 +103,8 @@ const features = [
 ];
 
 export default function RoadmapPage() {
+  const [isFabOpen, setIsFabOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Hero Section */}
@@ -160,42 +164,17 @@ export default function RoadmapPage() {
         </PageContainer>
       </div>
 
-      {/* AI Roadmap Feature Card */}
-      <PageContainer size="lg" className="py-8 -mt-6 relative z-10">
-        <Link href="/roadmap/generate">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-5 md:p-6 text-white relative overflow-hidden group cursor-pointer hover:shadow-lg transition-shadow">
-            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Brain className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Sparkles className="w-4 h-4 text-yellow-300" />
-                    <span className="text-xs font-medium text-indigo-200">Tính năng AI</span>
-                  </div>
-                  <h3 className="text-lg font-bold">AI Personalized Roadmap</h3>
-                  <p className="text-sm text-indigo-100 hidden sm:block">AI sẽ tạo lộ trình riêng dựa trên mục tiêu của bạn</p>
-                </div>
-              </div>
-              <button className="px-4 py-2 bg-white text-indigo-600 font-semibold rounded-lg hover:bg-indigo-50 transition-colors flex items-center gap-2 text-sm whitespace-nowrap">
-                Bắt đầu ngay
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </Link>
-      </PageContainer>
-
       {/* Roadmaps Grid */}
-      <PageContainer size="lg" className="py-12 relative z-10">
+      <PageContainer size="lg" className="py-16 relative z-10">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Lộ trình chuẩn</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Lộ trình học tập</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Các lộ trình được thiết kế sẵn bởi các chuyên gia, phù hợp cho từng vị trí công việc
+            Các lộ trình được thiết kế bởi chuyên gia hoặc tạo lộ trình cá nhân hóa với AI
           </p>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Standard Roadmap Cards */}
+
           {roadmaps.map((roadmap, index) => (
             <motion.div
               key={roadmap.id}
@@ -210,7 +189,7 @@ export default function RoadmapPage() {
                   <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${roadmap.gradient} transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300`}></div>
                   
                   <div className="flex items-start justify-between mb-6">
-                    <div className={`w-14 h-14 rounded-2xl ${roadmap.bgGradient} flex items-center justify-center text-${roadmap.color}-600 group-hover:scale-110 transition-transform duration-300`}>
+                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${roadmap.bgGradient} flex items-center justify-center text-${roadmap.color}-600 group-hover:scale-110 transition-transform duration-300`}>
                       <roadmap.icon className="w-7 h-7" />
                     </div>
                     <div className="bg-gray-50 px-3 py-1 rounded-full text-xs font-semibold text-gray-500 group-hover:bg-gray-100 transition-colors">
@@ -302,6 +281,108 @@ export default function RoadmapPage() {
             </div>
           </div>
         </PageContainer>
+      </div>
+
+      {/* FAB Speed Dial - AI Roadmap Creator */}
+      <div className="fixed bottom-6 right-6 z-50">
+        {/* Backdrop overlay when FAB is open */}
+        <AnimatePresence>
+          {isFabOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/20 backdrop-blur-[2px] -z-10"
+              onClick={() => setIsFabOpen(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Speed Dial Actions */}
+        <AnimatePresence>
+          {isFabOpen && (
+            <div className="absolute bottom-16 right-0 flex flex-col gap-3 items-end mb-3">
+              {/* Action 1: Lộ trình của tôi */}
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.8 }}
+                transition={{ duration: 0.2, delay: 0.05 }}
+              >
+                <Link 
+                  href="/roadmap/my"
+                  className="flex items-center gap-3 group"
+                  onClick={() => setIsFabOpen(false)}
+                >
+                  <motion.span 
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="px-3 py-1.5 bg-white text-gray-700 text-sm font-medium rounded-lg shadow-lg whitespace-nowrap border border-gray-100 group-hover:bg-gray-50"
+                  >
+                    Lộ trình của tôi
+                  </motion.span>
+                  <div className="w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center text-indigo-600 hover:bg-indigo-50 transition-colors border border-gray-100 group-hover:scale-105">
+                    <FolderOpen className="w-5 h-5" />
+                  </div>
+                </Link>
+              </motion.div>
+
+              {/* Action 2: Tạo lộ trình AI */}
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Link 
+                  href="/roadmap/generate"
+                  className="flex items-center gap-3 group"
+                  onClick={() => setIsFabOpen(false)}
+                >
+                  <motion.span 
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium rounded-lg shadow-lg whitespace-nowrap group-hover:shadow-xl"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Tạo lộ trình AI
+                    </span>
+                  </motion.span>
+                  <div className="w-11 h-11 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full shadow-lg flex items-center justify-center text-white group-hover:shadow-xl transition-shadow group-hover:scale-105">
+                    <Brain className="w-5 h-5" />
+                  </div>
+                </Link>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Main FAB Button */}
+        <motion.button
+          onClick={() => setIsFabOpen(!isFabOpen)}
+          className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 ${
+            isFabOpen 
+              ? 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200' 
+              : 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white hover:shadow-2xl hover:scale-105'
+          }`}
+          whileTap={{ scale: 0.95 }}
+          aria-label="Menu lộ trình AI"
+        >
+          <motion.div
+            animate={{ rotate: isFabOpen ? 45 : 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+          >
+            {isFabOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Plus className="w-6 h-6" />
+            )}
+          </motion.div>
+        </motion.button>
       </div>
     </div>
   );
