@@ -168,7 +168,7 @@ export default function NodeDetailSidebar({
             className="fixed top-0 right-0 w-full max-w-[500px] h-full bg-white z-[100] flex flex-col font-sans shadow-2xl"
           >
             {/* Header Toolbar */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+            <div className="flex items-center justify-between border-b border-gray-100">
                {/* Empty left side for spacing or future use */}
                <div></div>
 
