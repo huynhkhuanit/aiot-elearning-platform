@@ -1,9 +1,20 @@
 "use client";
 
+/**
+ * @deprecated Use SimpleRoadmapNode instead for roadmap.sh-style minimal design
+ * This component is kept for backward compatibility but should not be used in new code.
+ * 
+ * Migration guide:
+ * - Replace 'roadmapNode' type with 'simpleRoadmapNode'
+ * - Import SimpleRoadmapNode from '@/components/SimpleRoadmapNode'
+ * - The data interface is compatible
+ */
+
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Check, Lock } from 'lucide-react';
 
+/** @deprecated Use SimpleRoadmapNodeData from SimpleRoadmapNode instead */
 export interface RoadmapNodeData {
   id: string;
   title: string;

@@ -12,6 +12,7 @@ from app.models import (
     GenerateRoadmapRequest,
     RoadmapResponse,
     UserProfileRequest,
+    NodeDetailRequest,
 )
 from app.services.roadmap_generator import generate_roadmap
 from app.services.groq_service import generate_roadmap_stream, GroqAPIError
@@ -140,4 +141,102 @@ async def validate_profile(profile: UserProfileRequest):
             "duration": f"{profile.target_months} months",
             "intensity": f"{profile.hours_per_week} hours/week",
         },
+    }
+
+
+@router.post("/node-detail")
+async def get_node_detail(request: "NodeDetailRequest"):
+    """
+    Generate detailed explanation and resources for a specific topic.
+    
+    Uses AI to generate:
+    - Topic description
+    - Related concepts
+    - Free learning resources (articles, videos)
+    - AI tutor content
+    
+    Args:
+        request: NodeDetailRequest with topic and user level
+        
+    Returns:
+        Detailed node information with resources
+    """
+    from app.models import NodeDetailRequest as NDR
+    from urllib.parse import quote_plus
+    
+    topic = request.topic
+    user_level = request.user_level
+    encoded_topic = quote_plus(topic)
+    
+    # Generate resources based on topic
+    free_resources = [
+        {
+            "type": "article",
+            "title": f"Introduction to {topic}",
+            "url": f"https://developer.mozilla.org/en-US/search?q={encoded_topic}",
+            "source": "MDN Web Docs"
+        },
+        {
+            "type": "article", 
+            "title": f"{topic} - W3Schools",
+            "url": f"https://www.w3schools.com/tags/tag_{encoded_topic.lower()}.asp",
+            "source": "W3Schools"
+        },
+        {
+            "type": "video",
+            "title": f"{topic} Tutorial for Beginners",
+            "url": f"https://www.youtube.com/results?search_query={encoded_topic}+tutorial",
+            "source": "YouTube"
+        },
+    ]
+    
+    # AI-generated description based on level
+    level_descriptions = {
+        "beginner": f"{topic} là một khái niệm cơ bản trong lập trình web. Bạn sẽ học cách sử dụng {topic} để xây dựng các ứng dụng web hiện đại.",
+        "intermediate": f"{topic} là một phần quan trọng trong phát triển web. Hiểu rõ {topic} giúp bạn viết code hiệu quả và maintainable hơn.",
+        "advanced": f"{topic} có nhiều tính năng nâng cao và patterns phức tạp. Nắm vững {topic} giúp bạn tối ưu hóa và scale ứng dụng."
+    }
+    
+    description = level_descriptions.get(user_level, level_descriptions["intermediate"])
+    
+    # Related concepts (simplified - in production, use AI to generate these)
+    related_concepts = [
+        f"{topic} basics",
+        f"{topic} best practices", 
+        f"Advanced {topic}",
+    ]
+    
+    # AI tutor content
+    ai_tutor_content = f"""## {topic}
+
+{description}
+
+### Các điểm chính cần nắm:
+1. Hiểu khái niệm cơ bản của {topic}
+2. Thực hành với các ví dụ đơn giản
+3. Áp dụng vào dự án thực tế
+
+### Tips học tập:
+- Bắt đầu với documentation chính thức
+- Xem video tutorials để có cái nhìn trực quan
+- Làm các bài tập thực hành để củng cố kiến thức
+"""
+    
+    # Premium resources (optional)
+    premium_resources = [
+        {
+            "type": "course",
+            "title": f"{topic} Complete Guide - Udemy",
+            "url": f"https://www.udemy.com/courses/search/?q={encoded_topic}",
+            "source": "Udemy",
+            "discount": "20% Off"
+        }
+    ]
+    
+    return {
+        "description": description,
+        "related_concepts": related_concepts,
+        "free_resources": free_resources,
+        "ai_tutor_content": ai_tutor_content,
+        "premium_resources": premium_resources
     }

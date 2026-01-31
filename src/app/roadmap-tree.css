@@ -1,0 +1,933 @@
+/**
+ * Roadmap Tree Styles - Vertical Layout (roadmap.sh Inspired)
+ * Main topics flow vertically, sub-topics branch horizontally
+ */
+
+/* ========== CSS VARIABLES ========== */
+:root {
+  /* Node Type Colors */
+  --tree-node-topic: #f9f295;
+  --tree-node-topic-hover: #eae47b;
+  --tree-node-topic-border: #d4d400;
+  
+  --tree-node-subtopic: #ffe9b1;
+  --tree-node-subtopic-hover: #ffd580;
+  --tree-node-subtopic-border: #e8c27a;
+  
+  --tree-node-beginner: #d1fae5;
+  --tree-node-beginner-hover: #a7f3d0;
+  --tree-node-beginner-border: #10b981;
+  
+  --tree-node-alternative: #f8fafc;
+  --tree-node-alternative-hover: #f1f5f9;
+  --tree-node-alternative-border: #94a3b8;
+  
+  --tree-node-project: #fef3c7;
+  --tree-node-project-hover: #fde68a;
+  --tree-node-project-border: #f59e0b;
+
+  /* Status Colors */
+  --tree-status-done: #e2e8f0;
+  --tree-status-done-border: #94a3b8;
+  --tree-status-done-text: #64748b;
+  
+  --tree-status-learning: #ede9fe;
+  --tree-status-learning-border: #8b5cf6;
+  --tree-status-learning-glow: rgba(139, 92, 246, 0.3);
+  
+  --tree-status-skipped: #475569;
+  --tree-status-skipped-border: #334155;
+
+  /* Connector */
+  --tree-connector-color: #cbd5e1;
+  --tree-connector-width: 2px;
+
+  /* Layout */
+  --tree-max-width: 1100px;
+  --tree-row-gap: 24px;
+  
+  /* Background */
+  --tree-bg: #fafafa;
+  --tree-header-bg: #ffffff;
+}
+
+/* ========== PAGE CONTAINER ========== */
+.roadmap-tree-page {
+  min-height: 100vh;
+  background: var(--tree-bg);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ========== HEADER ========== */
+.roadmap-tree-header {
+  background: var(--tree-header-bg);
+  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.roadmap-tree-header__inner {
+  max-width: var(--tree-max-width);
+  margin: 0 auto;
+}
+
+.roadmap-tree-header__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+}
+
+.roadmap-tree-header__progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.roadmap-tree-header__progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.roadmap-tree-header__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  border-radius: 4px;
+  transition: width 400ms ease;
+}
+
+.roadmap-tree-header__progress-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #22c55e;
+  min-width: 48px;
+  text-align: right;
+}
+
+/* ========== VERTICAL TREE LAYOUT ========== */
+.roadmap-vertical-tree {
+  padding: 40px 24px 120px;
+  overflow-x: auto;
+}
+
+.roadmap-vertical-tree__container {
+  max-width: var(--tree-max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ========== ROOT NODE ========== */
+.roadmap-vertical-tree__root {
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.roadmap-vertical-tree__root::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -40px;
+  width: var(--tree-connector-width);
+  height: 40px;
+  background: var(--tree-connector-color);
+  transform: translateX(-50%);
+}
+
+.roadmap-root-node {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  color: #ffffff;
+  padding: 16px 40px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  box-shadow: 0 8px 30px rgba(139, 92, 246, 0.25);
+  cursor: default;
+  user-select: none;
+}
+
+.roadmap-root-node__title {
+  display: block;
+}
+
+/* ========== CONTENT ROWS ========== */
+.roadmap-vertical-tree__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+}
+
+/* ========== ROW (Main topic with horizontal sub-topics) ========== */
+.roadmap-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0;
+  align-items: flex-start;
+  position: relative;
+  padding: 24px 0;
+  min-height: 80px;
+}
+
+/* Vertical connectors */
+.roadmap-row__connector-top {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: var(--tree-connector-width);
+  height: 16px;
+  background: var(--tree-connector-color);
+  transform: translateX(-50%);
+}
+
+.roadmap-row__connector-bottom {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: var(--tree-connector-width);
+  height: 16px;
+  background: var(--tree-connector-color);
+  transform: translateX(-50%);
+}
+
+/* Left and right sub-topics containers */
+.roadmap-row__left,
+.roadmap-row__right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.roadmap-row__left {
+  align-items: flex-end;
+  padding-right: 0;
+}
+
+.roadmap-row__right {
+  align-items: flex-start;
+  padding-left: 0;
+}
+
+/* Center column for main node */
+.roadmap-row__center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* ========== MAIN TOPIC NODE ========== */
+.roadmap-main-node {
+  position: relative;
+  padding: 16px 32px;
+  border-radius: 10px;
+  border: 2px solid;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: all 200ms ease;
+  user-select: none;
+  min-width: 180px;
+  max-width: 240px;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.roadmap-main-node:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.roadmap-main-node__title {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Main node types */
+.roadmap-main-node--core,
+.roadmap-main-node--topic {
+  background-color: var(--tree-node-topic);
+  border-color: var(--tree-node-topic-border);
+  color: #1a1a1a;
+}
+
+.roadmap-main-node--core:hover,
+.roadmap-main-node--topic:hover {
+  background-color: var(--tree-node-topic-hover);
+}
+
+.roadmap-main-node--optional,
+.roadmap-main-node--subtopic {
+  background-color: var(--tree-node-subtopic);
+  border-color: var(--tree-node-subtopic-border);
+  color: #1a1a1a;
+}
+
+.roadmap-main-node--optional:hover,
+.roadmap-main-node--subtopic:hover {
+  background-color: var(--tree-node-subtopic-hover);
+}
+
+.roadmap-main-node--beginner {
+  background-color: var(--tree-node-beginner);
+  border-color: var(--tree-node-beginner-border);
+  color: #065f46;
+}
+
+.roadmap-main-node--beginner:hover {
+  background-color: var(--tree-node-beginner-hover);
+}
+
+.roadmap-main-node--alternative {
+  background-color: var(--tree-node-alternative);
+  border-color: var(--tree-node-alternative-border);
+  border-style: dashed;
+  color: #475569;
+}
+
+.roadmap-main-node--alternative:hover {
+  background-color: var(--tree-node-alternative-hover);
+}
+
+.roadmap-main-node--project {
+  background-color: var(--tree-node-project);
+  border-color: var(--tree-node-project-border);
+  color: #92400e;
+}
+
+.roadmap-main-node--project:hover {
+  background-color: var(--tree-node-project-hover);
+}
+
+/* Main node status */
+.roadmap-main-node--done {
+  background-color: var(--tree-status-done) !important;
+  border-color: var(--tree-status-done-border) !important;
+  color: var(--tree-status-done-text) !important;
+}
+
+.roadmap-main-node--done .roadmap-main-node__title {
+  text-decoration: line-through;
+  text-decoration-color: #94a3b8;
+}
+
+.roadmap-main-node--learning {
+  background-color: var(--tree-status-learning) !important;
+  border-color: var(--tree-status-learning-border) !important;
+  box-shadow: 0 0 0 4px var(--tree-status-learning-glow);
+  color: #5b21b6 !important;
+}
+
+.roadmap-main-node--skipped {
+  background-color: var(--tree-status-skipped) !important;
+  border-color: var(--tree-status-skipped-border) !important;
+  color: #ffffff !important;
+}
+
+.roadmap-main-node--skipped .roadmap-main-node__title {
+  text-decoration: line-through;
+  text-decoration-color: #94a3b8;
+}
+
+/* Status badge */
+.roadmap-main-node__badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  border: 2px solid #ffffff;
+}
+
+.roadmap-main-node__badge--done {
+  background: #22c55e;
+}
+
+.roadmap-main-node__badge--learning {
+  background: #8b5cf6;
+}
+
+/* Toggle button */
+.roadmap-main-node__toggle {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 150ms;
+  color: #64748b;
+}
+
+.roadmap-main-node__toggle:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* ========== SUB-TOPIC NODE ========== */
+.roadmap-subtopic {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.roadmap-subtopic--left {
+  flex-direction: row-reverse;
+}
+
+.roadmap-subtopic--right {
+  flex-direction: row;
+}
+
+/* Horizontal connector for sub-topics - DASHED style */
+.roadmap-subtopic__connector {
+  width: 24px;
+  height: 0;
+  border-top: 2px dashed var(--tree-connector-color);
+}
+
+.roadmap-subtopic-node {
+  position: relative;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 2px solid;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: all 200ms ease;
+  user-select: none;
+  min-width: 100px;
+  max-width: 160px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.roadmap-subtopic-node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.roadmap-subtopic-node__title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sub-topic node types */
+.roadmap-subtopic-node--core,
+.roadmap-subtopic-node--topic {
+  background-color: var(--tree-node-topic);
+  border-color: var(--tree-node-topic-border);
+  color: #1a1a1a;
+}
+
+.roadmap-subtopic-node--optional,
+.roadmap-subtopic-node--subtopic {
+  background-color: var(--tree-node-subtopic);
+  border-color: var(--tree-node-subtopic-border);
+  color: #1a1a1a;
+}
+
+.roadmap-subtopic-node--beginner {
+  background-color: var(--tree-node-beginner);
+  border-color: var(--tree-node-beginner-border);
+  color: #065f46;
+}
+
+.roadmap-subtopic-node--alternative {
+  background-color: var(--tree-node-alternative);
+  border-color: var(--tree-node-alternative-border);
+  border-style: dashed;
+  color: #475569;
+}
+
+.roadmap-subtopic-node--project {
+  background-color: var(--tree-node-project);
+  border-color: var(--tree-node-project-border);
+  color: #92400e;
+}
+
+/* Sub-topic status */
+.roadmap-subtopic-node--done {
+  background-color: var(--tree-status-done) !important;
+  border-color: var(--tree-status-done-border) !important;
+  color: var(--tree-status-done-text) !important;
+}
+
+.roadmap-subtopic-node--done .roadmap-subtopic-node__title {
+  text-decoration: line-through;
+}
+
+.roadmap-subtopic-node--learning {
+  background-color: var(--tree-status-learning) !important;
+  border-color: var(--tree-status-learning-border) !important;
+  box-shadow: 0 0 0 3px var(--tree-status-learning-glow);
+  color: #5b21b6 !important;
+}
+
+.roadmap-subtopic-node--skipped {
+  background-color: var(--tree-status-skipped) !important;
+  border-color: var(--tree-status-skipped-border) !important;
+  color: #ffffff !important;
+}
+
+.roadmap-subtopic-node__check {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  color: #22c55e;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+/* ========== LEGEND ========== */
+.roadmap-tree__legend {
+  position: fixed;
+  top: 160px;
+  right: 32px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  font-size: 13px;
+  width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 40;
+}
+
+.roadmap-tree__legend-title {
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 16px;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.roadmap-tree__legend-section {
+  margin-bottom: 16px;
+}
+
+.roadmap-tree__legend-section:last-child {
+  margin-bottom: 0;
+}
+
+.roadmap-tree__legend-section-title {
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.roadmap-tree__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.roadmap-tree__legend-item:last-child {
+  margin-bottom: 0;
+}
+
+.roadmap-tree__legend-color {
+  width: 28px;
+  height: 18px;
+  border-radius: 4px;
+  border: 2px solid;
+  flex-shrink: 0;
+}
+
+.roadmap-tree__legend-color--topic {
+  background-color: var(--tree-node-topic);
+  border-color: var(--tree-node-topic-border);
+}
+
+.roadmap-tree__legend-color--subtopic {
+  background-color: var(--tree-node-subtopic);
+  border-color: var(--tree-node-subtopic-border);
+}
+
+.roadmap-tree__legend-color--beginner {
+  background-color: var(--tree-node-beginner);
+  border-color: var(--tree-node-beginner-border);
+}
+
+.roadmap-tree__legend-color--alternative {
+  background-color: var(--tree-node-alternative);
+  border-color: var(--tree-node-alternative-border);
+  border-style: dashed;
+}
+
+.roadmap-tree__legend-color--done {
+  background-color: var(--tree-status-done);
+  border-color: var(--tree-status-done-border);
+}
+
+.roadmap-tree__legend-color--learning {
+  background-color: var(--tree-status-learning);
+  border-color: var(--tree-status-learning-border);
+}
+
+.roadmap-tree__legend-color--skipped {
+  background-color: var(--tree-status-skipped);
+  border-color: var(--tree-status-skipped-border);
+}
+
+.roadmap-tree__legend-label {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ========== CONTEXT MENU ========== */
+.roadmap-tree__context-menu {
+  position: fixed;
+  z-index: 1000;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  padding: 6px;
+  animation: context-menu-in 150ms ease;
+}
+
+@keyframes context-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.roadmap-tree__context-menu-header {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roadmap-tree__context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #334155;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 100ms;
+  font-weight: 500;
+}
+
+.roadmap-tree__context-menu-item:hover {
+  background: #f1f5f9;
+}
+
+.roadmap-tree__context-menu-item--active {
+  color: #8b5cf6;
+  background: #f5f3ff;
+}
+
+.roadmap-tree__context-menu-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 6px 0;
+}
+
+/* ========== DETAIL MODAL ========== */
+.roadmap-tree__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.roadmap-tree__modal {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+}
+
+.roadmap-tree__modal-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.roadmap-tree__modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.roadmap-tree__modal-body {
+  padding: 28px;
+}
+
+.roadmap-tree__modal-description {
+  color: #64748b;
+  line-height: 1.7;
+  margin-bottom: 24px;
+  font-size: 15px;
+}
+
+.roadmap-tree__modal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.roadmap-tree__modal-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #334155;
+  font-weight: 500;
+}
+
+.roadmap-tree__modal-techs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.roadmap-tree__modal-tech {
+  font-size: 12px;
+  padding: 6px 12px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.roadmap-tree__modal-footer {
+  padding: 20px 28px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.roadmap-tree__modal-btn {
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.roadmap-tree__modal-btn--secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.roadmap-tree__modal-btn--secondary:hover {
+  background: #e2e8f0;
+}
+
+.roadmap-tree__modal-btn--primary {
+  background: #22c55e;
+  color: #ffffff;
+  border: none;
+}
+
+.roadmap-tree__modal-btn--primary:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1280px) {
+  .roadmap-tree__legend {
+    right: 16px;
+    width: 180px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .roadmap-tree__legend {
+    display: none;
+  }
+  
+  .roadmap-row {
+    grid-template-columns: 1fr auto 1fr;
+    gap: 8px;
+  }
+  
+  .roadmap-row__left,
+  .roadmap-row__right {
+    padding: 0 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .roadmap-vertical-tree {
+    padding: 24px 16px 80px;
+  }
+  
+  .roadmap-tree-header {
+    padding: 12px 16px;
+  }
+  
+  .roadmap-main-node {
+    min-width: 140px;
+    max-width: 180px;
+    font-size: 14px;
+    padding: 12px 20px;
+  }
+  
+  .roadmap-subtopic-node {
+    min-width: 80px;
+    max-width: 120px;
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+  
+  .roadmap-root-node {
+    padding: 12px 24px;
+    font-size: 16px;
+  }
+  
+  .roadmap-subtopic__connector {
+    width: 16px;
+  }
+  
+  .roadmap-tree__modal {
+    max-width: 100%;
+    border-radius: 16px;
+    margin: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Stack sub-topics vertically on small screens */
+  .roadmap-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 0;
+  }
+  
+  .roadmap-row__left,
+  .roadmap-row__right {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    padding: 0;
+  }
+  
+  .roadmap-subtopic {
+    flex-direction: column !important;
+  }
+  
+  .roadmap-subtopic__connector {
+    width: var(--tree-connector-width);
+    height: 12px;
+  }
+  
+  .roadmap-row__connector-top,
+  .roadmap-row__connector-bottom {
+    display: none;
+  }
+}
+
+/* ========== SCROLLBAR ========== */
+.roadmap-vertical-tree::-webkit-scrollbar {
+  height: 8px;
+}
+
+.roadmap-vertical-tree::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 4px;
+}
+
+.roadmap-vertical-tree::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 4px;
+}
+
+.roadmap-vertical-tree::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* ========== ANIMATIONS ========== */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 4px var(--tree-status-learning-glow);
+  }
+  50% {
+    box-shadow: 0 0 0 8px var(--tree-status-learning-glow);
+  }
+}
+
+.roadmap-main-node--learning {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ========== PRINT STYLES ========== */
+@media print {
+  .roadmap-tree__legend,
+  .roadmap-tree-header {
+    display: none;
+  }
+  
+  .roadmap-vertical-tree {
+    overflow: visible;
+  }
+}

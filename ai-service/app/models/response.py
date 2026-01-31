@@ -20,13 +20,21 @@ class LearningResources(BaseModel):
 
 
 class RoadmapNodeData(BaseModel):
-    """Data payload for a roadmap node"""
+    """Enhanced data payload for a roadmap node (roadmap.sh style)"""
     label: str = Field(..., description="Display name of the topic")
-    description: str = Field(..., description="Detailed description of what to learn")
+    description: str = Field(..., description="Detailed description of what to learn and why it's important")
     estimated_hours: int = Field(..., ge=1, description="Estimated hours to complete")
     difficulty: Literal["beginner", "intermediate", "advanced"] = Field(
         ...,
         description="Difficulty level of the topic"
+    )
+    prerequisites: List[str] = Field(
+        default_factory=list,
+        description="List of prerequisite topics (human-readable names, not node IDs)"
+    )
+    learning_outcomes: List[str] = Field(
+        default_factory=list,
+        description="Specific learning outcomes - what you'll be able to do after completing this topic"
     )
     learning_resources: LearningResources = Field(
         default_factory=LearningResources,
@@ -37,10 +45,17 @@ class RoadmapNodeData(BaseModel):
 class RoadmapNode(BaseModel):
     """A node in the roadmap graph"""
     id: str = Field(..., description="Unique node identifier")
-    phase_id: str = Field(..., description="Phase this node belongs to")
-    type: Literal["core", "optional", "project"] = Field(
+    # Support both old phase_id and new section_id for backward compatibility
+    phase_id: Optional[str] = Field(None, description="[DEPRECATED] Phase this node belongs to - use section_id instead")
+    section_id: str = Field(..., description="Section this node belongs to")
+    subsection_id: Optional[str] = Field(None, description="Subsection this node belongs to (optional)")
+    type: Literal["core", "optional", "project", "alternative"] = Field(
         default="core",
-        description="Node type: core (required), optional, or project"
+        description="Node type: core (required), optional, project, or alternative (alternative option)"
+    )
+    is_hub: bool = Field(
+        default=False,
+        description="True if this is a hub node that branches to multiple children. Hub nodes are central concepts that split into detailed subtopics."
     )
     data: RoadmapNodeData = Field(..., description="Node data payload")
 
@@ -52,19 +67,51 @@ class RoadmapEdge(BaseModel):
     target: str = Field(..., description="Target node ID")
 
 
+class RoadmapSubsection(BaseModel):
+    """A subsection within a section (roadmap.sh style)"""
+    id: str = Field(..., description="Unique subsection identifier (e.g., 'subsec-1-1')")
+    name: str = Field(..., description="Subsection name")
+    order: int = Field(..., ge=1, description="Order within parent section")
+    description: Optional[str] = Field(None, description="Brief description of subsection")
+
+
+class RoadmapSection(BaseModel):
+    """A major section in the roadmap (roadmap.sh style - replaces phases)"""
+    id: str = Field(..., description="Unique section identifier (e.g., 'section-1')")
+    name: str = Field(..., description="Section name (e.g., 'Internet & Web Fundamentals')")
+    order: int = Field(..., ge=1, description="Display order")
+    description: Optional[str] = Field(None, description="Brief description of section")
+    subsections: List[RoadmapSubsection] = Field(
+        default_factory=list,
+        description="Subsections within this section"
+    )
+
+
 class RoadmapPhase(BaseModel):
-    """A phase/stage in the roadmap"""
+    """[DEPRECATED] A phase/stage in the roadmap - use RoadmapSection instead"""
     id: str = Field(..., description="Unique phase identifier")
     name: str = Field(..., description="Phase name")
     order: int = Field(..., ge=1, description="Phase order (1-based)")
 
 
 class GeneratedRoadmap(BaseModel):
-    """AI-generated learning roadmap"""
+    """AI-generated learning roadmap (roadmap.sh style with sections)"""
     roadmap_title: str = Field(..., description="Title of the roadmap")
     roadmap_description: str = Field(..., description="Brief description of the roadmap")
     total_estimated_hours: int = Field(..., description="Total hours to complete")
-    phases: List[RoadmapPhase] = Field(..., description="Learning phases")
+    
+    # New structure (roadmap.sh style)
+    sections: List[RoadmapSection] = Field(
+        default_factory=list,
+        description="Major sections with subsections (roadmap.sh style)"
+    )
+    
+    # Backward compatibility - keep phases for old clients
+    phases: List[RoadmapPhase] = Field(
+        default_factory=list,
+        description="[DEPRECATED] Learning phases - use sections instead"
+    )
+    
     nodes: List[RoadmapNode] = Field(..., description="All topic nodes")
     edges: List[RoadmapEdge] = Field(..., description="Connections between nodes")
 

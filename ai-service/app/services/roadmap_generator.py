@@ -11,6 +11,8 @@ from app.models import (
     GenerationMetadata,
     RoadmapResponse,
     RoadmapPhase,
+    RoadmapSection,
+    RoadmapSubsection,
     RoadmapNode,
     RoadmapNodeData,
     RoadmapEdge,
@@ -54,18 +56,28 @@ def calculate_personalization_score(
     user_level = difficulty_levels.get(profile.skill_level, 1)
     
     if roadmap.nodes:
-        first_phase_nodes = [n for n in roadmap.nodes if n.phase_id == "phase-1"]
-        if first_phase_nodes:
+        # Get first section/phase nodes
+        first_nodes = []
+        if roadmap.sections:
+            first_section_id = roadmap.sections[0].id if roadmap.sections else None
+            first_nodes = [n for n in roadmap.nodes if n.section_id == first_section_id]
+        elif roadmap.phases:
+            first_phase_id = roadmap.phases[0].id if roadmap.phases else "phase-1"
+            first_nodes = [n for n in roadmap.nodes if n.phase_id == first_phase_id]
+        
+        if first_nodes:
             avg_difficulty = sum(
-                difficulty_levels.get(n.data.difficulty, 1) for n in first_phase_nodes
-            ) / len(first_phase_nodes)
+                difficulty_levels.get(n.data.difficulty, 1) for n in first_nodes
+            ) / len(first_nodes)
             # Score is higher if starting difficulty matches user level
             difficulty_match = max(0, 1 - abs(avg_difficulty - user_level) / 3)
             score += difficulty_match * weights["difficulty_match"]
     
-    # Structure score (phases, edges, node types variety)
+    # Structure score (sections/phases, edges, node types variety)
     structure_score = 0.0
-    if len(roadmap.phases) >= 2:
+    # Check sections first, fall back to phases
+    section_count = len(roadmap.sections) if roadmap.sections else len(roadmap.phases)
+    if section_count >= 3:  # Good structure with multiple sections
         structure_score += 0.4
     if len(roadmap.edges) >= len(roadmap.nodes) * 0.8:  # Good connectivity
         structure_score += 0.3
@@ -80,20 +92,49 @@ def calculate_personalization_score(
 def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
     """
     Validate and parse raw AI response into structured roadmap.
+    Supports both new sections structure and legacy phases for backward compatibility.
     """
     try:
-        # Parse phases
+        # Parse sections (new roadmap.sh-style structure)
+        sections = []
+        for section_data in raw_data.get("sections", []):
+            subsections = [
+                RoadmapSubsection(
+                    id=subsec.get("id", ""),
+                    name=subsec.get("name", ""),
+                    order=subsec.get("order", idx + 1),
+                    description=subsec.get("description")
+                )
+                for idx, subsec in enumerate(section_data.get("subsections", []))
+            ]
+            
+            sections.append(
+                RoadmapSection(
+                    id=section_data.get("id", f"section-{len(sections) + 1}"),
+                    name=section_data.get("name", ""),
+                    order=section_data.get("order", len(sections) + 1),
+                    description=section_data.get("description"),
+                    subsections=subsections
+                )
+            )
+        
+        # Parse phases (backward compatibility - convert from sections if needed)
+        phases_data = raw_data.get("phases", [])
+        if not phases_data and sections:
+            # Convert sections to phases for backward compatibility
+            phases_data = [
+                {"id": s.id, "name": s.name, "order": s.order}
+                for s in sections
+            ]
+        
         phases = [
             RoadmapPhase(
                 id=p.get("id", f"phase-{i+1}"),
                 name=p.get("name", f"Phase {i+1}"),
                 order=p.get("order", i+1),
             )
-            for i, p in enumerate(raw_data.get("phases", []))
+            for i, p in enumerate(phases_data)
         ]
-        
-        # Parse nodes
-        nodes = []
         
         # Normalize suggested_type values from AI to valid enum values
         def normalize_suggested_type(value: str) -> str:
@@ -101,7 +142,6 @@ def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
             if not value:
                 return "video"
             value_lower = value.lower().strip()
-            # Map common variations to valid values
             type_mapping = {
                 "video": "video",
                 "videos": "video",
@@ -116,7 +156,7 @@ def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
                 "practice": "project",
                 "hands-on": "project",
             }
-            return type_mapping.get(value_lower, "video")  # Default to "video"
+            return type_mapping.get(value_lower, "video")
         
         # Normalize difficulty values
         def normalize_difficulty(value: str) -> str:
@@ -150,9 +190,13 @@ def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
                 "elective": "optional",
                 "project": "project",
                 "practice": "project",
+                "alternative": "alternative",  # NEW: alternative options
+                "alt": "alternative",
             }
             return type_mapping.get(value_lower, "core")
         
+        # Parse nodes
+        nodes = []
         for n in raw_data.get("nodes", []):
             node_data = n.get("data", {})
             learning_res = node_data.get("learning_resources", {})
@@ -167,15 +211,27 @@ def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
             raw_node_type = n.get("type", "core")
             normalized_node_type = normalize_node_type(raw_node_type)
             
+            # Get section_id and subsection_id (new structure)
+            section_id = n.get("section_id", n.get("phase_id", "section-1"))
+            subsection_id = n.get("subsection_id")
+            
+            # For backward compatibility, also keep phase_id
+            phase_id = n.get("phase_id", section_id)
+            
             nodes.append(RoadmapNode(
                 id=n.get("id", ""),
-                phase_id=n.get("phase_id", "phase-1"),
+                phase_id=phase_id,  # Backward compatibility
+                section_id=section_id,  # New field
+                subsection_id=subsection_id,  # New field
                 type=normalized_node_type,
+                is_hub=n.get("is_hub", False),  # NEW: parse is_hub field for tree structure
                 data=RoadmapNodeData(
                     label=node_data.get("label", "Unknown Topic"),
                     description=node_data.get("description", ""),
                     estimated_hours=node_data.get("estimated_hours", 5),
                     difficulty=normalized_difficulty,
+                    prerequisites=node_data.get("prerequisites", []),  # NEW
+                    learning_outcomes=node_data.get("learning_outcomes", []),  # NEW
                     learning_resources=LearningResources(
                         keywords=learning_res.get("keywords", []),
                         suggested_type=normalized_type,
@@ -197,7 +253,8 @@ def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
             roadmap_title=raw_data.get("roadmap_title", "Learning Roadmap"),
             roadmap_description=raw_data.get("roadmap_description", ""),
             total_estimated_hours=raw_data.get("total_estimated_hours", 0),
-            phases=phases,
+            sections=sections,  # NEW: roadmap.sh-style sections
+            phases=phases,      # Backward compatibility
             nodes=nodes,
             edges=edges,
         )

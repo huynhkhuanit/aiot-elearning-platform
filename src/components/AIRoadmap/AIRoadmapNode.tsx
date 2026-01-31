@@ -1,10 +1,21 @@
 "use client";
 
+/**
+ * @deprecated Use SimpleRoadmapNode instead for roadmap.sh-style minimal design
+ * This component is kept for backward compatibility but should not be used in new code.
+ * 
+ * Migration guide:
+ * - Replace 'aiRoadmapNode' type with 'simpleRoadmapNode'
+ * - Import SimpleRoadmapNode from '@/components/SimpleRoadmapNode'
+ * - Map node.data.label to title in the data object
+ */
+
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Check, Lock, Clock, BookOpen, Code, Wrench } from 'lucide-react';
 import type { AIRoadmapNodeFlowData } from '@/types/ai-roadmap';
 
+/** @deprecated Use SimpleRoadmapNode instead */
 const AIRoadmapNode = ({ data, selected }: NodeProps<AIRoadmapNodeFlowData>) => {
   // Get styles based on node type
   const getTypeStyles = () => {

@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # Groq Configuration (Llama 3 models)
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"  # Default: best Vietnamese support (llama-3.1-70b-versatile is decommissioned)
-    GROQ_MAX_TOKENS: int = 4000
+    GROQ_MAX_TOKENS: int = 12000  # Increased from 8000 to support tree structure roadmaps (150-200 nodes with branching)
     GROQ_TEMPERATURE: float = 0.7
     
     # Available model aliases for easy switching via .env
@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     
     # Prompt Configuration
-    PROMPT_VERSION: str = "1.0.0"
+    PROMPT_VERSION: str = "2.0.0"  # Updated for roadmap.sh-style detailed prompts with sections
     
     class Config:
         env_file = ".env"

@@ -1,7 +1,7 @@
 "use client";
 
 import { notFound } from "next/navigation";
-import RoadmapFlow from "@/components/RoadmapFlow";
+import RoadmapTreeView from "@/components/RoadmapTreeView";
 import { use } from "react";
 
 interface RoadmapNode {
@@ -771,7 +771,7 @@ export default function RoadmapFlowPage({ params }: { params: Promise<{ slug: st
   }
 
   return (
-    <RoadmapFlow
+    <RoadmapTreeView
       roadmapId={slug}
       roadmapTitle={roadmap.title}
       roadmapData={roadmap.data}

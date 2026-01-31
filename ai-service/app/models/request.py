@@ -70,3 +70,20 @@ class GenerateRoadmapRequest(BaseModel):
         ...,
         description="User profile for personalization"
     )
+
+
+class NodeDetailRequest(BaseModel):
+    """Request body for getting node detail with AI explanation"""
+    
+    topic: str = Field(
+        ...,
+        description="The topic/node title to get details for"
+    )
+    context: Optional[str] = Field(
+        default=None,
+        description="Parent topic or roadmap context"
+    )
+    user_level: Literal["beginner", "intermediate", "advanced"] = Field(
+        default="intermediate",
+        description="User's skill level for tailored explanations"
+    )
