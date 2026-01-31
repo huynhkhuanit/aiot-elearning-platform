@@ -104,50 +104,59 @@ export default function RoadmapPage() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Hero Section */}
-      <div className="relative bg-gray-900 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
-        
-        {/* Animated Background Blobs */}
-        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-indigo-500/30 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-72 h-72 bg-purple-500/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
-
-        <PageContainer size="lg" className="relative py-20 lg:py-28 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md shadow-lg mb-8 hover:bg-white/10 transition-all duration-300 cursor-default">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-inner">
-                <Star className="w-3 h-3 fill-current" />
-              </span>
-              <span className="text-sm font-medium text-indigo-200 tracking-wide pr-2">
-                Lộ trình chuẩn <span className="text-white font-bold">2025</span>
-              </span>
+      <div className="bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800">
+        <PageContainer size="lg" className="py-16 lg:py-20">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-10">
+            {/* Left Content */}
+            <div className="lg:max-w-xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-6">
+                <Star className="w-4 h-4 text-indigo-400" />
+                <span className="text-sm font-medium text-indigo-300">
+                  Lộ trình chuẩn 2025
+                </span>
+              </div>
+              
+              <h1 className="text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight">
+                Định hướng sự nghiệp <br className="hidden lg:block" />
+                <span className="text-indigo-400">công nghệ</span> của bạn
+              </h1>
+              
+              <p className="text-gray-400 text-base lg:text-lg mb-8 leading-relaxed">
+                Hệ thống lộ trình học tập được thiết kế bài bản, giúp bạn phát triển từ cơ bản đến chuyên gia.
+              </p>
+              
+              <div className="flex flex-wrap gap-3">
+                <Link href="/roadmap/generate">
+                  <button className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Tạo lộ trình AI
+                  </button>
+                </Link>
+                <Link href="/roadmap/my">
+                  <button className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-lg transition-colors border border-white/10 flex items-center gap-2">
+                    <Brain className="w-4 h-4" />
+                    Lộ trình của tôi
+                  </button>
+                </Link>
+              </div>
             </div>
             
-            <h1 className="text-4xl lg:text-6xl font-extrabold mb-6 tracking-tight">
-              Chọn con đường <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">sự nghiệp</span> của bạn
-            </h1>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Hệ thống lộ trình học tập chi tiết, bài bản giúp bạn đi từ con số 0 đến khi trở thành chuyên gia trong ngành công nghệ phần mềm.
-            </p>
-            
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/roadmap/generate">
-                <button className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:shadow-indigo-500/30 flex items-center">
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Tạo lộ trình AI
-                </button>
-              </Link>
-              <Link href="/roadmap/my">
-                <button className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-all duration-300 backdrop-blur-sm border border-white/10 flex items-center">
-                  <Brain className="w-5 h-5 mr-2" />
-                  Lộ trình của tôi
-                </button>
-              </Link>
+            {/* Right Stats */}
+            <div className="grid grid-cols-3 gap-6 lg:gap-8">
+              <div className="text-center">
+                <div className="text-3xl lg:text-4xl font-bold text-white mb-1">5+</div>
+                <div className="text-sm text-gray-400">Lộ trình chuẩn</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl lg:text-4xl font-bold text-indigo-400 mb-1">AI</div>
+                <div className="text-sm text-gray-400">Cá nhân hóa</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl lg:text-4xl font-bold text-white mb-1">100k+</div>
+                <div className="text-sm text-gray-400">Học viên</div>
+              </div>
             </div>
-          </motion.div>
+          </div>
         </PageContainer>
       </div>
 

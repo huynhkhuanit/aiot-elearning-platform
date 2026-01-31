@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import {
-  ArrowLeft,
   Plus,
   Clock,
   Target,
@@ -13,11 +11,14 @@ import {
   Loader2,
   MapPin,
   Brain,
+  Sparkles,
+  BookOpen,
+  ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
+import PageContainer from '@/components/PageContainer';
 
 interface RoadmapSummary {
   id: string;
@@ -88,15 +89,22 @@ export default function MyRoadmapsPage() {
     });
   };
 
+  // Login Required State
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Brain className="w-16 h-16 text-indigo-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Đăng nhập để xem lộ trình</h2>
-          <p className="text-gray-600 mb-6">Bạn cần đăng nhập để xem các lộ trình AI của mình</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="text-center max-w-sm">
+          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Brain className="w-8 h-8 text-gray-400" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Đăng nhập để tiếp tục</h2>
+          <p className="text-gray-500 text-sm mb-6">
+            Vui lòng đăng nhập để xem các lộ trình AI của bạn
+          </p>
           <Link href="/auth/login">
-            <Button className="bg-indigo-600 hover:bg-indigo-700">Đăng nhập</Button>
+            <Button className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2.5 rounded-lg font-medium">
+              Đăng nhập
+            </Button>
           </Link>
         </div>
       </div>
@@ -104,179 +112,204 @@ export default function MyRoadmapsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/roadmap"
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Lộ trình AI của tôi</h1>
-                <p className="text-gray-500">Quản lý các lộ trình học tập được AI tạo riêng cho bạn</p>
-              </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-100">
+        <PageContainer size="lg" className="py-6">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+            <Link href="/roadmap" className="hover:text-gray-900 transition-colors">
+              Lộ trình
+            </Link>
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-gray-900 font-medium">Lộ trình của tôi</span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">
+                Lộ trình của tôi
+              </h1>
+              <p className="text-gray-500 text-sm">
+                Quản lý và theo dõi tiến độ các lộ trình học tập AI
+              </p>
             </div>
             <Link href="/roadmap/generate">
-              <Button className="bg-indigo-600 hover:bg-indigo-700 flex items-center gap-2">
+              <Button className="bg-gray-900 hover:bg-gray-800 text-white flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium">
                 <Plus className="w-4 h-4" />
                 Tạo lộ trình mới
               </Button>
             </Link>
           </div>
-        </div>
+        </PageContainer>
       </div>
 
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+      {/* Content Section */}
+      <PageContainer size="lg" className="py-8">
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-gray-400 mb-3" />
+            <span className="text-gray-500 text-sm">Đang tải lộ trình...</span>
           </div>
-        ) : error ? (
-          <div className="text-center py-20">
-            <p className="text-red-500">{error}</p>
-            <Button onClick={fetchRoadmaps} className="mt-4">
+        )}
+
+        {/* Error State */}
+        {!isLoading && error && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
+              <Target className="w-7 h-7 text-red-500" />
+            </div>
+            <p className="text-gray-900 font-medium mb-2">Đã xảy ra lỗi</p>
+            <p className="text-gray-500 text-sm mb-4">{error}</p>
+            <Button onClick={fetchRoadmaps} variant="outline" className="font-medium">
               Thử lại
             </Button>
           </div>
-        ) : roadmaps.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-20"
-          >
-            <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <MapPin className="w-10 h-10 text-indigo-500" />
+        )}
+
+        {/* Empty State */}
+        {!isLoading && !error && roadmaps.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-6">
+              <MapPin className="w-8 h-8 text-gray-400" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
               Chưa có lộ trình nào
             </h2>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Tạo lộ trình học tập đầu tiên của bạn với AI để bắt đầu hành trình học tập
+            <p className="text-gray-500 text-sm text-center max-w-sm mb-6">
+              Tạo lộ trình học tập đầu tiên với AI để bắt đầu hành trình phát triển kỹ năng
             </p>
             <Link href="/roadmap/generate">
-              <Button className="bg-indigo-600 hover:bg-indigo-700 flex items-center gap-2 mx-auto">
-                <Plus className="w-4 h-4" />
+              <Button className="bg-gray-900 hover:bg-gray-800 text-white flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium">
+                <Sparkles className="w-4 h-4" />
                 Tạo lộ trình đầu tiên
               </Button>
             </Link>
-          </motion.div>
-        ) : (
-          <div className="grid gap-4">
-            {roadmaps.map((roadmap, index) => (
-              <motion.div
-                key={roadmap.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <CardContent className="p-0">
-                    <div className="flex items-stretch">
-                      {/* Progress Indicator */}
-                      <div className="w-2 bg-gradient-to-b from-indigo-500 to-purple-500" />
-                      
+          </div>
+        )}
+
+        {/* Roadmap List */}
+        {!isLoading && !error && roadmaps.length > 0 && (
+          <div className="space-y-4">
+            {/* Stats Summary */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white rounded-xl p-4 border border-gray-100">
+                <div className="text-2xl font-bold text-gray-900">{roadmaps.length}</div>
+                <div className="text-sm text-gray-500">Tổng lộ trình</div>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-gray-100">
+                <div className="text-2xl font-bold text-indigo-600">
+                  {roadmaps.filter(r => r.progress_percentage === 100).length}
+                </div>
+                <div className="text-sm text-gray-500">Đã hoàn thành</div>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-gray-100">
+                <div className="text-2xl font-bold text-gray-900">
+                  {roadmaps.filter(r => r.progress_percentage > 0 && r.progress_percentage < 100).length}
+                </div>
+                <div className="text-sm text-gray-500">Đang học</div>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-gray-100">
+                <div className="text-2xl font-bold text-gray-900">
+                  {roadmaps.reduce((acc, r) => acc + r.total_nodes, 0)}
+                </div>
+                <div className="text-sm text-gray-500">Tổng chủ đề</div>
+              </div>
+            </div>
+
+            {/* Roadmap Cards */}
+            <div className="space-y-3">
+              {roadmaps.map((roadmap) => (
+                <div
+                  key={roadmap.id}
+                  className="bg-white rounded-xl border border-gray-100 hover:border-gray-200 transition-colors overflow-hidden"
+                >
+                  <div className="p-5">
+                    <div className="flex items-start gap-4">
+                      {/* Icon */}
+                      <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
+                        <BookOpen className="w-6 h-6 text-indigo-600" />
+                      </div>
+
                       {/* Content */}
-                      <div className="flex-1 p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
                             <Link href={`/roadmap/my/${roadmap.id}`}>
-                              <h3 className="text-lg font-bold text-gray-900 hover:text-indigo-600 transition-colors mb-1">
+                              <h3 className="text-base font-semibold text-gray-900 hover:text-indigo-600 transition-colors truncate">
                                 {roadmap.title}
                               </h3>
                             </Link>
                             {roadmap.description && (
-                              <p className="text-gray-600 text-sm line-clamp-2 mb-4">
+                              <p className="text-sm text-gray-500 mt-1 line-clamp-1">
                                 {roadmap.description}
                               </p>
                             )}
-
-                            {/* Stats */}
-                            <div className="flex items-center gap-6 text-sm text-gray-500">
-                              <div className="flex items-center gap-1.5">
-                                <Target className="w-4 h-4" />
-                                <span>{roadmap.total_nodes} topics</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <Clock className="w-4 h-4" />
-                                <span>{formatDate(roadmap.created_at)}</span>
-                              </div>
-                            </div>
                           </div>
 
-                          {/* Progress Circle & Actions */}
-                          <div className="flex items-center gap-4 ml-6">
-                            {/* Progress Circle */}
-                            <div className="relative w-16 h-16">
-                              <svg className="w-full h-full transform -rotate-90">
-                                <circle
-                                  cx="32"
-                                  cy="32"
-                                  r="28"
-                                  fill="none"
-                                  stroke="#e5e7eb"
-                                  strokeWidth="5"
-                                />
-                                <circle
-                                  cx="32"
-                                  cy="32"
-                                  r="28"
-                                  fill="none"
-                                  stroke="#6366f1"
-                                  strokeWidth="5"
-                                  strokeLinecap="round"
-                                  strokeDasharray={`${roadmap.progress_percentage * 1.76} 176`}
-                                />
-                              </svg>
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-sm font-bold text-gray-900">
-                                  {roadmap.progress_percentage}%
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex items-center gap-2">
-                              <Link href={`/roadmap/my/${roadmap.id}`}>
-                                <Button variant="outline" size="sm" className="flex items-center gap-1">
-                                  Xem
-                                  <ChevronRight className="w-4 h-4" />
-                                </Button>
-                              </Link>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDelete(roadmap.id)}
-                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Link href={`/roadmap/my/${roadmap.id}`}>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-gray-700 border-gray-200 hover:bg-gray-50 font-medium"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                Tiếp tục
+                                <ChevronRight className="w-4 h-4 ml-1" />
                               </Button>
-                            </div>
+                            </Link>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(roadmap.id)}
+                              className="text-gray-400 hover:text-red-500 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
 
-                        {/* Progress Bar */}
-                        <div className="mt-4">
-                          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                            <span>{roadmap.completed_nodes} / {roadmap.total_nodes} hoàn thành</span>
-                            <span>{roadmap.progress_percentage}%</span>
+                        {/* Meta & Progress */}
+                        <div className="mt-4 flex items-center gap-6">
+                          <div className="flex items-center gap-4 text-sm text-gray-400">
+                            <div className="flex items-center gap-1.5">
+                              <Target className="w-4 h-4" />
+                              <span>{roadmap.total_nodes} chủ đề</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="w-4 h-4" />
+                              <span>{formatDate(roadmap.created_at)}</span>
+                            </div>
                           </div>
-                          <Progress value={roadmap.progress_percentage} className="h-2" />
+                          
+                          {/* Progress */}
+                          <div className="flex-1 flex items-center gap-3">
+                            <Progress 
+                              value={roadmap.progress_percentage} 
+                              className="h-1.5 flex-1 bg-gray-100" 
+                            />
+                            <span className={`text-sm font-medium ${
+                              roadmap.progress_percentage === 100 
+                                ? 'text-green-600' 
+                                : roadmap.progress_percentage > 0 
+                                  ? 'text-indigo-600' 
+                                  : 'text-gray-400'
+                            }`}>
+                              {roadmap.progress_percentage}%
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }
