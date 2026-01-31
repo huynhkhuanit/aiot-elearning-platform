@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, CheckCircle, BookOpen, Sparkles, ExternalLink,
-  Play, FileText, ChevronDown, Loader2, Clock, Star
+  X, CheckCircle, ExternalLink,
+  ChevronDown, Loader2, Heart, Zap, Star
 } from 'lucide-react';
 
 // ========== TYPES ==========
@@ -37,19 +37,19 @@ interface NodeDetailSidebarProps {
 
 // ========== RESOURCE BADGE ==========
 const ResourceBadge: React.FC<{ type: string; discount?: string }> = ({ type, discount }) => {
-  const colors: Record<string, string> = {
-    article: 'bg-yellow-100 text-yellow-800',
-    video: 'bg-purple-100 text-purple-800',
-    course: 'bg-blue-100 text-blue-800',
+  const badgeStyles: Record<string, string> = {
+    article: 'bg-yellow-400 text-black',
+    video: 'bg-purple-400 text-white icon-play', 
+    course: 'bg-yellow-400 text-black',
   };
 
   return (
-    <div className="flex items-center gap-1.5">
-      <span className={`px-2 py-0.5 text-xs font-medium rounded ${colors[type] || 'bg-gray-100 text-gray-800'}`}>
-        {type === 'article' ? 'Article' : type === 'video' ? 'Video' : 'Course'}
+    <div className="flex items-center gap-2 shrink-0 select-none">
+      <span className={`px-2 py-[2px] text-[10px] font-bold uppercase rounded-sm flex items-center justify-center min-w-[50px] tracking-wide ${badgeStyles[type] || 'bg-gray-200'}`}>
+        {type}
       </span>
       {discount && (
-        <span className="px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded">
+        <span className="px-1.5 py-[2px] text-[10px] font-bold bg-green-500 text-white rounded-sm uppercase tracking-wide">
           {discount}
         </span>
       )}
@@ -67,13 +67,8 @@ export default function NodeDetailSidebar({
   onStatusChange,
   nodeId,
 }: NodeDetailSidebarProps) {
-  const [activeTab, setActiveTab] = useState<'resources' | 'ai-tutor'>('resources');
   const [isLoading, setIsLoading] = useState(false);
   const [nodeDetail, setNodeDetail] = useState<NodeDetailData | null>(null);
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
-
-  const isDone = nodeStatus === 'done' || nodeStatus === 'completed';
-  const isLearning = nodeStatus === 'learning' || nodeStatus === 'current';
 
   // Fetch node details from AI API
   const fetchNodeDetail = useCallback(async () => {
@@ -101,9 +96,9 @@ export default function NodeDetailSidebar({
           premiumResources: data.premium_resources || [],
         });
       } else {
-        // Fallback data if API fails
+        // Fallback data
         setNodeDetail({
-          description: nodeDescription || `Learn about ${nodeTitle} and its core concepts.`,
+          description: nodeDescription || `Learn about ${nodeTitle}.`,
           relatedConcepts: [],
           freeResources: [
             { type: 'article', title: `Introduction to ${nodeTitle}`, url: `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(nodeTitle)}`, source: 'MDN' },
@@ -115,9 +110,8 @@ export default function NodeDetailSidebar({
       }
     } catch (error) {
       console.error('Failed to fetch node detail:', error);
-      // Fallback
       setNodeDetail({
-        description: nodeDescription || `Learn about ${nodeTitle} and its core concepts.`,
+        description: nodeDescription || `Learn about ${nodeTitle}.`,
         relatedConcepts: [],
         freeResources: [
           { type: 'article', title: `Search: ${nodeTitle}`, url: `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(nodeTitle)}`, source: 'MDN' },
@@ -151,17 +145,6 @@ export default function NodeDetailSidebar({
     };
   }, [isOpen, onClose]);
 
-  const getStatusLabel = () => {
-    if (isDone) return 'Done';
-    if (isLearning) return 'In Progress';
-    return 'Pending';
-  };
-
-  const getStatusColor = () => {
-    if (isDone) return 'bg-green-100 text-green-800';
-    if (isLearning) return 'bg-purple-100 text-purple-800';
-    return 'bg-gray-100 text-gray-800';
-  };
 
   return (
     <AnimatePresence>
@@ -172,7 +155,7 @@ export default function NodeDetailSidebar({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 z-[90]"
+            className="fixed inset-0 bg-black/60 z-[90]"
             onClick={onClose}
           />
 
@@ -181,227 +164,132 @@ export default function NodeDetailSidebar({
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 w-full max-w-[480px] h-full bg-white shadow-2xl z-[100] flex flex-col"
+            transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.8 }}
+            className="fixed top-0 right-0 w-full max-w-[500px] h-full bg-white z-[100] flex flex-col font-sans shadow-2xl"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              {/* Tabs */}
-              <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
-                <button
-                  onClick={() => setActiveTab('resources')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-                    activeTab === 'resources'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Resources
-                </button>
-                <button
-                  onClick={() => setActiveTab('ai-tutor')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-                    activeTab === 'ai-tutor'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  AI Tutor
-                </button>
-              </div>
+            {/* Header Toolbar */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+               {/* Empty left side for spacing or future use */}
+               <div></div>
 
-              {/* Status & Close */}
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <button
-                    onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg ${getStatusColor()}`}
-                  >
-                    {isDone && <CheckCircle className="w-3.5 h-3.5" />}
-                    {getStatusLabel()}
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  </button>
-                  
-                  {statusDropdownOpen && (
-                    <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px] z-10">
-                      <button
-                        onClick={() => { onStatusChange('pending'); setStatusDropdownOpen(false); }}
-                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                      >
-                        Pending
-                      </button>
-                      <button
-                        onClick={() => { onStatusChange('learning'); setStatusDropdownOpen(false); }}
-                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                      >
-                        In Progress
-                      </button>
-                      <button
-                        onClick={() => { onStatusChange('done'); setStatusDropdownOpen(false); }}
-                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                      >
-                        Done
-                      </button>
-                    </div>
-                  )}
-                </div>
-                
+              <div className="flex items-center justify-end w-full">
                 <button
                   onClick={onClose}
-                  className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            {/* Main Content */}
+            <div className="flex-1 overflow-y-auto px-8 py-6">
               {isLoading ? (
-                <div className="flex items-center justify-center h-64">
-                  <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+                <div className="flex flex-col items-center justify-center h-64 gap-4 text-gray-400">
+                  <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
+                  <span className="text-sm font-medium">Gathering resources...</span>
                 </div>
               ) : (
-                <div className="p-6">
-                  {/* Title */}
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">{nodeTitle}</h2>
+                <div className="space-y-10">
+                  {/* Title & Description */}
+                  <header>
+                    <h1 className="text-[32px] font-black leading-tight text-gray-900 mb-4 tracking-tight">
+                      {nodeTitle}
+                    </h1>
+                    {nodeDetail?.description && (
+                      <p className="text-[16px] leading-[1.6] text-gray-600 font-normal">
+                        {nodeDetail.description}
+                      </p>
+                    )}
+                  </header>
 
-                  {/* Description */}
-                  {nodeDetail?.description && (
-                    <p className="text-gray-600 leading-relaxed mb-6">
-                      {nodeDetail.description}
-                    </p>
-                  )}
+                  {/* Free Resources */}
+                  <section>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="h-[1px] bg-green-200 flex-1"></div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                        Free Resources
+                      </span>
+                      <div className="h-[1px] bg-green-200 flex-1"></div>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      {nodeDetail?.freeResources.map((resource, idx) => (
+                        <a
+                          key={idx}
+                          href={resource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-baseline gap-3 py-2 group hover:bg-gray-50 -mx-3 px-3 rounded-md transition-colors"
+                        >
+                          <ResourceBadge type={resource.type} />
+                          <span className="flex-1 text-[14px] text-gray-800 group-hover:text-blue-600 group-hover:underline underline-offset-4 decoration-blue-300 transition-all leading-normal">
+                            {resource.title}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  </section>
 
-                  {activeTab === 'resources' && (
-                    <>
-                      {/* Free Resources */}
-                      <div className="mb-8">
-                        <div className="flex items-center gap-2 mb-4">
-                          <span className="text-green-600">💚</span>
-                          <span className="text-sm font-semibold text-gray-900">Free Resources</span>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          {nodeDetail?.freeResources && nodeDetail.freeResources.length > 0 ? (
-                            nodeDetail.freeResources.map((resource, idx) => (
-                              <a
-                                key={idx}
-                                href={resource.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group"
-                              >
-                                <ResourceBadge type={resource.type} />
-                                <span className="flex-1 text-sm font-medium text-gray-900 group-hover:text-purple-600">
-                                  {resource.title}
-                                </span>
-                                <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-600" />
-                              </a>
-                            ))
-                          ) : (
-                            <p className="text-sm text-gray-500">No free resources available yet.</p>
-                          )}
-                        </div>
+                  {/* AI Tutor */}
+                  <section>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="h-[1px] bg-blue-200 flex-1"></div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                        AI Tutor
+                      </span>
+                      <div className="h-[1px] bg-blue-200 flex-1"></div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <a
+                         href="#"
+                         className="flex items-baseline gap-3 py-2 group hover:bg-gray-50 -mx-3 px-3 rounded-md transition-colors"
+                      >
+                        <ResourceBadge type="article" />
+                        <span className="flex-1 text-[14px] text-gray-800 group-hover:text-blue-600 group-hover:underline underline-offset-4 decoration-blue-300 transition-all leading-normal">
+                          Read explanation: How {nodeTitle} works
+                        </span>
+                      </a>
+                    </div>
+                  </section>
+
+                  {/* Premium Resources */}
+                  {nodeDetail?.premiumResources && nodeDetail.premiumResources.length > 0 && (
+                    <section>
+                       <div className="flex items-center gap-3 mb-4">
+                        <div className="h-[1px] bg-purple-200 flex-1"></div>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-3 py-1 rounded-full">
+                          Premium
+                        </span>
+                        <div className="h-[1px] bg-purple-200 flex-1"></div>
                       </div>
 
-                      {/* AI Tutor Quick Access */}
-                      {nodeDetail?.aiTutorContent && (
-                        <div className="mb-8">
-                          <div className="flex items-center gap-2 mb-4">
-                            <Sparkles className="w-4 h-4 text-purple-600" />
-                            <span className="text-sm font-semibold text-gray-900">Your personalized AI tutor</span>
-                          </div>
-                          
+                      <div className="space-y-1.5">
+                        {nodeDetail.premiumResources.map((resource, idx) => (
                           <a
-                            href="#"
-                            onClick={(e) => { e.preventDefault(); setActiveTab('ai-tutor'); }}
-                            className="flex items-center gap-3 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors group"
+                            key={idx}
+                            href={resource.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-baseline gap-3 py-2 group hover:bg-gray-50 -mx-3 px-3 rounded-md transition-colors"
                           >
-                            <ResourceBadge type="article" />
-                            <span className="flex-1 text-sm font-medium text-gray-900">
-                              Learn more about {nodeTitle}
+                            <ResourceBadge type={resource.type} discount={resource.discount} />
+                            <span className="flex-1 text-[14px] text-gray-800 group-hover:text-blue-600 group-hover:underline underline-offset-4 decoration-blue-300 transition-all leading-normal">
+                              {resource.title}
                             </span>
-                            <ExternalLink className="w-4 h-4 text-gray-400" />
                           </a>
-                        </div>
-                      )}
+                        ))}
+                      </div>
 
-                      {/* Premium Resources */}
-                      {nodeDetail?.premiumResources && nodeDetail.premiumResources.length > 0 && (
-                        <div>
-                          <div className="flex items-center gap-2 mb-4">
-                            <Star className="w-4 h-4 text-yellow-500" />
-                            <span className="text-sm font-semibold text-gray-900">Premium Resources</span>
-                          </div>
-                          
-                          <div className="space-y-3">
-                            {nodeDetail.premiumResources.map((resource, idx) => (
-                              <a
-                                key={idx}
-                                href={resource.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-3 p-3 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors group"
-                              >
-                                <ResourceBadge type={resource.type} discount={resource.discount} />
-                                <span className="flex-1 text-sm font-medium text-gray-900 group-hover:text-purple-600">
-                                  {resource.title}
-                                </span>
-                                <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-600" />
-                              </a>
-                            ))}
-                          </div>
-
-                          <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500">
-                            <p className="font-medium text-gray-700 mb-1">Note on Premium Resources</p>
-                            <p>These are optional paid resources vetted by our team. If you purchase a resource, we may receive a small commission at no extra cost to you.</p>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {activeTab === 'ai-tutor' && (
-                    <div>
-                      {nodeDetail?.aiTutorContent ? (
-                        <div className="prose prose-sm max-w-none">
-                          <div className="p-4 bg-purple-50 rounded-lg">
-                            <p className="text-gray-700 whitespace-pre-wrap">{nodeDetail.aiTutorContent}</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-12">
-                          <Sparkles className="w-12 h-12 text-purple-300 mx-auto mb-4" />
-                          <p className="text-gray-500 mb-4">AI-generated content for this topic is being prepared.</p>
-                          <button
-                            onClick={fetchNodeDetail}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                          >
-                            Generate AI Content
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Related Concepts */}
-                      {nodeDetail?.relatedConcepts && nodeDetail.relatedConcepts.length > 0 && (
-                        <div className="mt-8">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-3">Related Concepts</h3>
-                          <div className="flex flex-wrap gap-2">
-                            {nodeDetail.relatedConcepts.map((concept, idx) => (
-                              <span
-                                key={idx}
-                                className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full"
-                              >
-                                {concept}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                      {/* Disclaimer */}
+                      <div className="mt-8 bg-gray-50 p-4 rounded text-[12px] leading-relaxed text-gray-500">
+                        <p>
+                          <strong>Note:</strong> We may earn a commission if you buy through these links. 
+                          This helps keep the roadmap free.
+                        </p>
+                      </div>
+                    </section>
                   )}
                 </div>
               )}

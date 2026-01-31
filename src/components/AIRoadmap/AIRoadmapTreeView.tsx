@@ -410,7 +410,7 @@ const PhaseRow: React.FC<{
         <AnimatePresence>
           {isExpanded && leftChildren.map((child, idx) => (
             <motion.div
-              key={child.id}
+              key={`${child.id}-left-${idx}`}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
@@ -464,7 +464,7 @@ const PhaseRow: React.FC<{
         <AnimatePresence>
           {isExpanded && rightChildren.map((child, idx) => (
             <motion.div
-              key={child.id}
+              key={`${child.id}-right-${idx}`}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
