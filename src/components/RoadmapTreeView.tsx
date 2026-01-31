@@ -7,6 +7,7 @@ import {
   Home, ChevronRight, Clock, Code, Sparkles, ChevronDown, ChevronUp
 } from 'lucide-react';
 import Link from 'next/link';
+import NodeDetailSidebar from './NodeDetailSidebar';
 import '@/app/roadmap-tree.css';
 
 // ========== TYPES ==========
@@ -655,18 +656,16 @@ export default function RoadmapTreeView({ roadmapId, roadmapTitle, roadmapData }
         )}
       </AnimatePresence>
 
-      {/* Detail Modal */}
-      <AnimatePresence>
-        {isModalOpen && selectedNode && (
-          <DetailModal
-            node={selectedNode}
-            status={nodeStatuses.get(selectedNode.id) || 'available'}
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            onToggleComplete={(checked) => handleStatusChange(selectedNode.id, checked ? 'done' : 'available')}
-          />
-        )}
-      </AnimatePresence>
+      {/* Node Detail Sidebar */}
+      <NodeDetailSidebar
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        nodeTitle={selectedNode?.title || ''}
+        nodeDescription={selectedNode?.description}
+        nodeStatus={selectedNode ? (nodeStatuses.get(selectedNode.id) || 'available') : 'available'}
+        onStatusChange={(status) => selectedNode && handleStatusChange(selectedNode.id, status)}
+        nodeId={selectedNode?.id || ''}
+      />
     </div>
   );
 }

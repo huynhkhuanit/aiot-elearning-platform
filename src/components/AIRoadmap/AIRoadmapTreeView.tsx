@@ -7,6 +7,7 @@ import {
   Home, ChevronRight, Clock, Code, Sparkles, ChevronDown, ChevronUp, AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
+import NodeDetailSidebar from '../NodeDetailSidebar';
 import type { 
   AIGeneratedRoadmap, 
   RoadmapNode, 
@@ -675,18 +676,16 @@ export default function AIRoadmapTreeView({
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {isModalOpen && selectedNode && (
-          <DetailModal
-            node={selectedNode}
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            onToggleComplete={(completed) => 
-              handleStatusChange(selectedNode.id, completed ? 'completed' : 'pending')
-            }
-          />
-        )}
-      </AnimatePresence>
+      {/* Node Detail Sidebar */}
+      <NodeDetailSidebar
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        nodeTitle={selectedNode?.title || ''}
+        nodeDescription={selectedNode?.description}
+        nodeStatus={selectedNode?.status || 'pending'}
+        onStatusChange={(status) => selectedNode && handleStatusChange(selectedNode.id, status as NodeStatus)}
+        nodeId={selectedNode?.id || ''}
+      />
     </div>
   );
 }
