@@ -25,7 +25,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import PageContainer from '@/components/PageContainer';
-import { motion } from 'framer-motion';
 
 interface RoadmapSummary {
   id: string;
@@ -42,37 +41,29 @@ interface RoadmapSummary {
 const getRoadmapStyle = (title: string) => {
   const t = title.toLowerCase();
   
-  // Frontend Group (Blue)
   if (t.includes('react') || t.includes('frontend') || t.includes('vue') || t.includes('angular') || t.includes('web') || t.includes('javascript') || t.includes('typescript') || t.includes('html') || t.includes('css') || t.includes('ui')) {
-    return { icon: Layout, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', progress: 'bg-blue-600' };
+    return { icon: Layout, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', progress: 'bg-blue-500' };
   }
-  // Backend Group (Emerald) - Check javascript first to avoid overlaps
   if (t.includes('node') || t.includes('backend') || t.includes('api') || t.includes('java') || t.includes('golang') || t.includes('spring') || t.includes('dotnet') || t.includes('c#')) {
-    return { icon: Server, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', progress: 'bg-emerald-600' };
+    return { icon: Server, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', progress: 'bg-emerald-500' };
   }
-  // Data/DB Group (Cyan)
   if (t.includes('data') || t.includes('sql') || t.includes('db') || t.includes('mongo') || t.includes('postgres') || t.includes('mysql')) {
-    return { icon: Database, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-100', progress: 'bg-cyan-600' };
+    return { icon: Database, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200', progress: 'bg-cyan-500' };
   }
-  // Mobile Group (Purple)
   if (t.includes('mobile') || t.includes('android') || t.includes('ios') || t.includes('flutter') || t.includes('swift') || t.includes('kotlin')) {
-    return { icon: Smartphone, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', progress: 'bg-purple-600' };
+    return { icon: Smartphone, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200', progress: 'bg-purple-500' };
   }
-  // Cloud/DevOps Group (Orange)
   if (t.includes('cloud') || t.includes('aws') || t.includes('azure') || t.includes('devops') || t.includes('docker') || t.includes('kube') || t.includes('deploy')) {
-    return { icon: Cloud, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', progress: 'bg-orange-600' };
+    return { icon: Cloud, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', progress: 'bg-orange-500' };
   }
-  // AI/ML Group (Pink)
   if (t.includes('python') || t.includes('ai') || t.includes('ml') || t.includes('machine') || t.includes('intelligen') || t.includes('gpt') || t.includes('deep')) {
-    return { icon: Brain, color: 'text-pink-600', bg: 'bg-pink-50', border: 'border-pink-100', progress: 'bg-pink-600' };
+    return { icon: Brain, color: 'text-pink-600', bg: 'bg-pink-50', border: 'border-pink-200', progress: 'bg-pink-500' };
   }
-  // Low-level/Systems Group (Red)
   if (t.includes('c++') || t.includes('rust') || t.includes('embedded') || t.includes('system') || t.includes('linux')) {
-    return { icon: Cpu, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100', progress: 'bg-red-600' };
+    return { icon: Cpu, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', progress: 'bg-red-500' };
   }
   
-  // Default generic tech style (Indigo)
-  return { icon: Code, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', progress: 'bg-indigo-600' };
+  return { icon: Code, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200', progress: 'bg-indigo-500' };
 };
 
 export default function MyRoadmapsPage() {
@@ -139,15 +130,15 @@ export default function MyRoadmapsPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 font-sans">
         <div className="text-center max-w-sm">
-          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Brain className="w-8 h-8 text-gray-400" />
+          <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <Brain className="w-7 h-7 text-gray-400" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Đăng nhập để tiếp tục</h2>
-          <p className="text-gray-500 text-sm mb-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-2">Đăng nhập để tiếp tục</h2>
+          <p className="text-gray-500 text-sm mb-4">
             Vui lòng đăng nhập để xem các lộ trình AI của bạn
           </p>
           <Link href="/auth/login">
-            <Button className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2.5 rounded-lg font-medium">
+            <Button className="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2 rounded-lg font-medium text-sm">
               Đăng nhập
             </Button>
           </Link>
@@ -157,33 +148,29 @@ export default function MyRoadmapsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 font-sans">
+    <div className="min-h-screen bg-gray-50 font-sans">
       {/* Header Section */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-10 backdrop-blur-xl bg-white/80">
-        <PageContainer size="lg" className="py-5">
+      <div className="bg-white border-b border-gray-100">
+        <PageContainer size="lg" className="py-4">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+          <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-2">
             <Link href="/roadmap" className="hover:text-gray-900 transition-colors flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5" />
+              <MapPin className="w-3 h-3" />
               <span>Lộ trình</span>
             </Link>
-            <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
-            <span className="text-gray-900 font-medium bg-gray-100 px-2 py-0.5 rounded-md text-xs">Của tôi</span>
+            <ChevronRight className="w-3 h-3 text-gray-300" />
+            <span className="text-gray-700 font-medium">Của tôi</span>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                Lộ trình của tôi
-              </h1>
-              <p className="text-gray-500 text-sm mt-1">
-                Quản lý tiến độ học tập và phát triển kỹ năng của bạn
-              </p>
+              <h1 className="text-xl font-bold text-gray-900">Lộ trình của tôi</h1>
+              <p className="text-gray-500 text-sm">Quản lý tiến độ và kỹ năng của bạn</p>
             </div>
             <Link href="/roadmap/generate">
-              <Button className="bg-gradient-to-r from-gray-900 to-gray-800 hover:from-black hover:to-gray-900 text-white shadow-lg shadow-gray-200/50 flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all hover:-translate-y-0.5">
+              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 px-4 py-2 rounded-lg font-medium text-sm">
                 <Plus className="w-4 h-4" />
-                Tạo lộ trình mới
+                Tạo lộ trình
               </Button>
             </Link>
           </div>
@@ -191,44 +178,42 @@ export default function MyRoadmapsPage() {
       </div>
 
       {/* Content Section */}
-      <PageContainer size="lg" className="py-10">
+      <PageContainer size="lg" className="py-6">
         {/* Loading State */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center py-24">
-            <Loader2 className="w-10 h-10 animate-spin text-gray-300 mb-4" />
-            <span className="text-gray-400 font-medium">Đang tải dữ liệu...</span>
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-gray-300 mb-3" />
+            <span className="text-gray-400 text-sm">Đang tải...</span>
           </div>
         )}
 
         {/* Error State */}
         {!isLoading && error && (
-          <div className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-gray-200">
-            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
-              <Target className="w-8 h-8 text-red-500" />
+          <div className="flex flex-col items-center justify-center py-16 bg-white rounded-xl border border-gray-100">
+            <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-3">
+              <Target className="w-6 h-6 text-red-500" />
             </div>
-            <p className="text-gray-900 font-bold mb-2 text-lg">Đã xảy ra lỗi</p>
-            <p className="text-gray-500 mb-6">{error}</p>
-            <Button onClick={fetchRoadmaps} variant="outline" className="font-medium">
-              Thử lại ngay
+            <p className="text-gray-900 font-semibold mb-1">Đã xảy ra lỗi</p>
+            <p className="text-gray-500 text-sm mb-4">{error}</p>
+            <Button onClick={fetchRoadmaps} variant="outline" size="sm">
+              Thử lại
             </Button>
           </div>
         )}
 
         {/* Empty State */}
         {!isLoading && !error && roadmaps.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-gray-200">
-            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6 shadow-sm">
-              <Sparkles className="w-10 h-10 text-gray-300" />
+          <div className="flex flex-col items-center justify-center py-16 bg-white rounded-xl border border-dashed border-gray-200">
+            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+              <Sparkles className="w-7 h-7 text-gray-300" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">
-              Chưa có lộ trình nào
-            </h2>
-            <p className="text-gray-500 text-center max-w-md mb-8 leading-relaxed">
-              Hãy bắt đầu hành trình chinh phục công nghệ bằng cách tạo lộ trình học tập đầu tiên được cá nhân hóa bởi AI.
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Chưa có lộ trình</h2>
+            <p className="text-gray-500 text-sm text-center max-w-sm mb-5">
+              Bắt đầu tạo lộ trình học tập được cá nhân hóa bởi AI
             </p>
             <Link href="/roadmap/generate">
-              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2 px-8 py-3 rounded-xl font-semibold shadow-xl shadow-indigo-100 transition-all hover:-translate-y-0.5">
-                <Plus className="w-5 h-5" />
+              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 px-5 py-2 rounded-lg font-medium text-sm">
+                <Plus className="w-4 h-4" />
                 Tạo lộ trình đầu tiên
               </Button>
             </Link>
@@ -237,121 +222,90 @@ export default function MyRoadmapsPage() {
 
         {/* Roadmap List */}
         {!isLoading && !error && roadmaps.length > 0 && (
-          <div className="space-y-8">
-            {/* Stats Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: 'Tổng lộ trình', value: roadmaps.length, icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-50' },
-                { label: 'Đã hoàn thành', value: roadmaps.filter(r => r.progress_percentage === 100).length, icon: Target, color: 'text-green-600', bg: 'bg-green-50' },
-                { label: 'Đang học', value: roadmaps.filter(r => r.progress_percentage > 0 && r.progress_percentage < 100).length, icon: Zap, color: 'text-amber-600', bg: 'bg-amber-50' },
-                { label: 'Tổng chủ đề', value: roadmaps.reduce((acc, r) => acc + r.total_nodes, 0), icon: Layout, color: 'text-purple-600', bg: 'bg-purple-50' },
-              ].map((stat, i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4 hidden sm:flex">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.bg}`}>
-                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">{stat.label}</div>
-                  </div>
-                </div>
-              ))}
-              {/* Mobile Stats (Simplified) */}
-              <div className="col-span-2 sm:hidden grid grid-cols-2 gap-3">
-                 <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-                    <div className="text-2xl font-bold text-gray-900">{roadmaps.length}</div>
-                    <div className="text-xs text-gray-500">Tổng lộ trình</div>
-                 </div>
-                 <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-                    <div className="text-2xl font-bold text-green-600">{roadmaps.filter(r => r.progress_percentage === 100).length}</div>
-                    <div className="text-xs text-gray-500">Hoàn thành</div>
-                 </div>
+          <div className="space-y-5">
+            {/* Stats Summary - Compact inline */}
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-gray-100">
+                <BookOpen className="w-4 h-4 text-blue-500" />
+                <span className="text-gray-600"><strong className="text-gray-900">{roadmaps.length}</strong> lộ trình</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-gray-100">
+                <Target className="w-4 h-4 text-green-500" />
+                <span className="text-gray-600"><strong className="text-gray-900">{roadmaps.filter(r => r.progress_percentage === 100).length}</strong> hoàn thành</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-gray-100">
+                <Zap className="w-4 h-4 text-amber-500" />
+                <span className="text-gray-600"><strong className="text-gray-900">{roadmaps.filter(r => r.progress_percentage > 0 && r.progress_percentage < 100).length}</strong> đang học</span>
               </div>
             </div>
 
-            {/* Roadmap Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {roadmaps.map((roadmap, index) => {
+            {/* Roadmap Grid - Compact cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {roadmaps.map((roadmap) => {
                 const style = getRoadmapStyle(roadmap.title);
                 const Icon = style.icon;
                 
                 return (
-                  <motion.div
-                    key={roadmap.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="relative group"
-                  >
+                  <div key={roadmap.id} className="relative group">
                     <Link href={`/roadmap/my/${roadmap.id}`} className="block h-full">
-                      <div className={`bg-white rounded-2xl border ${style.border} h-full transition-all duration-300 hover:shadow-xl hover:shadow-gray-100 hover:-translate-y-1 overflow-hidden flex flex-col`}>
-                        <div className="p-6 flex-1 flex flex-col">
-                          {/* Card Header */}
-                          <div className="mb-5">
-                            <div className={`w-14 h-14 rounded-2xl ${style.bg} flex items-center justify-center transition-transform group-hover:scale-110 duration-300`}>
-                              <Icon className={`w-7 h-7 ${style.color}`} />
+                      <div className={`bg-white rounded-xl border ${style.border} h-full transition-shadow hover:shadow-md overflow-hidden`}>
+                        <div className="p-4">
+                          {/* Header */}
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className={`w-10 h-10 rounded-lg ${style.bg} flex items-center justify-center flex-shrink-0`}>
+                              <Icon className={`w-5 h-5 ${style.color}`} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+                                {roadmap.title}
+                              </h3>
+                              <p className="text-xs text-gray-500 line-clamp-1">
+                                {roadmap.description || `Lộ trình ${roadmap.title}`}
+                              </p>
                             </div>
                           </div>
 
-                          {/* Card Content */}
-                          <div className="mb-6 flex-1 text-left">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1">
-                              {roadmap.title}
-                            </h3>
-                            <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed h-10">
-                              {roadmap.description || `Lộ trình học tập ${roadmap.title} chi tiết.`}
-                            </p>
+                          {/* Meta */}
+                          <div className="flex items-center gap-3 text-xs text-gray-400 mb-3">
+                            <span className="flex items-center gap-1">
+                              <Target className="w-3 h-3" />
+                              {roadmap.total_nodes} topics
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {formatDate(roadmap.created_at)}
+                            </span>
                           </div>
 
-                          {/* Meta Info */}
-                          <div className="flex items-center gap-4 text-xs font-medium text-gray-400 mb-6">
-                            <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-md">
-                              <Target className="w-3.5 h-3.5" />
-                              <span>{roadmap.total_nodes} topics</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-md">
-                              <Clock className="w-3.5 h-3.5" />
-                              <span>{formatDate(roadmap.created_at)}</span>
-                            </div>
-                          </div>
-
-                          {/* Progress Section (Always at bottom) */}
-                          <div className="mt-auto">
-                            <div className="flex items-end justify-between mb-2">
-                              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tiến độ</span>
-                              <span className={`text-sm font-bold ${style.color}`}>
+                          {/* Progress */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs text-gray-500">Tiến độ</span>
+                              <span className={`text-xs font-semibold ${style.color}`}>
                                 {roadmap.progress_percentage}%
                               </span>
                             </div>
-                            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                               <div 
-                                className={`h-full ${style.progress} transition-all duration-500 ease-out`} 
+                                className={`h-full ${style.progress} transition-all`} 
                                 style={{ width: `${roadmap.progress_percentage}%` }}
                               />
                             </div>
                           </div>
                         </div>
-                        
-                        {/* Footer Action */}
-                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 group-hover:bg-gray-50/80 transition-colors flex items-center justify-between">
-                          <span className="text-sm font-semibold text-gray-600 group-hover:text-gray-900">Xem chi tiết</span>
-                          <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 group-hover:text-indigo-600 group-hover:border-indigo-200 transition-all">
-                            <ChevronRight className="w-4 h-4" />
-                          </div>
-                        </div>
                       </div>
                     </Link>
 
-                    {/* Delete Button (Absolutely Positioned) */}
+                    {/* Delete Button */}
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={(e) => handleDelete(e, roadmap.id)}
-                      className="absolute top-5 right-5 z-20 text-gray-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 w-7 h-7 text-gray-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </Button>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
@@ -361,3 +315,4 @@ export default function MyRoadmapsPage() {
     </div>
   );
 }
+
