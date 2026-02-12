@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from "react"
-import { X, Play, Copy, Download, RotateCcw, Code2, Eye, EyeOff, Sun, Moon, Sparkles, Globe, FileCode } from "lucide-react"
+import { useState, useEffect, useRef, useMemo, useCallback } from "react"
+import { X, Play, Copy, Download, RotateCcw, Code2, Eye, EyeOff, Sun, Moon, Sparkles, Globe, FileCode, Bot, MessageSquare, Wand2, AlertTriangle, Wifi, WifiOff } from "lucide-react"
 import Editor, { OnMount } from "@monaco-editor/react"
 import { generatePreviewHTML, validateHTML, validateCSS, createMonacoMarkerData, type ValidationError } from "./CodePlayground/utils"
+import { AIChatPanel, AIErrorBoundary } from "./AIAssistant"
 
 // Extract editor type from OnMount callback
 type MonacoEditor = Parameters<OnMount>[0]
@@ -111,6 +112,8 @@ export default function CodePlayground({ isOpen, onClose, lessonId, initialLangu
   const [isLoadingReview, setIsLoadingReview] = useState(false)
   const [showEmptyCodeModal, setShowEmptyCodeModal] = useState(false)
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]) // Store validation errors
+  const [showAIChat, setShowAIChat] = useState(false)
+  const [aiServerStatus, setAiServerStatus] = useState<"connected" | "disconnected" | "checking">("checking")
 
   const codeEditorRef = useRef<MonacoEditor | null>(null)
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -959,6 +962,54 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
     localStorage.setItem("code_playground_theme", newTheme)
   }
 
+  // AI Server health check
+  useEffect(() => {
+    if (!isOpen) return
+
+    const checkAIHealth = async () => {
+      setAiServerStatus("checking")
+      try {
+        const response = await fetch("/api/ai/health", { signal: AbortSignal.timeout(5000) })
+        const data = await response.json()
+        setAiServerStatus(data.status === "connected" ? "connected" : "disconnected")
+      } catch {
+        setAiServerStatus("disconnected")
+      }
+    }
+
+    checkAIHealth()
+    const interval = setInterval(checkAIHealth, 30000) // Check every 30s
+    return () => clearInterval(interval)
+  }, [isOpen])
+
+  // Handle AI code insertion from chat
+  const handleInsertCodeFromAI = useCallback((codeToInsert: string) => {
+    if (codeEditorRef.current) {
+      const editor = codeEditorRef.current
+      const position = editor.getPosition()
+      if (position) {
+        editor.executeEdits("ai-insert", [
+          {
+            range: {
+              startLineNumber: position.lineNumber,
+              startColumn: position.column,
+              endLineNumber: position.lineNumber,
+              endColumn: position.column,
+            },
+            text: codeToInsert,
+          },
+        ])
+        editor.focus()
+      }
+    }
+  }, [])
+
+  // Handle AI error explanation
+  const handleExplainError = useCallback(async (errorMsg: string) => {
+    setShowAIChat(true)
+    // The chat panel will handle this via quick action
+  }, [])
+
   if (!isOpen) return null
 
   const showSplitView = activeLanguage !== "cpp"
@@ -1120,11 +1171,35 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
               <Sparkles className="w-3 h-3" />
               <span className="hidden lg:inline">AI Review</span>
             </button>
+
+            {/* AI Chat Toggle */}
+            <button
+              onClick={() => setShowAIChat(!showAIChat)}
+              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 transition-all ${
+                showAIChat
+                  ? "bg-indigo-600 text-white shadow-lg"
+                  : theme === "dark"
+                    ? "bg-[#2d2d30] hover:bg-[#3e3e42] text-gray-300"
+                    : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+              }`}
+              title={showAIChat ? "Ẩn AI Chat" : "AI Chat Assistant"}
+            >
+              <Bot className="w-3 h-3" />
+              <span className="hidden lg:inline">AI Chat</span>
+              {/* AI status dot */}
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                aiServerStatus === "connected" ? "bg-green-400" :
+                aiServerStatus === "checking" ? "bg-yellow-400 animate-pulse" :
+                "bg-red-400"
+              }`} />
+            </button>
           </div>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex overflow-hidden">
+          {/* Main editor + preview area */}
+          <div className={`flex-1 flex flex-col overflow-hidden ${showAIChat ? "min-w-0" : ""}`}>
           {showSplitView ? (
             <>
               {/* Code Editor with Line Numbers - TOP */}
@@ -1668,6 +1743,21 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
               </div>
             </div>
           )}
+          </div>
+
+          {/* AI Chat Panel - Right Side */}
+          {showAIChat && (
+            <div className={`w-[340px] flex-shrink-0 border-l ${borderColor} overflow-hidden`}>
+              <AIErrorBoundary fallbackMessage="AI Chat tạm thời không hoạt động. Bạn vẫn có thể tiếp tục code bình thường.">
+                <AIChatPanel
+                  codeContext={code[activeLanguage]}
+                  language={LANGUAGE_LABELS[activeLanguage]}
+                  onInsertCode={handleInsertCodeFromAI}
+                  theme={theme}
+                />
+              </AIErrorBoundary>
+            </div>
+          )}
         </div>
 
         {/* Status Bar - VS Code Style */}
@@ -1700,6 +1790,21 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
                 <span>{validationErrors.length} {validationErrors.length === 1 ? "error" : "errors"}</span>
               </button>
             )}
+            {/* AI Server Status */}
+            <span
+              className={`flex items-center gap-1.5 bg-white/10 px-2 py-0.5 rounded cursor-pointer`}
+              onClick={() => setShowAIChat(!showAIChat)}
+              title={`AI: ${aiServerStatus === "connected" ? "Đã kết nối" : aiServerStatus === "checking" ? "Đang kiểm tra..." : "Mất kết nối"}`}
+            >
+              {aiServerStatus === "connected" ? (
+                <Wifi className="w-3 h-3 text-green-300" />
+              ) : aiServerStatus === "checking" ? (
+                <Wifi className="w-3 h-3 text-yellow-300 animate-pulse" />
+              ) : (
+                <WifiOff className="w-3 h-3 text-red-300" />
+              )}
+              <span className="text-[10px]">AI</span>
+            </span>
             {autoSaveStatus && (
               <span className="bg-white/10 px-2 py-0.5 rounded">
                 {autoSaveStatus === "saved" ? "✓ Saved" : "Saving..."}

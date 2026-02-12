@@ -7,9 +7,213 @@ import { useRouter } from 'next/navigation';
 import PageContainer from '@/components/PageContainer';
 import AvatarWithProBadge from '@/components/AvatarWithProBadge';
 import SettingsSkeleton from '@/components/SettingsSkeleton';
-import { User, Lock, Bell, Wand2, Camera, Globe, Linkedin, Github, Twitter, Facebook, Phone } from 'lucide-react';
+import { User, Lock, Bell, Wand2, Camera, Globe, Linkedin, Github, Twitter, Facebook, Phone, Wifi, WifiOff, Bot, Zap, Settings2 } from 'lucide-react';
 
 type SettingsTab = 'profile' | 'password' | 'notifications' | 'ai';
+
+// AI Assistant Settings sub-component
+function AIAssistantSettings() {
+  const [settings, setSettings] = useState({
+    enabled: true,
+    autocompleteEnabled: true,
+    autocompleteDelay: 300,
+    serverUrl: '',
+    completionModel: 'deepseek-coder:1.3b',
+    chatModel: 'codellama:13b-instruct',
+  });
+  const [serverStatus, setServerStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
+  const [serverModels, setServerModels] = useState<string[]>([]);
+  const [serverLatency, setServerLatency] = useState<number>(0);
+  const [saved, setSaved] = useState(false);
+
+  // Load settings from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('ai_assistant_settings');
+      if (stored) {
+        setSettings(prev => ({ ...prev, ...JSON.parse(stored) }));
+      }
+    } catch { /* ignore */ }
+    checkHealth();
+  }, []);
+
+  const checkHealth = async () => {
+    setServerStatus('checking');
+    try {
+      const res = await fetch('/api/ai/health', { signal: AbortSignal.timeout(8000) });
+      const data = await res.json();
+      setServerStatus(data.status === 'connected' ? 'connected' : 'disconnected');
+      setServerModels(data.models || []);
+      setServerLatency(data.latencyMs || 0);
+    } catch {
+      setServerStatus('disconnected');
+      setServerModels([]);
+    }
+  };
+
+  const handleSave = () => {
+    try {
+      localStorage.setItem('ai_assistant_settings', JSON.stringify(settings));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold text-gray-900 mb-2">AI Assistant</h2>
+      <p className="text-gray-600 mb-6">
+        Cài đặt trợ lý AI code để hỗ trợ học tập lập trình.
+      </p>
+
+      {/* Server Status Card */}
+      <div className="mb-6 p-4 rounded-lg border border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            {serverStatus === 'connected' ? (
+              <Wifi className="w-5 h-5 text-green-500" />
+            ) : serverStatus === 'checking' ? (
+              <Wifi className="w-5 h-5 text-yellow-500 animate-pulse" />
+            ) : (
+              <WifiOff className="w-5 h-5 text-red-500" />
+            )}
+            <span className="font-medium text-gray-900">
+              {serverStatus === 'connected' ? 'Đã kết nối' : serverStatus === 'checking' ? 'Đang kiểm tra...' : 'Mất kết nối'}
+            </span>
+          </div>
+          <button
+            onClick={checkHealth}
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Kiểm tra lại
+          </button>
+        </div>
+        {serverStatus === 'connected' && (
+          <div className="space-y-1 text-sm text-gray-600">
+            <p>Độ trễ: <span className="font-medium text-gray-900">{serverLatency}ms</span></p>
+            <p>Models: <span className="font-medium text-gray-900">{serverModels.join(', ') || 'Không có'}</span></p>
+          </div>
+        )}
+        {serverStatus === 'disconnected' && (
+          <p className="text-sm text-red-600">
+            Không thể kết nối tới AI server. Hãy chạy notebook Colab và cập nhật URL.
+          </p>
+        )}
+      </div>
+
+      {/* Settings Form */}
+      <div className="space-y-6">
+        {/* Enable/Disable AI */}
+        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <Bot className="w-5 h-5 text-purple-500" />
+            <div>
+              <p className="font-medium text-gray-900">Bật AI Assistant</p>
+              <p className="text-sm text-gray-500">Cho phép AI hỗ trợ trong quá trình học tập</p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.enabled}
+              onChange={(e) => setSettings(prev => ({ ...prev, enabled: e.target.checked }))}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-100 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+          </label>
+        </div>
+
+        {/* Autocomplete */}
+        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <Zap className="w-5 h-5 text-yellow-500" />
+            <div>
+              <p className="font-medium text-gray-900">AI Autocomplete</p>
+              <p className="text-sm text-gray-500">Tự động gợi ý code khi bạn đang gõ</p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.autocompleteEnabled}
+              onChange={(e) => setSettings(prev => ({ ...prev, autocompleteEnabled: e.target.checked }))}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-100 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+          </label>
+        </div>
+
+        {/* Autocomplete Delay */}
+        {settings.autocompleteEnabled && (
+          <div className="py-3 border-b border-gray-100">
+            <div className="flex items-center gap-3 mb-2">
+              <Settings2 className="w-5 h-5 text-gray-500" />
+              <div>
+                <p className="font-medium text-gray-900">Độ trễ autocomplete</p>
+                <p className="text-sm text-gray-500">Thời gian chờ sau khi ngừng gõ (ms)</p>
+              </div>
+            </div>
+            <div className="ml-8 flex items-center gap-3">
+              <input
+                type="range"
+                min={100}
+                max={1000}
+                step={50}
+                value={settings.autocompleteDelay}
+                onChange={(e) => setSettings(prev => ({ ...prev, autocompleteDelay: Number(e.target.value) }))}
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+              />
+              <span className="text-sm font-mono text-gray-700 w-16 text-right">{settings.autocompleteDelay}ms</span>
+            </div>
+          </div>
+        )}
+
+        {/* Model Selection */}
+        <div className="py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3 mb-3">
+            <Wand2 className="w-5 h-5 text-indigo-500" />
+            <p className="font-medium text-gray-900">AI Models</p>
+          </div>
+          <div className="ml-8 space-y-3">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Completion Model (Autocomplete)</label>
+              <input
+                type="text"
+                value={settings.completionModel}
+                onChange={(e) => setSettings(prev => ({ ...prev, completionModel: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="deepseek-coder:1.3b"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Chat Model (Chat/Generation)</label>
+              <input
+                type="text"
+                value={settings.chatModel}
+                onChange={(e) => setSettings(prev => ({ ...prev, chatModel: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="codellama:13b-instruct"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <div className="mt-6 flex items-center gap-3">
+        <button
+          onClick={handleSave}
+          className="px-6 py-2.5 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700 transition-colors"
+        >
+          {saved ? '✓ Đã lưu' : 'Lưu cài đặt'}
+        </button>
+        <p className="text-xs text-gray-500">
+          Cài đặt được lưu trên trình duyệt của bạn.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { user, isAuthenticated, isLoading: authLoading, refreshUser } = useAuth();
@@ -647,16 +851,7 @@ export default function SettingsPage() {
 
               {/* AI Assistant Tab */}
               {activeTab === 'ai' && (
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-6">AI Assistant</h2>
-                  <p className="text-gray-600 mb-6">
-                    Cài đặt trợ lý AI để hỗ trợ học tập.
-                  </p>
-                  <div className="text-center py-12">
-                    <Wand2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600">Chức năng đang được phát triển...</p>
-                  </div>
-                </div>
+                <AIAssistantSettings />
               )}
             </div>
           </div>
