@@ -23,11 +23,15 @@ const LANGUAGE_LABELS: Record<LanguageType, string> = {
 interface IDELayoutProps {
     lessonId?: string;
     initialLanguage?: LanguageType;
+    hideAIAgent?: boolean;
+    onBack?: () => void;
 }
 
 export default function IDELayout({
     lessonId = "",
     initialLanguage = "html",
+    hideAIAgent = false,
+    onBack,
 }: IDELayoutProps) {
     const {
         code,
@@ -121,6 +125,7 @@ export default function IDELayout({
                     theme={theme}
                     onToggleTheme={toggleTheme}
                     autoSaveStatus={autoSaveStatus}
+                    onBack={onBack}
                 />
 
                 {/* Activity Bar */}
@@ -128,6 +133,7 @@ export default function IDELayout({
                     activeView={activeView}
                     onToggleView={toggleActivityView}
                     agentOpen={panels.agent}
+                    hideAIAgent={hideAIAgent}
                 />
 
                 {/* Editor Area */}
@@ -163,7 +169,7 @@ export default function IDELayout({
                 </div>
 
                 {/* AI Agent Panel */}
-                {panels.agent && (
+                {!hideAIAgent && panels.agent && (
                     <div className="ide-agent overflow-hidden">
                         <AIErrorBoundary fallbackMessage="AI Agent tạm thời không hoạt động.">
                             <AIAgentPanel

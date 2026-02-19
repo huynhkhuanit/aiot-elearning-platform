@@ -15,6 +15,7 @@ interface TitleBarProps {
     theme: "light" | "dark";
     onToggleTheme: () => void;
     autoSaveStatus: string;
+    onBack?: () => void;
 }
 
 export default function TitleBar({
@@ -22,13 +23,22 @@ export default function TitleBar({
     theme,
     onToggleTheme,
     autoSaveStatus,
+    onBack,
 }: TitleBarProps) {
+    const handleBack = () => {
+        if (onBack) {
+            onBack();
+        } else {
+            window.history.back();
+        }
+    };
+
     return (
         <div className="ide-titlebar">
             {/* Left: Back + Logo */}
             <div className="flex items-center gap-3 flex-1">
                 <button
-                    onClick={() => window.history.back()}
+                    onClick={handleBack}
                     className="flex items-center gap-1.5 text-[var(--ide-text-muted)] hover:text-[var(--ide-text)] transition-colors"
                     title="Back to course"
                 >

@@ -7,18 +7,25 @@ interface ActivityBarProps {
     activeView: ActivityView;
     onToggleView: (view: ActivityView) => void;
     agentOpen: boolean;
+    hideAIAgent?: boolean;
 }
 
 export default function ActivityBar({
     activeView,
     onToggleView,
     agentOpen,
+    hideAIAgent,
 }: ActivityBarProps) {
-    const items: { id: ActivityView; icon: typeof Files; label: string }[] = [
-        { id: "explorer", icon: Files, label: "Explorer" },
-        { id: "search", icon: Search, label: "Search" },
-        { id: "ai", icon: Bot, label: "AI Agent" },
-    ];
+    const allItems: { id: ActivityView; icon: typeof Files; label: string }[] =
+        [
+            { id: "explorer", icon: Files, label: "Explorer" },
+            { id: "search", icon: Search, label: "Search" },
+            { id: "ai", icon: Bot, label: "AI Agent" },
+        ];
+
+    const items = hideAIAgent
+        ? allItems.filter((i) => i.id !== "ai")
+        : allItems;
 
     return (
         <div className="ide-activitybar">
