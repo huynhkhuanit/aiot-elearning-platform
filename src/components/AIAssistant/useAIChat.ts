@@ -11,6 +11,7 @@ function generateId(): string {
 // LocalStorage key for chat history
 const CHAT_HISTORY_KEY = "ai_chat_history";
 const MAX_HISTORY_LENGTH = 50;
+const STREAM_ACTIVITY_TIMEOUT_MS = 60000; // 60s client-side inactivity timeout
 
 interface UseAIChatOptions {
     codeContext?: string;
@@ -97,6 +98,8 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
             const abortController = new AbortController();
             abortControllerRef.current = abortController;
 
+            let fullContent = "";
+
             try {
                 // Build messages for API (only send last 10 messages for context window)
                 const contextMessages = updatedMessages
@@ -130,13 +133,24 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
                 if (!reader) throw new Error("No response stream");
 
                 const decoder = new TextDecoder();
-                let fullContent = "";
                 let buffer = "";
+
+                // Client-side activity timeout: abort if no chunks for 60s
+                let activityTimer: ReturnType<typeof setTimeout> | null = null;
+                const resetActivityTimer = () => {
+                    if (activityTimer) clearTimeout(activityTimer);
+                    activityTimer = setTimeout(() => {
+                        abortController.abort();
+                    }, STREAM_ACTIVITY_TIMEOUT_MS);
+                };
+                resetActivityTimer();
 
                 while (true) {
                     const { done, value } = await reader.read();
+                    resetActivityTimer();
 
                     if (done) {
+                        if (activityTimer) clearTimeout(activityTimer);
                         if (buffer.trim().startsWith("data: ")) {
                             try {
                                 const data = JSON.parse(buffer.trim().slice(6));
@@ -217,18 +231,20 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
                 });
             } catch (err) {
                 if (err instanceof Error && err.name === "AbortError") {
-                    // User stopped generation
+                    // User stopped or activity timeout
+                    const timeoutMsg = fullContent
+                        ? fullContent + "\n\n_⚠️ Response bị ngắt do timeout._"
+                        : "_⏱️ AI không phản hồi trong thời gian cho phép. Vui lòng thử lại hoặc chọn model nhỏ hơn._";
                     setMessages((prev) => {
                         const updated = [...prev];
                         const lastIdx = updated.length - 1;
                         if (
                             lastIdx >= 0 &&
-                            updated[lastIdx].role === "assistant" &&
-                            !updated[lastIdx].content
+                            updated[lastIdx].role === "assistant"
                         ) {
                             updated[lastIdx] = {
                                 ...updated[lastIdx],
-                                content: "_Đã dừng tạo phản hồi._",
+                                content: timeoutMsg,
                             };
                         }
                         saveHistory(updated);

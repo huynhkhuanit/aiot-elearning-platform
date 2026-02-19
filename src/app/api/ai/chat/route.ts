@@ -20,6 +20,15 @@ QUY TẮC:
 - Khuyến khích và động viên, không chê bai
 - Không viết code hoàn chỉnh cho bài tập, hướng dẫn từng bước`;
 
+// Compact prompt for small models (1.3b, 1b) that can't handle long context
+const SYSTEM_PROMPT_LITE = `You are a coding assistant. Answer in Vietnamese. Be concise. Use markdown code blocks.`;
+
+// Detect small models that need reduced params
+function isSmallModel(modelId?: string): boolean {
+    if (!modelId) return false;
+    return /[:\-](0\.5|1|1\.3|1\.5|3)b/i.test(modelId);
+}
+
 export async function POST(request: NextRequest) {
     try {
         const { messages, codeContext, language, modelId } =
@@ -35,11 +44,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Use compact prompt for small models, full prompt for larger ones
+        const smallModel = isSmallModel(modelId);
+        const systemPrompt = smallModel ? SYSTEM_PROMPT_LITE : SYSTEM_PROMPT;
+        const maxTokens = smallModel ? 512 : 2048;
+
         // Build messages array with system prompt
         const ollamaMessages: Array<{
             role: "user" | "assistant" | "system";
             content: string;
-        }> = [{ role: "system", content: SYSTEM_PROMPT }];
+        }> = [{ role: "system", content: systemPrompt }];
 
         // Add code context if provided
         if (codeContext) {
@@ -72,8 +86,8 @@ export async function POST(request: NextRequest) {
 
         try {
             stream = await getChatCompletionStream(ollamaMessages, {
-                maxTokens: 2048,
-                temperature: 0.3,
+                maxTokens,
+                temperature: smallModel ? 0.2 : 0.3,
                 modelId,
             });
         } catch (streamErr) {
@@ -87,8 +101,8 @@ export async function POST(request: NextRequest) {
                 errMsg.includes("method not allowed")
             ) {
                 const { content } = await getChatCompletion(ollamaMessages, {
-                    maxTokens: 2048,
-                    temperature: 0.3,
+                    maxTokens,
+                    temperature: smallModel ? 0.2 : 0.3,
                     modelId,
                 });
                 // Simulate streaming by sending full response in chunks
