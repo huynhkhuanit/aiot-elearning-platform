@@ -9,48 +9,53 @@ import { AIGlobalPanel, AIErrorBoundary } from "@/components/AIAssistant";
 import { ReactNode, useEffect, useState } from "react";
 
 export default function LayoutWrapper({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
+    const pathname = usePathname();
+    const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
-  // Kiểm tra nếu đang ở trang admin (chính xác: /admin hoặc /admin/*)
-  const isAdminPage = pathname === "/admin" || pathname?.startsWith("/admin/");
-  
-  // Kiểm tra nếu đang ở trang học tập (/learn/*)
-  const isLearningPage = pathname?.startsWith("/learn/");
+    // Kiểm tra nếu đang ở trang admin (chính xác: /admin hoặc /admin/*)
+    const isAdminPage =
+        pathname === "/admin" || pathname?.startsWith("/admin/");
 
-  // Nếu là trang admin hoặc học tập, không hiển thị Menu, Header, Footer
-  // Admin layout và Learn layout sẽ tự quản lý layout của họ
-  if (isAdminPage || isLearningPage) {
+    // Kiểm tra nếu đang ở trang học tập (/learn/*)
+    const isLearningPage = pathname?.startsWith("/learn/");
+
+    // Kiểm tra nếu đang ở trang playground (/playground)
+    const isPlaygroundPage = pathname?.startsWith("/playground");
+
+    // Nếu là trang admin, học tập, hoặc playground, không hiển thị Menu, Header, Footer
+    if (isAdminPage || isLearningPage || isPlaygroundPage) {
+        return (
+            <>
+                {children}
+                <AIErrorBoundary>
+                    <AIGlobalPanel />
+                </AIErrorBoundary>
+            </>
+        );
+    }
+
+    // Các trang khác (trang chủ, courses, etc.) hiển thị layout bình thường
     return (
-      <>
-        {children}
-        <AIErrorBoundary>
-          <AIGlobalPanel />
-        </AIErrorBoundary>
-      </>
+        <div style={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
+            <Header />
+            <Menu />
+            <main
+                className="md:ml-[96px] pb-[60px] md:pb-0"
+                style={{
+                    backgroundColor: "#ffffff",
+                }}
+            >
+                {children}
+            </main>
+            <Footer />
+            <NewsletterBulletin />
+            <AIErrorBoundary>
+                <AIGlobalPanel />
+            </AIErrorBoundary>
+        </div>
     );
-  }
-
-  // Các trang khác (trang chủ, courses, etc.) hiển thị layout bình thường
-  return (
-    <div style={{ backgroundColor: '#ffffff', minHeight: '100vh' }}>
-      <Header />
-      <Menu />
-      <main className="md:ml-[96px] pb-[60px] md:pb-0" style={{ 
-        backgroundColor: '#ffffff', 
-      }}>
-        {children}
-      </main>
-      <Footer />
-      <NewsletterBulletin />
-      <AIErrorBoundary>
-        <AIGlobalPanel />
-      </AIErrorBoundary>
-    </div>
-  );
 }
-

@@ -1,0 +1,319 @@
+/* ========================
+   VSCode-Style IDE Layout
+   ======================== */
+
+/* --- CSS Variables --- */
+.ide-root {
+    --ide-bg: #1e1e1e;
+    --ide-bg-alt: #252526;
+    --ide-bg-active: #37373d;
+    --ide-bg-hover: #2a2d2e;
+    --ide-border: #3c3c3c;
+    --ide-text: #cccccc;
+    --ide-text-muted: #858585;
+    --ide-accent: #007acc;
+    --ide-accent-hover: #0098ff;
+    --ide-titlebar: #323233;
+    --ide-activitybar: #333333;
+    --ide-statusbar: #007acc;
+    --ide-tab-active: #1e1e1e;
+    --ide-tab-inactive: #2d2d30;
+    --ide-scrollbar: #424242;
+    --ide-scrollbar-hover: #4f4f4f;
+    font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+        sans-serif;
+}
+
+.ide-root.light {
+    --ide-bg: #ffffff;
+    --ide-bg-alt: #f3f3f3;
+    --ide-bg-active: #e8e8e8;
+    --ide-bg-hover: #e8e8e8;
+    --ide-border: #e0e0e0;
+    --ide-text: #333333;
+    --ide-text-muted: #616161;
+    --ide-accent: #007acc;
+    --ide-titlebar: #dddddd;
+    --ide-activitybar: #2c2c2c;
+    --ide-statusbar: #007acc;
+    --ide-tab-active: #ffffff;
+    --ide-tab-inactive: #ececec;
+    --ide-scrollbar: #c1c1c1;
+    --ide-scrollbar-hover: #a0a0a0;
+}
+
+/* --- Grid Layout --- */
+.ide-grid {
+    display: grid;
+    grid-template-areas:
+        "titlebar   titlebar   titlebar"
+        "activity   editor     agent"
+        "statusbar  statusbar  statusbar";
+    grid-template-columns: 48px 1fr 0px;
+    grid-template-rows: 38px 1fr 24px;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+.ide-grid.agent-open {
+    grid-template-columns: 48px 1fr 400px;
+}
+
+.ide-grid .ide-titlebar {
+    grid-area: titlebar;
+}
+.ide-grid .ide-activitybar {
+    grid-area: activity;
+}
+.ide-grid .ide-editor {
+    grid-area: editor;
+}
+.ide-grid .ide-agent {
+    grid-area: agent;
+}
+.ide-grid .ide-statusbar {
+    grid-area: statusbar;
+}
+
+/* --- Titlebar --- */
+.ide-titlebar {
+    background: var(--ide-titlebar);
+    border-bottom: 1px solid var(--ide-border);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    user-select: none;
+    -webkit-app-region: drag;
+}
+
+/* --- Activity Bar --- */
+.ide-activitybar {
+    background: var(--ide-activitybar);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 4px;
+    border-right: 1px solid var(--ide-border);
+}
+
+.ide-activitybar button {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ide-text-muted);
+    position: relative;
+    transition: color 0.15s;
+}
+
+.ide-activitybar button:hover {
+    color: var(--ide-text);
+}
+
+.ide-activitybar button.active {
+    color: var(--ide-text);
+}
+
+.ide-activitybar button.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 25%;
+    bottom: 25%;
+    width: 2px;
+    background: var(--ide-accent);
+    border-radius: 0 1px 1px 0;
+}
+
+/* --- Status Bar --- */
+.ide-statusbar {
+    background: var(--ide-statusbar);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    font-size: 12px;
+    color: #ffffff;
+    user-select: none;
+}
+
+.ide-statusbar .status-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+    height: 100%;
+    cursor: default;
+}
+
+.ide-statusbar .status-item:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* --- Tab Bar --- */
+.ide-tabbar {
+    display: flex;
+    background: var(--ide-bg-alt);
+    border-bottom: 1px solid var(--ide-border);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.ide-tabbar::-webkit-scrollbar {
+    display: none;
+}
+
+.ide-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    height: 35px;
+    font-size: 13px;
+    color: var(--ide-text-muted);
+    background: var(--ide-tab-inactive);
+    border-right: 1px solid var(--ide-border);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    transition:
+        background 0.1s,
+        color 0.1s;
+    position: relative;
+}
+
+.ide-tab:hover {
+    background: var(--ide-bg-hover);
+}
+
+.ide-tab.active {
+    background: var(--ide-tab-active);
+    color: var(--ide-text);
+}
+
+.ide-tab.active::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--ide-tab-active);
+}
+
+.ide-tab .tab-close {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    opacity: 0;
+    transition:
+        opacity 0.1s,
+        background 0.1s;
+}
+
+.ide-tab:hover .tab-close,
+.ide-tab.active .tab-close {
+    opacity: 1;
+}
+
+.ide-tab .tab-close:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* --- Bottom Panel --- */
+.ide-bottom-panel {
+    border-top: 1px solid var(--ide-border);
+    display: flex;
+    flex-direction: column;
+    background: var(--ide-bg);
+}
+
+.ide-bottom-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--ide-bg-alt);
+    border-bottom: 1px solid var(--ide-border);
+    padding: 0 8px;
+    height: 35px;
+    flex-shrink: 0;
+}
+
+.ide-bottom-tab {
+    padding: 0 12px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ide-text-muted);
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: color 0.1s;
+}
+
+.ide-bottom-tab:hover {
+    color: var(--ide-text);
+}
+
+.ide-bottom-tab.active {
+    color: var(--ide-text);
+    border-bottom-color: var(--ide-accent);
+}
+
+/* --- Resize Handle --- */
+.ide-resize-handle {
+    height: 4px;
+    cursor: ns-resize;
+    background: transparent;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.ide-resize-handle:hover,
+.ide-resize-handle.dragging {
+    background: var(--ide-accent);
+}
+
+/* --- Scrollbar --- */
+.ide-root ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.ide-root ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ide-root ::-webkit-scrollbar-thumb {
+    background: var(--ide-scrollbar);
+    border-radius: 5px;
+}
+
+.ide-root ::-webkit-scrollbar-thumb:hover {
+    background: var(--ide-scrollbar-hover);
+}
+
+/* --- Animations --- */
+@keyframes ide-slide-in-right {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.ide-agent {
+    animation: ide-slide-in-right 0.2s ease-out;
+    border-left: 1px solid var(--ide-border);
+}
