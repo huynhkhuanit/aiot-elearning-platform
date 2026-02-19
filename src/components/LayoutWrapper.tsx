@@ -5,6 +5,7 @@ import Menu from "@/components/Menu";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import NewsletterBulletin from "@/components/NewsletterBulletin";
+import { AIGlobalPanel, AIErrorBoundary } from "@/components/AIAssistant";
 import { ReactNode, useEffect, useState } from "react";
 
 export default function LayoutWrapper({ children }: { children: ReactNode }) {
@@ -24,7 +25,14 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
   // Nếu là trang admin hoặc học tập, không hiển thị Menu, Header, Footer
   // Admin layout và Learn layout sẽ tự quản lý layout của họ
   if (isAdminPage || isLearningPage) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <AIErrorBoundary>
+          <AIGlobalPanel />
+        </AIErrorBoundary>
+      </>
+    );
   }
 
   // Các trang khác (trang chủ, courses, etc.) hiển thị layout bình thường
@@ -39,6 +47,9 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
       </main>
       <Footer />
       <NewsletterBulletin />
+      <AIErrorBoundary>
+        <AIGlobalPanel />
+      </AIErrorBoundary>
     </div>
   );
 }

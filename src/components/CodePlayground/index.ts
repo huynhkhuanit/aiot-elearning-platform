@@ -19,5 +19,5 @@ export {
 export { FileIcon } from "./FileIcon"
 
 // Export Monaco config
-export { configureMonacoEditor, getEditorOptions } from "./monacoConfig"
+export { configureMonacoEditor, getEditorOptions, disposeAICompletion } from "./monacoConfig"
 export type { MonacoEditor } from "./monacoConfig"

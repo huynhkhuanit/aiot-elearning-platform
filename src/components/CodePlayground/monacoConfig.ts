@@ -5,6 +5,9 @@ import type { OnMount } from "@monaco-editor/react"
 // Extract editor type from OnMount callback
 export type MonacoEditor = Parameters<OnMount>[0]
 
+// Track registered disposables to prevent duplicate registrations
+let aiCompletionDisposable: any = null
+
 /**
  * Configure Monaco Editor with enhanced IntelliSense
  */
@@ -83,6 +86,9 @@ export function configureMonacoEditor(monaco: any, theme: "light" | "dark") {
 
   // Configure C++ syntax highlighting
   configureCppSyntax(monaco)
+
+  // Configure AI inline code completion
+  configureAIInlineCompletion(monaco)
 }
 
 /**
@@ -677,5 +683,180 @@ export function getEditorOptions() {
     
     // Validation & Linting
     renderValidationDecorations: "on" as const,
+
+    // AI Inline Suggestions
+    inlineSuggest: {
+      enabled: true,
+      mode: "prefix" as const,
+    },
+  }
+}
+
+// ===== AI Inline Code Completion =====
+
+// Debounce timer for AI completion requests
+let completionDebounceTimer: ReturnType<typeof setTimeout> | null = null
+let lastCompletionRequest = 0
+
+/**
+ * Configure AI-powered inline code completion for all languages.
+ * Uses the /api/ai/complete endpoint to get suggestions from Ollama.
+ */
+function configureAIInlineCompletion(monaco: any) {
+  // Dispose previous registration if any (prevents duplicates on theme change)
+  if (aiCompletionDisposable) {
+    aiCompletionDisposable.dispose()
+    aiCompletionDisposable = null
+  }
+
+  const languages = ["html", "css", "javascript", "typescript", "cpp", "python"]
+
+  aiCompletionDisposable = monaco.languages.registerInlineCompletionsProvider(
+    languages.map((lang) => ({ language: lang })),
+    {
+      provideInlineCompletions: async (
+        model: any,
+        position: any,
+        _context: any,
+        token: any
+      ) => {
+        // Check if AI autocomplete is enabled via localStorage setting
+        try {
+          const settings = localStorage.getItem("ai_assistant_settings")
+          if (settings) {
+            const parsed = JSON.parse(settings)
+            if (parsed.autocompleteEnabled === false) {
+              return { items: [] }
+            }
+          }
+        } catch {
+          // Continue if settings can't be read
+        }
+
+        // Cancel any pending debounce
+        if (completionDebounceTimer) {
+          clearTimeout(completionDebounceTimer)
+        }
+
+        // Debounce: wait 300ms after last keystroke
+        const delay = 300
+        try {
+          const settings = localStorage.getItem("ai_assistant_settings")
+          if (settings) {
+            const parsed = JSON.parse(settings)
+            if (parsed.autocompleteDelay) {
+              // Use custom delay from settings (but minimum 100ms)
+            }
+          }
+        } catch {
+          // ignore
+        }
+
+        return new Promise((resolve) => {
+          completionDebounceTimer = setTimeout(async () => {
+            // Don't send requests too frequently
+            const now = Date.now()
+            if (now - lastCompletionRequest < 200) {
+              resolve({ items: [] })
+              return
+            }
+            lastCompletionRequest = now
+
+            try {
+              // Check if cancelled
+              if (token.isCancellationRequested) {
+                resolve({ items: [] })
+                return
+              }
+
+              // Get text before and after cursor
+              const textBeforeCursor = model.getValueInRange({
+                startLineNumber: Math.max(1, position.lineNumber - 50),
+                startColumn: 1,
+                endLineNumber: position.lineNumber,
+                endColumn: position.column,
+              })
+
+              const textAfterCursor = model.getValueInRange({
+                startLineNumber: position.lineNumber,
+                startColumn: position.column,
+                endLineNumber: Math.min(model.getLineCount(), position.lineNumber + 20),
+                endColumn: model.getLineMaxColumn(
+                  Math.min(model.getLineCount(), position.lineNumber + 20)
+                ),
+              })
+
+              // Skip if too little context (less than 5 chars)
+              if (textBeforeCursor.trim().length < 5) {
+                resolve({ items: [] })
+                return
+              }
+
+              // Call the completion API
+              const response = await fetch("/api/ai/complete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  prefix: textBeforeCursor,
+                  suffix: textAfterCursor,
+                  language: model.getLanguageId(),
+                  maxTokens: 64,
+                }),
+                signal: AbortSignal.timeout(8000),
+              })
+
+              if (!response.ok || token.isCancellationRequested) {
+                resolve({ items: [] })
+                return
+              }
+
+              const data = await response.json()
+
+              if (!data.completion || !data.completion.trim()) {
+                resolve({ items: [] })
+                return
+              }
+
+              // Create inline completion item
+              const completionText = data.completion
+
+              resolve({
+                items: [
+                  {
+                    insertText: completionText,
+                    range: {
+                      startLineNumber: position.lineNumber,
+                      startColumn: position.column,
+                      endLineNumber: position.lineNumber,
+                      endColumn: position.column,
+                    },
+                  },
+                ],
+              })
+            } catch {
+              // Silently fail - AI completion is best-effort
+              resolve({ items: [] })
+            }
+          }, delay)
+        })
+      },
+      freeInlineCompletions: () => {
+        // Nothing to clean up
+      },
+    }
+  )
+}
+
+/**
+ * Dispose AI completion provider (call on cleanup)
+ */
+export function disposeAICompletion() {
+  if (aiCompletionDisposable) {
+    aiCompletionDisposable.dispose()
+    aiCompletionDisposable = null
+  }
+  if (completionDebounceTimer) {
+    clearTimeout(completionDebounceTimer)
+    completionDebounceTimer = null
   }
 }
