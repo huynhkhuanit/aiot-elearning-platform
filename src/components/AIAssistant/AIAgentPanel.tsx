@@ -58,7 +58,7 @@ export default function AIAgentPanel({
         sendMessage: rawSendMessage,
         clearHistory,
         stopGeneration,
-    } = useAIChat({ codeContext, language });
+    } = useAIChat({ codeContext, language, modelId: selectedModel.id });
 
     // Auto-scroll
     useEffect(() => {

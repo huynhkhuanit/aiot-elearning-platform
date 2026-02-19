@@ -9,9 +9,12 @@ export interface AIModel {
 }
 
 export const AI_MODELS: AIModel[] = [
-    { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI" },
-    { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI" },
-    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", provider: "Google" },
+    {
+        id: "deepseek-coder:1.3b",
+        name: "DeepSeek Coder 1.3B",
+        provider: "Ollama",
+    },
+    { id: "codellama:13b-instruct", name: "CodeLlama 13B", provider: "Ollama" },
 ];
 
 export const AI_MODE_CONFIG: Record<
