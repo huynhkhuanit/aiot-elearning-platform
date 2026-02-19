@@ -1,39 +1,28 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Send, Square, Sparkles, Bug, Code2 } from "lucide-react";
+import { Send, Square, ArrowUp, FileCode2 } from "lucide-react";
+import type { AIAgentMode } from "./types";
 
 interface AIAgentInputProps {
     onSend: (message: string) => void;
     isLoading: boolean;
     onStop: () => void;
     codeContext?: string;
+    language?: string;
+    mode?: AIAgentMode;
+    modelName?: string;
     theme?: "light" | "dark";
 }
-
-const INLINE_ACTIONS = [
-    {
-        icon: Bug,
-        label: "Explain",
-        prompt: "Giải thích đoạn code này đang làm gì?",
-    },
-    {
-        icon: Sparkles,
-        label: "Improve",
-        prompt: "Hãy gợi ý cách cải thiện đoạn code này.",
-    },
-    {
-        icon: Code2,
-        label: "Fix Bugs",
-        prompt: "Kiểm tra và tìm lỗi trong đoạn code này.",
-    },
-];
 
 export default function AIAgentInput({
     onSend,
     isLoading,
     onStop,
     codeContext,
+    language,
+    mode = "agent",
+    modelName,
     theme = "dark",
 }: AIAgentInputProps) {
     const [input, setInput] = useState("");
@@ -44,7 +33,7 @@ export default function AIAgentInput({
         (e: React.ChangeEvent<HTMLTextAreaElement>) => {
             setInput(e.target.value);
             e.target.style.height = "auto";
-            e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+            e.target.style.height = Math.min(e.target.scrollHeight, 150) + "px";
         },
         [],
     );
@@ -68,96 +57,138 @@ export default function AIAgentInput({
         [handleSend],
     );
 
-    const handleQuickAction = useCallback(
-        (prompt: string) => {
-            if (isLoading) return;
-            onSend(prompt);
-        },
-        [isLoading, onSend],
-    );
+    const placeholderMap: Record<AIAgentMode, string> = {
+        agent: "Yêu cầu AI phân tích hoặc sửa code...",
+        ask: "Hỏi về code, khái niệm, kỹ thuật...",
+        plan: "Mô tả tính năng cần lên kế hoạch...",
+    };
+
+    const hasInput = input.trim().length > 0;
 
     return (
         <div
-            className={`border-t ${isDark ? "border-[#3d3d55]" : "border-gray-200"} p-3`}
+            className={`border-t p-3 ${
+                isDark ? "border-[#2d2d44]" : "border-gray-200"
+            }`}
         >
-            {/* Quick action chips */}
-            {codeContext && !isLoading && (
-                <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-                    {INLINE_ACTIONS.map((action, i) => (
-                        <button
-                            key={i}
-                            onClick={() => handleQuickAction(action.prompt)}
-                            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all cursor-pointer ${
-                                isDark
-                                    ? "bg-[#252536] hover:bg-[#2d2d45] text-gray-400 hover:text-gray-200 border border-[#3d3d55] hover:border-cyan-500/30"
-                                    : "bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 border border-gray-200"
-                            }`}
-                        >
-                            <action.icon
-                                className={`w-2.5 h-2.5 ${isDark ? "text-cyan-400" : "text-blue-500"}`}
-                            />
-                            <span>{action.label}</span>
-                        </button>
-                    ))}
-                </div>
-            )}
-
-            {/* Input area */}
+            {/* Input container */}
             <div
-                className={`flex items-end gap-2 rounded-xl px-3 py-2 ${
+                className={`rounded-xl overflow-hidden transition-all duration-200 ${
                     isDark
-                        ? "bg-[#252536] border border-[#3d3d55] focus-within:border-cyan-500/40"
-                        : "bg-gray-100 border border-gray-200 focus-within:border-blue-300"
-                } transition-colors`}
+                        ? "bg-[#1e1e34] border border-[#2d2d44]"
+                        : "bg-gray-50 border border-gray-200"
+                } ${
+                    hasInput
+                        ? isDark
+                            ? "border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.06)]"
+                            : "border-blue-300 shadow-sm"
+                        : ""
+                }`}
             >
+                {/* Context chips row */}
+                {codeContext && (
+                    <div className="flex items-center gap-1.5 px-3 pt-2 pb-0">
+                        {language && (
+                            <span
+                                className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${
+                                    isDark
+                                        ? "bg-white/[0.05] text-gray-400"
+                                        : "bg-gray-100 text-gray-500"
+                                }`}
+                            >
+                                <FileCode2 className="w-2.5 h-2.5" />
+                                {language}
+                            </span>
+                        )}
+                    </div>
+                )}
+
+                {/* Textarea */}
                 <textarea
                     ref={textareaRef}
                     value={input}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask AI about your code..."
-                    className={`flex-1 bg-transparent outline-none resize-none text-[13px] ${
+                    placeholder={placeholderMap[mode]}
+                    className={`w-full bg-transparent outline-none resize-none text-[13px] px-3 py-2.5 leading-relaxed ${
                         isDark
                             ? "text-gray-100 placeholder:text-gray-500"
                             : "text-gray-900 placeholder:text-gray-400"
                     }`}
                     rows={1}
-                    style={{ maxHeight: 120 }}
+                    style={{ maxHeight: 150 }}
                     disabled={isLoading}
                 />
-                {isLoading ? (
-                    <button
-                        onClick={onStop}
-                        className="flex-shrink-0 p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
-                        title="Stop generating"
-                    >
-                        <Square className="w-3.5 h-3.5" />
-                    </button>
-                ) : (
-                    <button
-                        onClick={handleSend}
-                        disabled={!input.trim()}
-                        className={`flex-shrink-0 p-1.5 rounded-lg transition-all ${
-                            input.trim()
-                                ? isDark
-                                    ? "bg-cyan-600 text-white hover:bg-cyan-500 shadow-sm shadow-cyan-500/20"
-                                    : "bg-blue-600 text-white hover:bg-blue-500"
-                                : isDark
-                                  ? "text-gray-600"
-                                  : "text-gray-400"
-                        }`}
-                        title="Send (Enter)"
-                    >
-                        <Send className="w-3.5 h-3.5" />
-                    </button>
-                )}
+
+                {/* Bottom toolbar */}
+                <div
+                    className={`flex items-center justify-between px-3 py-1.5 ${
+                        isDark
+                            ? "border-t border-[#2d2d44]/50"
+                            : "border-t border-gray-100"
+                    }`}
+                >
+                    {/* Left: model hint */}
+                    <div className="flex items-center gap-2">
+                        {modelName && (
+                            <span
+                                className={`text-[10px] ${
+                                    isDark ? "text-gray-600" : "text-gray-400"
+                                }`}
+                            >
+                                {modelName}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Right: send/stop */}
+                    <div className="flex items-center gap-1.5">
+                        {input.length > 0 && (
+                            <span
+                                className={`text-[10px] tabular-nums ${
+                                    isDark ? "text-gray-600" : "text-gray-400"
+                                }`}
+                            >
+                                {input.length}
+                            </span>
+                        )}
+                        {isLoading ? (
+                            <button
+                                onClick={onStop}
+                                className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors cursor-pointer"
+                                title="Stop (Esc)"
+                            >
+                                <Square className="w-3.5 h-3.5" />
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleSend}
+                                disabled={!hasInput}
+                                className={`flex items-center justify-center w-7 h-7 rounded-lg transition-all cursor-pointer ${
+                                    hasInput
+                                        ? isDark
+                                            ? "bg-cyan-600 text-white hover:bg-cyan-500 shadow-sm shadow-cyan-500/20"
+                                            : "bg-blue-600 text-white hover:bg-blue-500 shadow-sm"
+                                        : isDark
+                                          ? "text-gray-600"
+                                          : "text-gray-400"
+                                }`}
+                                title="Send (Enter)"
+                            >
+                                <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* Bottom hint */}
             <p
-                className={`text-[10px] mt-1.5 text-center ${isDark ? "text-gray-600" : "text-gray-400"}`}
+                className={`text-[10px] mt-1.5 text-center ${
+                    isDark ? "text-gray-600" : "text-gray-400"
+                }`}
             >
-                AI có thể mắc lỗi. Luôn kiểm tra lại code.
+                AI có thể mắc lỗi. Luôn kiểm tra lại kết quả.
             </p>
         </div>
     );

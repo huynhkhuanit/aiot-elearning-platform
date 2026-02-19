@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
-import { Loader2, AlertCircle } from "lucide-react";
+import { useRef, useEffect, useCallback, useState } from "react";
+import { Loader2, AlertCircle, X } from "lucide-react";
 import { useAIChat } from "./useAIChat";
 import { useAIAgent } from "./useAIAgent";
 import AIAgentHeader from "./AIAgentHeader";
@@ -10,7 +10,13 @@ import AIAgentMessage from "./AIAgentMessage";
 import AIAgentThinkingStep from "./AIAgentThinkingStep";
 import AIAgentWelcome from "./AIAgentWelcome";
 import AIAgentConversationList from "./AIAgentConversationList";
-import type { AIAgentPanelProps, AIServerStatus } from "./types";
+import type {
+    AIAgentPanelProps,
+    AIServerStatus,
+    AIAgentMode,
+    AIModel,
+} from "./types";
+import { AI_MODELS } from "./types";
 
 interface ExtendedAIAgentPanelProps extends AIAgentPanelProps {
     aiServerStatus?: AIServerStatus;
@@ -26,6 +32,10 @@ export default function AIAgentPanel({
 }: ExtendedAIAgentPanelProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const isDark = theme === "dark";
+
+    // Mode & Model state
+    const [mode, setMode] = useState<AIAgentMode>("agent");
+    const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS[0]);
 
     const {
         conversations,
@@ -50,25 +60,22 @@ export default function AIAgentPanel({
         stopGeneration,
     } = useAIChat({ codeContext, language });
 
-    // Auto-scroll to bottom
+    // Auto-scroll
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // Enhanced send with thinking animation
     const handleSendMessage = useCallback(
         async (content: string) => {
             startThinking();
             await rawSendMessage(content);
             stopThinking();
 
-            // Auto-title conversation from first message
             if (messages.length === 0) {
                 const title =
                     content.length > 40
                         ? content.slice(0, 40) + "..."
                         : content;
-                // Update most recent conversation
                 if (conversations.length > 0) {
                     updateConversation(conversations[0].id, {
                         title,
@@ -87,7 +94,6 @@ export default function AIAgentPanel({
         ],
     );
 
-    // Quick action handler
     const handleQuickAction = useCallback(
         (prompt: string) => {
             handleSendMessage(prompt);
@@ -95,13 +101,11 @@ export default function AIAgentPanel({
         [handleSendMessage],
     );
 
-    // New chat handler
     const handleNewChat = useCallback(() => {
         clearHistory();
         createConversation();
     }, [clearHistory, createConversation]);
 
-    // Stop handler
     const handleStop = useCallback(() => {
         stopGeneration();
         stopThinking();
@@ -109,15 +113,21 @@ export default function AIAgentPanel({
 
     return (
         <div
-            className={`flex flex-col h-full ${isDark ? "bg-[#1e1e2e]" : "bg-white"} ${className}`}
+            className={`flex flex-col h-full ${
+                isDark ? "bg-[#1a1a2e]" : "bg-white"
+            } ${className}`}
         >
-            {/* Header */}
+            {/* Header — Model selector + Mode tabs */}
             <AIAgentHeader
                 onNewChat={handleNewChat}
                 onToggleHistory={toggleHistory}
                 showHistory={showHistory}
                 aiStatus={aiServerStatus}
                 theme={theme}
+                mode={mode}
+                onModeChange={setMode}
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
             />
 
             {/* Conversation History (collapsible) */}
@@ -137,10 +147,19 @@ export default function AIAgentPanel({
             )}
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto">
+            <div
+                className="flex-1 overflow-y-auto"
+                style={{
+                    scrollbarWidth: "thin",
+                    scrollbarColor: isDark
+                        ? "#2d2d44 transparent"
+                        : "#e5e7eb transparent",
+                }}
+            >
                 {messages.length === 0 ? (
                     <AIAgentWelcome
                         codeContext={codeContext}
+                        language={language}
                         onQuickAction={handleQuickAction}
                         theme={theme}
                     />
@@ -155,7 +174,7 @@ export default function AIAgentPanel({
                             />
                         ))}
 
-                        {/* Streaming empty state */}
+                        {/* Streaming loading state */}
                         {isLoading &&
                             messages.length > 0 &&
                             messages[messages.length - 1].role ===
@@ -163,10 +182,18 @@ export default function AIAgentPanel({
                             !messages[messages.length - 1].content && (
                                 <div className="flex items-center gap-2 px-4 py-3">
                                     <Loader2
-                                        className={`w-4 h-4 animate-spin ${isDark ? "text-cyan-400" : "text-blue-500"}`}
+                                        className={`w-4 h-4 animate-spin ${
+                                            isDark
+                                                ? "text-cyan-400"
+                                                : "text-blue-500"
+                                        }`}
                                     />
                                     <span
-                                        className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                                        className={`text-xs ${
+                                            isDark
+                                                ? "text-gray-400"
+                                                : "text-gray-500"
+                                        }`}
                                     >
                                         AI đang suy nghĩ...
                                     </span>
@@ -181,14 +208,20 @@ export default function AIAgentPanel({
             {/* Error display */}
             {error && (
                 <div
-                    className={`mx-3 mb-2 px-3 py-2 rounded-lg ${isDark ? "bg-red-500/10 border border-red-500/20" : "bg-red-50 border border-red-200"}`}
+                    className={`mx-3 mb-2 px-3 py-2 rounded-xl ${
+                        isDark
+                            ? "bg-red-500/8 border border-red-500/15"
+                            : "bg-red-50 border border-red-200"
+                    }`}
                 >
                     <div className="flex items-start gap-2">
                         <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                        <div>
+                        <div className="flex-1">
                             <p className="text-xs text-red-400">{error}</p>
                             <p
-                                className={`text-[10px] mt-0.5 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                                className={`text-[10px] mt-0.5 ${
+                                    isDark ? "text-gray-500" : "text-gray-400"
+                                }`}
                             >
                                 Kiểm tra kết nối AI server hoặc thử lại.
                             </p>
@@ -203,6 +236,9 @@ export default function AIAgentPanel({
                 isLoading={isLoading}
                 onStop={handleStop}
                 codeContext={codeContext}
+                language={language}
+                mode={mode}
+                modelName={selectedModel.name}
                 theme={theme}
             />
         </div>

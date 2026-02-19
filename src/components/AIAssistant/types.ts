@@ -1,5 +1,34 @@
 // AI Agent Assistant — Local Types
 
+export type AIAgentMode = "agent" | "ask" | "plan";
+
+export interface AIModel {
+    id: string;
+    name: string;
+    provider: string;
+}
+
+export const AI_MODELS: AIModel[] = [
+    { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI" },
+    { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI" },
+    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", provider: "Google" },
+];
+
+export const AI_MODE_CONFIG: Record<
+    AIAgentMode,
+    { label: string; description: string }
+> = {
+    agent: {
+        label: "Agent",
+        description: "Tự động phân tích, sửa code, và thực thi",
+    },
+    ask: { label: "Ask", description: "Hỏi đáp về code, khái niệm" },
+    plan: {
+        label: "Plan",
+        description: "Lên kế hoạch, phân tích kiến trúc",
+    },
+};
+
 export interface ThinkingStep {
     id: string;
     label: string;
@@ -33,9 +62,9 @@ export interface AIAgentPanelProps {
 
 export type AIServerStatus = "connected" | "checking" | "disconnected";
 
-// Quick action definition
 export interface QuickAction {
     icon: React.ComponentType<{ className?: string }>;
     label: string;
+    description?: string;
     prompt: string;
 }
