@@ -182,13 +182,85 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                     });
 
                     if (!response.ok) {
-                        const errData = await response.json().catch(() => ({}));
-                        throw new Error(errData.error || `Server error: ${response.status}`);
+                        const errData = await response
+                            .json()
+                            .catch(() => ({}));
+                        throw new Error(
+                            errData.error || `Server error: ${response.status}`,
+                        );
                     }
 
-                    const data = await response.json();
-                    assistantContent = data.content || "";
-                    toolCalls = data.toolCalls || null;
+                    const contentType =
+                        response.headers.get("content-type") || "";
+                    const isStream =
+                        contentType.includes("text/event-stream");
+
+                    if (isStream && response.body) {
+                        const decoder = new TextDecoder();
+                        const reader = response.body.getReader();
+                        assistantContent = "";
+                        toolCalls = null;
+                        let streamDone = false;
+
+                        while (true) {
+                            if (abortRef.current) break;
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            const text = decoder.decode(value, {
+                                stream: true,
+                            });
+                            const lines = text.split("\n");
+                            for (const line of lines) {
+                                if (!line.startsWith("data: ")) continue;
+                                try {
+                                    const data = JSON.parse(
+                                        line.slice(6),
+                                    ) as {
+                                        content?: string;
+                                        toolCalls?: OllamaToolCall[] | null;
+                                        done?: boolean;
+                                        error?: string;
+                                    };
+                                    if (data.error) {
+                                        throw new Error(data.error);
+                                    }
+                                    if (typeof data.content === "string") {
+                                        assistantContent += data.content;
+                                        setMessages((prev) => {
+                                            const next = [...prev];
+                                            const lastIdx = next.length - 1;
+                                            if (
+                                                lastIdx >= 0 &&
+                                                next[lastIdx].role ===
+                                                    "assistant" &&
+                                                next[lastIdx].id ===
+                                                    placeholderId
+                                            ) {
+                                                next[lastIdx] = {
+                                                    ...next[lastIdx],
+                                                    content:
+                                                        assistantContent + "▌",
+                                                    timestamp: Date.now(),
+                                                };
+                                            }
+                                            return next;
+                                        });
+                                    }
+                                    if (data.done) {
+                                        toolCalls = data.toolCalls ?? null;
+                                        streamDone = true;
+                                    }
+                                } catch {
+                                    /* skip malformed SSE line */
+                                }
+                            }
+                            if (streamDone) break;
+                        }
+                    } else {
+                        const data = await response.json();
+                        assistantContent = data.content || "";
+                        toolCalls = data.toolCalls || null;
+                    }
 
                     if (toolCalls && toolCalls.length > 0) {
                         apiMessages.push({

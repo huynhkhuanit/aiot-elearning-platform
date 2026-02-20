@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getChatCompletionWithTools } from "@/lib/ollama";
+import {
+    getChatCompletionWithTools,
+    getChatCompletionWithToolsStream,
+} from "@/lib/ollama";
 import { PLAYGROUND_TOOLS } from "@/lib/agent-tools";
 
 const AGENT_SYSTEM_PROMPT = `Bạn là AI Agent lập trình trong playground CodeSense AIoT. Bạn có thể ĐỌC và SỬA code trực tiếp bằng các tools.
@@ -105,20 +108,93 @@ ${String(code.javascript || "").slice(0, 3000)}
                 ? modelId
                 : "qwen2.5-coder:7b-instruct";
 
-        const result = await getChatCompletionWithTools(
-            ollamaMessages,
-            PLAYGROUND_TOOLS,
-            {
-                modelId: agentModel,
-                maxTokens: 2048,
-                temperature: 0.2,
-            },
-        );
+        const opts = {
+            modelId: agentModel,
+            maxTokens: 2048,
+            temperature: 0.2,
+        };
 
-        return Response.json({
-            content: result.content,
-            toolCalls: result.toolCalls,
-            durationMs: result.durationMs,
+        // Prefer streaming for lower latency; fallback to non-streaming on failure
+        let stream: ReadableStream<import("@/lib/ollama").ToolsStreamChunk>;
+        try {
+            stream = await getChatCompletionWithToolsStream(
+                ollamaMessages,
+                PLAYGROUND_TOOLS,
+                opts,
+            );
+        } catch (streamErr) {
+            const errMsg =
+                streamErr instanceof Error
+                    ? streamErr.message
+                    : String(streamErr);
+            if (
+                errMsg.includes("405") ||
+                errMsg.includes("method not allowed") ||
+                errMsg.includes("fetch")
+            ) {
+                const result = await getChatCompletionWithTools(
+                    ollamaMessages,
+                    PLAYGROUND_TOOLS,
+                    opts,
+                );
+                return Response.json({
+                    content: result.content,
+                    toolCalls: result.toolCalls,
+                    durationMs: result.durationMs,
+                });
+            }
+            throw streamErr;
+        }
+
+        const encoder = new TextEncoder();
+        const toSSE = (obj: object) =>
+            encoder.encode(`data: ${JSON.stringify(obj)}\n\n`);
+
+        const sseStream = new ReadableStream({
+            async start(controller) {
+                const reader = stream.getReader();
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        if (value.type === "chunk") {
+                            controller.enqueue(
+                                toSSE({
+                                    content: value.content,
+                                    done: false,
+                                }),
+                            );
+                        } else if (value.type === "done") {
+                            controller.enqueue(
+                                toSSE({
+                                    content: value.content,
+                                    toolCalls: value.toolCalls,
+                                    done: true,
+                                }),
+                            );
+                            break;
+                        }
+                    }
+                } catch (error) {
+                    const msg =
+                        error instanceof Error
+                            ? error.message
+                            : "Stream error";
+                    controller.enqueue(
+                        toSSE({ content: "", done: true, error: msg }),
+                    );
+                }
+                controller.close();
+            },
+        });
+
+        return new Response(sseStream, {
+            headers: {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                Connection: "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
         });
     } catch (error) {
         console.error("AI Agent Error:", error);
