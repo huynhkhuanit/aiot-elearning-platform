@@ -1,6 +1,6 @@
 // AI Agent Assistant — Local Types
 
-export type AIAgentMode = "agent" | "ask" | "plan";
+export type AIAgentMode = "agent" | "ask";
 
 export interface AIModel {
     id: string;
@@ -23,16 +23,17 @@ export const AI_MODELS: AIModel[] = [
 
 export const AI_MODE_CONFIG: Record<
     AIAgentMode,
-    { label: string; description: string }
+    { label: string; description: string; accent: "amber" | "blue" }
 > = {
     agent: {
         label: "Agent",
         description: "Tự động phân tích, sửa code, và thực thi",
+        accent: "amber",
     },
-    ask: { label: "Ask", description: "Hỏi đáp về code, khái niệm" },
-    plan: {
-        label: "Plan",
-        description: "Lên kế hoạch, phân tích kiến trúc",
+    ask: {
+        label: "Chat",
+        description: "Hỏi đáp về code, khái niệm",
+        accent: "blue",
     },
 };
 

@@ -15,14 +15,16 @@ VAI TRÒ CỦA BẠN:
 - Trả lời câu hỏi về thuật toán, cấu trúc dữ liệu
 - Khuyến khích học viên tự suy nghĩ trước khi đưa ra đáp án
 
-QUY TẮC:
+QUY TẮC PHẢN HỒI:
 - Trả lời bằng TIẾNG VIỆT
-- Giải thích đơn giản, dễ hiểu cho người mới
-- Khi đưa code, luôn kèm comment giải thích
-- Sử dụng markdown code blocks với language tag
-- Nếu câu hỏi mơ hồ, hỏi lại để làm rõ
+- Giải thích đơn giản, dễ hiểu cho người mới nhưng ĐẦY ĐỦ và CÓ CẤU TRÚC
+- Tối ưu chất lượng: trả lời dài hơn khi cần, có ví dụ code cụ thể kèm comment
+- Khi đưa code, luôn kèm comment giải thích và bước thực hiện
+- Sử dụng markdown (## tiêu đề, - bullet, code blocks với language tag)
+- Nếu câu hỏi mơ hồ, hỏi lại ngắn gọn để làm rõ
 - Khuyến khích và động viên, không chê bai
-- Không viết code hoàn chỉnh cho bài tập, hướng dẫn từng bước`;
+- Không viết code hoàn chỉnh cho bài tập, hướng dẫn từng bước
+- Ưu tiên phản hồi FOCUS vào câu hỏi chính, tránh lan man`;
 
 // Compact prompt for small models (1.3b, 1b) that can't handle long context
 const SYSTEM_PROMPT_LITE = `You are a coding assistant. Answer in Vietnamese. Be concise. Use markdown code blocks.`;
@@ -51,7 +53,8 @@ export async function POST(request: NextRequest) {
         // Use compact prompt for small models, full prompt for larger ones
         const smallModel = isSmallModel(modelId);
         const systemPrompt = smallModel ? SYSTEM_PROMPT_LITE : SYSTEM_PROMPT;
-        const maxTokens = smallModel ? 512 : 2048;
+        // Larger models: 4096 tokens for longer, higher-quality responses
+        const maxTokens = smallModel ? 512 : 4096;
 
         // Build messages array with system prompt
         const ollamaMessages: Array<{
@@ -88,9 +91,10 @@ export async function POST(request: NextRequest) {
 
         let stream: ReadableStream<string>;
         let effectiveModelId = modelId;
+        // Lower temperature for more focused, consistent answers
         const opts = {
             maxTokens,
-            temperature: smallModel ? 0.2 : 0.3,
+            temperature: smallModel ? 0.2 : 0.25,
             modelId: effectiveModelId,
         };
 

@@ -215,6 +215,11 @@ export default function AIAgentPanel({
                                 message={msg}
                                 onInsertCode={onInsertCode}
                                 theme={theme}
+                                accent={
+                                    mode === "agent"
+                                        ? "amber"
+                                        : "blue"
+                                }
                             />
                         ))}
 
@@ -227,9 +232,13 @@ export default function AIAgentPanel({
                                 <div className="flex items-center gap-2 px-4 py-3">
                                     <Loader2
                                         className={`w-4 h-4 animate-spin ${
-                                            isDark
-                                                ? "text-cyan-400"
-                                                : "text-blue-500"
+                                            mode === "agent"
+                                                ? isDark
+                                                    ? "text-amber-400"
+                                                    : "text-amber-600"
+                                                : isDark
+                                                  ? "text-blue-400"
+                                                  : "text-blue-500"
                                         }`}
                                     />
                                     <span

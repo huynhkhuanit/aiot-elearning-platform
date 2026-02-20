@@ -5,10 +5,13 @@ import { Bot, Copy, Check, RotateCcw } from "lucide-react";
 import type { AIChatMessage } from "@/types/ai";
 import AIAgentCodeBlock from "./AIAgentCodeBlock";
 
+type MessageAccent = "amber" | "blue";
+
 interface AIAgentMessageProps {
     message: AIChatMessage;
     onInsertCode?: (code: string) => void;
     theme?: "light" | "dark";
+    accent?: MessageAccent;
 }
 
 function parseContent(
@@ -46,9 +49,11 @@ function parseContent(
 function FormattedText({
     content,
     isDark,
+    accent = "blue",
 }: {
     content: string;
     isDark: boolean;
+    accent?: MessageAccent;
 }) {
     const lines = content.split("\n");
 
@@ -88,11 +93,17 @@ function FormattedText({
                         >
                             <span
                                 className={`mt-1.5 w-1 h-1 rounded-full flex-shrink-0 ${
-                                    isDark ? "bg-cyan-400" : "bg-blue-500"
+                                    accent === "amber"
+                                        ? isDark
+                                            ? "bg-amber-400"
+                                            : "bg-amber-500"
+                                        : isDark
+                                          ? "bg-blue-400"
+                                          : "bg-blue-500"
                                 }`}
                             />
                             <span className="text-[13px] leading-relaxed">
-                                {renderInline(line.slice(2), isDark)}
+                                {renderInline(line.slice(2), isDark, accent)}
                             </span>
                         </div>
                     );
@@ -107,7 +118,13 @@ function FormattedText({
                         >
                             <span
                                 className={`text-[11px] font-mono mt-0.5 flex-shrink-0 ${
-                                    isDark ? "text-cyan-400" : "text-blue-500"
+                                    accent === "amber"
+                                        ? isDark
+                                            ? "text-amber-400"
+                                            : "text-amber-600"
+                                        : isDark
+                                          ? "text-blue-400"
+                                          : "text-blue-600"
                                 }`}
                             >
                                 {num}.
@@ -116,6 +133,7 @@ function FormattedText({
                                 {renderInline(
                                     line.replace(/^\d+\.\s/, ""),
                                     isDark,
+                                    accent,
                                 )}
                             </span>
                         </div>
@@ -127,7 +145,7 @@ function FormattedText({
 
                 return (
                     <p key={lineIdx} className="text-[13px] leading-relaxed">
-                        {renderInline(line, isDark)}
+                        {renderInline(line, isDark, accent)}
                     </p>
                 );
             })}
@@ -135,7 +153,11 @@ function FormattedText({
     );
 }
 
-function renderInline(text: string, isDark: boolean) {
+function renderInline(
+    text: string,
+    isDark: boolean,
+    _accent?: MessageAccent,
+) {
     const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g);
 
     return parts.map((part, i) => {
@@ -185,6 +207,7 @@ export default function AIAgentMessage({
     message,
     onInsertCode,
     theme = "dark",
+    accent = "blue",
 }: AIAgentMessageProps) {
     const isUser = message.role === "user";
     const isDark = theme === "dark";
@@ -258,18 +281,27 @@ export default function AIAgentMessage({
             <div className="flex items-start gap-2.5">
                 {/* AI Avatar */}
                 <div className="relative flex-shrink-0 mt-0.5">
-                    <div
-                        className={`w-6 h-6 rounded-lg flex items-center justify-center ${
-                            isDark
-                                ? "bg-gradient-to-br from-cyan-500 to-blue-600"
-                                : "bg-gradient-to-br from-blue-500 to-indigo-600"
-                        }`}
-                        style={{
-                            boxShadow: isDark
-                                ? "0 0 12px rgba(6, 182, 212, 0.15)"
-                                : "0 0 12px rgba(59, 130, 246, 0.1)",
-                        }}
-                    >
+                <div
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors duration-200 ${
+                        accent === "amber"
+                            ? isDark
+                                ? "bg-gradient-to-br from-amber-500 to-orange-600"
+                                : "bg-gradient-to-br from-amber-400 to-orange-500"
+                            : isDark
+                              ? "bg-gradient-to-br from-blue-500 to-indigo-600"
+                              : "bg-gradient-to-br from-blue-500 to-indigo-600"
+                    }`}
+                    style={{
+                        boxShadow:
+                            accent === "amber"
+                                ? isDark
+                                    ? "0 0 12px rgba(245, 158, 11, 0.15)"
+                                    : "0 0 12px rgba(245, 158, 11, 0.1)"
+                                : isDark
+                                  ? "0 0 12px rgba(59, 130, 246, 0.15)"
+                                  : "0 0 12px rgba(59, 130, 246, 0.1)",
+                    }}
+                >
                         <Bot className="w-3.5 h-3.5 text-white" />
                     </div>
                 </div>
@@ -336,15 +368,22 @@ export default function AIAgentMessage({
                                     key={i}
                                     content={part.content}
                                     isDark={isDark}
+                                    accent={accent}
                                 />
                             ),
                         )}
 
-                        {/* Streaming cursor */}
+                        {/* Streaming cursor (Copilot-style) */}
                         {isStreaming && (
                             <span
-                                className={`inline-block w-[2px] h-4 ml-0.5 align-text-bottom ${
-                                    isDark ? "bg-cyan-400" : "bg-blue-500"
+                                className={`inline-block w-[2px] h-4 ml-0.5 align-text-bottom animate-pulse ${
+                                    accent === "amber"
+                                        ? isDark
+                                            ? "bg-amber-400"
+                                            : "bg-amber-500"
+                                        : isDark
+                                          ? "bg-blue-400"
+                                          : "bg-blue-500"
                                 }`}
                                 style={{
                                     animation: "blink 1s step-end infinite",

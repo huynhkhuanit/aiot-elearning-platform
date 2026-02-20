@@ -60,7 +60,6 @@ export default function AIAgentInput({
     const placeholderMap: Record<AIAgentMode, string> = {
         agent: "Yêu cầu AI phân tích hoặc sửa code...",
         ask: "Hỏi về code, khái niệm, kỹ thuật...",
-        plan: "Mô tả tính năng cần lên kế hoạch...",
     };
 
     const hasInput = input.trim().length > 0;
@@ -79,9 +78,13 @@ export default function AIAgentInput({
                         : "bg-gray-50 border border-gray-200"
                 } ${
                     hasInput
-                        ? isDark
-                            ? "border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.06)]"
-                            : "border-blue-300 shadow-sm"
+                        ? mode === "agent"
+                            ? isDark
+                                ? "border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.06)]"
+                                : "border-amber-300 shadow-sm"
+                            : isDark
+                              ? "border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.06)]"
+                              : "border-blue-300 shadow-sm"
                         : ""
                 }`}
             >
@@ -164,11 +167,15 @@ export default function AIAgentInput({
                             <button
                                 onClick={handleSend}
                                 disabled={!hasInput}
-                                className={`flex items-center justify-center w-7 h-7 rounded-lg transition-all cursor-pointer ${
+                                className={`flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 cursor-pointer ${
                                     hasInput
-                                        ? isDark
-                                            ? "bg-cyan-600 text-white hover:bg-cyan-500 shadow-sm shadow-cyan-500/20"
-                                            : "bg-blue-600 text-white hover:bg-blue-500 shadow-sm"
+                                        ? mode === "agent"
+                                            ? isDark
+                                                ? "bg-amber-600 text-white hover:bg-amber-500 shadow-sm shadow-amber-500/20"
+                                                : "bg-amber-600 text-white hover:bg-amber-500 shadow-sm"
+                                            : isDark
+                                              ? "bg-blue-600 text-white hover:bg-blue-500 shadow-sm shadow-blue-500/20"
+                                              : "bg-blue-600 text-white hover:bg-blue-500 shadow-sm"
                                         : isDark
                                           ? "text-gray-600"
                                           : "text-gray-400"

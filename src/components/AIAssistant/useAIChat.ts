@@ -134,6 +134,16 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 
                 const decoder = new TextDecoder();
                 let buffer = "";
+                let lastUpdateLen = 0;
+
+                // Copilot-style: update UI at word boundaries or every ~10 chars for long words
+                const shouldUpdate = (len: number, content: string): boolean => {
+                    if (len <= lastUpdateLen) return false;
+                    if (lastUpdateLen === 0) return true; // first chunk, show immediately
+                    if (len - lastUpdateLen >= 10) return true; // long word/token run
+                    const lastChar = content[len - 1];
+                    return /[\s\n.,!?;:()"'{}\[\]]/.test(lastChar);
+                };
 
                 // Client-side activity timeout: abort if no chunks for 60s
                 let activityTimer: ReturnType<typeof setTimeout> | null = null;
@@ -177,9 +187,18 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 
                                 if (data.content) {
                                     fullContent += data.content;
+                                    const len = fullContent.length;
+                                    const doUpdate =
+                                        data.done ||
+                                        shouldUpdate(len, fullContent);
+                                    if (doUpdate) lastUpdateLen = len;
 
-                                    // Update assistant message with accumulated content
-                                    setMessages((prev) => {
+                                    // Update at word boundaries or when done (Copilot-style word-by-word feel)
+                                    if (doUpdate) {
+                                        const displayContent = data.done
+                                            ? fullContent
+                                            : fullContent + "▌";
+                                        setMessages((prev) => {
                                         const updated = [...prev];
                                         const lastIdx = updated.length - 1;
                                         if (
@@ -189,11 +208,12 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
                                         ) {
                                             updated[lastIdx] = {
                                                 ...updated[lastIdx],
-                                                content: fullContent,
+                                                content: displayContent,
                                             };
                                         }
                                         return updated;
                                     });
+                                    }
                                 }
 
                                 if (data.done) break;

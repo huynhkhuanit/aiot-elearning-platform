@@ -7,7 +7,6 @@ import {
     ChevronDown,
     Zap,
     MessageCircle,
-    Map,
     Wifi,
     WifiOff,
     Loader2,
@@ -33,7 +32,6 @@ const MODE_ICONS: Record<
 > = {
     agent: Zap,
     ask: MessageCircle,
-    plan: Map,
 };
 
 export default function AIAgentHeader({
@@ -224,16 +222,21 @@ export default function AIAgentHeader({
                     const Icon = MODE_ICONS[m];
                     const config = AI_MODE_CONFIG[m];
                     const isActive = mode === m;
+                    const accent = config.accent; // amber | blue
 
                     return (
                         <button
                             key={m}
                             onClick={() => onModeChange(m)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
                                 isActive
-                                    ? isDark
-                                        ? "bg-white/[0.08] text-cyan-300 shadow-sm"
-                                        : "bg-blue-50 text-blue-700 shadow-sm"
+                                    ? accent === "amber"
+                                        ? isDark
+                                            ? "bg-amber-500/15 text-amber-400 shadow-sm border border-amber-500/20"
+                                            : "bg-amber-50 text-amber-700 shadow-sm border border-amber-200"
+                                        : isDark
+                                          ? "bg-blue-500/15 text-blue-400 shadow-sm border border-blue-500/20"
+                                          : "bg-blue-50 text-blue-700 shadow-sm border border-blue-200"
                                     : isDark
                                       ? "text-gray-500 hover:text-gray-300 hover:bg-white/[0.04]"
                                       : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
