@@ -224,17 +224,7 @@ export default function AIAgentPanel({
                                         !m.content
                                     ),
                             )
-                            .map((msg, idx) => {
-                                const visibleMessages = messages.filter(
-                                    (m) =>
-                                        !(
-                                            isLoading &&
-                                            m === messages[messages.length - 1] &&
-                                            m.role === "assistant" &&
-                                            !m.content
-                                        ),
-                                );
-                                return (
+                            .map((msg) => (
                                     <AIAgentMessage
                                         key={msg.id}
                                         message={msg}
@@ -245,16 +235,9 @@ export default function AIAgentPanel({
                                                 ? "amber"
                                                 : "blue"
                                         }
-                                        animateWords={
-                                            mode === "agent" &&
-                                            msg.role === "assistant" &&
-                                            idx === visibleMessages.length - 1 &&
-                                            !!msg.content &&
-                                            !isLoading
-                                        }
+                                        animateWords={false}
                                     />
-                                );
-                            })}
+                                ))}
 
                         {/* Placeholder hiển thị từng chữ khi đang chờ response */}
                         {isLoading &&

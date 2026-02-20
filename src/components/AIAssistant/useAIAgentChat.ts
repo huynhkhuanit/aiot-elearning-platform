@@ -224,7 +224,12 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                                     if (data.error) {
                                         throw new Error(data.error);
                                     }
-                                    if (typeof data.content === "string") {
+                                    // Chỉ append content khi chưa done - tránh trùng nội dung
+                                    // (event done chứa full content, đã có sẵn từ các chunk trước)
+                                    if (
+                                        typeof data.content === "string" &&
+                                        !data.done
+                                    ) {
                                         assistantContent += data.content;
                                         setMessages((prev) => {
                                             const next = [...prev];
@@ -248,6 +253,12 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                                     }
                                     if (data.done) {
                                         toolCalls = data.toolCalls ?? null;
+                                        if (
+                                            typeof data.content === "string" &&
+                                            !assistantContent
+                                        ) {
+                                            assistantContent = data.content;
+                                        }
                                         streamDone = true;
                                     }
                                 } catch {
@@ -303,12 +314,11 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                     if (
                         lastIdx >= 0 &&
                         next[lastIdx].role === "assistant" &&
-                        next[lastIdx].id === placeholderId &&
-                        !next[lastIdx].content
+                        next[lastIdx].id === placeholderId
                     ) {
                         next[lastIdx] = {
                             ...next[lastIdx],
-                            content: finalContent,
+                            content: finalContent.replace(/▌$/, ""),
                             timestamp: Date.now(),
                         };
                     } else {
