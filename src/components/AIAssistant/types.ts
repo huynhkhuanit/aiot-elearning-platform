@@ -59,10 +59,23 @@ export interface AIConversation {
     messageCount: number;
 }
 
+export interface CodeState {
+    html: string;
+    css: string;
+    javascript: string;
+}
+
 export interface AIAgentPanelProps {
     codeContext?: string;
     language?: string;
     onInsertCode?: (code: string) => void;
+    /** Full code state for Agent mode tools (read_code, edit_code) */
+    code?: CodeState;
+    /** Edit code by tab for Agent mode edit_code tool */
+    onEditCode?: (
+        tab: "html" | "css" | "javascript",
+        content: string,
+    ) => void;
     className?: string;
     theme?: "light" | "dark";
 }

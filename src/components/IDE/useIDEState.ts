@@ -116,6 +116,14 @@ export function useIDEState(
         [activeTab],
     );
 
+    // Update code by explicit tab (for AI Agent edit_code tool)
+    const updateCodeByTab = useCallback(
+        (tab: "html" | "css" | "javascript", value: string) => {
+            setCode((prev) => ({ ...prev, [tab]: value }));
+        },
+        [],
+    );
+
     // Toggle theme
     const toggleTheme = useCallback(() => {
         setTheme((prev) => {
@@ -167,6 +175,7 @@ export function useIDEState(
         cursorPosition,
         setActiveTab,
         updateCode,
+        updateCodeByTab,
         toggleTheme,
         togglePanel,
         toggleActivityView,

@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useState } from "react";
-import { Loader2, AlertCircle, X } from "lucide-react";
+import { useRef, useEffect, useCallback, useState, useMemo } from "react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useAIChat } from "./useAIChat";
+import { useAIAgentChat } from "./useAIAgentChat";
 import { useAIAgent } from "./useAIAgent";
 import AIAgentHeader from "./AIAgentHeader";
 import AIAgentInput from "./AIAgentInput";
@@ -26,6 +27,8 @@ export default function AIAgentPanel({
     codeContext,
     language,
     onInsertCode,
+    code,
+    onEditCode,
     className = "",
     theme = "dark",
     aiServerStatus = "checking",
@@ -33,9 +36,32 @@ export default function AIAgentPanel({
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const isDark = theme === "dark";
 
-    // Mode & Model state
+    // Mode & Model state - default to Qwen when we have agent context (playground)
+    const hasAgentContext = !!(code && onEditCode);
+    const qwenModel = useMemo(
+        () => AI_MODELS.find((m) => m.id.includes("qwen")) || AI_MODELS[0],
+        [],
+    );
     const [mode, setMode] = useState<AIAgentMode>("agent");
-    const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS[0]);
+    const [selectedModel, setSelectedModel] = useState<AIModel>(() =>
+        hasAgentContext ? qwenModel : AI_MODELS[0],
+    );
+
+    // Keep Qwen when in playground agent context
+    useEffect(() => {
+        if (hasAgentContext && selectedModel.id.includes("deepseek-coder")) {
+            setSelectedModel(qwenModel);
+        }
+    }, [hasAgentContext, selectedModel.id, qwenModel]);
+
+    // Auto-switch to Qwen when Agent mode + DeepSeek (tools support)
+    const handleModeChange = useCallback((newMode: AIAgentMode) => {
+        setMode(newMode);
+        if (newMode === "agent" && selectedModel.id.includes("deepseek-coder")) {
+            const qwen = AI_MODELS.find((m) => m.id.includes("qwen"));
+            if (qwen) setSelectedModel(qwen);
+        }
+    }, [selectedModel.id]);
 
     const {
         conversations,
@@ -51,6 +77,24 @@ export default function AIAgentPanel({
         toggleHistory,
     } = useAIAgent();
 
+    const agentChat = useAIAgentChat({
+        code: code || { html: "", css: "", javascript: "" },
+        language,
+        modelId: selectedModel.id,
+        onEditCode: onEditCode || (() => {}),
+        onToolExecute: (_toolName, status) => {
+            if (status === "start") startThinking();
+            else stopThinking();
+        },
+    });
+
+    const normalChat = useAIChat({
+        codeContext,
+        language,
+        modelId: selectedModel.id,
+    });
+
+    const useAgentMode = mode === "agent" && !!code && !!onEditCode;
     const {
         messages,
         isLoading,
@@ -58,7 +102,7 @@ export default function AIAgentPanel({
         sendMessage: rawSendMessage,
         clearHistory,
         stopGeneration,
-    } = useAIChat({ codeContext, language, modelId: selectedModel.id });
+    } = useAgentMode ? agentChat : normalChat;
 
     // Auto-scroll
     useEffect(() => {
@@ -125,7 +169,7 @@ export default function AIAgentPanel({
                 aiStatus={aiServerStatus}
                 theme={theme}
                 mode={mode}
-                onModeChange={setMode}
+                onModeChange={handleModeChange}
                 selectedModel={selectedModel}
                 onModelChange={setSelectedModel}
             />
@@ -204,6 +248,30 @@ export default function AIAgentPanel({
                     </div>
                 )}
             </div>
+
+            {/* Agent mode + DeepSeek model warning */}
+            {useAgentMode &&
+                selectedModel.id.includes("deepseek-coder") &&
+                !error && (
+                    <div
+                        className={`mx-3 mb-2 px-3 py-2 rounded-xl flex items-center gap-2 ${
+                            isDark
+                                ? "bg-amber-500/10 border border-amber-500/20"
+                                : "bg-amber-50 border border-amber-200"
+                        }`}
+                    >
+                        <AlertCircle
+                            className={`w-4 h-4 flex-shrink-0 ${
+                                isDark ? "text-amber-400" : "text-amber-600"
+                            }`}
+                        />
+                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                            DeepSeek 1.3B có thể không hỗ trợ tools. Khuyến nghị
+                            chọn <strong>Qwen 2.5 Coder 7B</strong> để AI có thể
+                            đọc và sửa code.
+                        </p>
+                    </div>
+                )}
 
             {/* Error display */}
             {error && (

@@ -47,6 +47,7 @@ export default function IDELayout({
         cursorPosition,
         setActiveTab,
         updateCode,
+        updateCodeByTab,
         toggleTheme,
         togglePanel,
         toggleActivityView,
@@ -118,6 +119,15 @@ export default function IDELayout({
         [activeTab, code, updateCode],
     );
 
+    // Agent edit_code: update tab content + switch to edited tab so user sees the change
+    const handleEditCode = useCallback(
+        (tab: "html" | "css" | "javascript", content: string) => {
+            updateCodeByTab(tab, content);
+            setActiveTab(tab);
+        },
+        [updateCodeByTab, setActiveTab],
+    );
+
     return (
         <div className={`ide-root ${theme === "light" ? "light" : ""}`}>
             <div className={`ide-grid ${panels.agent ? "agent-open" : ""}`}>
@@ -180,6 +190,8 @@ export default function IDELayout({
                                 codeContext={code[activeTab]}
                                 language={LANGUAGE_LABELS[activeTab]}
                                 onInsertCode={handleInsertCode}
+                                code={code}
+                                onEditCode={handleEditCode}
                                 theme={theme}
                                 aiServerStatus={aiServerStatus}
                             />

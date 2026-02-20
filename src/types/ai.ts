@@ -131,9 +131,37 @@ export interface OllamaChatMessage {
     content: string;
 }
 
+export interface OllamaToolCall {
+    type: "function";
+    function: {
+        index?: number;
+        name: string;
+        arguments?: string | Record<string, unknown>;
+    };
+}
+
+export interface OllamaChatMessageWithTools extends OllamaChatMessage {
+    tool_calls?: OllamaToolCall[];
+}
+
+export interface OllamaToolDefinition {
+    type: "function";
+    function: {
+        name: string;
+        description: string;
+        parameters: {
+            type: "object";
+            required?: string[];
+            properties: Record<string, { type: string; description?: string }>;
+        };
+    };
+}
+
 export interface OllamaChatRequest {
     model: string;
     messages: OllamaChatMessage[];
+    tools?: OllamaToolDefinition[];
+    tool_choice?: "auto" | "none";
     stream?: boolean;
     options?: {
         temperature?: number;
@@ -147,7 +175,7 @@ export interface OllamaChatRequest {
 
 export interface OllamaChatResponse {
     model: string;
-    message: OllamaChatMessage;
+    message: OllamaChatMessageWithTools;
     done: boolean;
     total_duration?: number;
     eval_count?: number;
