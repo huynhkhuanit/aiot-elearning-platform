@@ -14,7 +14,11 @@ export const AI_MODELS: AIModel[] = [
         name: "DeepSeek Coder 1.3B",
         provider: "Ollama",
     },
-    { id: "codellama:13b-instruct", name: "CodeLlama 13B", provider: "Ollama" },
+    {
+        id: "qwen2.5-coder:7b-instruct",
+        name: "Qwen 2.5 Coder 7B",
+        provider: "Ollama",
+    },
 ];
 
 export const AI_MODE_CONFIG: Record<

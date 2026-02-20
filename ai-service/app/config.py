@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     GROQ_MAX_TOKENS: int = 12000  # Increased from 8000 to support tree structure roadmaps (150-200 nodes with branching)
     GROQ_TEMPERATURE: float = 0.7
     
+    # Ollama Local Configuration (backup for Colab)
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_CHAT_MODEL: str = "qwen2.5-coder:7b-instruct"
+    OLLAMA_COMPLETION_MODEL: str = "deepseek-coder:1.3b"
+    
     # Available model aliases for easy switching via .env
     # Set GROQ_MODEL to one of these values:
     # - llama-3.3-70b-versatile (best for Vietnamese + complex JSON)

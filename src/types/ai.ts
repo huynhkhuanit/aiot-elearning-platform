@@ -96,7 +96,7 @@ export const DEFAULT_AI_SETTINGS: AIAssistantSettings = {
     autocompleteDelay: 300,
     serverUrl: "",
     completionModel: "deepseek-coder:1.3b",
-    chatModel: "codellama:13b-instruct",
+    chatModel: "qwen2.5-coder:7b-instruct",
 };
 
 // ===== Ollama API Types (internal) =====

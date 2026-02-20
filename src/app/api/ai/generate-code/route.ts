@@ -53,7 +53,7 @@ Trả lời với 2 phần rõ ràng:
       code: extractedCode || result.content,
       explanation: explanation || "Code đã được sinh thành công.",
       language: lang,
-      model: process.env.OLLAMA_CHAT_MODEL || "codellama:13b-instruct",
+      model: process.env.OLLAMA_CHAT_MODEL || "qwen2.5-coder:7b-instruct",
       durationMs: result.durationMs,
     })
   } catch (error) {

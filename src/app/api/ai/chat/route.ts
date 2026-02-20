@@ -1,5 +1,9 @@
 import { NextRequest } from "next/server";
-import { getChatCompletionStream, getChatCompletion } from "@/lib/ollama";
+import {
+    getChatCompletionStream,
+    getChatCompletion,
+    getOllamaConfig,
+} from "@/lib/ollama";
 
 // System prompt for the AI coding tutor (Vietnamese context)
 const SYSTEM_PROMPT = `Bạn là một trợ lý lập trình AI thông minh trên nền tảng học tập CodeSense AIoT - một trang web E-learning dành cho sinh viên và người mới bắt đầu học lập trình tại Việt Nam.
@@ -83,32 +87,59 @@ export async function POST(request: NextRequest) {
             );
 
         let stream: ReadableStream<string>;
+        let effectiveModelId = modelId;
+        const opts = {
+            maxTokens,
+            temperature: smallModel ? 0.2 : 0.3,
+            modelId: effectiveModelId,
+        };
 
         try {
-            stream = await getChatCompletionStream(ollamaMessages, {
-                maxTokens,
-                temperature: smallModel ? 0.2 : 0.3,
-                modelId,
-            });
+            stream = await getChatCompletionStream(ollamaMessages, opts);
         } catch (streamErr) {
-            // Fallback: use non-streaming when streaming fails (e.g. 405 from Ngrok free tier)
             const errMsg =
                 streamErr instanceof Error
                     ? streamErr.message
                     : String(streamErr);
-            if (
+            // Fallback: model not found (404) -> retry with default chat model
+            if (errMsg.includes("404") && errMsg.includes("not found")) {
+                const { chatModel } = getOllamaConfig();
+                effectiveModelId = chatModel;
+                try {
+                    stream = await getChatCompletionStream(ollamaMessages, {
+                        ...opts,
+                        modelId: effectiveModelId,
+                    });
+                } catch (retryErr) {
+                    const retryMsg =
+                        retryErr instanceof Error
+                            ? retryErr.message
+                            : String(retryErr);
+                    if (
+                        retryMsg.includes("405") ||
+                        retryMsg.includes("method not allowed")
+                    ) {
+                        const { content } = await getChatCompletion(
+                            ollamaMessages,
+                            { ...opts, modelId: effectiveModelId },
+                        );
+                        stream = new ReadableStream({
+                            start(controller) {
+                                if (content) controller.enqueue(content);
+                                controller.close();
+                            },
+                        });
+                    } else {
+                        throw retryErr;
+                    }
+                }
+            } else if (
                 errMsg.includes("405") ||
                 errMsg.includes("method not allowed")
             ) {
-                const { content } = await getChatCompletion(ollamaMessages, {
-                    maxTokens,
-                    temperature: smallModel ? 0.2 : 0.3,
-                    modelId,
-                });
-                // Simulate streaming by sending full response in chunks
+                const { content } = await getChatCompletion(ollamaMessages, opts);
                 stream = new ReadableStream({
                     start(controller) {
-                        // Send as single chunk (simulated streaming)
                         if (content) controller.enqueue(content);
                         controller.close();
                     },

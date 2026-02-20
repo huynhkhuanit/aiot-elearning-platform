@@ -19,7 +19,7 @@ function AIAssistantSettings() {
     autocompleteDelay: 300,
     serverUrl: '',
     completionModel: 'deepseek-coder:1.3b',
-    chatModel: 'codellama:13b-instruct',
+    chatModel: 'qwen2.5-coder:7b-instruct',
   });
   const [serverStatus, setServerStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
   const [serverModels, setServerModels] = useState<string[]>([]);
@@ -192,7 +192,7 @@ function AIAssistantSettings() {
                 value={settings.chatModel}
                 onChange={(e) => setSettings(prev => ({ ...prev, chatModel: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="codellama:13b-instruct"
+                placeholder="qwen2.5-coder:7b-instruct"
               />
             </div>
           </div>

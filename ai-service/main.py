@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
-from app.routers import roadmap
+from app.routers import roadmap, ollama
 
 # Configure logging
 logging.basicConfig(
@@ -22,20 +22,23 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
     # Startup
-    logger.info(f"[START] AI Roadmap Service (Groq + Llama 3)")
+    logger.info(f"[START] AI Service (Groq + Ollama Local)")
     logger.info(f"[ENV] {'Development' if settings.DEBUG else 'Production'}")
-    logger.info(f"[MODEL] {settings.GROQ_MODEL}")
+    logger.info(f"[GROQ MODEL] {settings.GROQ_MODEL}")
     api_key_preview = settings.GROQ_API_KEY[:15] + "..." if settings.GROQ_API_KEY and len(settings.GROQ_API_KEY) > 15 else "NOT SET"
-    logger.info(f"[API_KEY] {api_key_preview} (length: {len(settings.GROQ_API_KEY) if settings.GROQ_API_KEY else 0})")
+    logger.info(f"[GROQ KEY] {api_key_preview}")
+    logger.info(f"[OLLAMA] {settings.OLLAMA_BASE_URL}")
+    logger.info(f"[OLLAMA CHAT] {settings.OLLAMA_CHAT_MODEL}")
+    logger.info(f"[OLLAMA COMPLETION] {settings.OLLAMA_COMPLETION_MODEL}")
     yield
     # Shutdown
-    logger.info("[STOP] Shutting down AI Roadmap Service")
+    logger.info("[STOP] Shutting down AI Service")
 
 
 app = FastAPI(
-    title="AI Roadmap Generator",
-    description="Generate personalized learning roadmaps using AI",
-    version="1.0.0",
+    title="AIoT Learning Platform - AI Service",
+    description="AI Service: Roadmap Generation (Groq) + Code Agent (Ollama Local)",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -50,6 +53,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(roadmap.router)
+app.include_router(ollama.router)
 
 
 @app.get("/")
@@ -57,8 +61,9 @@ async def root():
     """Health check endpoint"""
     return {
         "status": "ok",
-        "service": "AI Roadmap Generator",
-        "version": "1.0.0",
+        "service": "AIoT Learning Platform - AI Service",
+        "version": "2.0.0",
+        "providers": ["groq", "ollama-local"],
     }
 
 
@@ -68,11 +73,18 @@ async def health_check():
     api_key_preview = settings.GROQ_API_KEY[:15] + "..." if settings.GROQ_API_KEY and len(settings.GROQ_API_KEY) > 15 else "NOT SET"
     return {
         "status": "healthy",
-        "groq_configured": bool(settings.GROQ_API_KEY),
-        "api_key_preview": api_key_preview,
-        "api_key_length": len(settings.GROQ_API_KEY) if settings.GROQ_API_KEY else 0,
-        "model": settings.GROQ_MODEL,
-        "provider": "groq",
+        "providers": {
+            "groq": {
+                "configured": bool(settings.GROQ_API_KEY),
+                "model": settings.GROQ_MODEL,
+                "api_key_preview": api_key_preview,
+            },
+            "ollama": {
+                "base_url": settings.OLLAMA_BASE_URL,
+                "chat_model": settings.OLLAMA_CHAT_MODEL,
+                "completion_model": settings.OLLAMA_COMPLETION_MODEL,
+            },
+        },
     }
 
 

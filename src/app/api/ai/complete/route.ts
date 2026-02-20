@@ -3,7 +3,18 @@ import { getCodeCompletion } from "@/lib/ollama"
 
 export async function POST(request: NextRequest) {
   try {
-    const { prefix, suffix, language, maxTokens } = await request.json()
+    let body: Record<string, unknown>
+    try {
+      const text = await request.text()
+      body = text ? (JSON.parse(text) as Record<string, unknown>) : {}
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid or empty JSON body. Expected { prefix, suffix }" },
+        { status: 400 }
+      )
+    }
+
+    const { prefix, suffix, language, maxTokens } = body
 
     if (typeof prefix !== "string" || typeof suffix !== "string") {
       return NextResponse.json(
@@ -12,8 +23,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const maxTokensNum =
+      typeof maxTokens === "number" && maxTokens > 0 ? maxTokens : 128
+
     const result = await getCodeCompletion(prefix, suffix, {
-      maxTokens: maxTokens ?? 128,
+      maxTokens: maxTokensNum,
       temperature: 0.2,
     })
 
