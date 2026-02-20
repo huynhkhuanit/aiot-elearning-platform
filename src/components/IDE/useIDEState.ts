@@ -83,6 +83,25 @@ export function useIDEState(
     // Console logs
     const [consoleLogs, setConsoleLogs] = useState<ConsoleLog[]>([]);
 
+    // Clear logs on each preview update (don't persist - only show latest run)
+    const [clearLogsOnUpdate, setClearLogsOnUpdate] = useState(() => {
+        if (typeof window === "undefined") return false;
+        try {
+            return localStorage.getItem("ide_console_clear_on_update") === "true";
+        } catch {
+            return false;
+        }
+    });
+
+    const setClearLogsOnUpdateWithStorage = useCallback((value: boolean) => {
+        setClearLogsOnUpdate(value);
+        try {
+            localStorage.setItem("ide_console_clear_on_update", String(value));
+        } catch {
+            /* ignore */
+        }
+    }, []);
+
     // Cursor position
     const [cursorPosition, setCursorPosition] = useState({
         line: 1,
@@ -143,6 +162,8 @@ export function useIDEState(
         bottomTab,
         bottomHeight,
         consoleLogs,
+        clearLogsOnUpdate,
+        setClearLogsOnUpdate: setClearLogsOnUpdateWithStorage,
         cursorPosition,
         setActiveTab,
         updateCode,

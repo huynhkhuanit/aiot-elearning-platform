@@ -42,6 +42,8 @@ export default function IDELayout({
         bottomTab,
         bottomHeight,
         consoleLogs,
+        clearLogsOnUpdate,
+        setClearLogsOnUpdate,
         cursorPosition,
         setActiveTab,
         updateCode,
@@ -160,6 +162,8 @@ export default function IDELayout({
                             onTabChange={setBottomTab}
                             consoleLogs={consoleLogs}
                             onClearLogs={clearConsoleLogs}
+                            clearLogsOnUpdate={clearLogsOnUpdate}
+                            onClearLogsOnUpdateChange={setClearLogsOnUpdate}
                             code={code}
                             height={bottomHeight}
                             onHeightChange={setBottomHeight}

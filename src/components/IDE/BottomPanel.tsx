@@ -7,6 +7,8 @@ import {
     AlertTriangle,
     Trash2,
     GripHorizontal,
+    CheckSquare,
+    Square,
 } from "lucide-react";
 import type { BottomTab, ConsoleLog, CodeState } from "./useIDEState";
 import { generatePreviewHTML } from "../CodePlayground/utils";
@@ -16,6 +18,8 @@ interface BottomPanelProps {
     onTabChange: (tab: BottomTab) => void;
     consoleLogs: ConsoleLog[];
     onClearLogs: () => void;
+    clearLogsOnUpdate: boolean;
+    onClearLogsOnUpdateChange: (value: boolean) => void;
     code: CodeState;
     height: number;
     onHeightChange: (height: number) => void;
@@ -27,6 +31,8 @@ export default function BottomPanel({
     onTabChange,
     consoleLogs,
     onClearLogs,
+    clearLogsOnUpdate,
+    onClearLogsOnUpdateChange,
     code,
     height,
     onHeightChange,
@@ -34,11 +40,23 @@ export default function BottomPanel({
 }: BottomPanelProps) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const executionRef = useRef(0);
+    const prevCodeRef = useRef<CodeState>(code);
     const [isDragging, setIsDragging] = useState(false);
 
-    // Live preview update
+    // Live preview update - ONLY when code changes. Do NOT include activeTab.
+    // Including activeTab caused iframe to reload on tab switch → JS re-runs → duplicate console logs.
+    // Iframe is always mounted (hidden when not preview), so no need to refresh on tab switch.
     useEffect(() => {
         const timer = setTimeout(() => {
+            const codeChanged =
+                prevCodeRef.current.html !== code.html ||
+                prevCodeRef.current.css !== code.css ||
+                prevCodeRef.current.javascript !== code.javascript;
+            prevCodeRef.current = code;
+
+            if (clearLogsOnUpdate && codeChanged) {
+                onClearLogs();
+            }
             executionRef.current += 1;
             if (iframeRef.current?.contentWindow) {
                 const previewHTML = generatePreviewHTML(
@@ -47,9 +65,9 @@ export default function BottomPanel({
                 );
                 iframeRef.current.srcdoc = previewHTML;
             }
-        }, 800);
+        }, 300);
         return () => clearTimeout(timer);
-    }, [code]);
+    }, [code, clearLogsOnUpdate, onClearLogs]);
 
     // Handle resize drag
     const handleResizeStart = useCallback(
@@ -111,31 +129,68 @@ export default function BottomPanel({
                         )}
                     </button>
                 ))}
-                {activeTab === "console" && consoleLogs.length > 0 && (
-                    <button
-                        onClick={onClearLogs}
-                        className="ml-auto px-2 text-[var(--ide-text-muted)] hover:text-[var(--ide-text)] transition-colors"
-                        title="Clear console"
-                    >
-                        <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                {activeTab === "console" && (
+                    <div className="ml-auto flex items-center gap-2">
+                        <button
+                            type="button"
+                            role="checkbox"
+                            aria-checked={clearLogsOnUpdate}
+                            aria-label="Chỉ hiển thị log từ lần chạy mới nhất"
+                            title="Chỉ lần chạy mới nhất: Bật sẽ xóa log cũ mỗi khi code thay đổi"
+                            onClick={() =>
+                                onClearLogsOnUpdateChange(!clearLogsOnUpdate)
+                            }
+                            className="flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer text-[var(--ide-text-muted)] hover:text-[var(--ide-text)] hover:bg-[var(--ide-bg-hover)] transition-colors duration-200 border border-transparent hover:border-[var(--ide-border)] focus:outline-none focus:ring-1 focus:ring-[var(--ide-accent)] focus:border-[var(--ide-accent)]"
+                        >
+                            {clearLogsOnUpdate ? (
+                                <CheckSquare
+                                    className="w-3.5 h-3.5 text-[var(--ide-accent)] flex-shrink-0"
+                                    aria-hidden
+                                />
+                            ) : (
+                                <Square
+                                    className="w-3.5 h-3.5 flex-shrink-0"
+                                    aria-hidden
+                                />
+                            )}
+                            <span className="text-[11px] uppercase tracking-wider whitespace-nowrap">
+                                Chỉ lần chạy mới
+                            </span>
+                        </button>
+                        {consoleLogs.length > 0 && (
+                            <button
+                                onClick={onClearLogs}
+                                className="px-2 py-1 text-[var(--ide-text-muted)] hover:text-[var(--ide-text)] hover:bg-[var(--ide-bg-hover)] rounded transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[var(--ide-accent)]"
+                                title="Xóa tất cả log"
+                                aria-label="Xóa tất cả log"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                        )}
+                    </div>
                 )}
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-auto bg-[var(--ide-bg)]">
-                {activeTab === "preview" && (
-                    <iframe
-                        ref={iframeRef}
-                        className="w-full h-full border-0"
-                        sandbox="allow-scripts allow-same-origin"
-                        title="Live Preview"
-                        style={{ background: "#ffffff" }}
-                    />
-                )}
+            <div className="flex-1 overflow-auto bg-[var(--ide-bg)] relative">
+                {/* Iframe always mounted so it receives code updates when user edits
+                    CSS/JS while viewing Console. Hidden via CSS when not on preview. */}
+                <iframe
+                    ref={iframeRef}
+                    className={`w-full h-full border-0 absolute inset-0 ${
+                        activeTab !== "preview" ? "invisible" : ""
+                    }`}
+                    sandbox="allow-scripts allow-same-origin"
+                    title="Live Preview"
+                    style={{
+                        background: "#ffffff",
+                        pointerEvents:
+                            activeTab !== "preview" ? "none" : undefined,
+                    }}
+                />
 
                 {activeTab === "console" && (
-                    <div className="p-2 font-mono text-[12px]">
+                    <div className="relative z-10 p-2 font-mono text-[12px]">
                         {consoleLogs.length === 0 ? (
                             <div className="text-[var(--ide-text-muted)] p-2">
                                 No console output
@@ -167,7 +222,7 @@ export default function BottomPanel({
                 )}
 
                 {activeTab === "problems" && (
-                    <div className="p-2 text-[12px] text-[var(--ide-text-muted)]">
+                    <div className="relative z-10 p-2 text-[12px] text-[var(--ide-text-muted)]">
                         No problems found
                     </div>
                 )}
