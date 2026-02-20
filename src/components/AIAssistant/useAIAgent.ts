@@ -111,9 +111,9 @@ export function useAIAgent() {
     const startThinking = useCallback(() => {
         setIsThinking(true);
         const steps: ThinkingStep[] = [
-            { id: "1", label: "Analyzing code context", status: "active" },
-            { id: "2", label: "Finding relevant patterns", status: "pending" },
-            { id: "3", label: "Generating response", status: "pending" },
+            { id: "1", label: "Đang phân tích code...", status: "active" },
+            { id: "2", label: "Đang tìm pattern phù hợp...", status: "pending" },
+            { id: "3", label: "Đang tạo phản hồi...", status: "pending" },
         ];
         setThinkingSteps(steps);
 

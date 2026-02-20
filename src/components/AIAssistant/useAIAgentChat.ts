@@ -138,7 +138,16 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
             };
 
             const updatedMessages = [...messages, userMessage];
-            setMessages(updatedMessages);
+
+            // Add empty assistant placeholder for streaming UI (Copilot-style)
+            const placeholderId = generateId();
+            const placeholderMessage: AIChatMessage = {
+                id: placeholderId,
+                role: "assistant",
+                content: "",
+                timestamp: Date.now(),
+            };
+            setMessages([...updatedMessages, placeholderMessage]);
             saveHistory(updatedMessages);
             setIsLoading(true);
 
@@ -212,23 +221,54 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                     break;
                 }
 
-                const assistantMessage: AIChatMessage = {
-                    id: generateId(),
-                    role: "assistant",
-                    content:
-                        assistantContent ||
-                        "Đã xử lý xong. Nếu cần sửa code, tôi đã dùng tools để cập nhật.",
-                    timestamp: Date.now(),
-                };
+                const finalContent =
+                    assistantContent ||
+                    "Đã xử lý xong. Nếu cần sửa code, tôi đã dùng tools để cập nhật.";
 
-                setMessages((prev) => [...prev, assistantMessage]);
-                saveHistory([...updatedMessages, assistantMessage]);
+                setMessages((prev) => {
+                    const next = [...prev];
+                    const lastIdx = next.length - 1;
+                    if (
+                        lastIdx >= 0 &&
+                        next[lastIdx].role === "assistant" &&
+                        next[lastIdx].id === placeholderId &&
+                        !next[lastIdx].content
+                    ) {
+                        next[lastIdx] = {
+                            ...next[lastIdx],
+                            content: finalContent,
+                            timestamp: Date.now(),
+                        };
+                    } else {
+                        next.push({
+                            id: generateId(),
+                            role: "assistant",
+                            content: finalContent,
+                            timestamp: Date.now(),
+                        });
+                    }
+                    return next;
+                });
+                saveHistory([...updatedMessages, { ...placeholderMessage, content: finalContent }]);
             } catch (err) {
                 if (abortRef.current) return;
 
                 const errMsg = err instanceof Error ? err.message : "Unknown error";
                 setError(errMsg);
                 options.onError?.(errMsg);
+
+                // Remove empty placeholder on error
+                setMessages((prev) => {
+                    const last = prev[prev.length - 1];
+                    if (
+                        last?.role === "assistant" &&
+                        !last.content &&
+                        last.id === placeholderId
+                    ) {
+                        return prev.slice(0, -1);
+                    }
+                    return prev;
+                });
             } finally {
                 setIsLoading(false);
                 abortRef.current = false;

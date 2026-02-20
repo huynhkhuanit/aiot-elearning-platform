@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
-import { Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useAIChat } from "./useAIChat";
 import { useAIAgentChat } from "./useAIAgentChat";
 import { useAIAgent } from "./useAIAgent";
@@ -9,6 +9,7 @@ import AIAgentHeader from "./AIAgentHeader";
 import AIAgentInput from "./AIAgentInput";
 import AIAgentMessage from "./AIAgentMessage";
 import AIAgentThinkingStep from "./AIAgentThinkingStep";
+import AIAgentStreamingPlaceholder from "./AIAgentStreamingPlaceholder";
 import AIAgentWelcome from "./AIAgentWelcome";
 import AIAgentConversationList from "./AIAgentConversationList";
 import type {
@@ -185,9 +186,13 @@ export default function AIAgentPanel({
                 />
             )}
 
-            {/* Thinking Steps */}
+            {/* Thinking Steps (Agent mode - amber accent) */}
             {isThinking && (
-                <AIAgentThinkingStep steps={thinkingSteps} theme={theme} />
+                <AIAgentThinkingStep
+                    steps={thinkingSteps}
+                    theme={theme}
+                    accent={useAgentMode ? "amber" : "blue"}
+                />
             )}
 
             {/* Messages Area */}
@@ -209,48 +214,68 @@ export default function AIAgentPanel({
                     />
                 ) : (
                     <div>
-                        {messages.map((msg) => (
-                            <AIAgentMessage
-                                key={msg.id}
-                                message={msg}
-                                onInsertCode={onInsertCode}
-                                theme={theme}
-                                accent={
-                                    mode === "agent"
-                                        ? "amber"
-                                        : "blue"
-                                }
-                            />
-                        ))}
+                        {messages
+                            .filter(
+                                (m) =>
+                                    !(
+                                        isLoading &&
+                                        m === messages[messages.length - 1] &&
+                                        m.role === "assistant" &&
+                                        !m.content
+                                    ),
+                            )
+                            .map((msg, idx) => {
+                                const visibleMessages = messages.filter(
+                                    (m) =>
+                                        !(
+                                            isLoading &&
+                                            m === messages[messages.length - 1] &&
+                                            m.role === "assistant" &&
+                                            !m.content
+                                        ),
+                                );
+                                return (
+                                    <AIAgentMessage
+                                        key={msg.id}
+                                        message={msg}
+                                        onInsertCode={onInsertCode}
+                                        theme={theme}
+                                        accent={
+                                            mode === "agent"
+                                                ? "amber"
+                                                : "blue"
+                                        }
+                                        animateWords={
+                                            mode === "agent" &&
+                                            msg.role === "assistant" &&
+                                            idx === visibleMessages.length - 1 &&
+                                            !!msg.content &&
+                                            !isLoading
+                                        }
+                                    />
+                                );
+                            })}
 
-                        {/* Streaming loading state */}
+                        {/* Placeholder hiển thị từng chữ khi đang chờ response */}
                         {isLoading &&
                             messages.length > 0 &&
                             messages[messages.length - 1].role ===
                                 "assistant" &&
                             !messages[messages.length - 1].content && (
-                                <div className="flex items-center gap-2 px-4 py-3">
-                                    <Loader2
-                                        className={`w-4 h-4 animate-spin ${
-                                            mode === "agent"
-                                                ? isDark
-                                                    ? "text-amber-400"
-                                                    : "text-amber-600"
-                                                : isDark
-                                                  ? "text-blue-400"
-                                                  : "text-blue-500"
-                                        }`}
-                                    />
-                                    <span
-                                        className={`text-xs ${
-                                            isDark
-                                                ? "text-gray-400"
-                                                : "text-gray-500"
-                                        }`}
-                                    >
-                                        AI đang suy nghĩ...
-                                    </span>
-                                </div>
+                                <AIAgentStreamingPlaceholder
+                                    theme={theme}
+                                    accent={
+                                        mode === "agent" ? "amber" : "blue"
+                                    }
+                                    statusLabel={
+                                        isThinking && thinkingSteps.length > 0
+                                            ? thinkingSteps.find(
+                                                  (s) => s.status === "active",
+                                              )?.label ??
+                                              "AI đang tạo phản hồi..."
+                                            : "AI đang tạo phản hồi..."
+                                    }
+                                />
                             )}
 
                         <div ref={messagesEndRef} />

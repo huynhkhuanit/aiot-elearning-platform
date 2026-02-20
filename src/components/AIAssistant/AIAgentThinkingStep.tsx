@@ -7,11 +7,13 @@ import type { ThinkingStep } from "./types";
 interface AIAgentThinkingStepProps {
     steps: ThinkingStep[];
     theme?: "light" | "dark";
+    accent?: "amber" | "blue";
 }
 
 export default function AIAgentThinkingStep({
     steps,
     theme = "dark",
+    accent = "blue",
 }: AIAgentThinkingStepProps) {
     const isDark = theme === "dark";
     const [collapsed, setCollapsed] = useState(false);
@@ -24,17 +26,23 @@ export default function AIAgentThinkingStep({
 
     return (
         <div
-            className={`mx-3 my-2 rounded-xl overflow-hidden border transition-all ${
-                isDark
-                    ? "bg-[#16162a]/80 border-[#2d2d44]"
-                    : "bg-blue-50/50 border-blue-100"
+            className={`mx-3 my-2 rounded-xl overflow-hidden border transition-all duration-200 ${
+                accent === "amber"
+                    ? isDark
+                        ? "bg-[#16162a]/80 border-amber-500/20"
+                        : "bg-amber-50/50 border-amber-200"
+                    : isDark
+                      ? "bg-[#16162a]/80 border-[#2d2d44]"
+                      : "bg-blue-50/50 border-blue-100"
             }`}
         >
             {/* Progress bar */}
-            <div className={`h-0.5 ${isDark ? "bg-[#2d2d44]" : "bg-blue-100"}`}>
+            <div className={`h-0.5 ${isDark ? "bg-[#2d2d44]" : accent === "amber" ? "bg-amber-100" : "bg-blue-100"}`}>
                 <div
                     className={`h-full transition-all duration-500 ease-out rounded-full ${
-                        isDark ? "bg-cyan-500" : "bg-blue-500"
+                        accent === "amber"
+                            ? isDark ? "bg-amber-500" : "bg-amber-500"
+                            : isDark ? "bg-blue-500" : "bg-blue-500"
                     }`}
                     style={{ width: `${progress}%` }}
                 />
@@ -43,20 +51,27 @@ export default function AIAgentThinkingStep({
             {/* Header — clickable to toggle */}
             <button
                 onClick={() => setCollapsed(!collapsed)}
-                className={`w-full flex items-center gap-2 px-3 py-2 transition-colors cursor-pointer ${
-                    isDark ? "hover:bg-white/[0.02]" : "hover:bg-blue-50"
+                className={`w-full flex items-center gap-2 px-3 py-2 transition-colors duration-200 cursor-pointer ${
+                    accent === "amber"
+                        ? isDark ? "hover:bg-white/[0.02]" : "hover:bg-amber-50"
+                        : isDark ? "hover:bg-white/[0.02]" : "hover:bg-blue-50"
                 }`}
+                aria-label={collapsed ? "Expand thinking steps" : "Collapse thinking steps"}
             >
                 <div className="relative flex items-center justify-center w-4 h-4">
                     <Loader2
                         className={`w-3.5 h-3.5 animate-spin ${
-                            isDark ? "text-cyan-400" : "text-blue-500"
+                            accent === "amber"
+                                ? isDark ? "text-amber-400" : "text-amber-600"
+                                : isDark ? "text-blue-400" : "text-blue-500"
                         }`}
                     />
                 </div>
                 <span
                     className={`text-xs font-medium flex-1 text-left ${
-                        isDark ? "text-cyan-400" : "text-blue-600"
+                        accent === "amber"
+                            ? isDark ? "text-amber-400" : "text-amber-700"
+                            : isDark ? "text-blue-400" : "text-blue-600"
                     }`}
                 >
                     {activeStep ? activeStep.label : "Đang xử lý..."}
@@ -107,9 +122,9 @@ export default function AIAgentThinkingStep({
                                 <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center">
                                     <div
                                         className={`w-1.5 h-1.5 rounded-full ${
-                                            isDark
-                                                ? "bg-cyan-400"
-                                                : "bg-blue-500"
+                                            accent === "amber"
+                                                ? isDark ? "bg-amber-400" : "bg-amber-500"
+                                                : isDark ? "bg-blue-400" : "bg-blue-500"
                                         }`}
                                         style={{
                                             animation:

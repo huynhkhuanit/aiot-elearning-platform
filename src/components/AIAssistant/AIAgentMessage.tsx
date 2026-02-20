@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Bot, Copy, Check, RotateCcw } from "lucide-react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { Bot, Copy, Check } from "lucide-react";
 import type { AIChatMessage } from "@/types/ai";
 import AIAgentCodeBlock from "./AIAgentCodeBlock";
 
@@ -12,7 +12,11 @@ interface AIAgentMessageProps {
     onInsertCode?: (code: string) => void;
     theme?: "light" | "dark";
     accent?: MessageAccent;
+    /** Hiển thị từng chữ (word) khi nội dung vừa tới (Agent mode) */
+    animateWords?: boolean;
 }
+
+const WORD_REVEAL_DELAY_MS = 35;
 
 function parseContent(
     content: string,
@@ -203,26 +207,56 @@ function timeAgo(timestamp: number): string {
     return `${Math.floor(hours / 24)} ngày trước`;
 }
 
+function splitIntoWords(text: string): string[] {
+    return text.match(/\S+\s*|\s+/g) || [];
+}
+
 export default function AIAgentMessage({
     message,
     onInsertCode,
     theme = "dark",
     accent = "blue",
+    animateWords = false,
 }: AIAgentMessageProps) {
     const isUser = message.role === "user";
     const isDark = theme === "dark";
     const [copied, setCopied] = useState(false);
     const [hovered, setHovered] = useState(false);
-    const parts = useMemo(
-        () => parseContent(message.content),
-        [message.content],
-    );
+    const hasAnimatedRef = useRef(false);
 
-    const isStreaming =
-        !isUser && message.content && message.content.endsWith("▌");
+    const rawContent = message.content.replace(/▌$/, "");
+    const isStreaming = !isUser && message.content.endsWith("▌");
+
+    const [revealedWordCount, setRevealedWordCount] = useState(0);
+
+    const words = useMemo(() => splitIntoWords(rawContent), [rawContent]);
+    const shouldAnimate =
+        animateWords &&
+        !isStreaming &&
+        rawContent.length > 0 &&
+        !hasAnimatedRef.current;
+
+    useEffect(() => {
+        if (!shouldAnimate || words.length === 0) return;
+        if (revealedWordCount >= words.length) {
+            hasAnimatedRef.current = true;
+            return;
+        }
+        const t = setTimeout(() => {
+            setRevealedWordCount((n) => Math.min(n + 1, words.length));
+        }, WORD_REVEAL_DELAY_MS);
+        return () => clearTimeout(t);
+    }, [shouldAnimate, revealedWordCount, words.length]);
+
+    const displayContent =
+        shouldAnimate && revealedWordCount < words.length
+            ? words.slice(0, revealedWordCount).join("")
+            : rawContent;
+
+    const parts = useMemo(() => parseContent(displayContent), [displayContent]);
 
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(message.content);
+        await navigator.clipboard.writeText(rawContent);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
@@ -373,8 +407,9 @@ export default function AIAgentMessage({
                             ),
                         )}
 
-                        {/* Streaming cursor (Copilot-style) */}
-                        {isStreaming && (
+                        {/* Streaming cursor hoặc cursor khi đang animate word-by-word */}
+                        {(isStreaming ||
+                            (shouldAnimate && revealedWordCount < words.length)) && (
                             <span
                                 className={`inline-block w-[2px] h-4 ml-0.5 align-text-bottom animate-pulse ${
                                     accent === "amber"
