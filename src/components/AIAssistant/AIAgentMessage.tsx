@@ -394,7 +394,6 @@ export default function AIAgentMessage({
                                     key={i}
                                     code={part.content}
                                     language={part.language}
-                                    onInsertCode={onInsertCode}
                                     theme={theme}
                                 />
                             ) : (
