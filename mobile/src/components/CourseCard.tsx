@@ -1,10 +1,51 @@
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radius, shadows } from "../theme";
 import { Course } from "../types/course";
 import { getLevelLabel, getLevelColor } from "../utils/format";
+
+function ThumbnailImage({
+  uri,
+  style,
+  placeholderStyle,
+  placeholderIconSize = 28,
+  placeholderVariant = "light",
+}: {
+  uri: string;
+  style: object;
+  placeholderStyle: object;
+  placeholderIconSize?: number;
+  placeholderVariant?: "light" | "dark";
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const placeholderColors =
+    placeholderVariant === "dark"
+      ? [colors.light.gradientFrom, colors.light.gradientTo]
+      : [colors.light.gradientFrom + "30", colors.light.gradientTo + "30"];
+  const iconColor = placeholderVariant === "dark" ? "rgba(255,255,255,0.7)" : colors.light.primary;
+  return (
+    <View style={[style, { backgroundColor: colors.light.surface }]}>
+      {!loaded && (
+        <LinearGradient
+          colors={placeholderColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[StyleSheet.absoluteFill, placeholderStyle]}
+        >
+          <Ionicons name="code-slash-outline" size={placeholderIconSize} color={iconColor} />
+        </LinearGradient>
+      )}
+      <Image
+        source={{ uri }}
+        style={[StyleSheet.absoluteFill, { backgroundColor: "transparent" }]}
+        onLoadEnd={() => setLoaded(true)}
+      />
+    </View>
+  );
+}
+
 interface Props {
   course: Course;
   variant?: "vertical" | "horizontal";
@@ -17,9 +58,7 @@ function CourseCard({
 }: Props) {
   if (variant === "horizontal") {
     return <TouchableOpacity style={[styles.hCard, shadows.md]} activeOpacity={0.7} onPress={onPress}>
-                {course.thumbnailUrl ? <Image source={{
-        uri: course.thumbnailUrl
-      }} style={styles.hThumbnail} /> : <LinearGradient colors={[colors.light.gradientFrom + "30", colors.light.gradientTo + "30"]} style={[styles.hThumbnail, styles.thumbnailPlaceholder]}>
+                {course.thumbnailUrl ? <ThumbnailImage uri={course.thumbnailUrl} style={styles.hThumbnail} placeholderStyle={styles.thumbnailPlaceholder} placeholderIconSize={28} /> : <LinearGradient colors={[colors.light.gradientFrom + "30", colors.light.gradientTo + "30"]} style={[styles.hThumbnail, styles.thumbnailPlaceholder]}>
                         <Ionicons name="code-slash-outline" size={28} color={colors.light.primary} />
                     </LinearGradient>}
                 <View style={styles.hContent}>
@@ -70,9 +109,7 @@ function CourseCard({
   // Vertical card (for featured / horizontal scroll)
   return <TouchableOpacity style={[styles.vCard, shadows.md]} activeOpacity={0.7} onPress={onPress}>
             <View style={styles.vThumbnailWrap}>
-                {course.thumbnailUrl ? <Image source={{
-        uri: course.thumbnailUrl
-      }} style={styles.vThumbnail} /> : <LinearGradient colors={[colors.light.gradientFrom, colors.light.gradientTo]} start={{
+                {course.thumbnailUrl ? <ThumbnailImage uri={course.thumbnailUrl} style={styles.vThumbnail} placeholderStyle={[styles.thumbnailPlaceholder, { borderRadius: 0 }]} placeholderIconSize={36} placeholderVariant="dark" /> : <LinearGradient colors={[colors.light.gradientFrom, colors.light.gradientTo]} start={{
         x: 0,
         y: 0
       }} end={{

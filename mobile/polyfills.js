@@ -1,11 +1,49 @@
 /**
- * Polyfills cho React Native - FormData và WebSocket.
+ * Polyfills cho React Native - globals cần thiết cho thư viện web.
  * Chạy TRƯỚC mọi module (index.js dùng require('./polyfills') đầu tiên).
  *
- * Lý do: "[runtime not ready]" - một số thư viện (Supabase realtime, whatwg-fetch)
- * truy cập FormData/WebSocket khi load, nhưng React Native chưa khởi tạo xong.
+ * Lý do: "[runtime not ready]" - nhiều thư viện (Supabase, Tamagui, LogBox...)
+ * truy cập window/FormData/WebSocket khi load, nhưng RN chưa khởi tạo xong.
  */
 const g = typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : this;
+
+// window - nhiều thư viện dùng window (browser API), RN không có sẵn
+if (typeof g.window === 'undefined') {
+  g.window = g;
+}
+
+// globalThis - chuẩn ES2020
+if (typeof g.globalThis === 'undefined') {
+  g.globalThis = g;
+}
+
+// document - stub tối thiểu (một số lib check document.createElement, document.body...)
+if (typeof g.document === 'undefined') {
+  g.document = {
+    createElement: () => ({}),
+    body: {},
+    documentElement: {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+}
+
+// navigator - stub (một số lib check navigator.userAgent)
+if (typeof g.navigator === 'undefined') {
+  g.navigator = { userAgent: 'ReactNative' };
+}
+
+// setImmediate / clearImmediate - Node.js API (dùng bởi LogBox, promise polyfills, ...)
+if (typeof g.setImmediate === 'undefined') {
+  g.setImmediate = function (fn) {
+    return setTimeout(fn, 0);
+  };
+}
+if (typeof g.clearImmediate === 'undefined') {
+  g.clearImmediate = function (id) {
+    clearTimeout(id);
+  };
+}
 
 // FormData - polyfill thuần JS, không phụ thuộc native
 if (typeof g.FormData === 'undefined') {

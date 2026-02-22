@@ -144,12 +144,25 @@ export default function CoursesScreen({
                     {[1, 2, 3, 4].map(i => <LoadingSkeleton key={i} variant="card" height={130} style={{
         marginBottom: spacing.base
       }} />)}
-                </View> : <FlatList data={courses} renderItem={renderCourseItem} keyExtractor={keyExtractor} contentContainerStyle={styles.listContent} ItemSeparatorComponent={() => <View style={styles.separator} />} onEndReached={handleLoadMore} onEndReachedThreshold={0.5} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.light.primary} />} ListEmptyComponent={<EmptyState icon="search-outline" title="Không tìm thấy khoá học" description="Thử thay đổi từ khoá hoặc bộ lọc" actionLabel="Xoá bộ lọc" onAction={() => {
-      setSearch("");
-      setSelectedLevel("");
-    }} />} ListFooterComponent={isLoadingMore ? <ActivityIndicator style={{
-      padding: spacing.base
-    }} size="small" color={colors.light.primary} /> : null} />}
+                </View> : <FlatList
+                data={courses}
+                renderItem={renderCourseItem}
+                keyExtractor={keyExtractor}
+                contentContainerStyle={styles.listContent}
+                ItemSeparatorComponent={() => <View style={styles.separator} />}
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.5}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.light.primary} />}
+                ListEmptyComponent={<EmptyState icon="search-outline" title="Không tìm thấy khoá học" description="Thử thay đổi từ khoá hoặc bộ lọc" actionLabel="Xoá bộ lọc" onAction={() => {
+                  setSearch("");
+                  setSelectedLevel("");
+                }} />}
+                ListFooterComponent={isLoadingMore ? <ActivityIndicator style={{ padding: spacing.base }} size="small" color={colors.light.primary} /> : null}
+                initialNumToRender={6}
+                maxToRenderPerBatch={8}
+                windowSize={11}
+                removeClippedSubviews={true}
+              />}
         </View>;
 }
 const styles = StyleSheet.create({
