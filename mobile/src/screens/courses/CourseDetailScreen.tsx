@@ -6,13 +6,12 @@ import {
     ScrollView,
     Image,
     TouchableOpacity,
-    ActivityIndicator,
     Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { colors, typography, spacing, radius } from "../../theme";
+import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { CoursesStackParamList } from "../../navigation/types";
 import { Chapter } from "../../types/course";
 import {
@@ -21,6 +20,9 @@ import {
     enrollCourse,
 } from "../../api/courses";
 import { getLevelLabel, getLevelColor } from "../../utils/format";
+import GradientButton from "../../components/GradientButton";
+import LoadingSkeleton from "../../components/LoadingSkeleton";
+import Badge from "../../components/Badge";
 
 type Props = NativeStackScreenProps<CoursesStackParamList, "CourseDetail">;
 
@@ -88,7 +90,25 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
     if (isLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.light.primary} />
+                <LoadingSkeleton variant="thumbnail" height={220} />
+                <View style={{ padding: spacing.xl }}>
+                    <LoadingSkeleton variant="line" width="60%" height={20} />
+                    <LoadingSkeleton
+                        variant="line"
+                        height={28}
+                        style={{ marginTop: spacing.sm }}
+                    />
+                    <LoadingSkeleton
+                        variant="line"
+                        height={16}
+                        style={{ marginTop: spacing.sm }}
+                    />
+                    <LoadingSkeleton
+                        variant="card"
+                        height={80}
+                        style={{ marginTop: spacing.xl }}
+                    />
+                </View>
             </View>
         );
     }
@@ -96,11 +116,13 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
     if (!course) {
         return (
             <View style={styles.loadingContainer}>
-                <Ionicons
-                    name="alert-circle-outline"
-                    size={48}
-                    color={colors.light.textMuted}
-                />
+                <View style={styles.errorIcon}>
+                    <Ionicons
+                        name="alert-circle-outline"
+                        size={48}
+                        color={colors.light.textMuted}
+                    />
+                </View>
                 <Text style={styles.errorText}>Không tìm thấy khoá học</Text>
             </View>
         );
@@ -114,62 +136,61 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
     return (
         <View style={styles.container}>
             <ScrollView bounces={false}>
-                {/* Course Thumbnail */}
-                {course.thumbnailUrl ? (
-                    <Image
-                        source={{ uri: course.thumbnailUrl }}
-                        style={styles.thumbnail}
-                    />
-                ) : (
-                    <LinearGradient
-                        colors={[
-                            colors.light.gradientFrom,
-                            colors.light.gradientTo,
-                        ]}
-                        style={styles.thumbnail}
-                    >
-                        <Ionicons
-                            name="book"
-                            size={48}
-                            color="rgba(255,255,255,0.6)"
+                {/* Course Thumbnail with overlay */}
+                <View style={styles.thumbnailWrap}>
+                    {course.thumbnailUrl ? (
+                        <Image
+                            source={{ uri: course.thumbnailUrl }}
+                            style={styles.thumbnail}
                         />
-                    </LinearGradient>
-                )}
+                    ) : (
+                        <LinearGradient
+                            colors={[
+                                colors.light.gradientFrom,
+                                colors.light.gradientTo,
+                            ]}
+                            style={[
+                                styles.thumbnail,
+                                styles.thumbnailPlaceholder,
+                            ]}
+                        >
+                            <Ionicons
+                                name="code-slash"
+                                size={48}
+                                color="rgba(255,255,255,0.5)"
+                            />
+                        </LinearGradient>
+                    )}
+                    {/* Gradient overlay */}
+                    <LinearGradient
+                        colors={["transparent", "rgba(0,0,0,0.6)"]}
+                        style={styles.thumbnailOverlay}
+                    />
+                    {/* Course title on image */}
+                    <View style={styles.thumbnailContent}>
+                        <Badge
+                            variant="level"
+                            text={getLevelLabel(course.level || "BEGINNER")}
+                            color="#ffffff"
+                            bgColor={
+                                getLevelColor(course.level || "BEGINNER") + "cc"
+                            }
+                        />
+                    </View>
+                </View>
 
                 {/* Course Info */}
                 <View style={styles.content}>
-                    <View style={styles.badgeRow}>
-                        <View
-                            style={[
-                                styles.levelBadge,
-                                {
-                                    backgroundColor:
-                                        getLevelColor(
-                                            course.level || "BEGINNER",
-                                        ) + "20",
-                                },
-                            ]}
-                        >
-                            <Text
-                                style={[
-                                    styles.levelText,
-                                    {
-                                        color: getLevelColor(
-                                            course.level || "BEGINNER",
-                                        ),
-                                    },
-                                ]}
-                            >
-                                {getLevelLabel(course.level || "BEGINNER")}
-                            </Text>
-                        </View>
-                        <Text style={styles.price}>
-                            {course.isFree ? "Miễn phí" : course.price}
-                        </Text>
+                    <View style={styles.priceRow}>
+                        <Text style={styles.title}>{course.title}</Text>
                     </View>
+                    {course.subtitle && (
+                        <Text style={styles.subtitle}>{course.subtitle}</Text>
+                    )}
 
-                    <Text style={styles.title}>{course.title}</Text>
-                    <Text style={styles.subtitle}>{course.subtitle}</Text>
+                    <Text style={styles.price}>
+                        {course.isFree ? "Miễn phí" : course.price}
+                    </Text>
 
                     {/* Instructor */}
                     <View style={styles.instructorRow}>
@@ -192,50 +213,108 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                 />
                             </View>
                         )}
-                        <Text style={styles.instructorName}>
-                            {course.instructor?.name || "Giảng viên"}
-                        </Text>
+                        <View>
+                            <Text style={styles.instructorLabel}>
+                                Giảng viên
+                            </Text>
+                            <Text style={styles.instructorName}>
+                                {course.instructor?.name || "Giảng viên"}
+                            </Text>
+                        </View>
                     </View>
 
                     {/* Stats Row */}
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
-                            <Ionicons
-                                name="people-outline"
-                                size={16}
-                                color={colors.light.primary}
-                            />
-                            <Text style={styles.statValue}>
-                                {course.students || 0}
-                            </Text>
-                            <Text style={styles.statLabel}>học viên</Text>
+                            <View
+                                style={[
+                                    styles.statIconCircle,
+                                    {
+                                        backgroundColor:
+                                            colors.light.primarySoft,
+                                    },
+                                ]}
+                            >
+                                <Ionicons
+                                    name="people-outline"
+                                    size={18}
+                                    color={colors.light.primary}
+                                />
+                            </View>
+                            <View>
+                                <Text style={styles.statValue}>
+                                    {course.students || 0}
+                                </Text>
+                                <Text style={styles.statLabel}>học viên</Text>
+                            </View>
                         </View>
+                        <View style={styles.statDivider} />
                         <View style={styles.statItem}>
-                            <Ionicons
-                                name="play-circle-outline"
-                                size={16}
-                                color={colors.light.primary}
-                            />
-                            <Text style={styles.statValue}>{totalLessons}</Text>
-                            <Text style={styles.statLabel}>bài học</Text>
+                            <View
+                                style={[
+                                    styles.statIconCircle,
+                                    {
+                                        backgroundColor:
+                                            colors.light.accentSoft,
+                                    },
+                                ]}
+                            >
+                                <Ionicons
+                                    name="play-circle-outline"
+                                    size={18}
+                                    color={colors.light.accent}
+                                />
+                            </View>
+                            <View>
+                                <Text style={styles.statValue}>
+                                    {totalLessons}
+                                </Text>
+                                <Text style={styles.statLabel}>bài học</Text>
+                            </View>
                         </View>
+                        <View style={styles.statDivider} />
                         <View style={styles.statItem}>
-                            <Ionicons name="star" size={16} color="#f59e0b" />
-                            <Text style={styles.statValue}>
-                                {Number(course.rating || 0).toFixed(1)}
-                            </Text>
-                            <Text style={styles.statLabel}>đánh giá</Text>
+                            <View
+                                style={[
+                                    styles.statIconCircle,
+                                    {
+                                        backgroundColor:
+                                            colors.light.warningSoft,
+                                    },
+                                ]}
+                            >
+                                <Ionicons
+                                    name="star"
+                                    size={18}
+                                    color="#f59e0b"
+                                />
+                            </View>
+                            <View>
+                                <Text style={styles.statValue}>
+                                    {Number(course.rating || 0).toFixed(1)}
+                                </Text>
+                                <Text style={styles.statLabel}>đánh giá</Text>
+                            </View>
                         </View>
                     </View>
 
                     {/* Chapters */}
-                    <Text style={styles.sectionTitle}>Nội dung khoá học</Text>
+                    <View style={styles.sectionHeader}>
+                        <View style={styles.sectionDot} />
+                        <Text style={styles.sectionTitle}>
+                            Nội dung khoá học
+                        </Text>
+                        <Text style={styles.chapterCount}>
+                            {chapters.length} chương
+                        </Text>
+                    </View>
+
                     {chapters.length === 0 ? (
                         <Text style={styles.emptyChapters}>
                             Chưa có nội dung
                         </Text>
                     ) : (
-                        chapters.map((chapter) => (
+                        chapters.map((chapter, idx) => (
                             <View
                                 key={chapter.id}
                                 style={styles.chapterContainer}
@@ -251,16 +330,14 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                     }
                                     activeOpacity={0.7}
                                 >
-                                    <View style={styles.chapterTitleRow}>
-                                        <Ionicons
-                                            name={
-                                                expandedChapter === chapter.id
-                                                    ? "chevron-down"
-                                                    : "chevron-forward"
-                                            }
-                                            size={18}
-                                            color={colors.light.textSecondary}
-                                        />
+                                    <View style={styles.chapterLeft}>
+                                        <View style={styles.chapterIndex}>
+                                            <Text
+                                                style={styles.chapterIndexText}
+                                            >
+                                                {idx + 1}
+                                            </Text>
+                                        </View>
                                         <Text
                                             style={styles.chapterTitle}
                                             numberOfLines={1}
@@ -268,9 +345,22 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                             {chapter.title}
                                         </Text>
                                     </View>
-                                    <Text style={styles.chapterLessonsCount}>
-                                        {chapter.lessons?.length || 0} bài
-                                    </Text>
+                                    <View style={styles.chapterRight}>
+                                        <Text
+                                            style={styles.chapterLessonsCount}
+                                        >
+                                            {chapter.lessons?.length || 0} bài
+                                        </Text>
+                                        <Ionicons
+                                            name={
+                                                expandedChapter === chapter.id
+                                                    ? "chevron-up"
+                                                    : "chevron-down"
+                                            }
+                                            size={18}
+                                            color={colors.light.textMuted}
+                                        />
+                                    </View>
                                 </TouchableOpacity>
                                 {expandedChapter === chapter.id &&
                                     chapter.lessons?.map((lesson) => (
@@ -282,19 +372,28 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                             }
                                             activeOpacity={0.7}
                                         >
-                                            <Ionicons
-                                                name={
-                                                    lesson.is_completed
-                                                        ? "checkmark-circle"
-                                                        : "play-circle-outline"
-                                                }
-                                                size={20}
-                                                color={
-                                                    lesson.is_completed
-                                                        ? colors.light.success
-                                                        : colors.light.textMuted
-                                                }
-                                            />
+                                            <View
+                                                style={[
+                                                    styles.lessonIcon,
+                                                    lesson.is_completed &&
+                                                        styles.lessonIconDone,
+                                                ]}
+                                            >
+                                                <Ionicons
+                                                    name={
+                                                        lesson.is_completed
+                                                            ? "checkmark"
+                                                            : "play"
+                                                    }
+                                                    size={12}
+                                                    color={
+                                                        lesson.is_completed
+                                                            ? "#ffffff"
+                                                            : colors.light
+                                                                  .primary
+                                                    }
+                                                />
+                                            </View>
                                             <Text
                                                 style={[
                                                     styles.lessonTitle,
@@ -326,47 +425,28 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
 
             {/* Bottom Enroll Button */}
             <View style={styles.bottomBar}>
-                <TouchableOpacity
-                    onPress={course.isEnrolled ? undefined : handleEnroll}
-                    disabled={isEnrolling || course.isEnrolled}
-                    activeOpacity={0.8}
-                    style={styles.enrollButtonWrapper}
-                >
-                    <LinearGradient
-                        colors={
-                            course.isEnrolled
-                                ? [colors.light.success, "#16a34a"]
-                                : [
-                                      colors.light.gradientFrom,
-                                      colors.light.gradientTo,
-                                  ]
+                <View style={styles.bottomPriceCol}>
+                    <Text style={styles.bottomPriceLabel}>Giá</Text>
+                    <Text style={styles.bottomPrice}>
+                        {course.isFree ? "Miễn phí" : course.price}
+                    </Text>
+                </View>
+                <View style={styles.bottomBtnCol}>
+                    <GradientButton
+                        title={
+                            course.isEnrolled ? "Đã ghi danh" : "Ghi danh ngay"
                         }
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.enrollButton}
-                    >
-                        {isEnrolling ? (
-                            <ActivityIndicator color="#ffffff" />
-                        ) : (
-                            <>
-                                <Ionicons
-                                    name={
-                                        course.isEnrolled
-                                            ? "checkmark-circle"
-                                            : "rocket-outline"
-                                    }
-                                    size={20}
-                                    color="#ffffff"
-                                />
-                                <Text style={styles.enrollButtonText}>
-                                    {course.isEnrolled
-                                        ? "Đã ghi danh"
-                                        : "Ghi danh ngay"}
-                                </Text>
-                            </>
-                        )}
-                    </LinearGradient>
-                </TouchableOpacity>
+                        onPress={course.isEnrolled ? () => {} : handleEnroll}
+                        loading={isEnrolling}
+                        disabled={course.isEnrolled}
+                        variant={course.isEnrolled ? "success" : "primary"}
+                        icon={
+                            course.isEnrolled
+                                ? "checkmark-circle"
+                                : "rocket-outline"
+                        }
+                    />
+                </View>
             </View>
         </View>
     );
@@ -376,85 +456,143 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.light.background },
     loadingContainer: {
         flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
         backgroundColor: colors.light.background,
+    },
+    errorIcon: {
+        alignItems: "center",
+        justifyContent: "center",
+        flex: 1,
     },
     errorText: {
         ...typography.body,
         color: colors.light.textMuted,
-        marginTop: spacing.base,
+        textAlign: "center",
+        marginTop: -100,
     },
 
+    // Thumbnail
+    thumbnailWrap: {
+        position: "relative",
+    },
     thumbnail: {
         width: "100%",
-        height: 200,
+        height: 220,
         backgroundColor: colors.light.surface,
+    },
+    thumbnailPlaceholder: {
         justifyContent: "center",
         alignItems: "center",
     },
+    thumbnailOverlay: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: 100,
+    },
+    thumbnailContent: {
+        position: "absolute",
+        bottom: spacing.base,
+        left: spacing.xl,
+    },
+
+    // Content
     content: { padding: spacing.xl },
-
-    badgeRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: spacing.sm,
+    priceRow: {
+        marginBottom: spacing.xs,
     },
-    levelBadge: {
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 3,
-        borderRadius: radius.sm,
-    },
-    levelText: { ...typography.small, fontWeight: "600" },
-    price: { ...typography.bodyMedium, color: colors.light.primary },
-
     title: {
         ...typography.h2,
         color: colors.light.text,
-        marginBottom: spacing.sm,
     },
     subtitle: {
         ...typography.body,
         color: colors.light.textSecondary,
+        marginBottom: spacing.sm,
+    },
+    price: {
+        ...typography.bodySemiBold,
+        color: colors.light.primary,
         marginBottom: spacing.base,
     },
 
+    // Instructor
     instructorRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: spacing.base,
+        marginBottom: spacing.xl,
+        gap: spacing.md,
     },
     instructorAvatar: {
-        width: 32,
-        height: 32,
+        width: 40,
+        height: 40,
         borderRadius: radius.full,
-        marginRight: spacing.sm,
         backgroundColor: colors.light.surface,
     },
     avatarPlaceholder: { justifyContent: "center", alignItems: "center" },
+    instructorLabel: {
+        ...typography.small,
+        color: colors.light.textMuted,
+    },
     instructorName: { ...typography.captionMedium, color: colors.light.text },
 
+    // Stats
     statsRow: {
         flexDirection: "row",
-        justifyContent: "space-around",
-        backgroundColor: colors.light.surface,
-        borderRadius: radius.md,
+        alignItems: "center",
+        backgroundColor: colors.light.surfaceElevated,
+        borderRadius: radius.lg,
         paddingVertical: spacing.base,
+        paddingHorizontal: spacing.md,
         marginBottom: spacing.xl,
+        ...shadows.sm,
     },
-    statItem: { alignItems: "center" },
+    statItem: {
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+        justifyContent: "center",
+    },
+    statIconCircle: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.md,
+        justifyContent: "center",
+        alignItems: "center",
+    },
     statValue: {
-        ...typography.bodyMedium,
+        ...typography.captionMedium,
         color: colors.light.text,
-        marginTop: spacing.xs,
     },
     statLabel: { ...typography.small, color: colors.light.textMuted },
+    statDivider: {
+        width: 1,
+        height: 32,
+        backgroundColor: colors.light.border,
+    },
 
+    // Section
+    sectionHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: spacing.base,
+        gap: spacing.sm,
+    },
+    sectionDot: {
+        width: 4,
+        height: 20,
+        borderRadius: 2,
+        backgroundColor: colors.light.primary,
+    },
     sectionTitle: {
         ...typography.h3,
         color: colors.light.text,
-        marginBottom: spacing.base,
+        flex: 1,
+    },
+    chapterCount: {
+        ...typography.small,
+        color: colors.light.textMuted,
     },
     emptyChapters: {
         ...typography.body,
@@ -463,42 +601,73 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.xl,
     },
 
+    // Chapters
     chapterContainer: {
         marginBottom: spacing.sm,
-        borderRadius: radius.md,
+        borderRadius: radius.lg,
         borderWidth: 1,
         borderColor: colors.light.border,
         overflow: "hidden",
+        backgroundColor: colors.light.surfaceElevated,
     },
     chapterHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         padding: spacing.base,
-        backgroundColor: colors.light.surface,
     },
-    chapterTitleRow: {
+    chapterLeft: {
         flex: 1,
         flexDirection: "row",
         alignItems: "center",
-        gap: spacing.sm,
+        gap: spacing.md,
+    },
+    chapterIndex: {
+        width: 28,
+        height: 28,
+        borderRadius: radius.sm,
+        backgroundColor: colors.light.primarySoft,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    chapterIndexText: {
+        ...typography.smallBold,
+        color: colors.light.primary,
     },
     chapterTitle: {
         ...typography.captionMedium,
         color: colors.light.text,
         flex: 1,
     },
+    chapterRight: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+    },
     chapterLessonsCount: { ...typography.small, color: colors.light.textMuted },
 
+    // Lessons
     lessonItem: {
         flexDirection: "row",
         alignItems: "center",
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.base,
-        paddingLeft: spacing["2xl"],
-        gap: spacing.sm,
+        paddingLeft: spacing.xl + spacing.md,
+        gap: spacing.md,
         borderTopWidth: 1,
         borderTopColor: colors.light.border,
+        backgroundColor: colors.light.surface,
+    },
+    lessonIcon: {
+        width: 24,
+        height: 24,
+        borderRadius: radius.full,
+        backgroundColor: colors.light.primarySoft,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    lessonIconDone: {
+        backgroundColor: colors.light.success,
     },
     lessonTitle: { ...typography.caption, color: colors.light.text, flex: 1 },
     lessonCompleted: {
@@ -506,25 +675,34 @@ const styles = StyleSheet.create({
         textDecorationLine: "line-through",
     },
 
+    // Bottom bar
     bottomBar: {
         position: "absolute",
         bottom: 0,
         left: 0,
         right: 0,
+        flexDirection: "row",
+        alignItems: "center",
         padding: spacing.base,
         paddingBottom: spacing.xl,
-        backgroundColor: colors.light.background,
+        backgroundColor: colors.light.surfaceElevated,
         borderTopWidth: 1,
         borderTopColor: colors.light.border,
+        gap: spacing.base,
+        ...shadows.lg,
     },
-    enrollButtonWrapper: { borderRadius: radius.md, overflow: "hidden" },
-    enrollButton: {
-        height: 48,
-        borderRadius: radius.md,
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: spacing.sm,
+    bottomPriceCol: {
+        minWidth: 80,
     },
-    enrollButtonText: { ...typography.button, color: "#ffffff" },
+    bottomPriceLabel: {
+        ...typography.small,
+        color: colors.light.textMuted,
+    },
+    bottomPrice: {
+        ...typography.bodySemiBold,
+        color: colors.light.primary,
+    },
+    bottomBtnCol: {
+        flex: 1,
+    },
 });

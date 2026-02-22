@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import {
     View,
     Text,
@@ -8,15 +8,16 @@ import {
     Image,
     ActivityIndicator,
     RefreshControl,
+    Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "../../contexts/AuthContext";
-import { colors, typography, spacing, radius, layout } from "../../theme";
+import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { ProfileStackParamList } from "../../navigation/types";
-import { EnrolledCourse } from "../../types/course";
 import { getInitials, formatStudyTime } from "../../utils/format";
+import StatCard from "../../components/StatCard";
 
 type Props = {
     navigation: NativeStackNavigationProp<
@@ -36,7 +37,16 @@ export default function ProfileScreen({ navigation }: Props) {
     };
 
     const handleLogout = async () => {
-        await logout();
+        Alert.alert("Đăng xuất", "Bạn có chắc muốn đăng xuất?", [
+            { text: "Huỷ", style: "cancel" },
+            {
+                text: "Đăng xuất",
+                style: "destructive",
+                onPress: async () => {
+                    await logout();
+                },
+            },
+        ]);
     };
 
     if (!user) {
@@ -65,28 +75,46 @@ export default function ProfileScreen({ navigation }: Props) {
                 end={{ x: 1, y: 1 }}
                 style={styles.header}
             >
+                {/* Decorative shapes */}
+                <View style={styles.decorCircle1} />
+                <View style={styles.decorCircle2} />
+                <View style={styles.decorWave} />
+
                 {/* Edit Button */}
                 <TouchableOpacity
                     style={styles.editButton}
                     onPress={() => navigation.navigate("EditProfile")}
                 >
-                    <Ionicons name="create-outline" size={22} color="#ffffff" />
+                    <View style={styles.editCircle}>
+                        <Ionicons
+                            name="create-outline"
+                            size={18}
+                            color="#ffffff"
+                        />
+                    </View>
                 </TouchableOpacity>
 
                 {/* Avatar */}
                 <View style={styles.avatarContainer}>
-                    {user.avatar_url ? (
-                        <Image
-                            source={{ uri: user.avatar_url }}
-                            style={styles.avatar}
-                        />
-                    ) : (
-                        <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                            <Text style={styles.avatarText}>
-                                {getInitials(user.full_name)}
-                            </Text>
-                        </View>
-                    )}
+                    <View style={styles.avatarRing}>
+                        {user.avatar_url ? (
+                            <Image
+                                source={{ uri: user.avatar_url }}
+                                style={styles.avatar}
+                            />
+                        ) : (
+                            <View
+                                style={[
+                                    styles.avatar,
+                                    styles.avatarPlaceholder,
+                                ]}
+                            >
+                                <Text style={styles.avatarText}>
+                                    {getInitials(user.full_name)}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
 
                     {/* Membership Badge */}
                     <View
@@ -130,97 +158,137 @@ export default function ProfileScreen({ navigation }: Props) {
 
             {/* Stats Cards */}
             <View style={styles.statsGrid}>
-                <View style={styles.statCard}>
-                    <Ionicons name="flame" size={24} color="#f59e0b" />
-                    <Text style={styles.statValue}>{user.learning_streak}</Text>
-                    <Text style={styles.statLabel}>Chuỗi ngày</Text>
-                </View>
-                <View style={styles.statCard}>
-                    <Ionicons
-                        name="time"
-                        size={24}
-                        color={colors.light.primary}
-                    />
-                    <Text style={styles.statValue}>
-                        {formatStudyTime(user.total_study_time)}
-                    </Text>
-                    <Text style={styles.statLabel}>Thời gian học</Text>
-                </View>
-                <View style={styles.statCard}>
-                    <Ionicons
-                        name="shield-checkmark"
-                        size={24}
-                        color={colors.light.success}
-                    />
-                    <Text style={styles.statValue}>
-                        {user.is_verified ? "Đã" : "Chưa"}
-                    </Text>
-                    <Text style={styles.statLabel}>Xác minh</Text>
-                </View>
+                <StatCard
+                    icon="flame"
+                    iconColor="#f59e0b"
+                    value={user.learning_streak}
+                    label="Chuỗi ngày"
+                />
+                <StatCard
+                    icon="time"
+                    iconColor={colors.light.primary}
+                    value={formatStudyTime(user.total_study_time)}
+                    label="Thời gian học"
+                />
+                <StatCard
+                    icon="shield-checkmark"
+                    iconColor={colors.light.success}
+                    value={user.is_verified ? "Đã" : "Chưa"}
+                    label="Xác minh"
+                />
             </View>
 
             {/* Info Section */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Thông tin</Text>
-                <View style={styles.infoRow}>
-                    <Ionicons
-                        name="mail-outline"
-                        size={20}
-                        color={colors.light.textMuted}
-                    />
-                    <Text style={styles.infoText}>{user.email}</Text>
+                <View style={styles.sectionHeaderRow}>
+                    <View style={styles.sectionDot} />
+                    <Text style={styles.sectionTitle}>Thông tin</Text>
                 </View>
-                {user.phone && (
+                <View style={styles.infoCard}>
                     <View style={styles.infoRow}>
-                        <Ionicons
-                            name="call-outline"
-                            size={20}
-                            color={colors.light.textMuted}
-                        />
-                        <Text style={styles.infoText}>{user.phone}</Text>
+                        <View style={styles.infoIconCircle}>
+                            <Ionicons
+                                name="mail-outline"
+                                size={18}
+                                color={colors.light.primary}
+                            />
+                        </View>
+                        <View style={styles.infoContent}>
+                            <Text style={styles.infoLabel}>Email</Text>
+                            <Text style={styles.infoText}>{user.email}</Text>
+                        </View>
                     </View>
-                )}
+                    {user.phone && (
+                        <>
+                            <View style={styles.infoSeparator} />
+                            <View style={styles.infoRow}>
+                                <View style={styles.infoIconCircle}>
+                                    <Ionicons
+                                        name="call-outline"
+                                        size={18}
+                                        color={colors.light.accent}
+                                    />
+                                </View>
+                                <View style={styles.infoContent}>
+                                    <Text style={styles.infoLabel}>
+                                        Điện thoại
+                                    </Text>
+                                    <Text style={styles.infoText}>
+                                        {user.phone}
+                                    </Text>
+                                </View>
+                            </View>
+                        </>
+                    )}
+                </View>
             </View>
 
             {/* Actions */}
             <View style={styles.section}>
-                <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => navigation.navigate("EditProfile")}
-                >
-                    <Ionicons
-                        name="person-outline"
-                        size={22}
-                        color={colors.light.text}
-                    />
-                    <Text style={styles.menuText}>Chỉnh sửa hồ sơ</Text>
-                    <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color={colors.light.textMuted}
-                    />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.menuItem, styles.logoutItem]}
-                    onPress={handleLogout}
-                >
-                    <Ionicons
-                        name="log-out-outline"
-                        size={22}
-                        color={colors.light.error}
-                    />
-                    <Text
-                        style={[styles.menuText, { color: colors.light.error }]}
+                <View style={styles.sectionHeaderRow}>
+                    <View style={styles.sectionDot} />
+                    <Text style={styles.sectionTitle}>Cài đặt</Text>
+                </View>
+                <View style={styles.menuCard}>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => navigation.navigate("EditProfile")}
+                        activeOpacity={0.7}
                     >
-                        Đăng xuất
-                    </Text>
-                    <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color={colors.light.error}
-                    />
-                </TouchableOpacity>
+                        <View
+                            style={[
+                                styles.menuIcon,
+                                { backgroundColor: colors.light.primarySoft },
+                            ]}
+                        >
+                            <Ionicons
+                                name="person-outline"
+                                size={18}
+                                color={colors.light.primary}
+                            />
+                        </View>
+                        <Text style={styles.menuText}>Chỉnh sửa hồ sơ</Text>
+                        <Ionicons
+                            name="chevron-forward"
+                            size={18}
+                            color={colors.light.textMuted}
+                        />
+                    </TouchableOpacity>
+
+                    <View style={styles.menuSeparator} />
+
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={handleLogout}
+                        activeOpacity={0.7}
+                    >
+                        <View
+                            style={[
+                                styles.menuIcon,
+                                { backgroundColor: colors.light.errorSoft },
+                            ]}
+                        >
+                            <Ionicons
+                                name="log-out-outline"
+                                size={18}
+                                color={colors.light.error}
+                            />
+                        </View>
+                        <Text
+                            style={[
+                                styles.menuText,
+                                { color: colors.light.error },
+                            ]}
+                        >
+                            Đăng xuất
+                        </Text>
+                        <Ionicons
+                            name="chevron-forward"
+                            size={18}
+                            color={colors.light.error}
+                        />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <View style={{ height: spacing["3xl"] }} />
@@ -240,33 +308,75 @@ const styles = StyleSheet.create({
     // Header
     header: {
         paddingTop: 56,
-        paddingBottom: spacing["2xl"],
+        paddingBottom: spacing["3xl"],
         alignItems: "center",
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
+        borderBottomLeftRadius: radius["2xl"],
+        borderBottomRightRadius: radius["2xl"],
+        overflow: "hidden",
+    },
+    decorCircle1: {
+        position: "absolute",
+        top: -20,
+        right: -20,
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: "rgba(255,255,255,0.06)",
+    },
+    decorCircle2: {
+        position: "absolute",
+        bottom: 40,
+        left: -30,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: "rgba(255,255,255,0.05)",
+    },
+    decorWave: {
+        position: "absolute",
+        bottom: -20,
+        right: 30,
+        width: 120,
+        height: 60,
+        borderRadius: 60,
+        backgroundColor: "rgba(255,255,255,0.04)",
     },
     editButton: {
         position: "absolute",
-        top: 50,
+        top: 52,
         right: spacing.base,
-        padding: spacing.sm,
-        backgroundColor: "rgba(255,255,255,0.2)",
-        borderRadius: radius.full,
+        zIndex: 2,
     },
+    editCircle: {
+        width: 40,
+        height: 40,
+        borderRadius: radius.full,
+        backgroundColor: "rgba(255,255,255,0.2)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    // Avatar
     avatarContainer: { marginBottom: spacing.base, position: "relative" },
-    avatar: {
-        width: 88,
-        height: 88,
+    avatarRing: {
+        width: 104,
+        height: 104,
         borderRadius: radius.full,
         borderWidth: 3,
-        borderColor: "rgba(255,255,255,0.5)",
+        borderColor: "rgba(255,255,255,0.3)",
+        padding: 3,
+    },
+    avatar: {
+        width: "100%",
+        height: "100%",
+        borderRadius: radius.full,
     },
     avatarPlaceholder: {
         backgroundColor: "rgba(255,255,255,0.2)",
         justifyContent: "center",
         alignItems: "center",
     },
-    avatarText: { ...typography.h2, color: "#ffffff" },
+    avatarText: { ...typography.h1, color: "#ffffff" },
     memberBadge: {
         position: "absolute",
         bottom: -4,
@@ -275,7 +385,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 3,
         paddingHorizontal: spacing.sm,
-        paddingVertical: 3,
+        paddingVertical: 4,
         borderRadius: radius.full,
         borderWidth: 2,
         borderColor: "#ffffff",
@@ -307,51 +417,84 @@ const styles = StyleSheet.create({
         marginTop: -spacing.lg,
         gap: spacing.sm,
     },
-    statCard: {
-        flex: 1,
-        alignItems: "center",
-        backgroundColor: colors.light.surfaceElevated,
-        borderRadius: radius.md,
-        paddingVertical: spacing.base,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-    statValue: {
-        ...typography.bodyMedium,
-        color: colors.light.text,
-        marginTop: spacing.xs,
-    },
-    statLabel: { ...typography.small, color: colors.light.textMuted },
 
-    // Info
+    // Section
     section: { marginTop: spacing.xl, paddingHorizontal: spacing.xl },
+    sectionHeaderRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+        marginBottom: spacing.md,
+    },
+    sectionDot: {
+        width: 4,
+        height: 20,
+        borderRadius: 2,
+        backgroundColor: colors.light.primary,
+    },
     sectionTitle: {
         ...typography.h3,
         color: colors.light.text,
-        marginBottom: spacing.base,
+    },
+
+    // Info card
+    infoCard: {
+        backgroundColor: colors.light.surfaceElevated,
+        borderRadius: radius.lg,
+        padding: spacing.base,
+        ...shadows.sm,
     },
     infoRow: {
         flexDirection: "row",
         alignItems: "center",
         gap: spacing.md,
-        paddingVertical: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.light.border,
+        paddingVertical: spacing.sm,
     },
-    infoText: { ...typography.body, color: colors.light.text },
+    infoIconCircle: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.md,
+        backgroundColor: colors.light.primarySoft,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    infoContent: {},
+    infoLabel: {
+        ...typography.small,
+        color: colors.light.textMuted,
+    },
+    infoText: { ...typography.captionMedium, color: colors.light.text },
+    infoSeparator: {
+        height: 1,
+        backgroundColor: colors.light.border,
+        marginLeft: 52,
+    },
 
-    // Menu
+    // Menu card
+    menuCard: {
+        backgroundColor: colors.light.surfaceElevated,
+        borderRadius: radius.lg,
+        padding: spacing.sm,
+        ...shadows.sm,
+    },
     menuItem: {
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: spacing.base,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.sm,
         gap: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.light.border,
+    },
+    menuIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.md,
+        justifyContent: "center",
+        alignItems: "center",
     },
     menuText: { ...typography.body, color: colors.light.text, flex: 1 },
-    logoutItem: { borderBottomWidth: 0, marginTop: spacing.sm },
+    menuSeparator: {
+        height: 1,
+        backgroundColor: colors.light.border,
+        marginLeft: 52,
+    },
 });

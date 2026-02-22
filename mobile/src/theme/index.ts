@@ -1,3 +1,3 @@
 export { colors, type ColorScheme } from "./colors";
 export { typography } from "./typography";
-export { spacing, radius, layout } from "./spacing";
+export { spacing, radius, layout, shadows, animation } from "./spacing";

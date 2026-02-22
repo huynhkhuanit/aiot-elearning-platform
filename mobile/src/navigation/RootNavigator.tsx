@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../contexts/AuthContext";
-import { colors } from "../theme";
+import { colors, shadows, radius, spacing, typography } from "../theme";
 
 // Auth Screens
 import LoginScreen from "../screens/auth/LoginScreen";
@@ -27,7 +27,13 @@ import {
     MainTabsParamList,
 } from "./types";
 
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import {
+    View,
+    ActivityIndicator,
+    StyleSheet,
+    Platform,
+    Text,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 // --- Auth Stack ---
@@ -141,7 +147,7 @@ function MainTabs() {
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: false,
-                tabBarIcon: ({ focused, color, size }) => {
+                tabBarIcon: ({ focused, color }) => {
                     let iconName: React.ComponentProps<typeof Ionicons>["name"];
 
                     if (route.name === "Home") {
@@ -151,25 +157,33 @@ function MainTabs() {
                     } else if (route.name === "Profile") {
                         iconName = focused ? "person" : "person-outline";
                     } else {
-                        iconName = "ellipse"; // fallback
+                        iconName = "ellipse";
                     }
 
                     return (
-                        <Ionicons name={iconName} size={size} color={color} />
+                        <View style={tabStyles.iconWrap}>
+                            <Ionicons name={iconName} size={24} color={color} />
+                            {focused && <View style={tabStyles.activeDot} />}
+                        </View>
                     );
                 },
                 tabBarActiveTintColor: colors.light.primary,
                 tabBarInactiveTintColor: colors.light.tabInactive,
                 tabBarStyle: {
                     backgroundColor: colors.light.tabBar,
-                    borderTopColor: colors.light.tabBarBorder,
-                    height: 60,
-                    paddingBottom: 8,
-                    paddingTop: 8,
+                    borderTopColor: colors.light.border,
+                    borderTopWidth: 1,
+                    borderTopLeftRadius: radius.xl,
+                    borderTopRightRadius: radius.xl,
+                    height: Platform.OS === "ios" ? 88 : 68,
+                    paddingBottom: Platform.OS === "ios" ? 28 : 10,
+                    paddingTop: 10,
+                    position: "absolute",
+                    ...shadows.lg,
                 },
                 tabBarLabelStyle: {
-                    fontSize: 12,
-                    fontWeight: "500",
+                    ...typography.tiny,
+                    marginTop: 2,
                 },
             })}
         >
@@ -191,6 +205,19 @@ function MainTabs() {
         </Tab.Navigator>
     );
 }
+
+const tabStyles = StyleSheet.create({
+    iconWrap: {
+        alignItems: "center",
+    },
+    activeDot: {
+        width: 5,
+        height: 5,
+        borderRadius: 2.5,
+        backgroundColor: colors.light.primary,
+        marginTop: 3,
+    },
+});
 
 // --- Root Navigator (Auth or Main) ---
 const RootStack = createNativeStackNavigator<RootStackParamList>();

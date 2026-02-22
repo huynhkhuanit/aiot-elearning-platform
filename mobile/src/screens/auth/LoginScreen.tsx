@@ -2,21 +2,21 @@ import React, { useState } from "react";
 import {
     View,
     Text,
-    TextInput,
-    TouchableOpacity,
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
     Alert,
-    ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { TouchableOpacity } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
-import { colors, typography, spacing, radius, layout } from "../../theme";
+import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { AuthStackParamList } from "../../navigation/types";
+import InputField from "../../components/InputField";
+import GradientButton from "../../components/GradientButton";
 
 type Props = {
     navigation: NativeStackNavigationProp<AuthStackParamList, "Login">;
@@ -26,7 +26,6 @@ export default function LoginScreen({ navigation }: Props) {
     const { login } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleLogin = async () => {
@@ -68,17 +67,26 @@ export default function LoginScreen({ navigation }: Props) {
                         end={{ x: 1, y: 1 }}
                         style={styles.header}
                     >
+                        {/* Decorative circles */}
+                        <View style={styles.decorCircle1} />
+                        <View style={styles.decorCircle2} />
+                        <View style={styles.decorCircle3} />
+
                         <View style={styles.headerContent}>
                             <View style={styles.logoContainer}>
-                                <Ionicons
-                                    name="school"
-                                    size={40}
-                                    color="#ffffff"
-                                />
+                                <View style={styles.logoInner}>
+                                    <Ionicons
+                                        name="code-slash"
+                                        size={32}
+                                        color="#ffffff"
+                                    />
+                                </View>
+                                {/* Glow ring */}
+                                <View style={styles.logoGlow} />
                             </View>
                             <Text style={styles.appName}>DHV LearnX</Text>
                             <Text style={styles.tagline}>
-                                Nền tảng học tập AIoT
+                                Nền tảng học lập trình AIoT
                             </Text>
                         </View>
                     </LinearGradient>
@@ -87,98 +95,61 @@ export default function LoginScreen({ navigation }: Props) {
                     <View style={styles.formContainer}>
                         <Text style={styles.title}>Đăng nhập</Text>
                         <Text style={styles.subtitle}>
-                            Chào mừng bạn trở lại!
+                            Chào mừng bạn trở lại! Tiếp tục hành trình học tập.
                         </Text>
 
-                        {/* Email Input */}
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Email</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons
-                                    name="mail-outline"
-                                    size={20}
-                                    color={colors.light.textMuted}
-                                    style={styles.inputIcon}
-                                />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Nhập email của bạn"
-                                    placeholderTextColor={
-                                        colors.light.textMuted
-                                    }
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    autoComplete="email"
-                                    value={email}
-                                    onChangeText={setEmail}
-                                />
-                            </View>
-                        </View>
+                        <InputField
+                            label="Email"
+                            icon="mail-outline"
+                            placeholder="Nhập email của bạn"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoComplete="email"
+                            value={email}
+                            onChangeText={setEmail}
+                        />
 
-                        {/* Password Input */}
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Mật khẩu</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons
-                                    name="lock-closed-outline"
-                                    size={20}
-                                    color={colors.light.textMuted}
-                                    style={styles.inputIcon}
-                                />
-                                <TextInput
-                                    style={[styles.input, styles.passwordInput]}
-                                    placeholder="Nhập mật khẩu"
-                                    placeholderTextColor={
-                                        colors.light.textMuted
-                                    }
-                                    secureTextEntry={!showPassword}
-                                    autoComplete="password"
-                                    value={password}
-                                    onChangeText={setPassword}
-                                />
-                                <TouchableOpacity
-                                    onPress={() =>
-                                        setShowPassword(!showPassword)
-                                    }
-                                    style={styles.eyeButton}
-                                >
-                                    <Ionicons
-                                        name={
-                                            showPassword
-                                                ? "eye-off-outline"
-                                                : "eye-outline"
-                                        }
-                                        size={20}
-                                        color={colors.light.textMuted}
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
+                        <InputField
+                            label="Mật khẩu"
+                            icon="lock-closed-outline"
+                            placeholder="Nhập mật khẩu"
+                            secureEntry
+                            autoComplete="password"
+                            value={password}
+                            onChangeText={setPassword}
+                        />
 
-                        {/* Login Button */}
-                        <TouchableOpacity
+                        <GradientButton
+                            title="Đăng nhập"
                             onPress={handleLogin}
-                            disabled={isLoading}
-                            activeOpacity={0.8}
-                        >
-                            <LinearGradient
-                                colors={[
-                                    colors.light.gradientFrom,
-                                    colors.light.gradientTo,
-                                ]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={styles.loginButton}
-                            >
-                                {isLoading ? (
-                                    <ActivityIndicator color="#ffffff" />
-                                ) : (
-                                    <Text style={styles.loginButtonText}>
-                                        Đăng nhập
-                                    </Text>
-                                )}
-                            </LinearGradient>
-                        </TouchableOpacity>
+                            loading={isLoading}
+                            icon="log-in-outline"
+                        />
+
+                        {/* Divider */}
+                        <View style={styles.dividerRow}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>hoặc</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        {/* Social hints */}
+                        <View style={styles.socialRow}>
+                            <View style={styles.socialButton}>
+                                <Ionicons
+                                    name="logo-google"
+                                    size={22}
+                                    color={colors.light.textSecondary}
+                                />
+                            </View>
+                            <View style={styles.socialButton}>
+                                <Ionicons
+                                    name="logo-github"
+                                    size={22}
+                                    color={colors.light.textSecondary}
+                                />
+                            </View>
+                        </View>
 
                         {/* Register Link */}
                         <View style={styles.registerRow}>
@@ -187,6 +158,7 @@ export default function LoginScreen({ navigation }: Props) {
                             </Text>
                             <TouchableOpacity
                                 onPress={() => navigation.navigate("Register")}
+                                hitSlop={{ top: 10, bottom: 10 }}
                             >
                                 <Text style={styles.registerLink}>
                                     Đăng ký ngay
@@ -209,24 +181,71 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
     },
+
+    // Header
     header: {
-        paddingTop: 60,
-        paddingBottom: 40,
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
+        paddingTop: 64,
+        paddingBottom: 48,
+        borderBottomLeftRadius: radius["2xl"],
+        borderBottomRightRadius: radius["2xl"],
+        overflow: "hidden",
     },
     headerContent: {
         alignItems: "center",
         paddingHorizontal: spacing.xl,
+        zIndex: 1,
+    },
+    // Decorative circles
+    decorCircle1: {
+        position: "absolute",
+        top: -30,
+        right: -30,
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: "rgba(255,255,255,0.08)",
+    },
+    decorCircle2: {
+        position: "absolute",
+        bottom: 20,
+        left: -40,
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: "rgba(255,255,255,0.06)",
+    },
+    decorCircle3: {
+        position: "absolute",
+        top: 40,
+        left: 60,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: "rgba(255,255,255,0.05)",
     },
     logoContainer: {
+        position: "relative",
+        marginBottom: spacing.base,
+    },
+    logoInner: {
         width: 72,
         height: 72,
-        borderRadius: radius.lg,
+        borderRadius: radius.xl,
         backgroundColor: "rgba(255,255,255,0.2)",
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: spacing.base,
+        borderWidth: 1.5,
+        borderColor: "rgba(255,255,255,0.3)",
+    },
+    logoGlow: {
+        position: "absolute",
+        top: -6,
+        left: -6,
+        right: -6,
+        bottom: -6,
+        borderRadius: radius.xl + 6,
+        borderWidth: 2,
+        borderColor: "rgba(255,255,255,0.15)",
     },
     appName: {
         ...typography.h1,
@@ -234,9 +253,11 @@ const styles = StyleSheet.create({
         marginBottom: spacing.xs,
     },
     tagline: {
-        ...typography.body,
-        color: "rgba(255,255,255,0.85)",
+        ...typography.caption,
+        color: "rgba(255,255,255,0.8)",
     },
+
+    // Form
     formContainer: {
         flex: 1,
         paddingHorizontal: spacing.xl,
@@ -248,61 +269,53 @@ const styles = StyleSheet.create({
         marginBottom: spacing.xs,
     },
     subtitle: {
-        ...typography.body,
+        ...typography.caption,
         color: colors.light.textSecondary,
         marginBottom: spacing["2xl"],
+        lineHeight: 22,
     },
-    inputGroup: {
-        marginBottom: spacing.lg,
-    },
-    label: {
-        ...typography.label,
-        color: colors.light.text,
-        marginBottom: spacing.sm,
-    },
-    inputWrapper: {
+
+    // Divider
+    dividerRow: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: colors.light.inputBg,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: colors.light.border,
-        height: layout.inputHeight,
-        paddingHorizontal: spacing.base,
+        marginVertical: spacing.xl,
     },
-    inputIcon: {
-        marginRight: spacing.sm,
-    },
-    input: {
+    dividerLine: {
         flex: 1,
-        ...typography.body,
-        color: colors.light.text,
-        height: "100%",
+        height: 1,
+        backgroundColor: colors.light.border,
     },
-    passwordInput: {
-        paddingRight: 40,
+    dividerText: {
+        ...typography.small,
+        color: colors.light.textMuted,
+        marginHorizontal: spacing.base,
     },
-    eyeButton: {
-        position: "absolute",
-        right: spacing.base,
-        padding: spacing.xs,
+
+    // Social
+    socialRow: {
+        flexDirection: "row",
+        justifyContent: "center",
+        gap: spacing.base,
+        marginBottom: spacing.xl,
     },
-    loginButton: {
-        height: layout.buttonHeight,
+    socialButton: {
+        width: 52,
+        height: 52,
         borderRadius: radius.md,
+        borderWidth: 1.5,
+        borderColor: colors.light.border,
+        backgroundColor: colors.light.surfaceElevated,
         justifyContent: "center",
         alignItems: "center",
-        marginTop: spacing.sm,
+        ...shadows.sm,
     },
-    loginButtonText: {
-        ...typography.button,
-        color: "#ffffff",
-    },
+
+    // Register link
     registerRow: {
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-        marginTop: spacing.xl,
         paddingBottom: spacing["2xl"],
     },
     registerText: {

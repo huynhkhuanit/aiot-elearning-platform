@@ -6,19 +6,19 @@ import {
     ScrollView,
     TouchableOpacity,
     FlatList,
-    Image,
     RefreshControl,
-    ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "../../contexts/AuthContext";
-import { colors, typography, spacing, radius, layout } from "../../theme";
+import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { HomeStackParamList } from "../../navigation/types";
 import { Course } from "../../types/course";
 import { fetchCourses } from "../../api/courses";
-import { getLevelLabel, getLevelColor } from "../../utils/format";
+import CourseCard from "../../components/CourseCard";
+import StatCard from "../../components/StatCard";
+import LoadingSkeleton from "../../components/LoadingSkeleton";
 
 type Props = {
     navigation: NativeStackNavigationProp<HomeStackParamList, "HomeScreen">;
@@ -53,100 +53,20 @@ export default function HomeScreen({ navigation }: Props) {
         loadData();
     };
 
-    const renderCourseCard = ({ item }: { item: Course }) => (
-        <TouchableOpacity
-            style={styles.courseCard}
-            activeOpacity={0.7}
-            onPress={() =>
-                navigation.navigate("CourseDetail", { slug: item.slug })
-            }
-        >
-            {item.thumbnailUrl ? (
-                <Image
-                    source={{ uri: item.thumbnailUrl }}
-                    style={styles.courseThumbnail}
-                />
-            ) : (
-                <View
-                    style={[
-                        styles.courseThumbnail,
-                        styles.courseThumbnailPlaceholder,
-                    ]}
-                >
-                    <Ionicons
-                        name="book-outline"
-                        size={32}
-                        color={colors.light.textMuted}
-                    />
-                </View>
-            )}
-            <View style={styles.courseCardContent}>
-                <View style={styles.courseCardBadges}>
-                    <View
-                        style={[
-                            styles.levelBadge,
-                            {
-                                backgroundColor:
-                                    getLevelColor(item.level) + "20",
-                            },
-                        ]}
-                    >
-                        <Text
-                            style={[
-                                styles.levelBadgeText,
-                                { color: getLevelColor(item.level) },
-                            ]}
-                        >
-                            {getLevelLabel(item.level)}
-                        </Text>
-                    </View>
-                    {item.isFree && (
-                        <View style={styles.freeBadge}>
-                            <Text style={styles.freeBadgeText}>Miễn phí</Text>
-                        </View>
-                    )}
-                </View>
-                <Text style={styles.courseTitle} numberOfLines={2}>
-                    {item.title}
-                </Text>
-                <Text style={styles.courseInstructor} numberOfLines={1}>
-                    {item.instructor.name}
-                </Text>
-                <View style={styles.courseStats}>
-                    <View style={styles.statItem}>
-                        <Ionicons
-                            name="people-outline"
-                            size={14}
-                            color={colors.light.textMuted}
-                        />
-                        <Text style={styles.statText}>{item.students}</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                        <Ionicons
-                            name="time-outline"
-                            size={14}
-                            color={colors.light.textMuted}
-                        />
-                        <Text style={styles.statText}>{item.duration}</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                        <Ionicons name="star" size={14} color="#f59e0b" />
-                        <Text style={styles.statText}>
-                            {item.rating.toFixed(1)}
-                        </Text>
-                    </View>
-                </View>
-            </View>
-        </TouchableOpacity>
+    const renderCourseCard = useCallback(
+        ({ item }: { item: Course }) => (
+            <CourseCard
+                course={item}
+                variant="vertical"
+                onPress={() =>
+                    navigation.navigate("CourseDetail", { slug: item.slug })
+                }
+            />
+        ),
+        [navigation],
     );
 
-    if (isLoading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.light.primary} />
-            </View>
-        );
-    }
+    const keyExtractor = useCallback((item: Course) => item.id, []);
 
     return (
         <ScrollView
@@ -166,48 +86,147 @@ export default function HomeScreen({ navigation }: Props) {
                 end={{ x: 1, y: 1 }}
                 style={styles.banner}
             >
+                {/* Decorative shapes */}
+                <View style={styles.decorCircle1} />
+                <View style={styles.decorCircle2} />
+                <View style={styles.decorRect} />
+
                 <View style={styles.bannerContent}>
-                    <Text style={styles.greeting}>Xin chào,</Text>
-                    <Text style={styles.userName}>
-                        {user?.full_name || "Học viên"} 👋
-                    </Text>
+                    <View style={styles.greetingRow}>
+                        <View style={styles.greetingText}>
+                            <Text style={styles.greeting}>Xin chào,</Text>
+                            <Text style={styles.userName}>
+                                {user?.full_name || "Học viên"}
+                            </Text>
+                        </View>
+                        <View style={styles.avatarCircle}>
+                            <Ionicons
+                                name="person"
+                                size={22}
+                                color={colors.light.gradientFrom}
+                            />
+                        </View>
+                    </View>
                     <Text style={styles.bannerSubtitle}>
                         Hôm nay bạn muốn học gì?
                     </Text>
+
+                    {/* Search shortcut */}
+                    <TouchableOpacity
+                        style={styles.searchShortcut}
+                        onPress={() =>
+                            navigation.getParent()?.navigate("Courses")
+                        }
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons
+                            name="search-outline"
+                            size={18}
+                            color="rgba(255,255,255,0.6)"
+                        />
+                        <Text style={styles.searchPlaceholder}>
+                            Tìm kiếm khoá học...
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Quick Stats */}
                 <View style={styles.statsRow}>
-                    <View style={styles.quickStat}>
-                        <Ionicons name="flame" size={20} color="#fbbf24" />
-                        <Text style={styles.quickStatValue}>
-                            {user?.learning_streak || 0}
-                        </Text>
-                        <Text style={styles.quickStatLabel}>Streak</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.quickStat}>
-                        <Ionicons name="time" size={20} color="#34d399" />
-                        <Text style={styles.quickStatValue}>
-                            {Math.floor((user?.total_study_time || 0) / 60)}h
-                        </Text>
-                        <Text style={styles.quickStatLabel}>Đã học</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.quickStat}>
-                        <Ionicons name="ribbon" size={20} color="#f472b6" />
-                        <Text style={styles.quickStatValue}>
-                            {user?.membership_type || "FREE"}
-                        </Text>
-                        <Text style={styles.quickStatLabel}>Gói</Text>
-                    </View>
+                    <StatCard
+                        icon="flame"
+                        iconColor="#fbbf24"
+                        value={user?.learning_streak || 0}
+                        label="Chuỗi ngày"
+                        glass
+                    />
+                    <StatCard
+                        icon="time"
+                        iconColor="#34d399"
+                        value={`${Math.floor((user?.total_study_time || 0) / 60)}h`}
+                        label="Đã học"
+                        glass
+                    />
+                    <StatCard
+                        icon="ribbon"
+                        iconColor="#f472b6"
+                        value={user?.membership_type || "FREE"}
+                        label="Gói"
+                        glass
+                    />
                 </View>
             </LinearGradient>
+
+            {/* Categories Quick Links */}
+            <View style={styles.categoriesSection}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.categoriesList}
+                >
+                    {[
+                        {
+                            icon: "code-slash",
+                            label: "Web Dev",
+                            color: "#6366f1",
+                        },
+                        {
+                            icon: "phone-portrait-outline",
+                            label: "Mobile",
+                            color: "#14b8a6",
+                        },
+                        {
+                            icon: "hardware-chip-outline",
+                            label: "IoT",
+                            color: "#f59e0b",
+                        },
+                        {
+                            icon: "server-outline",
+                            label: "Backend",
+                            color: "#ef4444",
+                        },
+                        {
+                            icon: "git-branch-outline",
+                            label: "DevOps",
+                            color: "#8b5cf6",
+                        },
+                    ].map((cat) => (
+                        <TouchableOpacity
+                            key={cat.label}
+                            style={styles.categoryItem}
+                            activeOpacity={0.7}
+                            onPress={() =>
+                                navigation.getParent()?.navigate("Courses")
+                            }
+                        >
+                            <View
+                                style={[
+                                    styles.categoryIcon,
+                                    { backgroundColor: cat.color + "14" },
+                                ]}
+                            >
+                                <Ionicons
+                                    name={cat.icon as any}
+                                    size={22}
+                                    color={cat.color}
+                                />
+                            </View>
+                            <Text style={styles.categoryLabel}>
+                                {cat.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
 
             {/* Featured Courses */}
             <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Khoá học nổi bật</Text>
+                    <View style={styles.sectionTitleRow}>
+                        <View style={styles.sectionDot} />
+                        <Text style={styles.sectionTitle}>
+                            Khoá học nổi bật
+                        </Text>
+                    </View>
                     <TouchableOpacity
                         onPress={() =>
                             navigation.getParent()?.navigate("Courses")
@@ -217,66 +236,159 @@ export default function HomeScreen({ navigation }: Props) {
                     </TouchableOpacity>
                 </View>
 
-                <FlatList
-                    data={featuredCourses}
-                    renderItem={renderCourseCard}
-                    keyExtractor={(item) => item.id}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.coursesList}
-                    ItemSeparatorComponent={() => (
-                        <View style={{ width: spacing.md }} />
-                    )}
-                />
+                {isLoading ? (
+                    <View style={styles.skeletonRow}>
+                        <LoadingSkeleton
+                            variant="card"
+                            width={280}
+                            height={230}
+                        />
+                        <LoadingSkeleton
+                            variant="card"
+                            width={280}
+                            height={230}
+                        />
+                    </View>
+                ) : (
+                    <FlatList
+                        data={featuredCourses}
+                        renderItem={renderCourseCard}
+                        keyExtractor={keyExtractor}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.coursesList}
+                        ItemSeparatorComponent={() => (
+                            <View style={{ width: spacing.base }} />
+                        )}
+                    />
+                )}
             </View>
 
-            <View style={{ height: spacing["2xl"] }} />
+            <View style={{ height: spacing["3xl"] }} />
         </ScrollView>
     );
 }
 
-const CARD_WIDTH = 260;
-
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.light.background },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: colors.light.background,
-    },
 
     // Banner
     banner: {
         paddingTop: 56,
         paddingBottom: spacing.xl,
         paddingHorizontal: spacing.xl,
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
+        borderBottomLeftRadius: radius["2xl"],
+        borderBottomRightRadius: radius["2xl"],
+        overflow: "hidden",
     },
-    bannerContent: { marginBottom: spacing.xl },
-    greeting: { ...typography.body, color: "rgba(255,255,255,0.8)" },
-    userName: { ...typography.h1, color: "#ffffff", marginBottom: spacing.xs },
-    bannerSubtitle: { ...typography.caption, color: "rgba(255,255,255,0.7)" },
+    decorCircle1: {
+        position: "absolute",
+        top: -20,
+        right: -20,
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: "rgba(255,255,255,0.06)",
+    },
+    decorCircle2: {
+        position: "absolute",
+        bottom: 40,
+        left: -30,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: "rgba(255,255,255,0.05)",
+    },
+    decorRect: {
+        position: "absolute",
+        top: 60,
+        right: 50,
+        width: 40,
+        height: 40,
+        borderRadius: radius.sm,
+        backgroundColor: "rgba(255,255,255,0.04)",
+        transform: [{ rotate: "45deg" }],
+    },
+    bannerContent: {
+        marginBottom: spacing.lg,
+        zIndex: 1,
+    },
+    greetingRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        marginBottom: spacing.xs,
+    },
+    greetingText: {},
+    greeting: {
+        ...typography.caption,
+        color: "rgba(255,255,255,0.75)",
+    },
+    userName: {
+        ...typography.h1,
+        color: "#ffffff",
+    },
+    avatarCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: radius.full,
+        backgroundColor: "rgba(255,255,255,0.9)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    bannerSubtitle: {
+        ...typography.caption,
+        color: "rgba(255,255,255,0.65)",
+        marginBottom: spacing.base,
+    },
 
+    // Search shortcut
+    searchShortcut: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "rgba(255,255,255,0.15)",
+        borderRadius: radius.md,
+        paddingHorizontal: spacing.base,
+        paddingVertical: spacing.md,
+        gap: spacing.sm,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.12)",
+    },
+    searchPlaceholder: {
+        ...typography.caption,
+        color: "rgba(255,255,255,0.5)",
+    },
+
+    // Stats
     statsRow: {
         flexDirection: "row",
-        backgroundColor: "rgba(255,255,255,0.15)",
+        gap: spacing.sm,
+        zIndex: 1,
+    },
+
+    // Categories
+    categoriesSection: {
+        marginTop: spacing.xl,
+    },
+    categoriesList: {
+        paddingHorizontal: spacing.xl,
+        gap: spacing.lg,
+    },
+    categoryItem: {
+        alignItems: "center",
+        width: 64,
+    },
+    categoryIcon: {
+        width: 52,
+        height: 52,
         borderRadius: radius.lg,
-        paddingVertical: spacing.base,
-        paddingHorizontal: spacing.lg,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: spacing.xs,
     },
-    quickStat: { flex: 1, alignItems: "center" },
-    quickStatValue: {
-        ...typography.bodyMedium,
-        color: "#ffffff",
-        marginTop: spacing.xs,
-    },
-    quickStatLabel: { ...typography.small, color: "rgba(255,255,255,0.7)" },
-    statDivider: {
-        width: 1,
-        backgroundColor: "rgba(255,255,255,0.2)",
-        marginVertical: spacing.xs,
+    categoryLabel: {
+        ...typography.small,
+        color: colors.light.textSecondary,
     },
 
     // Sections
@@ -288,65 +400,25 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.xl,
         marginBottom: spacing.base,
     },
+    sectionTitleRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+    },
+    sectionDot: {
+        width: 4,
+        height: 20,
+        borderRadius: 2,
+        backgroundColor: colors.light.primary,
+    },
     sectionTitle: { ...typography.h3, color: colors.light.text },
     seeAll: { ...typography.captionMedium, color: colors.light.primary },
 
     // Course Cards
     coursesList: { paddingHorizontal: spacing.xl },
-    courseCard: {
-        width: CARD_WIDTH,
-        backgroundColor: colors.light.surfaceElevated,
-        borderRadius: radius.lg,
-        overflow: "hidden",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-    courseThumbnail: {
-        width: CARD_WIDTH,
-        height: 140,
-        backgroundColor: colors.light.surface,
-    },
-    courseThumbnailPlaceholder: {
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    courseCardContent: { padding: spacing.base },
-    courseCardBadges: {
+    skeletonRow: {
         flexDirection: "row",
-        gap: spacing.sm,
-        marginBottom: spacing.sm,
+        paddingHorizontal: spacing.xl,
+        gap: spacing.base,
     },
-    levelBadge: {
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 2,
-        borderRadius: radius.sm,
-    },
-    levelBadgeText: { ...typography.small, fontWeight: "600" },
-    freeBadge: {
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 2,
-        borderRadius: radius.sm,
-        backgroundColor: colors.light.badge.free + "20",
-    },
-    freeBadgeText: {
-        ...typography.small,
-        fontWeight: "600",
-        color: colors.light.badge.free,
-    },
-    courseTitle: {
-        ...typography.bodyMedium,
-        color: colors.light.text,
-        marginBottom: spacing.xs,
-    },
-    courseInstructor: {
-        ...typography.caption,
-        color: colors.light.textSecondary,
-        marginBottom: spacing.sm,
-    },
-    courseStats: { flexDirection: "row", gap: spacing.base },
-    statItem: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-    statText: { ...typography.small, color: colors.light.textMuted },
 });

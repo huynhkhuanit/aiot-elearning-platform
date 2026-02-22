@@ -2,12 +2,11 @@ import React, { useState } from "react";
 import {
     View,
     Text,
-    TextInput,
     StyleSheet,
     ScrollView,
     TouchableOpacity,
     Alert,
-    ActivityIndicator,
+    Image,
     KeyboardAvoidingView,
     Platform,
 } from "react-native";
@@ -15,9 +14,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../contexts/AuthContext";
-import { colors, typography, spacing, radius, layout } from "../../theme";
+import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { ProfileStackParamList } from "../../navigation/types";
 import { updateProfile } from "../../api/users";
+import { getInitials } from "../../utils/format";
+import InputField from "../../components/InputField";
+import GradientButton from "../../components/GradientButton";
 
 type Props = {
     navigation: NativeStackNavigationProp<ProfileStackParamList, "EditProfile">;
@@ -64,115 +66,113 @@ export default function EditProfileScreen({ navigation }: Props) {
                 contentContainerStyle={styles.scrollContent}
                 keyboardShouldPersistTaps="handled"
             >
-                {/* Full Name */}
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Họ và tên</Text>
-                    <View style={styles.inputWrapper}>
-                        <Ionicons
-                            name="person-outline"
-                            size={20}
-                            color={colors.light.textMuted}
-                            style={styles.inputIcon}
-                        />
-                        <TextInput
-                            style={styles.input}
-                            value={fullName}
-                            onChangeText={setFullName}
-                            placeholder="Nhập họ và tên"
-                            placeholderTextColor={colors.light.textMuted}
-                        />
+                {/* Avatar section */}
+                <View style={styles.avatarSection}>
+                    <View style={styles.avatarContainer}>
+                        {user?.avatar_url ? (
+                            <Image
+                                source={{ uri: user.avatar_url }}
+                                style={styles.avatar}
+                            />
+                        ) : (
+                            <LinearGradient
+                                colors={[
+                                    colors.light.gradientFrom,
+                                    colors.light.gradientTo,
+                                ]}
+                                style={[
+                                    styles.avatar,
+                                    styles.avatarPlaceholder,
+                                ]}
+                            >
+                                <Text style={styles.avatarText}>
+                                    {getInitials(user?.full_name || "")}
+                                </Text>
+                            </LinearGradient>
+                        )}
+                        <View style={styles.cameraButton}>
+                            <Ionicons name="camera" size={16} color="#ffffff" />
+                        </View>
                     </View>
+                    <Text style={styles.changeAvatarText}>
+                        Đổi ảnh đại diện
+                    </Text>
                 </View>
 
-                {/* Bio */}
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Giới thiệu</Text>
-                    <View style={[styles.inputWrapper, styles.bioWrapper]}>
-                        <TextInput
-                            style={[styles.input, styles.bioInput]}
-                            value={bio}
-                            onChangeText={setBio}
-                            placeholder="Viết vài dòng về bạn..."
-                            placeholderTextColor={colors.light.textMuted}
-                            multiline
-                            numberOfLines={4}
-                            textAlignVertical="top"
-                        />
-                    </View>
-                </View>
+                {/* Form */}
+                <View style={styles.formCard}>
+                    <InputField
+                        label="Họ và tên"
+                        icon="person-outline"
+                        value={fullName}
+                        onChangeText={setFullName}
+                        placeholder="Nhập họ và tên"
+                    />
 
-                {/* Phone */}
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Số điện thoại</Text>
-                    <View style={styles.inputWrapper}>
-                        <Ionicons
-                            name="call-outline"
-                            size={20}
-                            color={colors.light.textMuted}
-                            style={styles.inputIcon}
-                        />
-                        <TextInput
-                            style={styles.input}
-                            value={phone}
-                            onChangeText={setPhone}
-                            placeholder="Nhập số điện thoại"
-                            placeholderTextColor={colors.light.textMuted}
-                            keyboardType="phone-pad"
-                        />
+                    <View style={styles.bioGroup}>
+                        <Text style={styles.label}>Giới thiệu</Text>
+                        <View style={styles.bioWrapper}>
+                            <Ionicons
+                                name="document-text-outline"
+                                size={18}
+                                color={colors.light.textMuted}
+                                style={styles.bioIcon}
+                            />
+                            <View style={styles.bioInputWrap}>
+                                <InputField
+                                    label=""
+                                    placeholder="Viết vài dòng về bạn..."
+                                    value={bio}
+                                    onChangeText={setBio}
+                                    multiline
+                                    numberOfLines={4}
+                                    textAlignVertical="top"
+                                />
+                            </View>
+                        </View>
                     </View>
-                </View>
 
-                {/* Email (Read-only) */}
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Email</Text>
-                    <View style={[styles.inputWrapper, styles.readOnly]}>
-                        <Ionicons
-                            name="mail-outline"
-                            size={20}
-                            color={colors.light.textMuted}
-                            style={styles.inputIcon}
-                        />
-                        <Text style={styles.readOnlyText}>{user?.email}</Text>
-                        <Ionicons
-                            name="lock-closed-outline"
-                            size={16}
-                            color={colors.light.textMuted}
-                        />
+                    <InputField
+                        label="Số điện thoại"
+                        icon="call-outline"
+                        value={phone}
+                        onChangeText={setPhone}
+                        placeholder="Nhập số điện thoại"
+                        keyboardType="phone-pad"
+                    />
+
+                    {/* Email (Read-only) */}
+                    <View style={styles.readOnlyGroup}>
+                        <Text style={styles.label}>Email</Text>
+                        <View style={styles.readOnlyField}>
+                            <Ionicons
+                                name="mail-outline"
+                                size={20}
+                                color={colors.light.textMuted}
+                            />
+                            <Text style={styles.readOnlyText}>
+                                {user?.email}
+                            </Text>
+                            <View style={styles.lockBadge}>
+                                <Ionicons
+                                    name="lock-closed"
+                                    size={12}
+                                    color={colors.light.textMuted}
+                                />
+                            </View>
+                        </View>
                     </View>
                 </View>
 
                 {/* Save Button */}
-                <TouchableOpacity
-                    onPress={handleSave}
-                    disabled={isSaving}
-                    activeOpacity={0.8}
-                    style={styles.saveButtonWrapper}
-                >
-                    <LinearGradient
-                        colors={[
-                            colors.light.gradientFrom,
-                            colors.light.gradientTo,
-                        ]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.saveButton}
-                    >
-                        {isSaving ? (
-                            <ActivityIndicator color="#ffffff" />
-                        ) : (
-                            <>
-                                <Ionicons
-                                    name="checkmark"
-                                    size={20}
-                                    color="#ffffff"
-                                />
-                                <Text style={styles.saveButtonText}>
-                                    Lưu thay đổi
-                                </Text>
-                            </>
-                        )}
-                    </LinearGradient>
-                </TouchableOpacity>
+                <View style={styles.saveSection}>
+                    <GradientButton
+                        title="Lưu thay đổi"
+                        onPress={handleSave}
+                        loading={isSaving}
+                        icon="checkmark"
+                    />
+                </View>
             </ScrollView>
         </KeyboardAvoidingView>
     );
@@ -180,55 +180,110 @@ export default function EditProfileScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.light.background },
-    scrollContent: { padding: spacing.xl, paddingBottom: spacing["3xl"] },
+    scrollContent: {
+        paddingBottom: spacing["3xl"],
+    },
 
-    inputGroup: { marginBottom: spacing.lg },
+    // Avatar
+    avatarSection: {
+        alignItems: "center",
+        paddingVertical: spacing.xl,
+    },
+    avatarContainer: {
+        position: "relative",
+        marginBottom: spacing.sm,
+    },
+    avatar: {
+        width: 96,
+        height: 96,
+        borderRadius: radius.full,
+    },
+    avatarPlaceholder: {
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    avatarText: {
+        ...typography.h1,
+        color: "#ffffff",
+    },
+    cameraButton: {
+        position: "absolute",
+        bottom: 0,
+        right: 0,
+        width: 32,
+        height: 32,
+        borderRadius: radius.full,
+        backgroundColor: colors.light.primary,
+        justifyContent: "center",
+        alignItems: "center",
+        borderWidth: 3,
+        borderColor: colors.light.background,
+    },
+    changeAvatarText: {
+        ...typography.captionMedium,
+        color: colors.light.primary,
+    },
+
+    // Form
+    formCard: {
+        marginHorizontal: spacing.xl,
+        backgroundColor: colors.light.surfaceElevated,
+        borderRadius: radius.lg,
+        padding: spacing.xl,
+        ...shadows.sm,
+    },
     label: {
         ...typography.label,
         color: colors.light.text,
         marginBottom: spacing.sm,
     },
-    inputWrapper: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: colors.light.inputBg,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: colors.light.border,
-        height: layout.inputHeight,
-        paddingHorizontal: spacing.base,
-    },
-    inputIcon: { marginRight: spacing.sm },
-    input: {
-        flex: 1,
-        ...typography.body,
-        color: colors.light.text,
-        height: "100%",
+    bioGroup: {
+        marginBottom: spacing.lg,
     },
     bioWrapper: {
-        height: 120,
+        flexDirection: "row",
         alignItems: "flex-start",
-        paddingVertical: spacing.md,
     },
-    bioInput: { height: "100%", paddingTop: 0 },
-    readOnly: {
+    bioIcon: {
+        marginTop: spacing.base,
+        marginRight: spacing.sm,
+    },
+    bioInputWrap: {
+        flex: 1,
+    },
+
+    // Read-only
+    readOnlyGroup: {
+        marginBottom: spacing.sm,
+    },
+    readOnlyField: {
+        flexDirection: "row",
+        alignItems: "center",
         backgroundColor: colors.light.surface,
+        borderRadius: radius.md,
+        borderWidth: 1.5,
         borderColor: colors.light.border,
+        height: 52,
+        paddingHorizontal: spacing.base,
+        gap: spacing.md,
     },
     readOnlyText: {
         ...typography.body,
         color: colors.light.textMuted,
         flex: 1,
     },
-
-    saveButtonWrapper: { marginTop: spacing.sm },
-    saveButton: {
-        height: layout.buttonHeight,
-        borderRadius: radius.md,
-        flexDirection: "row",
+    lockBadge: {
+        width: 24,
+        height: 24,
+        borderRadius: radius.sm,
+        backgroundColor: colors.light.surface,
         justifyContent: "center",
         alignItems: "center",
-        gap: spacing.sm,
     },
-    saveButtonText: { ...typography.button, color: "#ffffff" },
+
+    // Save
+    saveSection: {
+        paddingHorizontal: spacing.xl,
+        marginTop: spacing.xl,
+    },
 });

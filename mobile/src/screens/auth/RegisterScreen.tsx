@@ -2,21 +2,21 @@ import React, { useState } from "react";
 import {
     View,
     Text,
-    TextInput,
-    TouchableOpacity,
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
     Alert,
-    ActivityIndicator,
+    TouchableOpacity,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/AuthContext";
-import { colors, typography, spacing, radius, layout } from "../../theme";
+import { colors, typography, spacing, radius } from "../../theme";
 import { AuthStackParamList } from "../../navigation/types";
+import InputField from "../../components/InputField";
+import GradientButton from "../../components/GradientButton";
 
 type Props = {
     navigation: NativeStackNavigationProp<AuthStackParamList, "Register">;
@@ -28,7 +28,6 @@ export default function RegisterScreen({ navigation }: Props) {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleRegister = async () => {
@@ -81,167 +80,99 @@ export default function RegisterScreen({ navigation }: Props) {
                         end={{ x: 1, y: 1 }}
                         style={styles.header}
                     >
+                        {/* Decorative */}
+                        <View style={styles.decorCircle1} />
+                        <View style={styles.decorCircle2} />
+
                         <TouchableOpacity
                             onPress={() => navigation.goBack()}
                             style={styles.backButton}
+                            hitSlop={{
+                                top: 10,
+                                bottom: 10,
+                                left: 10,
+                                right: 10,
+                            }}
                         >
-                            <Ionicons
-                                name="arrow-back"
-                                size={24}
-                                color="#ffffff"
-                            />
+                            <View style={styles.backCircle}>
+                                <Ionicons
+                                    name="arrow-back"
+                                    size={20}
+                                    color="#ffffff"
+                                />
+                            </View>
                         </TouchableOpacity>
+
                         <View style={styles.headerContent}>
                             <View style={styles.logoContainer}>
                                 <Ionicons
-                                    name="school"
-                                    size={36}
+                                    name="rocket-outline"
+                                    size={28}
                                     color="#ffffff"
                                 />
                             </View>
                             <Text style={styles.appName}>Tạo tài khoản</Text>
                             <Text style={styles.tagline}>
-                                Bắt đầu hành trình học tập
+                                Bắt đầu hành trình chinh phục lập trình
                             </Text>
+                        </View>
+
+                        {/* Step dots (visual decoration) */}
+                        <View style={styles.stepRow}>
+                            <View style={styles.stepDotActive} />
+                            <View style={styles.stepLine} />
+                            <View style={styles.stepDot} />
+                            <View style={styles.stepLine} />
+                            <View style={styles.stepDot} />
                         </View>
                     </LinearGradient>
 
                     {/* Register Form */}
                     <View style={styles.formContainer}>
-                        {/* Full Name */}
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Họ và tên</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons
-                                    name="person-outline"
-                                    size={20}
-                                    color={colors.light.textMuted}
-                                    style={styles.inputIcon}
-                                />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Nhập họ và tên"
-                                    placeholderTextColor={
-                                        colors.light.textMuted
-                                    }
-                                    autoCapitalize="words"
-                                    value={fullName}
-                                    onChangeText={setFullName}
-                                />
-                            </View>
-                        </View>
+                        <InputField
+                            label="Họ và tên"
+                            icon="person-outline"
+                            placeholder="Nhập họ và tên"
+                            autoCapitalize="words"
+                            value={fullName}
+                            onChangeText={setFullName}
+                        />
 
-                        {/* Username */}
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Tên người dùng</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons
-                                    name="at-outline"
-                                    size={20}
-                                    color={colors.light.textMuted}
-                                    style={styles.inputIcon}
-                                />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Nhập username"
-                                    placeholderTextColor={
-                                        colors.light.textMuted
-                                    }
-                                    autoCapitalize="none"
-                                    value={username}
-                                    onChangeText={setUsername}
-                                />
-                            </View>
-                        </View>
+                        <InputField
+                            label="Tên người dùng"
+                            icon="at-outline"
+                            placeholder="Nhập username"
+                            autoCapitalize="none"
+                            value={username}
+                            onChangeText={setUsername}
+                        />
 
-                        {/* Email */}
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Email</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons
-                                    name="mail-outline"
-                                    size={20}
-                                    color={colors.light.textMuted}
-                                    style={styles.inputIcon}
-                                />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Nhập email"
-                                    placeholderTextColor={
-                                        colors.light.textMuted
-                                    }
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    autoComplete="email"
-                                    value={email}
-                                    onChangeText={setEmail}
-                                />
-                            </View>
-                        </View>
+                        <InputField
+                            label="Email"
+                            icon="mail-outline"
+                            placeholder="Nhập email"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoComplete="email"
+                            value={email}
+                            onChangeText={setEmail}
+                        />
 
-                        {/* Password */}
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Mật khẩu</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons
-                                    name="lock-closed-outline"
-                                    size={20}
-                                    color={colors.light.textMuted}
-                                    style={styles.inputIcon}
-                                />
-                                <TextInput
-                                    style={[styles.input, styles.passwordInput]}
-                                    placeholder="Tối thiểu 6 ký tự"
-                                    placeholderTextColor={
-                                        colors.light.textMuted
-                                    }
-                                    secureTextEntry={!showPassword}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                />
-                                <TouchableOpacity
-                                    onPress={() =>
-                                        setShowPassword(!showPassword)
-                                    }
-                                    style={styles.eyeButton}
-                                >
-                                    <Ionicons
-                                        name={
-                                            showPassword
-                                                ? "eye-off-outline"
-                                                : "eye-outline"
-                                        }
-                                        size={20}
-                                        color={colors.light.textMuted}
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
+                        <InputField
+                            label="Mật khẩu"
+                            icon="lock-closed-outline"
+                            placeholder="Tối thiểu 6 ký tự"
+                            secureEntry
+                            value={password}
+                            onChangeText={setPassword}
+                        />
 
-                        {/* Register Button */}
-                        <TouchableOpacity
+                        <GradientButton
+                            title="Đăng ký"
                             onPress={handleRegister}
-                            disabled={isLoading}
-                            activeOpacity={0.8}
-                        >
-                            <LinearGradient
-                                colors={[
-                                    colors.light.gradientFrom,
-                                    colors.light.gradientTo,
-                                ]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={styles.registerButton}
-                            >
-                                {isLoading ? (
-                                    <ActivityIndicator color="#ffffff" />
-                                ) : (
-                                    <Text style={styles.registerButtonText}>
-                                        Đăng ký
-                                    </Text>
-                                )}
-                            </LinearGradient>
-                        </TouchableOpacity>
+                            loading={isLoading}
+                            icon="person-add-outline"
+                        />
 
                         {/* Login Link */}
                         <View style={styles.loginRow}>
@@ -250,6 +181,7 @@ export default function RegisterScreen({ navigation }: Props) {
                             </Text>
                             <TouchableOpacity
                                 onPress={() => navigation.goBack()}
+                                hitSlop={{ top: 10, bottom: 10 }}
                             >
                                 <Text style={styles.loginLink}>Đăng nhập</Text>
                             </TouchableOpacity>
@@ -265,80 +197,119 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.light.background },
     flex: { flex: 1 },
     scrollContent: { flexGrow: 1 },
+
+    // Header
     header: {
-        paddingTop: 50,
-        paddingBottom: 32,
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
+        paddingTop: 52,
+        paddingBottom: spacing["2xl"],
+        borderBottomLeftRadius: radius["2xl"],
+        borderBottomRightRadius: radius["2xl"],
+        overflow: "hidden",
+    },
+    decorCircle1: {
+        position: "absolute",
+        top: -20,
+        right: -20,
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: "rgba(255,255,255,0.08)",
+    },
+    decorCircle2: {
+        position: "absolute",
+        bottom: 30,
+        left: -30,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: "rgba(255,255,255,0.06)",
     },
     backButton: {
         position: "absolute",
-        top: 50,
+        top: 52,
         left: spacing.base,
-        zIndex: 1,
-        padding: spacing.sm,
+        zIndex: 2,
     },
-    headerContent: { alignItems: "center", paddingHorizontal: spacing.xl },
+    backCircle: {
+        width: 40,
+        height: 40,
+        borderRadius: radius.full,
+        backgroundColor: "rgba(255,255,255,0.2)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    headerContent: {
+        alignItems: "center",
+        paddingHorizontal: spacing.xl,
+    },
     logoContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: radius.md,
+        width: 56,
+        height: 56,
+        borderRadius: radius.lg,
         backgroundColor: "rgba(255,255,255,0.2)",
         justifyContent: "center",
         alignItems: "center",
         marginBottom: spacing.md,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.25)",
     },
-    appName: { ...typography.h2, color: "#ffffff", marginBottom: spacing.xs },
-    tagline: { ...typography.caption, color: "rgba(255,255,255,0.85)" },
+    appName: {
+        ...typography.h2,
+        color: "#ffffff",
+        marginBottom: spacing.xs,
+    },
+    tagline: {
+        ...typography.caption,
+        color: "rgba(255,255,255,0.8)",
+    },
+
+    // Step dots
+    stepRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: spacing.lg,
+        gap: 0,
+    },
+    stepDotActive: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: "#ffffff",
+    },
+    stepDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: "rgba(255,255,255,0.3)",
+    },
+    stepLine: {
+        width: 32,
+        height: 2,
+        backgroundColor: "rgba(255,255,255,0.2)",
+        marginHorizontal: spacing.xs,
+    },
+
+    // Form
     formContainer: {
         flex: 1,
         paddingHorizontal: spacing.xl,
         paddingTop: spacing.xl,
     },
-    inputGroup: { marginBottom: spacing.base },
-    label: {
-        ...typography.label,
-        color: colors.light.text,
-        marginBottom: spacing.sm,
-    },
-    inputWrapper: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: colors.light.inputBg,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: colors.light.border,
-        height: layout.inputHeight,
-        paddingHorizontal: spacing.base,
-    },
-    inputIcon: { marginRight: spacing.sm },
-    input: {
-        flex: 1,
-        ...typography.body,
-        color: colors.light.text,
-        height: "100%",
-    },
-    passwordInput: { paddingRight: 40 },
-    eyeButton: {
-        position: "absolute",
-        right: spacing.base,
-        padding: spacing.xs,
-    },
-    registerButton: {
-        height: layout.buttonHeight,
-        borderRadius: radius.md,
-        justifyContent: "center",
-        alignItems: "center",
-        marginTop: spacing.sm,
-    },
-    registerButtonText: { ...typography.button, color: "#ffffff" },
+
     loginRow: {
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-        marginTop: spacing.xl,
+        marginTop: spacing.lg,
         paddingBottom: spacing["2xl"],
     },
-    loginText: { ...typography.caption, color: colors.light.textSecondary },
-    loginLink: { ...typography.captionMedium, color: colors.light.primary },
+    loginText: {
+        ...typography.caption,
+        color: colors.light.textSecondary,
+    },
+    loginLink: {
+        ...typography.captionMedium,
+        color: colors.light.primary,
+    },
 });

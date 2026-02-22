@@ -6,28 +6,33 @@ import {
     FlatList,
     TextInput,
     TouchableOpacity,
-    Image,
     ActivityIndicator,
     RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors, typography, spacing, radius, layout } from "../../theme";
+import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { CoursesStackParamList } from "../../navigation/types";
 import { Course } from "../../types/course";
 import { fetchCourses } from "../../api/courses";
-import { getLevelLabel, getLevelColor } from "../../utils/format";
+import CourseCard from "../../components/CourseCard";
+import LoadingSkeleton from "../../components/LoadingSkeleton";
+import EmptyState from "../../components/EmptyState";
 
 type Props = {
     navigation: NativeStackNavigationProp<CoursesStackParamList, "CoursesList">;
 };
 
 const LEVEL_FILTERS = [
-    { label: "Tất cả", value: "" },
-    { label: "Cơ bản", value: "BEGINNER" },
-    { label: "Trung cấp", value: "INTERMEDIATE" },
-    { label: "Nâng cao", value: "ADVANCED" },
+    { label: "Tất cả", value: "", icon: "grid-outline" as const },
+    { label: "Cơ bản", value: "BEGINNER", icon: "leaf-outline" as const },
+    {
+        label: "Trung cấp",
+        value: "INTERMEDIATE",
+        icon: "trending-up-outline" as const,
+    },
+    { label: "Nâng cao", value: "ADVANCED", icon: "rocket-outline" as const },
 ];
 
 export default function CoursesScreen({ navigation }: Props) {
@@ -94,89 +99,29 @@ export default function CoursesScreen({ navigation }: Props) {
         loadCourses(1, true);
     };
 
-    const renderCourseItem = ({ item }: { item: Course }) => (
-        <TouchableOpacity
-            style={styles.courseItem}
-            activeOpacity={0.7}
-            onPress={() =>
-                navigation.navigate("CourseDetail", { slug: item.slug })
-            }
-        >
-            {item.thumbnailUrl ? (
-                <Image
-                    source={{ uri: item.thumbnailUrl }}
-                    style={styles.thumbnail}
-                />
-            ) : (
-                <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
-                    <Ionicons
-                        name="book-outline"
-                        size={28}
-                        color={colors.light.textMuted}
-                    />
-                </View>
-            )}
-            <View style={styles.courseInfo}>
-                <View style={styles.badgeRow}>
-                    <View
-                        style={[
-                            styles.levelBadge,
-                            {
-                                backgroundColor:
-                                    getLevelColor(item.level) + "20",
-                            },
-                        ]}
-                    >
-                        <Text
-                            style={[
-                                styles.levelText,
-                                { color: getLevelColor(item.level) },
-                            ]}
-                        >
-                            {getLevelLabel(item.level)}
-                        </Text>
-                    </View>
-                    <Text style={styles.priceText}>{item.price}</Text>
-                </View>
-                <Text style={styles.courseTitle} numberOfLines={2}>
-                    {item.title}
-                </Text>
-                <Text style={styles.instructorName} numberOfLines={1}>
-                    {item.instructor.name}
-                </Text>
-                <View style={styles.statsRow}>
-                    <Ionicons
-                        name="people-outline"
-                        size={13}
-                        color={colors.light.textMuted}
-                    />
-                    <Text style={styles.statText}>{item.students}</Text>
-                    <Ionicons
-                        name="star"
-                        size={13}
-                        color="#f59e0b"
-                        style={{ marginLeft: spacing.sm }}
-                    />
-                    <Text style={styles.statText}>
-                        {item.rating.toFixed(1)}
-                    </Text>
-                    <Ionicons
-                        name="play-circle-outline"
-                        size={13}
-                        color={colors.light.textMuted}
-                        style={{ marginLeft: spacing.sm }}
-                    />
-                    <Text style={styles.statText}>{item.totalLessons} bài</Text>
-                </View>
-            </View>
-        </TouchableOpacity>
+    const renderCourseItem = useCallback(
+        ({ item }: { item: Course }) => (
+            <CourseCard
+                course={item}
+                variant="horizontal"
+                onPress={() =>
+                    navigation.navigate("CourseDetail", { slug: item.slug })
+                }
+            />
+        ),
+        [navigation],
     );
+
+    const keyExtractor = useCallback((item: Course) => item.id, []);
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Khoá học</Text>
+                <Text style={styles.headerSubtitle}>
+                    Khám phá và nâng cao kỹ năng
+                </Text>
             </View>
 
             {/* Search Bar */}
@@ -201,6 +146,12 @@ export default function CoursesScreen({ navigation }: Props) {
                             onPress={() => {
                                 setSearch("");
                                 handleSearch();
+                            }}
+                            hitSlop={{
+                                top: 10,
+                                bottom: 10,
+                                left: 10,
+                                right: 10,
                             }}
                         >
                             <Ionicons
@@ -229,7 +180,17 @@ export default function CoursesScreen({ navigation }: Props) {
                                     styles.filterChipActive,
                             ]}
                             onPress={() => setSelectedLevel(item.value)}
+                            activeOpacity={0.7}
                         >
+                            <Ionicons
+                                name={item.icon}
+                                size={14}
+                                color={
+                                    selectedLevel === item.value
+                                        ? "#ffffff"
+                                        : colors.light.textSecondary
+                                }
+                            />
                             <Text
                                 style={[
                                     styles.filterText,
@@ -246,17 +207,21 @@ export default function CoursesScreen({ navigation }: Props) {
 
             {/* Courses List */}
             {isLoading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator
-                        size="large"
-                        color={colors.light.primary}
-                    />
+                <View style={styles.skeletonContainer}>
+                    {[1, 2, 3, 4].map((i) => (
+                        <LoadingSkeleton
+                            key={i}
+                            variant="card"
+                            height={130}
+                            style={{ marginBottom: spacing.base }}
+                        />
+                    ))}
                 </View>
             ) : (
                 <FlatList
                     data={courses}
                     renderItem={renderCourseItem}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={keyExtractor}
                     contentContainerStyle={styles.listContent}
                     ItemSeparatorComponent={() => (
                         <View style={styles.separator} />
@@ -271,16 +236,16 @@ export default function CoursesScreen({ navigation }: Props) {
                         />
                     }
                     ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <Ionicons
-                                name="search-outline"
-                                size={48}
-                                color={colors.light.textMuted}
-                            />
-                            <Text style={styles.emptyText}>
-                                Không tìm thấy khoá học
-                            </Text>
-                        </View>
+                        <EmptyState
+                            icon="search-outline"
+                            title="Không tìm thấy khoá học"
+                            description="Thử thay đổi từ khoá hoặc bộ lọc"
+                            actionLabel="Xoá bộ lọc"
+                            onAction={() => {
+                                setSearch("");
+                                setSelectedLevel("");
+                            }}
+                        />
                     }
                     ListFooterComponent={
                         isLoadingMore ? (
@@ -299,8 +264,18 @@ export default function CoursesScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.light.background },
-    header: { paddingHorizontal: spacing.xl, paddingVertical: spacing.base },
-    headerTitle: { ...typography.h2, color: colors.light.text },
+
+    // Header
+    header: {
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.base,
+    },
+    headerTitle: { ...typography.h1, color: colors.light.text },
+    headerSubtitle: {
+        ...typography.caption,
+        color: colors.light.textSecondary,
+        marginTop: 2,
+    },
 
     // Search
     searchContainer: {
@@ -310,28 +285,39 @@ const styles = StyleSheet.create({
     searchBar: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: colors.light.inputBg,
+        backgroundColor: colors.light.surfaceElevated,
         borderRadius: radius.md,
         paddingHorizontal: spacing.base,
-        height: 44,
+        height: 48,
         gap: spacing.sm,
+        borderWidth: 1,
+        borderColor: colors.light.border,
+        ...shadows.sm,
     },
-    searchInput: { flex: 1, ...typography.body, color: colors.light.text },
+    searchInput: {
+        flex: 1,
+        ...typography.body,
+        color: colors.light.text,
+    },
 
     // Filters
     filtersContainer: { marginBottom: spacing.base },
     filtersList: { paddingHorizontal: spacing.xl, gap: spacing.sm },
     filterChip: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.xs,
         paddingHorizontal: spacing.base,
-        paddingVertical: spacing.sm,
+        paddingVertical: spacing.sm + 2,
         borderRadius: radius.full,
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: colors.light.border,
-        backgroundColor: colors.light.background,
+        backgroundColor: colors.light.surfaceElevated,
     },
     filterChipActive: {
         backgroundColor: colors.light.primary,
         borderColor: colors.light.primary,
+        ...shadows.glow,
     },
     filterText: {
         ...typography.captionMedium,
@@ -344,65 +330,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.xl,
         paddingBottom: spacing["2xl"],
     },
-    separator: { height: spacing.base },
-    courseItem: {
-        flexDirection: "row",
-        backgroundColor: colors.light.surfaceElevated,
-        borderRadius: radius.md,
-        overflow: "hidden",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    thumbnail: {
-        width: 110,
-        height: 120,
-        backgroundColor: colors.light.surface,
-    },
-    thumbnailPlaceholder: { justifyContent: "center", alignItems: "center" },
-    courseInfo: { flex: 1, padding: spacing.md },
-    badgeRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: spacing.xs,
-    },
-    levelBadge: {
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 2,
-        borderRadius: radius.sm,
-    },
-    levelText: { ...typography.small, fontWeight: "600" },
-    priceText: { ...typography.smallBold, color: colors.light.primary },
-    courseTitle: {
-        ...typography.captionMedium,
-        color: colors.light.text,
-        marginBottom: 2,
-    },
-    instructorName: {
-        ...typography.small,
-        color: colors.light.textSecondary,
-        marginBottom: spacing.sm,
-    },
-    statsRow: { flexDirection: "row", alignItems: "center" },
-    statText: {
-        ...typography.small,
-        color: colors.light.textMuted,
-        marginLeft: 2,
-    },
-
-    // States
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    emptyContainer: { alignItems: "center", paddingTop: spacing["5xl"] },
-    emptyText: {
-        ...typography.body,
-        color: colors.light.textMuted,
-        marginTop: spacing.base,
+    separator: { height: spacing.md },
+    skeletonContainer: {
+        paddingHorizontal: spacing.xl,
+        paddingTop: spacing.sm,
     },
 });
