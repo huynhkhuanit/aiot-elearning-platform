@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../contexts/AuthContext";
 import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { HomeStackParamList } from "../../navigation/types";
@@ -19,6 +20,8 @@ import { fetchCourses } from "../../api/courses";
 import CourseCard from "../../components/CourseCard";
 import StatCard from "../../components/StatCard";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
+import SectionHeader from "../../components/SectionHeader";
+import ScreenTransition from "../../components/ScreenTransition";
 
 type Props = {
     navigation: NativeStackNavigationProp<HomeStackParamList, "HomeScreen">;
@@ -26,6 +29,7 @@ type Props = {
 
 export default function HomeScreen({ navigation }: Props) {
     const { user } = useAuth();
+    const insets = useSafeAreaInsets();
     const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -84,7 +88,10 @@ export default function HomeScreen({ navigation }: Props) {
                 colors={[colors.light.gradientFrom, colors.light.gradientTo]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.banner}
+                style={[
+                    styles.banner,
+                    { paddingTop: Math.max(56, insets.top + spacing.base) },
+                ]}
             >
                 {/* Decorative shapes */}
                 <View style={styles.decorCircle1} />
@@ -157,114 +164,111 @@ export default function HomeScreen({ navigation }: Props) {
             </LinearGradient>
 
             {/* Categories Quick Links */}
-            <View style={styles.categoriesSection}>
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.categoriesList}
-                >
-                    {[
-                        {
-                            icon: "code-slash",
-                            label: "Web Dev",
-                            color: "#6366f1",
-                        },
-                        {
-                            icon: "phone-portrait-outline",
-                            label: "Mobile",
-                            color: "#14b8a6",
-                        },
-                        {
-                            icon: "hardware-chip-outline",
-                            label: "IoT",
-                            color: "#f59e0b",
-                        },
-                        {
-                            icon: "server-outline",
-                            label: "Backend",
-                            color: "#ef4444",
-                        },
-                        {
-                            icon: "git-branch-outline",
-                            label: "DevOps",
-                            color: "#8b5cf6",
-                        },
-                    ].map((cat) => (
-                        <TouchableOpacity
-                            key={cat.label}
-                            style={styles.categoryItem}
-                            activeOpacity={0.7}
-                            onPress={() =>
-                                navigation.getParent()?.navigate("Courses")
-                            }
-                        >
-                            <View
-                                style={[
-                                    styles.categoryIcon,
-                                    { backgroundColor: cat.color + "14" },
-                                ]}
-                            >
-                                <Ionicons
-                                    name={cat.icon as any}
-                                    size={22}
-                                    color={cat.color}
-                                />
-                            </View>
-                            <Text style={styles.categoryLabel}>
-                                {cat.label}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
-
-            {/* Featured Courses */}
-            <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                    <View style={styles.sectionTitleRow}>
-                        <View style={styles.sectionDot} />
-                        <Text style={styles.sectionTitle}>
-                            Khoá học nổi bật
-                        </Text>
-                    </View>
-                    <TouchableOpacity
-                        onPress={() =>
-                            navigation.getParent()?.navigate("Courses")
-                        }
-                    >
-                        <Text style={styles.seeAll}>Xem tất cả</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {isLoading ? (
-                    <View style={styles.skeletonRow}>
-                        <LoadingSkeleton
-                            variant="card"
-                            width={280}
-                            height={230}
-                        />
-                        <LoadingSkeleton
-                            variant="card"
-                            width={280}
-                            height={230}
-                        />
-                    </View>
-                ) : (
-                    <FlatList
-                        data={featuredCourses}
-                        renderItem={renderCourseCard}
-                        keyExtractor={keyExtractor}
+            <ScreenTransition delay={100}>
+                <View style={styles.categoriesSection}>
+                    <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.coursesList}
-                        ItemSeparatorComponent={() => (
-                            <View style={{ width: spacing.base }} />
-                        )}
-                    />
-                )}
-            </View>
+                        contentContainerStyle={styles.categoriesList}
+                    >
+                        {[
+                            {
+                                icon: "code-slash",
+                                label: "Web Dev",
+                                color: "#6366f1",
+                            },
+                            {
+                                icon: "phone-portrait-outline",
+                                label: "Mobile",
+                                color: "#14b8a6",
+                            },
+                            {
+                                icon: "hardware-chip-outline",
+                                label: "IoT",
+                                color: "#f59e0b",
+                            },
+                            {
+                                icon: "server-outline",
+                                label: "Backend",
+                                color: "#ef4444",
+                            },
+                            {
+                                icon: "git-branch-outline",
+                                label: "DevOps",
+                                color: "#8b5cf6",
+                            },
+                        ].map((cat) => (
+                            <TouchableOpacity
+                                key={cat.label}
+                                style={styles.categoryItem}
+                                activeOpacity={0.7}
+                                onPress={() =>
+                                    navigation.getParent()?.navigate("Courses")
+                                }
+                            >
+                                <View
+                                    style={[
+                                        styles.categoryIcon,
+                                        { backgroundColor: cat.color + "14" },
+                                    ]}
+                                >
+                                    <Ionicons
+                                        name={cat.icon as any}
+                                        size={22}
+                                        color={cat.color}
+                                    />
+                                </View>
+                                <Text style={styles.categoryLabel}>
+                                    {cat.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            </ScreenTransition>
 
-            <View style={{ height: spacing["3xl"] }} />
+            {/* Featured Courses */}
+            <ScreenTransition delay={200}>
+                <View style={styles.section}>
+                    <SectionHeader
+                        title="Khoá học nổi bật"
+                        actionLabel="Xem tất cả"
+                        onAction={() =>
+                            navigation.getParent()?.navigate("Courses")
+                        }
+                        style={{ paddingHorizontal: spacing.xl }}
+                    />
+
+                    {isLoading ? (
+                        <View style={styles.skeletonRow}>
+                            <LoadingSkeleton
+                                variant="card"
+                                width={280}
+                                height={230}
+                            />
+                            <LoadingSkeleton
+                                variant="card"
+                                width={280}
+                                height={230}
+                            />
+                        </View>
+                    ) : (
+                        <FlatList
+                            data={featuredCourses}
+                            renderItem={renderCourseCard}
+                            keyExtractor={keyExtractor}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.coursesList}
+                            ItemSeparatorComponent={() => (
+                                <View style={{ width: spacing.base }} />
+                            )}
+                        />
+                    )}
+                </View>
+            </ScreenTransition>
+
+            <View style={{ height: spacing["3xl"] + insets.bottom }} />
         </ScrollView>
     );
 }
