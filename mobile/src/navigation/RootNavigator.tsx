@@ -18,261 +18,190 @@ import ProfileScreen from "../screens/profile/ProfileScreen";
 import EditProfileScreen from "../screens/profile/EditProfileScreen";
 
 // Navigation types
-import {
-    AuthStackParamList,
-    HomeStackParamList,
-    CoursesStackParamList,
-    ProfileStackParamList,
-    RootStackParamList,
-    MainTabsParamList,
-} from "./types";
-
-import {
-    View,
-    ActivityIndicator,
-    StyleSheet,
-    Platform,
-    Text,
-} from "react-native";
+import { AuthStackParamList, HomeStackParamList, CoursesStackParamList, ProfileStackParamList, RootStackParamList, MainTabsParamList } from "./types";
+import { View, ActivityIndicator, StyleSheet, Platform, Text } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 // --- Shared screen options for content stacks ---
 const contentScreenOptions = {
-    headerStyle: { backgroundColor: colors.light.background },
-    headerTintColor: colors.light.text,
-    headerTitleStyle: { fontWeight: "600" as const },
-    headerShadowVisible: false,
-    animation: "ios_from_right" as const,
-    animationDuration: 280,
-    gestureEnabled: true,
+  headerStyle: {
+    backgroundColor: colors.light.background
+  },
+  headerTintColor: colors.light.text,
+  headerTitleStyle: {
+    fontWeight: "600" as const
+  },
+  headerShadowVisible: false,
+  animation: "ios_from_right" as const,
+  animationDuration: 280,
+  gestureEnabled: true
 };
 
 // --- Auth Stack ---
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 function AuthNavigator() {
-    return (
-        <AuthStack.Navigator
-            screenOptions={{
-                headerShown: false,
-                animation: "fade",
-                animationDuration: 300,
-            }}
-        >
+  return <AuthStack.Navigator screenOptions={{
+    headerShown: false,
+    animation: "fade",
+    animationDuration: 300
+  }}>
             <AuthStack.Screen name="Login" component={LoginScreen} />
-            <AuthStack.Screen
-                name="Register"
-                component={RegisterScreen}
-                options={{
-                    animation: "slide_from_bottom",
-                    animationDuration: 320,
-                }}
-            />
-        </AuthStack.Navigator>
-    );
+            <AuthStack.Screen name="Register" component={RegisterScreen} options={{
+      animation: "slide_from_bottom",
+      animationDuration: 320
+    }} />
+        </AuthStack.Navigator>;
 }
 
 // --- Home Stack ---
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 function HomeNavigator() {
-    return (
-        <HomeStack.Navigator screenOptions={contentScreenOptions}>
-            <HomeStack.Screen
-                name="HomeScreen"
-                component={HomeScreen}
-                options={{ headerShown: false }}
-            />
-            <HomeStack.Screen
-                name="CourseDetail"
-                component={CourseDetailScreen}
-                options={{ title: "Chi tiết khoá học" }}
-            />
-            <HomeStack.Screen
-                name="LessonVideo"
-                component={LessonVideoScreen}
-                options={{
-                    title: "Bài học",
-                    animation: "slide_from_bottom",
-                    animationDuration: 320,
-                }}
-            />
-        </HomeStack.Navigator>
-    );
+  return <HomeStack.Navigator screenOptions={contentScreenOptions}>
+            <HomeStack.Screen name="HomeScreen" component={HomeScreen} options={{
+      headerShown: false
+    }} />
+            <HomeStack.Screen name="CourseDetail" component={CourseDetailScreen} options={{
+      title: "Chi tiết khoá học"
+    }} />
+            <HomeStack.Screen name="LessonVideo" component={LessonVideoScreen} options={{
+      title: "Bài học",
+      animation: "slide_from_bottom",
+      animationDuration: 320
+    }} />
+        </HomeStack.Navigator>;
 }
 
 // --- Courses Stack ---
 const CoursesStack = createNativeStackNavigator<CoursesStackParamList>();
 function CoursesNavigator() {
-    return (
-        <CoursesStack.Navigator screenOptions={contentScreenOptions}>
-            <CoursesStack.Screen
-                name="CoursesList"
-                component={CoursesScreen}
-                options={{ headerShown: false }}
-            />
-            <CoursesStack.Screen
-                name="CourseDetail"
-                component={CourseDetailScreen}
-                options={{ title: "Chi tiết khoá học" }}
-            />
-            <CoursesStack.Screen
-                name="LessonVideo"
-                component={LessonVideoScreen}
-                options={{
-                    title: "Bài học",
-                    animation: "slide_from_bottom",
-                    animationDuration: 320,
-                }}
-            />
-        </CoursesStack.Navigator>
-    );
+  return <CoursesStack.Navigator screenOptions={contentScreenOptions}>
+            <CoursesStack.Screen name="CoursesList" component={CoursesScreen} options={{
+      headerShown: false
+    }} />
+            <CoursesStack.Screen name="CourseDetail" component={CourseDetailScreen} options={{
+      title: "Chi tiết khoá học"
+    }} />
+            <CoursesStack.Screen name="LessonVideo" component={LessonVideoScreen} options={{
+      title: "Bài học",
+      animation: "slide_from_bottom",
+      animationDuration: 320
+    }} />
+        </CoursesStack.Navigator>;
 }
 
 // --- Profile Stack ---
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 function ProfileNavigator() {
-    return (
-        <ProfileStack.Navigator screenOptions={contentScreenOptions}>
-            <ProfileStack.Screen
-                name="ProfileScreen"
-                component={ProfileScreen}
-                options={{ headerShown: false }}
-            />
-            <ProfileStack.Screen
-                name="EditProfile"
-                component={EditProfileScreen}
-                options={{
-                    title: "Chỉnh sửa hồ sơ",
-                    animation: "slide_from_bottom",
-                    animationDuration: 320,
-                }}
-            />
-            <ProfileStack.Screen
-                name="CourseDetail"
-                component={CourseDetailScreen}
-                options={{ title: "Chi tiết khoá học" }}
-            />
-        </ProfileStack.Navigator>
-    );
+  return <ProfileStack.Navigator screenOptions={contentScreenOptions}>
+            <ProfileStack.Screen name="ProfileScreen" component={ProfileScreen} options={{
+      headerShown: false
+    }} />
+            <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} options={{
+      title: "Chỉnh sửa hồ sơ",
+      animation: "slide_from_bottom",
+      animationDuration: 320
+    }} />
+            <ProfileStack.Screen name="CourseDetail" component={CourseDetailScreen} options={{
+      title: "Chi tiết khoá học"
+    }} />
+        </ProfileStack.Navigator>;
 }
-
 import TabScreenWrapper from "../components/TabScreenWrapper";
 
 // --- Bottom Tabs ---
 const Tab = createBottomTabNavigator<MainTabsParamList>();
-
-const HomeTab = () => (
-    <TabScreenWrapper>
+const HomeTab = () => <TabScreenWrapper>
         <HomeNavigator />
-    </TabScreenWrapper>
-);
-
-const CoursesTab = () => (
-    <TabScreenWrapper>
+    </TabScreenWrapper>;
+const CoursesTab = () => <TabScreenWrapper>
         <CoursesNavigator />
-    </TabScreenWrapper>
-);
-
-const ProfileTab = () => (
-    <TabScreenWrapper>
+    </TabScreenWrapper>;
+const ProfileTab = () => <TabScreenWrapper>
         <ProfileNavigator />
-    </TabScreenWrapper>
-);
-
+    </TabScreenWrapper>;
 function MainTabs() {
-    return (
-        <Tab.Navigator
-            screenOptions={({ route }) => ({
-                headerShown: false,
-                tabBarIcon: ({ focused, color }) => {
-                    let iconName: React.ComponentProps<typeof Ionicons>["name"];
-
-                    if (route.name === "Home") {
-                        iconName = focused ? "home" : "home-outline";
-                    } else if (route.name === "Courses") {
-                        iconName = focused ? "book" : "book-outline";
-                    } else if (route.name === "Profile") {
-                        iconName = focused ? "person" : "person-outline";
-                    } else {
-                        iconName = "ellipse";
-                    }
-
-                    return (
-                        <View style={tabStyles.iconWrap}>
+  return <Tab.Navigator screenOptions={({
+    route
+  }) => ({
+    headerShown: false,
+    tabBarIcon: ({
+      focused,
+      color
+    }) => {
+      let iconName: React.ComponentProps<typeof Ionicons>["name"];
+      if (route.name === "Home") {
+        iconName = focused ? "home" : "home-outline";
+      } else if (route.name === "Courses") {
+        iconName = focused ? "book" : "book-outline";
+      } else if (route.name === "Profile") {
+        iconName = focused ? "person" : "person-outline";
+      } else {
+        iconName = "ellipse";
+      }
+      return <View style={tabStyles.iconWrap}>
                             <Ionicons name={iconName} size={24} color={color} />
                             {focused && <View style={tabStyles.activeDot} />}
-                        </View>
-                    );
-                },
-                tabBarActiveTintColor: colors.light.primary,
-                tabBarInactiveTintColor: colors.light.tabInactive,
-                tabBarStyle: {
-                    backgroundColor: colors.light.tabBar,
-                    borderTopColor: colors.light.border,
-                    borderTopWidth: 1,
-                    borderTopLeftRadius: radius.xl,
-                    borderTopRightRadius: radius.xl,
-                    height: Platform.OS === "ios" ? 88 : 68,
-                    paddingBottom: Platform.OS === "ios" ? 28 : 10,
-                    paddingTop: 10,
-                    position: "absolute",
-                    ...shadows.lg,
-                },
-                tabBarLabelStyle: {
-                    ...typography.tiny,
-                    marginTop: 2,
-                },
-            })}
-        >
-            <Tab.Screen
-                name="Home"
-                component={HomeTab}
-                options={{ tabBarLabel: "Trang chủ" }}
-            />
-            <Tab.Screen
-                name="Courses"
-                component={CoursesTab}
-                options={{ tabBarLabel: "Khoá học" }}
-            />
-            <Tab.Screen
-                name="Profile"
-                component={ProfileTab}
-                options={{ tabBarLabel: "Hồ sơ" }}
-            />
-        </Tab.Navigator>
-    );
+                        </View>;
+    },
+    tabBarActiveTintColor: colors.light.primary,
+    tabBarInactiveTintColor: colors.light.tabInactive,
+    tabBarStyle: {
+      backgroundColor: colors.light.tabBar,
+      borderTopColor: colors.light.border,
+      borderTopWidth: 1,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      height: Platform.OS === "ios" ? 88 : 68,
+      paddingBottom: Platform.OS === "ios" ? 28 : 10,
+      paddingTop: 10,
+      position: "absolute",
+      ...shadows.lg
+    },
+    tabBarLabelStyle: {
+      ...typography.tiny,
+      marginTop: 2
+    }
+  })}>
+            <Tab.Screen name="Home" component={HomeTab} options={{
+      tabBarLabel: "Trang chủ"
+    }} />
+            <Tab.Screen name="Courses" component={CoursesTab} options={{
+      tabBarLabel: "Khoá học"
+    }} />
+            <Tab.Screen name="Profile" component={ProfileTab} options={{
+      tabBarLabel: "Hồ sơ"
+    }} />
+        </Tab.Navigator>;
 }
-
 const tabStyles = StyleSheet.create({
-    iconWrap: {
-        alignItems: "center",
-    },
-    activeDot: {
-        width: 5,
-        height: 5,
-        borderRadius: 2.5,
-        backgroundColor: colors.light.primary,
-        marginTop: 3,
-    },
+  iconWrap: {
+    alignItems: "center"
+  },
+  activeDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.light.primary,
+    marginTop: 3
+  }
 });
 
 // --- Root Navigator (Auth or Main) ---
 const RootStack = createNativeStackNavigator<RootStackParamList>();
-
 export default function RootNavigator() {
-    const { isAuthenticated, isLoading } = useAuth();
-
-    if (isLoading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <LinearGradient
-                    colors={[
-                        colors.light.gradientFrom,
-                        colors.light.gradientTo,
-                    ]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                />
+  const {
+    isAuthenticated,
+    isLoading
+  } = useAuth();
+  if (isLoading) {
+    return <View style={styles.loadingContainer}>
+                <LinearGradient colors={[colors.light.gradientFrom, colors.light.gradientTo]} start={{
+        x: 0,
+        y: 0
+      }} end={{
+        x: 1,
+        y: 1
+      }} style={StyleSheet.absoluteFill} />
                 {/* Decorative shapes */}
                 <View style={styles.splashCircle1} />
                 <View style={styles.splashCircle2} />
@@ -285,81 +214,66 @@ export default function RootNavigator() {
                         Nền tảng học lập trình AIoT
                     </Text>
                 </View>
-                <ActivityIndicator
-                    size="small"
-                    color="rgba(255,255,255,0.7)"
-                    style={styles.splashLoader}
-                />
-            </View>
-        );
-    }
-
-    return (
-        <RootStack.Navigator
-            screenOptions={{
-                headerShown: false,
-                animation: "fade",
-                animationDuration: 350,
-            }}
-        >
-            {isAuthenticated ? (
-                <RootStack.Screen name="Main" component={MainTabs} />
-            ) : (
-                <RootStack.Screen name="Auth" component={AuthNavigator} />
-            )}
-        </RootStack.Navigator>
-    );
+                <ActivityIndicator size="small" color="rgba(255,255,255,0.7)" style={styles.splashLoader} />
+            </View>;
+  }
+  return <RootStack.Navigator screenOptions={{
+    headerShown: false,
+    animation: "fade",
+    animationDuration: 350
+  }}>
+            {isAuthenticated ? <RootStack.Screen name="Main" component={MainTabs} /> : <RootStack.Screen name="Auth" component={AuthNavigator} />}
+        </RootStack.Navigator>;
 }
-
 const styles = StyleSheet.create({
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    splashCircle1: {
-        position: "absolute",
-        top: -40,
-        right: -40,
-        width: 160,
-        height: 160,
-        borderRadius: 80,
-        backgroundColor: "rgba(255,255,255,0.06)",
-    },
-    splashCircle2: {
-        position: "absolute",
-        bottom: 80,
-        left: -50,
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: "rgba(255,255,255,0.04)",
-    },
-    splashContent: {
-        alignItems: "center",
-    },
-    splashLogo: {
-        width: 80,
-        height: 80,
-        borderRadius: radius.xl,
-        backgroundColor: "rgba(255,255,255,0.18)",
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: spacing.lg,
-        borderWidth: 1.5,
-        borderColor: "rgba(255,255,255,0.25)",
-    },
-    splashName: {
-        ...typography.h1,
-        color: "#ffffff",
-        marginBottom: spacing.xs,
-    },
-    splashTagline: {
-        ...typography.caption,
-        color: "rgba(255,255,255,0.7)",
-    },
-    splashLoader: {
-        position: "absolute",
-        bottom: 80,
-    },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  splashCircle1: {
+    position: "absolute",
+    top: -40,
+    right: -40,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: "rgba(255,255,255,0.06)"
+  },
+  splashCircle2: {
+    position: "absolute",
+    bottom: 80,
+    left: -50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "rgba(255,255,255,0.04)"
+  },
+  splashContent: {
+    alignItems: "center"
+  },
+  splashLogo: {
+    width: 80,
+    height: 80,
+    borderRadius: radius.xl,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.lg,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.25)"
+  },
+  splashName: {
+    ...typography.h1,
+    color: "#ffffff",
+    marginBottom: spacing.xs
+  },
+  splashTagline: {
+    ...typography.caption,
+    color: "rgba(255,255,255,0.7)"
+  },
+  splashLoader: {
+    position: "absolute",
+    bottom: 80
+  }
 });
