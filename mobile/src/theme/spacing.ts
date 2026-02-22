@@ -74,9 +74,15 @@ export const shadows = {
     },
 } as const;
 
+/**
+ * Animation timings per ui-ux-pro-max: 150–300ms for micro-interactions.
+ * Use transform/opacity for smooth 60fps (avoid width/height).
+ */
 export const animation = {
     fast: 150,
     normal: 250,
+    /** Screen/tab transitions: 280ms for perceived smoothness */
+    transition: 280,
     slow: 400,
     spring: { damping: 15, stiffness: 150 },
 } as const;

@@ -16,7 +16,6 @@ import CourseCard from "../../components/CourseCard";
 import StatCard from "../../components/StatCard";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
 import SectionHeader from "../../components/SectionHeader";
-import ScreenTransition from "../../components/ScreenTransition";
 type Props = {
   navigation: NativeStackNavigationProp<HomeStackParamList, "HomeScreen">;
 };
@@ -110,8 +109,7 @@ export default function HomeScreen({
             </LinearGradient>
 
             {/* Categories Quick Links */}
-            <ScreenTransition delay={100}>
-                <YStack style={styles.categoriesSection}>
+            <YStack style={styles.categoriesSection}>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesList}>
                         {[{
             icon: "code-slash",
@@ -145,11 +143,9 @@ export default function HomeScreen({
                             </TouchableOpacity>)}
                     </ScrollView>
                 </YStack>
-            </ScreenTransition>
 
             {/* Featured Courses */}
-            <ScreenTransition delay={200}>
-                <YStack style={styles.section}>
+            <YStack style={styles.section}>
                     <SectionHeader title="Khoá học nổi bật" actionLabel="Xem tất cả" onAction={() => navigation.getParent()?.navigate("Courses")} style={{
           paddingHorizontal: spacing.xl
         }} />
@@ -161,7 +157,6 @@ export default function HomeScreen({
           width: spacing.base
         }} />} />}
                 </YStack>
-            </ScreenTransition>
 
             <YStack style={{
       height: spacing["3xl"] + insets.bottom

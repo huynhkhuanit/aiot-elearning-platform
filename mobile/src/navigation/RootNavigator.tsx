@@ -32,8 +32,7 @@ const contentScreenOptions = {
     fontWeight: "600" as const
   },
   headerShadowVisible: false,
-  animation: "ios_from_right" as const,
-  animationDuration: 280,
+  animation: "none" as const,
   gestureEnabled: true
 };
 
@@ -42,14 +41,10 @@ const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 function AuthNavigator() {
   return <AuthStack.Navigator screenOptions={{
     headerShown: false,
-    animation: "fade",
-    animationDuration: 300
+    animation: "none"
   }}>
-            <AuthStack.Screen name="Login" component={LoginScreen} />
-            <AuthStack.Screen name="Register" component={RegisterScreen} options={{
-      animation: "slide_from_bottom",
-      animationDuration: 320
-    }} />
+    <AuthStack.Screen name="Login" component={LoginScreen} />
+    <AuthStack.Screen name="Register" component={RegisterScreen} />
         </AuthStack.Navigator>;
 }
 
@@ -64,9 +59,7 @@ function HomeNavigator() {
       title: "Chi tiết khoá học"
     }} />
             <HomeStack.Screen name="LessonVideo" component={LessonVideoScreen} options={{
-      title: "Bài học",
-      animation: "slide_from_bottom",
-      animationDuration: 320
+      title: "Bài học"
     }} />
         </HomeStack.Navigator>;
 }
@@ -82,9 +75,7 @@ function CoursesNavigator() {
       title: "Chi tiết khoá học"
     }} />
             <CoursesStack.Screen name="LessonVideo" component={LessonVideoScreen} options={{
-      title: "Bài học",
-      animation: "slide_from_bottom",
-      animationDuration: 320
+      title: "Bài học"
     }} />
         </CoursesStack.Navigator>;
 }
@@ -97,30 +88,20 @@ function ProfileNavigator() {
       headerShown: false
     }} />
             <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} options={{
-      title: "Chỉnh sửa hồ sơ",
-      animation: "slide_from_bottom",
-      animationDuration: 320
+      title: "Chỉnh sửa hồ sơ"
     }} />
             <ProfileStack.Screen name="CourseDetail" component={CourseDetailScreen} options={{
       title: "Chi tiết khoá học"
     }} />
         </ProfileStack.Navigator>;
 }
-import TabScreenWrapper from "../components/TabScreenWrapper";
-
 // --- Bottom Tabs ---
 const Tab = createBottomTabNavigator<MainTabsParamList>();
-const HomeTab = () => <TabScreenWrapper>
-        <HomeNavigator />
-    </TabScreenWrapper>;
-const CoursesTab = () => <TabScreenWrapper>
-        <CoursesNavigator />
-    </TabScreenWrapper>;
-const ProfileTab = () => <TabScreenWrapper>
-        <ProfileNavigator />
-    </TabScreenWrapper>;
 function MainTabs() {
-  return <Tab.Navigator screenOptions={({
+  return (
+    <Tab.Navigator
+      detachInactiveScreens={false}
+      screenOptions={({
     route
   }) => ({
     headerShown: false,
@@ -162,16 +143,17 @@ function MainTabs() {
       marginTop: 2
     }
   })}>
-            <Tab.Screen name="Home" component={HomeTab} options={{
+            <Tab.Screen name="Home" component={HomeNavigator} options={{
       tabBarLabel: "Trang chủ"
     }} />
-            <Tab.Screen name="Courses" component={CoursesTab} options={{
+      <Tab.Screen name="Courses" component={CoursesNavigator} options={{
       tabBarLabel: "Khoá học"
     }} />
-            <Tab.Screen name="Profile" component={ProfileTab} options={{
+      <Tab.Screen name="Profile" component={ProfileNavigator} options={{
       tabBarLabel: "Hồ sơ"
     }} />
-        </Tab.Navigator>;
+    </Tab.Navigator>
+  );
 }
 const tabStyles = StyleSheet.create({
   iconWrap: {
@@ -219,8 +201,7 @@ export default function RootNavigator() {
   }
   return <RootStack.Navigator screenOptions={{
     headerShown: false,
-    animation: "fade",
-    animationDuration: 350
+    animation: "none"
   }}>
             {isAuthenticated ? <RootStack.Screen name="Main" component={MainTabs} /> : <RootStack.Screen name="Auth" component={AuthNavigator} />}
         </RootStack.Navigator>;
