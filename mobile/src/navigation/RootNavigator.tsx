@@ -38,12 +38,14 @@ import { View, ActivityIndicator, StyleSheet, Platform, Text } from "react-nativ
 import { LinearGradient } from "expo-linear-gradient";
 
 // --- Shared screen options for content stacks (slide from right) ---
+// animation: 'slide_from_right' bắt buộc bật transition trên web (mặc định web dùng 'none')
 const contentScreenOptions = {
   headerStyle: { backgroundColor: colors.light.background },
   headerTintColor: colors.light.text,
   headerTitleStyle: { fontWeight: "600" as const },
   headerShadowVisible: false,
   gestureEnabled: true,
+  animation: "slide_from_right" as const,
   cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
   transitionSpec: slideTransitionSpec,
 };
@@ -55,6 +57,7 @@ function AuthNavigator() {
     <AuthStack.Navigator
       screenOptions={{
         headerShown: false,
+        animation: "fade" as const,
         cardStyleInterpolator: CardStyleInterpolators.forFadeFromCenter,
         transitionSpec: fadeTransitionSpec,
       }}
@@ -220,6 +223,7 @@ export default function RootNavigator() {
     <RootStack.Navigator
       screenOptions={{
         headerShown: false,
+        animation: "fade" as const,
         cardStyleInterpolator: CardStyleInterpolators.forFadeFromCenter,
         transitionSpec: fadeTransitionSpec,
       }}
