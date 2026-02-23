@@ -1,9 +1,24 @@
 import React from "react";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createStackNavigator, CardStyleInterpolators } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../contexts/AuthContext";
-import { colors, shadows, radius, spacing, typography } from "../theme";
+import { colors, shadows, radius, spacing, typography, animation } from "../theme";
+
+// Transition config (ui-ux-pro-max: 150-300ms, transform/opacity, đơn giản)
+const DURATION = animation.transition; // 280ms
+const EASING = Easing.bezier(0.4, 0, 0.2, 1);
+
+const slideTransitionSpec = {
+  open: { animation: "timing" as const, config: { duration: DURATION, easing: EASING } },
+  close: { animation: "timing" as const, config: { duration: DURATION, easing: EASING } },
+};
+
+const fadeTransitionSpec = {
+  open: { animation: "timing" as const, config: { duration: DURATION, easing: EASING } },
+  close: { animation: "timing" as const, config: { duration: DURATION * 0.8, easing: EASING } },
+};
 
 // Auth Screens
 import LoginScreen from "../screens/auth/LoginScreen";
@@ -22,34 +37,36 @@ import { AuthStackParamList, HomeStackParamList, CoursesStackParamList, ProfileS
 import { View, ActivityIndicator, StyleSheet, Platform, Text } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
-// --- Shared screen options for content stacks ---
+// --- Shared screen options for content stacks (slide from right) ---
 const contentScreenOptions = {
-  headerStyle: {
-    backgroundColor: colors.light.background
-  },
+  headerStyle: { backgroundColor: colors.light.background },
   headerTintColor: colors.light.text,
-  headerTitleStyle: {
-    fontWeight: "600" as const
-  },
+  headerTitleStyle: { fontWeight: "600" as const },
   headerShadowVisible: false,
-  animation: "none" as const,
-  gestureEnabled: true
+  gestureEnabled: true,
+  cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+  transitionSpec: slideTransitionSpec,
 };
 
-// --- Auth Stack ---
-const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+// --- Auth Stack (fade) ---
+const AuthStack = createStackNavigator<AuthStackParamList>();
 function AuthNavigator() {
-  return <AuthStack.Navigator screenOptions={{
-    headerShown: false,
-    animation: "none"
-  }}>
-    <AuthStack.Screen name="Login" component={LoginScreen} />
-    <AuthStack.Screen name="Register" component={RegisterScreen} />
-        </AuthStack.Navigator>;
+  return (
+    <AuthStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        cardStyleInterpolator: CardStyleInterpolators.forFadeFromCenter,
+        transitionSpec: fadeTransitionSpec,
+      }}
+    >
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+    </AuthStack.Navigator>
+  );
 }
 
 // --- Home Stack ---
-const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+const HomeStack = createStackNavigator<HomeStackParamList>();
 function HomeNavigator() {
   return <HomeStack.Navigator screenOptions={contentScreenOptions}>
             <HomeStack.Screen name="HomeScreen" component={HomeScreen} options={{
@@ -65,7 +82,7 @@ function HomeNavigator() {
 }
 
 // --- Courses Stack ---
-const CoursesStack = createNativeStackNavigator<CoursesStackParamList>();
+const CoursesStack = createStackNavigator<CoursesStackParamList>();
 function CoursesNavigator() {
   return <CoursesStack.Navigator screenOptions={contentScreenOptions}>
             <CoursesStack.Screen name="CoursesList" component={CoursesScreen} options={{
@@ -81,7 +98,7 @@ function CoursesNavigator() {
 }
 
 // --- Profile Stack ---
-const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+const ProfileStack = createStackNavigator<ProfileStackParamList>();
 function ProfileNavigator() {
   return <ProfileStack.Navigator screenOptions={contentScreenOptions}>
             <ProfileStack.Screen name="ProfileScreen" component={ProfileScreen} options={{
@@ -169,7 +186,7 @@ const tabStyles = StyleSheet.create({
 });
 
 // --- Root Navigator (Auth or Main) ---
-const RootStack = createNativeStackNavigator<RootStackParamList>();
+const RootStack = createStackNavigator<RootStackParamList>();
 export default function RootNavigator() {
   const {
     isAuthenticated,
@@ -199,12 +216,17 @@ export default function RootNavigator() {
                 <ActivityIndicator size="small" color="rgba(255,255,255,0.7)" style={styles.splashLoader} />
             </View>;
   }
-  return <RootStack.Navigator screenOptions={{
-    headerShown: false,
-    animation: "none"
-  }}>
+  return (
+    <RootStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        cardStyleInterpolator: CardStyleInterpolators.forFadeFromCenter,
+        transitionSpec: fadeTransitionSpec,
+      }}
+    >
             {isAuthenticated ? <RootStack.Screen name="Main" component={MainTabs} /> : <RootStack.Screen name="Auth" component={AuthNavigator} />}
-        </RootStack.Navigator>;
+    </RootStack.Navigator>
+  );
 }
 const styles = StyleSheet.create({
   loadingContainer: {

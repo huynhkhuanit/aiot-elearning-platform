@@ -12,15 +12,38 @@ if (typeof g.window === 'undefined') {
   g.window = g;
 }
 
+// window.location - @react-navigation/stack và một số lib truy cập location.href
+if (typeof g.window !== 'undefined' && typeof g.window.location === 'undefined') {
+  g.window.location = {
+    href: '',
+    pathname: '/',
+    search: '',
+    hash: '',
+    origin: '',
+    host: '',
+    hostname: '',
+    port: '',
+    protocol: 'file:',
+    assign: () => {},
+    replace: () => {},
+    reload: () => {},
+  };
+}
+
 // globalThis - chuẩn ES2020
 if (typeof g.globalThis === 'undefined') {
   g.globalThis = g;
 }
 
-// document - stub tối thiểu (một số lib check document.createElement, document.body...)
+// document - stub tối thiểu (một số lib check document.createElement, document.body, getElementById...)
 if (typeof g.document === 'undefined') {
   g.document = {
     createElement: () => ({}),
+    getElementById: () => null,
+    getElementsByClassName: () => [],
+    getElementsByTagName: () => [],
+    querySelector: () => null,
+    querySelectorAll: () => [],
     body: {},
     documentElement: {},
     addEventListener: () => {},

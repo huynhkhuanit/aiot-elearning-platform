@@ -216,7 +216,6 @@ function CourseCard({ course, variant = "vertical", onPress }: Props) {
             </View>
             {course.isFree && (
               <View style={[styles.freeBadge, styles.badgeOverlaySolid, { backgroundColor: colors.light.success }]}>
-                <Ionicons name="star" size={10} color="#fff" style={{ marginRight: 4 }} />
                 <Text style={[styles.freeText, styles.badgeOverlayText]}>
                   Miễn phí
                 </Text>
@@ -297,7 +296,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: spacing.base,
     left: spacing.base,
-    flexDirection: "row",
+    flexDirection: "column",
+    alignItems: "flex-start",
     gap: spacing.xs,
     zIndex: 2,
   },
@@ -435,6 +435,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: radius.sm,
+    flexShrink: 0,
   },
   levelText: {
     ...typography.smallBold,
@@ -443,12 +444,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   freeBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: radius.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexShrink: 0,
   },
   freeText: {
     ...typography.smallBold,
