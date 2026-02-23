@@ -144,8 +144,14 @@ export default function HomeScreen({
                               onPress={() => navigation.getParent()?.navigate("Courses")}
                               activeOpacity={0.85}
                             >
-                                <View style={[styles.categoryIcon, { backgroundColor: cat.color + "15" }]}>
-                                    <Ionicons name={cat.icon as any} size={24} color={cat.color} />
+                                <View style={[styles.categoryIcon, { backgroundColor: cat.color + "18" }]}>
+                                    <Ionicons
+                                        name={cat.icon as any}
+                                        size={24}
+                                        color={cat.color}
+                                        style={styles.categoryIconGlyph}
+                                        includeFontPadding={false}
+                                    />
                                 </View>
                                 <Text style={styles.categoryLabel} numberOfLines={1}>{cat.label}</Text>
                             </TouchableOpacity>
@@ -302,7 +308,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
-    ...shadows.sm,
+  },
+  categoryIconGlyph: {
+    backgroundColor: "transparent",
   },
   categoryLabel: {
     ...typography.smallMedium,
