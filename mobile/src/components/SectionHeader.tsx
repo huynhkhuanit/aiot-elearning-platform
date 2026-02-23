@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from "react-native";
+import { View, Text, StyleSheet, ViewStyle } from "react-native";
+import { XStack } from "tamagui";
 import { colors, typography, spacing } from "../theme";
 interface Props {
   title: string;
@@ -18,14 +19,15 @@ export default function SectionHeader({
                 <View style={styles.dot} />
                 <Text style={styles.title}>{title}</Text>
             </View>
-            {actionLabel && onAction && <TouchableOpacity onPress={onAction} hitSlop={{
-      top: 10,
-      bottom: 10,
-      left: 10,
-      right: 10
-    }}>
-                    <Text style={styles.action}>{actionLabel}</Text>
-                </TouchableOpacity>}
+            {actionLabel && onAction && (
+              <XStack
+                onPress={onAction}
+                pressStyle={{ opacity: 0.7 }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.action}>{actionLabel}</Text>
+              </XStack>
+            )}
         </View>;
 }
 const styles = StyleSheet.create({

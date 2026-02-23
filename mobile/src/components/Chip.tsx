@@ -1,9 +1,9 @@
 import React from "react";
 import { Text, StyleSheet } from "react-native";
+import { XStack } from "tamagui";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radius, shadows } from "../theme";
-import AnimatedPressable from "./AnimatedPressable";
 interface Props {
   label: string;
   selected?: boolean;
@@ -17,25 +17,26 @@ export default function Chip({
   onPress
 }: Props) {
   if (selected) {
-    return <AnimatedPressable onPress={onPress} style={shadows.glow}>
-                <LinearGradient colors={[colors.light.gradientFrom, colors.light.gradientTo]} start={{
-        x: 0,
-        y: 0
-      }} end={{
-        x: 1,
-        y: 0
-      }} style={styles.chip}>
-                    {icon && <Ionicons name={icon} size={14} color="#ffffff" />}
-                    <Text style={[styles.text, styles.textActive]}>
-                        {label}
-                    </Text>
-                </LinearGradient>
-            </AnimatedPressable>;
+    return (
+      <XStack onPress={onPress} style={shadows.glow} pressStyle={{ scale: 0.96, opacity: 0.9 }}>
+        <LinearGradient
+          colors={[colors.light.gradientFrom, colors.light.gradientTo]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.chip}
+        >
+          {icon && <Ionicons name={icon} size={14} color="#ffffff" />}
+          <Text style={[styles.text, styles.textActive]}>{label}</Text>
+        </LinearGradient>
+      </XStack>
+    );
   }
-  return <AnimatedPressable onPress={onPress} style={styles.chip}>
-            {icon && <Ionicons name={icon} size={14} color={colors.light.textSecondary} />}
-            <Text style={styles.text}>{label}</Text>
-        </AnimatedPressable>;
+  return (
+    <XStack onPress={onPress} style={styles.chip} pressStyle={{ scale: 0.96, opacity: 0.9 }}>
+      {icon && <Ionicons name={icon} size={14} color={colors.light.textSecondary} />}
+      <Text style={styles.text}>{label}</Text>
+    </XStack>
+  );
 }
 const styles = StyleSheet.create({
   chip: {

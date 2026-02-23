@@ -1,7 +1,7 @@
 const __ReactNativeView = require('react-native').View;
 const __ReactNativeText = require('react-native').Text;
 import React, { useEffect, useState, useCallback } from "react";
-import { ScrollView, TouchableOpacity, FlatList, RefreshControl, StyleSheet } from "react-native";
+import { ScrollView, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View, Text as RNText } from "react-native";
 import { YStack, XStack, Text } from "tamagui";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -92,11 +92,17 @@ export default function HomeScreen({
                     </Text>
 
                     {/* Search shortcut */}
-                    <TouchableOpacity style={styles.searchShortcut} onPress={() => navigation.getParent()?.navigate("Courses")} activeOpacity={0.8}>
-                        <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.6)" />
-                        <Text style={styles.searchPlaceholder}>
-                            Tìm kiếm khoá học...
-                        </Text>
+                    <TouchableOpacity
+                      style={styles.searchShortcut}
+                      onPress={() => navigation.getParent()?.navigate("Courses")}
+                      activeOpacity={0.85}
+                    >
+                        <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.7)" />
+                        <View style={styles.searchPlaceholderWrap}>
+                            <RNText style={styles.searchPlaceholder} numberOfLines={1} ellipsizeMode="tail">
+                                Tìm kiếm khoá học, kỹ năng...
+                            </RNText>
+                        </View>
                     </TouchableOpacity>
                 </YStack>
 
@@ -131,16 +137,19 @@ export default function HomeScreen({
             icon: "git-branch-outline",
             label: "DevOps",
             color: "#8b5cf6"
-          }].map(cat => <TouchableOpacity key={cat.label} style={styles.categoryItem} activeOpacity={0.7} onPress={() => navigation.getParent()?.navigate("Courses")}>
-                                <YStack style={[styles.categoryIcon, {
-              backgroundColor: cat.color + "14"
-            }]}>
-                                    <Ionicons name={cat.icon as any} size={22} color={cat.color} />
-                                </YStack>
-                                <Text style={styles.categoryLabel}>
-                                    {cat.label}
-                                </Text>
-                            </TouchableOpacity>)}
+          }].map(cat => (
+                            <TouchableOpacity
+                              key={cat.label}
+                              style={styles.categoryItem}
+                              onPress={() => navigation.getParent()?.navigate("Courses")}
+                              activeOpacity={0.85}
+                            >
+                                <View style={[styles.categoryIcon, { backgroundColor: cat.color + "15" }]}>
+                                    <Ionicons name={cat.icon as any} size={24} color={cat.color} />
+                                </View>
+                                <Text style={styles.categoryLabel} numberOfLines={1}>{cat.label}</Text>
+                            </TouchableOpacity>
+                          ))}
                     </ScrollView>
                 </YStack>
 
@@ -151,10 +160,10 @@ export default function HomeScreen({
         }} />
 
                     {isLoading ? <XStack style={styles.skeletonRow}>
-                            <LoadingSkeleton variant="card" width={280} height={230} />
-                            <LoadingSkeleton variant="card" width={280} height={230} />
-                        </XStack> : <FlatList data={featuredCourses} renderItem={renderCourseCard} keyExtractor={keyExtractor} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.coursesList} ItemSeparatorComponent={() => <YStack style={{
-          width: spacing.base
+                            <LoadingSkeleton variant="card" width={280} height={260} />
+                            <LoadingSkeleton variant="card" width={280} height={260} />
+                        </XStack> : <FlatList data={featuredCourses} renderItem={renderCourseCard} keyExtractor={keyExtractor} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.coursesList} snapToInterval={280 + 20} snapToAlignment="start" decelerationRate="fast" ItemSeparatorComponent={() => <YStack style={{
+          width: spacing.lg
         }} />} />}
                 </YStack>
 
@@ -243,17 +252,27 @@ const styles = StyleSheet.create({
   searchShortcut: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.md,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: radius.xl,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)"
+    borderColor: "rgba(255,255,255,0.2)",
+    minHeight: 48,
+    overflow: "hidden",
+  },
+  searchPlaceholderWrap: {
+    flex: 1,
+    minWidth: 0,
+    backgroundColor: "transparent",
   },
   searchPlaceholder: {
-    ...typography.caption,
-    color: "rgba(255,255,255,0.5)"
+    ...typography.bodyMedium,
+    fontSize: 15,
+    color: "rgba(255,255,255,0.95)",
+    paddingRight: spacing.xs,
+    backgroundColor: "transparent",
   },
   // Stats
   statsRow: {
@@ -271,19 +290,27 @@ const styles = StyleSheet.create({
   },
   categoryItem: {
     alignItems: "center",
-    width: 64
+    width: 72,
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   categoryIcon: {
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     borderRadius: radius.lg,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: spacing.xs
+    overflow: "hidden",
+    ...shadows.sm,
   },
   categoryLabel: {
-    ...typography.small,
-    color: colors.light.textSecondary
+    ...typography.smallMedium,
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.light.textSecondary,
+    textAlign: "center",
+    paddingHorizontal: 2,
   },
   // Sections
   section: {
@@ -317,7 +344,8 @@ const styles = StyleSheet.create({
   },
   // Course Cards
   coursesList: {
-    paddingHorizontal: spacing.xl
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   skeletonRow: {
     flexDirection: "row",

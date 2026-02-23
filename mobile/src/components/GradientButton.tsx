@@ -1,5 +1,6 @@
 import React from "react";
-import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, ViewStyle } from "react-native";
+import { Text, ActivityIndicator, StyleSheet, ViewStyle } from "react-native";
+import { XStack } from "tamagui";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, radius, layout, shadows, spacing } from "../theme";
@@ -32,51 +33,83 @@ export default function GradientButton({
   const isGradient = variant === "primary" || variant === "success";
   const isOutline = variant === "outline";
   if (isGradient) {
-    return <TouchableOpacity onPress={onPress} disabled={loading || disabled} activeOpacity={0.8} style={[{
-      borderRadius: radius.md,
-      overflow: "hidden"
-    }, variant === "primary" && shadows.glow, style]}>
-                <LinearGradient colors={gradientMap[variant]} start={{
-        x: 0,
-        y: 0
-      }} end={{
-        x: 1,
-        y: 0
-      }} style={[styles.button, {
-        height,
-        opacity: disabled ? 0.6 : 1
-      }]}>
-                    {loading ? <ActivityIndicator color="#ffffff" /> : <>
-                            {icon && <Ionicons name={icon} size={small ? 18 : 20} color="#ffffff" />}
-                            <Text style={[small ? styles.textSmall : styles.text]}>
-                                {title}
-                            </Text>
-                        </>}
-                </LinearGradient>
-            </TouchableOpacity>;
+    return (
+      <XStack
+        onPress={onPress}
+        disabled={loading || disabled}
+        pressStyle={{ scale: 0.97, opacity: 0.9 }}
+        style={[
+          styles.gradientWrapper,
+          { height, borderRadius: radius.md, overflow: "hidden" },
+          variant === "primary" && shadows.glow,
+          style,
+        ]}
+        opacity={disabled ? 0.6 : 1}
+      >
+        <LinearGradient
+          colors={gradientMap[variant]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[StyleSheet.absoluteFillObject, { borderRadius: radius.md }]}
+        />
+        <XStack
+          style={[styles.button, { height }]}
+          flex={1}
+          justifyContent="center"
+          alignItems="center"
+          gap={spacing.sm}
+        >
+          {loading ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <>
+              {icon && <Ionicons name={icon} size={small ? 18 : 20} color="#ffffff" />}
+              <Text style={[small ? styles.textSmall : styles.text]}>{title}</Text>
+            </>
+          )}
+        </XStack>
+      </XStack>
+    );
   }
-  return <TouchableOpacity onPress={onPress} disabled={loading || disabled} activeOpacity={0.7} style={[styles.button, {
-    height,
-    borderRadius: radius.md,
-    opacity: disabled ? 0.6 : 1
-  }, isOutline && styles.outline, variant === "ghost" && styles.ghost, style]}>
-            {loading ? <ActivityIndicator color={colors.light.primary} /> : <>
-                    {icon && <Ionicons name={icon} size={small ? 18 : 20} color={colors.light.primary} />}
-                    <Text style={[small ? styles.textSmall : styles.text, {
-        color: colors.light.primary
-      }]}>
-                        {title}
-                    </Text>
-                </>}
-        </TouchableOpacity>;
+  return (
+    <XStack
+      onPress={onPress}
+      disabled={loading || disabled}
+      pressStyle={{ scale: 0.97, opacity: 0.9 }}
+      style={[
+        styles.button,
+        { height, borderRadius: radius.md },
+        isOutline && styles.outline,
+        variant === "ghost" && styles.ghost,
+        style,
+      ]}
+      opacity={disabled ? 0.6 : 1}
+    >
+      {loading ? (
+        <ActivityIndicator color={colors.light.primary} />
+      ) : (
+        <>
+          {icon && <Ionicons name={icon} size={small ? 18 : 20} color={colors.light.primary} />}
+          <Text style={[small ? styles.textSmall : styles.text, { color: colors.light.primary }]}>
+            {title}
+          </Text>
+        </>
+      )}
+    </XStack>
+  );
 }
 const styles = StyleSheet.create({
+  gradientWrapper: {
+    width: "100%",
+    alignSelf: "stretch",
+    position: "relative",
+  },
   button: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: spacing.sm,
-    borderRadius: radius.md
+    borderRadius: radius.md,
   },
   text: {
     ...typography.button,

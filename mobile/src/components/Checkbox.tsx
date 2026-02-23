@@ -1,5 +1,6 @@
 import React from "react";
-import { TouchableOpacity, View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { XStack } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radius, spacing, typography } from "../theme";
 interface CheckboxProps {
@@ -16,17 +17,24 @@ export default function Checkbox({
   description,
   disabled
 }: CheckboxProps) {
-  return <TouchableOpacity style={[styles.container, disabled && styles.disabled]} onPress={() => onChange(!checked)} disabled={disabled} activeOpacity={0.7}>
-            <View style={[styles.box, checked && styles.boxChecked, disabled && styles.boxDisabled]}>
-                {checked && <Ionicons name="checkmark" size={16} color="#ffffff" />}
-            </View>
-            {(label || description) && <View style={styles.textContainer}>
-                    {label && <Text style={[styles.label, disabled && styles.textDisabled]}>
-                            {label}
-                        </Text>}
-                    {description && <Text style={styles.description}>{description}</Text>}
-                </View>}
-        </TouchableOpacity>;
+  return (
+    <XStack
+      style={[styles.container, disabled && styles.disabled]}
+      onPress={() => onChange(!checked)}
+      disabled={disabled}
+      pressStyle={{ opacity: 0.8 }}
+    >
+      <View style={[styles.box, checked && styles.boxChecked, disabled && styles.boxDisabled]}>
+        {checked && <Ionicons name="checkmark" size={16} color="#ffffff" />}
+      </View>
+      {(label || description) && (
+        <View style={styles.textContainer}>
+          {label && <Text style={[styles.label, disabled && styles.textDisabled]}>{label}</Text>}
+          {description && <Text style={styles.description}>{description}</Text>}
+        </View>
+      )}
+    </XStack>
+  );
 }
 const styles = StyleSheet.create({
   container: {

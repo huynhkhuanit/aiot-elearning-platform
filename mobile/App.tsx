@@ -1,3 +1,4 @@
+import "@tamagui/native/setup-zeego";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";

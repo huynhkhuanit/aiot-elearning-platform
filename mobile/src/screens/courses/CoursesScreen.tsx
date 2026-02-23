@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, FlatList, TextInput, ActivityIndicator, RefreshControl } from "react-native";
+import { XStack } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -113,17 +114,15 @@ export default function CoursesScreen({
                 <View style={styles.searchBar}>
                     <Ionicons name="search-outline" size={20} color={colors.light.textMuted} />
                     <TextInput style={styles.searchInput} placeholder="Tìm kiếm khoá học..." placeholderTextColor={colors.light.textMuted} value={search} onChangeText={setSearch} onSubmitEditing={handleSearch} returnKeyType="search" />
-                    {search.length > 0 && <TouchableOpacity onPress={() => {
-          setSearch("");
-          handleSearch();
-        }} hitSlop={{
-          top: 10,
-          bottom: 10,
-          left: 10,
-          right: 10
-        }}>
-                            <Ionicons name="close-circle" size={20} color={colors.light.textMuted} />
-                        </TouchableOpacity>}
+                    {search.length > 0 && (
+                      <XStack
+                        onPress={() => { setSearch(""); handleSearch(); }}
+                        pressStyle={{ opacity: 0.7 }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Ionicons name="close-circle" size={20} color={colors.light.textMuted} />
+                      </XStack>
+                    )}
                 </View>
             </View>
 
@@ -131,12 +130,16 @@ export default function CoursesScreen({
             <View style={styles.filtersContainer}>
                 <FlatList data={LEVEL_FILTERS} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersList} keyExtractor={item => item.value} renderItem={({
         item
-      }) => <TouchableOpacity style={[styles.filterChip, selectedLevel === item.value && styles.filterChipActive]} onPress={() => setSelectedLevel(item.value)} activeOpacity={0.7}>
-                            <Ionicons name={item.icon} size={14} color={selectedLevel === item.value ? "#ffffff" : colors.light.textSecondary} />
-                            <Text style={[styles.filterText, selectedLevel === item.value && styles.filterTextActive]}>
-                                {item.label}
-                            </Text>
-                        </TouchableOpacity>} />
+      }) => (
+                            <XStack
+                              style={[styles.filterChip, selectedLevel === item.value && styles.filterChipActive]}
+                              onPress={() => setSelectedLevel(item.value)}
+                              pressStyle={{ scale: 0.96, opacity: 0.9 }}
+                            >
+                              <Ionicons name={item.icon} size={14} color={selectedLevel === item.value ? "#ffffff" : colors.light.textSecondary} />
+                              <Text style={[styles.filterText, selectedLevel === item.value && styles.filterTextActive]}>{item.label}</Text>
+                            </XStack>
+                          )} />
             </View>
 
             {/* Courses List */}

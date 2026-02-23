@@ -1,11 +1,13 @@
 import React, { memo, useState } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Image, StyleSheet } from "react-native";
+import { Card } from "tamagui";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radius, shadows } from "../theme";
 import { Course } from "../types/course";
-import { getLevelLabel, getLevelColor } from "../utils/format";
+import { getLevelLabel, getLevelColor, formatCompactNumber } from "../utils/format";
 
+/** Thumbnail with placeholder. Per ui-ux-pro-max: reserve space to avoid content jumping. */
 function ThumbnailImage({
   uri,
   style,
@@ -20,11 +22,14 @@ function ThumbnailImage({
   placeholderVariant?: "light" | "dark";
 }) {
   const [loaded, setLoaded] = useState(false);
-  const placeholderColors =
+  const placeholderColors: [string, string] =
     placeholderVariant === "dark"
       ? [colors.light.gradientFrom, colors.light.gradientTo]
       : [colors.light.gradientFrom + "30", colors.light.gradientTo + "30"];
-  const iconColor = placeholderVariant === "dark" ? "rgba(255,255,255,0.7)" : colors.light.primary;
+  const iconColor =
+    placeholderVariant === "dark"
+      ? "rgba(255,255,255,0.7)"
+      : colors.light.primary;
   return (
     <View style={[style, { backgroundColor: colors.light.surface }]}>
       {!loaded && (
@@ -34,7 +39,11 @@ function ThumbnailImage({
           end={{ x: 1, y: 1 }}
           style={[StyleSheet.absoluteFill, placeholderStyle]}
         >
-          <Ionicons name="code-slash-outline" size={placeholderIconSize} color={iconColor} />
+          <Ionicons
+            name="image-outline"
+            size={placeholderIconSize}
+            color={iconColor}
+          />
         </LinearGradient>
       )}
       <Image
@@ -46,241 +55,419 @@ function ThumbnailImage({
   );
 }
 
+/** Stat row item. Per ui-ux-pro-max: consistent icon sizing */
+function StatItem({
+  icon,
+  value,
+  iconColor = colors.light.textMuted,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  value: string;
+  iconColor?: string;
+}) {
+  return (
+    <View style={styles.statItem}>
+      <Ionicons name={icon} size={14} color={iconColor} />
+      <Text style={styles.statText} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
 interface Props {
   course: Course;
   variant?: "vertical" | "horizontal";
   onPress: () => void;
 }
-function CourseCard({
-  course,
-  variant = "vertical",
-  onPress
-}: Props) {
+
+function CourseCard({ course, variant = "vertical", onPress }: Props) {
+  const levelColor = getLevelColor(course.level);
+  const levelLabel = getLevelLabel(course.level);
+
+  const accessibilityLabel = `${course.title}, ${levelLabel}, ${course.instructor.name}`;
+  const accessibilityHint = "Nhấn đúp để mở khoá học";
+
   if (variant === "horizontal") {
-    return <TouchableOpacity style={[styles.hCard, shadows.md]} activeOpacity={0.7} onPress={onPress}>
-                {course.thumbnailUrl ? <ThumbnailImage uri={course.thumbnailUrl} style={styles.hThumbnail} placeholderStyle={styles.thumbnailPlaceholder} placeholderIconSize={28} /> : <LinearGradient colors={[colors.light.gradientFrom + "30", colors.light.gradientTo + "30"]} style={[styles.hThumbnail, styles.thumbnailPlaceholder]}>
-                        <Ionicons name="code-slash-outline" size={28} color={colors.light.primary} />
-                    </LinearGradient>}
-                <View style={styles.hContent}>
-                    <View style={styles.badgeRow}>
-                        <View style={[styles.levelBadge, {
-            backgroundColor: getLevelColor(course.level) + "18"
-          }]}>
-                            <Text style={[styles.levelText, {
-              color: getLevelColor(course.level)
-            }]}>
-                                {getLevelLabel(course.level)}
-                            </Text>
-                        </View>
-                        {course.isFree && <View style={styles.freeBadge}>
-                                <Text style={styles.freeText}>Miễn phí</Text>
-                            </View>}
-                    </View>
-                    <Text style={styles.hTitle} numberOfLines={2}>
-                        {course.title}
-                    </Text>
-                    <Text style={styles.hInstructor} numberOfLines={1}>
-                        {course.instructor.name}
-                    </Text>
-                    <View style={styles.statsRow}>
-                        <View style={styles.statItem}>
-                            <Ionicons name="people-outline" size={13} color={colors.light.textMuted} />
-                            <Text style={styles.statText}>
-                                {course.students}
-                            </Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Ionicons name="star" size={13} color="#f59e0b" />
-                            <Text style={styles.statText}>
-                                {course.rating.toFixed(1)}
-                            </Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Ionicons name="play-circle-outline" size={13} color={colors.light.textMuted} />
-                            <Text style={styles.statText}>
-                                {course.totalLessons} bài
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-            </TouchableOpacity>;
+    return (
+      <Card
+        flexDirection="row"
+        style={[styles.hCard, shadows.sm]}
+        pressStyle={{ scale: 0.98, opacity: 0.9 }}
+        onPress={onPress}
+        cursor="pointer"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole="button"
+        accessibilityHint={accessibilityHint}
+      >
+        <View style={styles.hThumbnailWrap}>
+          {course.thumbnailUrl ? (
+            <ThumbnailImage
+              uri={course.thumbnailUrl}
+              style={styles.hThumbnail}
+              placeholderStyle={styles.thumbnailPlaceholder}
+              placeholderIconSize={24}
+            />
+          ) : (
+            <LinearGradient
+              colors={[
+                colors.light.gradientFrom + "30",
+                colors.light.gradientTo + "30",
+              ]}
+              style={[styles.hThumbnail, styles.thumbnailPlaceholder]}
+            >
+              <Ionicons
+                name="image-outline"
+                size={24}
+                color={colors.light.primary}
+              />
+            </LinearGradient>
+          )}
+          {course.isFree && (
+            <View style={styles.hFreeBadge}>
+              <Ionicons name="star" size={10} color="#fff" />
+              <Text style={styles.hFreeText}>Miễn phí</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.hContent}>
+          <View style={styles.hTopRow}>
+            <View style={[styles.levelBadge, { backgroundColor: levelColor + "15" }]}>
+              <Text style={[styles.levelText, { color: levelColor }]}>{levelLabel}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Ionicons name="star" size={12} color="#f59e0b" />
+              <Text style={[styles.statText, { color: colors.light.textSecondary, fontWeight: "600" }]}>
+                {course.rating.toFixed(1)}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.hTitle} numberOfLines={2}>
+            {course.title}
+          </Text>
+
+          <View style={styles.instructorRow}>
+            <Ionicons name="person-circle-outline" size={16} color={colors.light.textMuted} />
+            <Text style={styles.instructorText} numberOfLines={1}>
+              {course.instructor.name}
+            </Text>
+          </View>
+
+          <View style={styles.hStatsDivider} />
+
+          <View style={styles.hStatsRow}>
+            <StatItem icon="people-outline" value={formatCompactNumber(course.students)} />
+            <StatItem icon="play-circle-outline" value={`${course.totalLessons} bài`} />
+            <StatItem icon="time-outline" value={course.duration} />
+          </View>
+        </View>
+      </Card>
+    );
   }
 
-  // Vertical card (for featured / horizontal scroll)
-  return <TouchableOpacity style={[styles.vCard, shadows.md]} activeOpacity={0.7} onPress={onPress}>
-            <View style={styles.vThumbnailWrap}>
-                {course.thumbnailUrl ? <ThumbnailImage uri={course.thumbnailUrl} style={styles.vThumbnail} placeholderStyle={[styles.thumbnailPlaceholder, { borderRadius: 0 }]} placeholderIconSize={36} placeholderVariant="dark" /> : <LinearGradient colors={[colors.light.gradientFrom, colors.light.gradientTo]} start={{
-        x: 0,
-        y: 0
-      }} end={{
-        x: 1,
-        y: 1
-      }} style={[styles.vThumbnail, styles.thumbnailPlaceholder]}>
-                        <Ionicons name="code-slash-outline" size={36} color="rgba(255,255,255,0.7)" />
-                    </LinearGradient>}
-                {/* Gradient overlay on thumbnail */}
-                <LinearGradient colors={["transparent", "rgba(0,0,0,0.4)"]} style={styles.thumbnailOverlay} />
-                {/* Badges on thumbnail */}
-                <View style={styles.vBadgeOverlay}>
-                    <View style={[styles.levelBadge, {
-          backgroundColor: getLevelColor(course.level) + "cc"
-        }]}>
-                        <Text style={[styles.levelText, {
-            color: "#ffffff"
-          }]}>
-                            {getLevelLabel(course.level)}
-                        </Text>
-                    </View>
-                    {course.isFree && <View style={[styles.freeBadge, {
-          backgroundColor: colors.light.success + "cc"
-        }]}>
-                            <Text style={[styles.freeText, {
-            color: "#ffffff"
-          }]}>
-                                Miễn phí
-                            </Text>
-                        </View>}
-                </View>
+  // Vertical card (featured / carousel)
+  return (
+    <Card
+      style={[styles.vCard, shadows.sm]}
+      pressStyle={{ scale: 0.98, opacity: 0.95 }}
+      onPress={onPress}
+      cursor="pointer"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      accessibilityHint={accessibilityHint}
+    >
+      <Card.Header unstyled padding={0}>
+        <View style={styles.vThumbnailWrap}>
+          {course.thumbnailUrl ? (
+            <ThumbnailImage
+              uri={course.thumbnailUrl}
+              style={styles.vThumbnail}
+              placeholderStyle={[styles.thumbnailPlaceholder, { borderRadius: 0 }]}
+              placeholderIconSize={32}
+              placeholderVariant="dark"
+            />
+          ) : (
+            <LinearGradient
+              colors={[colors.light.gradientFrom, colors.light.gradientTo]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.vThumbnail, styles.thumbnailPlaceholder]}
+            >
+              <Ionicons
+                name="image-outline"
+                size={32}
+                color="rgba(255,255,255,0.7)"
+              />
+            </LinearGradient>
+          )}
+          
+          <LinearGradient
+            colors={["transparent", "rgba(0,0,0,0.6)"]}
+            style={styles.thumbnailOverlay}
+          />
+
+          <View style={styles.vBadgeOverlay}>
+            <View style={[styles.levelBadge, styles.badgeOverlaySolid, { backgroundColor: levelColor }]}>
+              <Text style={[styles.levelText, styles.badgeOverlayText]}>
+                {levelLabel}
+              </Text>
             </View>
-            <View style={styles.vContent}>
-                <Text style={styles.vTitle} numberOfLines={2}>
-                    {course.title}
+            {course.isFree && (
+              <View style={[styles.freeBadge, styles.badgeOverlaySolid, { backgroundColor: colors.light.success }]}>
+                <Ionicons name="star" size={10} color="#fff" style={{ marginRight: 4 }} />
+                <Text style={[styles.freeText, styles.badgeOverlayText]}>
+                  Miễn phí
                 </Text>
-                <Text style={styles.vInstructor} numberOfLines={1}>
-                    {course.instructor.name}
-                </Text>
-                <View style={styles.statsRow}>
-                    <View style={styles.statItem}>
-                        <Ionicons name="people-outline" size={13} color={colors.light.textMuted} />
-                        <Text style={styles.statText}>{course.students}</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                        <Ionicons name="time-outline" size={13} color={colors.light.textMuted} />
-                        <Text style={styles.statText}>{course.duration}</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                        <Ionicons name="star" size={13} color="#f59e0b" />
-                        <Text style={styles.statText}>
-                            {course.rating.toFixed(1)}
-                        </Text>
-                    </View>
-                </View>
+              </View>
+            )}
+          </View>
+          
+          {/* Subtle bookmark icon on top right */}
+          <View style={styles.bookmarkOverlay}>
+            <View style={styles.bookmarkIconBg}>
+              <Ionicons name="bookmark-outline" size={18} color={colors.light.text} />
             </View>
-        </TouchableOpacity>;
+          </View>
+        </View>
+      </Card.Header>
+      
+      <Card.Footer unstyled>
+        <View style={styles.vContent}>
+          <View style={styles.vTitleContainer}>
+            <Text style={styles.vTitle} numberOfLines={2}>
+              {course.title}
+            </Text>
+          </View>
+
+          <View style={styles.instructorRow}>
+            <Ionicons name="person-circle-outline" size={18} color={colors.light.textMuted} />
+            <Text style={styles.instructorText} numberOfLines={1}>
+              {course.instructor.name}
+            </Text>
+          </View>
+          
+          <View style={styles.vStatsDivider} />
+
+          <View style={styles.statsRow}>
+            <StatItem icon="people-outline" value={formatCompactNumber(course.students)} />
+            <StatItem icon="time-outline" value={course.duration} />
+            <StatItem icon="star" value={course.rating.toFixed(1)} iconColor="#f59e0b" />
+          </View>
+        </View>
+      </Card.Footer>
+    </Card>
+  );
 }
+
 export default memo(CourseCard);
+
 const VCARD_WIDTH = 280;
+const H_THUMB_WIDTH = 120;
+const H_THUMB_HEIGHT = 120; // Square-ish for a premium look in horizontal list, or keep 4:3? Let's use 120x90.
+const H_THUMB_ACTUAL_HEIGHT = 90;
+
 const styles = StyleSheet.create({
   // === Vertical card ===
   vCard: {
     width: VCARD_WIDTH,
     backgroundColor: colors.light.card,
-    borderRadius: radius.lg,
-    overflow: "hidden"
+    borderRadius: radius.xl,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(15, 23, 42, 0.08)",
   },
   vThumbnailWrap: {
-    position: "relative"
+    position: "relative",
   },
   vThumbnail: {
     width: VCARD_WIDTH,
-    height: 150,
-    backgroundColor: colors.light.surface
+    height: 156, // 16:9 ratio
+    backgroundColor: colors.light.surface,
   },
   thumbnailOverlay: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    height: 60
+    height: 72,
   },
   vBadgeOverlay: {
     position: "absolute",
-    top: spacing.sm,
-    left: spacing.sm,
+    top: spacing.base,
+    left: spacing.base,
     flexDirection: "row",
-    gap: spacing.xs
+    gap: spacing.xs,
+    zIndex: 2,
+  },
+  bookmarkOverlay: {
+    position: "absolute",
+    top: spacing.base,
+    right: spacing.base,
+    zIndex: 2,
+  },
+  bookmarkIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.full,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    ...shadows.sm,
+  },
+  badgeOverlaySolid: {
+    borderWidth: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  badgeOverlayText: {
+    color: "#ffffff",
+    fontWeight: "700",
   },
   vContent: {
-    padding: spacing.base
+    padding: spacing.lg,
+  },
+  vTitleContainer: {
+    height: 48, // Fix height for 2 lines to maintain card alignment
+    marginBottom: spacing.xs,
+    justifyContent: "flex-start",
   },
   vTitle: {
-    ...typography.bodyMedium,
+    ...typography.bodySemiBold,
+    fontSize: 16,
+    lineHeight: 22,
     color: colors.light.text,
-    marginBottom: spacing.xs
   },
-  vInstructor: {
+  instructorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: spacing.md,
+  },
+  instructorText: {
     ...typography.caption,
     color: colors.light.textSecondary,
-    marginBottom: spacing.sm
+    flex: 1,
   },
+  vStatsDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.light.border || "rgba(15, 23, 42, 0.08)",
+    marginBottom: spacing.md,
+  },
+
   // === Horizontal card ===
   hCard: {
     flexDirection: "row",
     backgroundColor: colors.light.card,
     borderRadius: radius.lg,
-    overflow: "hidden"
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(15, 23, 42, 0.05)",
+    padding: spacing.sm,
+    gap: spacing.sm,
+  },
+  hThumbnailWrap: {
+    position: "relative",
+    borderRadius: radius.md,
+    overflow: "hidden",
   },
   hThumbnail: {
-    width: 116,
-    height: 130,
-    backgroundColor: colors.light.surface
+    width: H_THUMB_WIDTH,
+    height: H_THUMB_ACTUAL_HEIGHT,
+    backgroundColor: colors.light.surface,
+  },
+  hFreeBadge: {
+    position: "absolute",
+    bottom: 4,
+    left: 4,
+    backgroundColor: colors.light.success,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  hFreeText: {
+    ...typography.smallBold,
+    fontSize: 9,
+    color: "#fff",
+    marginLeft: 2,
   },
   hContent: {
     flex: 1,
-    padding: spacing.md,
-    justifyContent: "center"
+    justifyContent: "space-between",
+    paddingVertical: 2,
+  },
+  hTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
   },
   hTitle: {
-    ...typography.captionMedium,
+    ...typography.bodySemiBold,
+    fontSize: 15,
+    lineHeight: 20,
     color: colors.light.text,
-    marginBottom: 2
+    marginBottom: 4,
   },
-  hInstructor: {
-    ...typography.small,
-    color: colors.light.textSecondary,
-    marginBottom: spacing.sm
+  hStatsDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.light.border || "rgba(15, 23, 42, 0.06)",
+    marginVertical: 6,
   },
+  hStatsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
   // === Shared ===
   thumbnailPlaceholder: {
     justifyContent: "center",
-    alignItems: "center"
-  },
-  badgeRow: {
-    flexDirection: "row",
-    gap: spacing.xs,
-    marginBottom: spacing.xs
+    alignItems: "center",
   },
   levelBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.sm
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
   },
   levelText: {
-    ...typography.small,
-    fontWeight: "600"
+    ...typography.smallBold,
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   freeBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: radius.sm,
-    backgroundColor: colors.light.badge.freeBg
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   freeText: {
-    ...typography.small,
-    fontWeight: "600",
-    color: colors.light.badge.free
+    ...typography.smallBold,
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   statsRow: {
     flexDirection: "row",
-    gap: spacing.md
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   statItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3
+    gap: 4,
   },
   statText: {
     ...typography.small,
-    color: colors.light.textMuted
-  }
+    color: colors.light.textMuted,
+  },
 });
