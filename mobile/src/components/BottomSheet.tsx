@@ -85,19 +85,21 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius["2xl"],
     paddingTop: spacing.sm,
     paddingBottom: spacing["2xl"],
-    // Extra padding for safe area
     maxHeight: SCREEN_HEIGHT * 0.85,
-    ...shadows.lg
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: "rgba(0,0,0,0.06)",
+    ...shadows.lg,
   },
   handleContainer: {
     alignItems: "center",
-    paddingVertical: spacing.sm
+    paddingVertical: spacing.sm,
   },
   handle: {
     width: 40,
     height: 5,
-    borderRadius: radius.full,
-    backgroundColor: colors.light.border
+    borderRadius: 999,
+    backgroundColor: "#94a3b8",
   },
   header: {
     flexDirection: "row",

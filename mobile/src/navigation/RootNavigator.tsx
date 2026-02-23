@@ -35,6 +35,7 @@ import EditProfileScreen from "../screens/profile/EditProfileScreen";
 // Navigation types
 import { AuthStackParamList, HomeStackParamList, CoursesStackParamList, ProfileStackParamList, RootStackParamList, MainTabsParamList } from "./types";
 import { View, ActivityIndicator, StyleSheet, Platform, Text } from "react-native";
+import AnimatedTabBar from "../components/AnimatedTabBar";
 import { LinearGradient } from "expo-linear-gradient";
 
 // --- Shared screen options for content stacks (slide from right) ---
@@ -120,49 +121,24 @@ const Tab = createBottomTabNavigator<MainTabsParamList>();
 function MainTabs() {
   return (
     <Tab.Navigator
+      tabBar={(props) => <AnimatedTabBar {...props} />}
       detachInactiveScreens={false}
-      screenOptions={({
-    route
-  }) => ({
+      screenOptions={{
     headerShown: false,
-    tabBarIcon: ({
-      focused,
-      color
-    }) => {
-      let iconName: React.ComponentProps<typeof Ionicons>["name"];
-      if (route.name === "Home") {
-        iconName = focused ? "home" : "home-outline";
-      } else if (route.name === "Courses") {
-        iconName = focused ? "book" : "book-outline";
-      } else if (route.name === "Profile") {
-        iconName = focused ? "person" : "person-outline";
-      } else {
-        iconName = "ellipse";
-      }
-      return <View style={tabStyles.iconWrap}>
-                            <Ionicons name={iconName} size={24} color={color} />
-                            {focused && <View style={tabStyles.activeDot} />}
-                        </View>;
-    },
     tabBarActiveTintColor: colors.light.primary,
     tabBarInactiveTintColor: colors.light.tabInactive,
     tabBarStyle: {
-      backgroundColor: colors.light.tabBar,
-      borderTopColor: colors.light.border,
-      borderTopWidth: 1,
-      borderTopLeftRadius: radius.xl,
-      borderTopRightRadius: radius.xl,
-      height: Platform.OS === "ios" ? 88 : 68,
-      paddingBottom: Platform.OS === "ios" ? 28 : 10,
-      paddingTop: 10,
       position: "absolute",
-      ...shadows.lg
+      backgroundColor: "transparent",
+      borderTopWidth: 0,
+      elevation: 0,
+      shadowOpacity: 0,
     },
     tabBarLabelStyle: {
       ...typography.tiny,
       marginTop: 2
     }
-  })}>
+  }}>
             <Tab.Screen name="Home" component={HomeNavigator} options={{
       tabBarLabel: "Trang chủ"
     }} />
@@ -175,18 +151,6 @@ function MainTabs() {
     </Tab.Navigator>
   );
 }
-const tabStyles = StyleSheet.create({
-  iconWrap: {
-    alignItems: "center"
-  },
-  activeDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: colors.light.primary,
-    marginTop: 3
-  }
-});
 
 // --- Root Navigator (Auth or Main) ---
 const RootStack = createStackNavigator<RootStackParamList>();
