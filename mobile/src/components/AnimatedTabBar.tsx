@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, shadows, typography } from "../theme";
+import { colors, typography } from "../theme";
 
 const ICON_SIZE = 22;
 const PILL_HEIGHT = 36;
@@ -173,10 +173,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: PILL_PADDING_H,
     paddingVertical: BAR_PADDING_V,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.light.border,
     minHeight: PILL_HEIGHT + BAR_PADDING_V * 2,
-    ...shadows.lg,
   },
   pill: {
     position: "absolute",
@@ -192,7 +191,8 @@ const styles = StyleSheet.create({
     paddingVertical: PILL_PADDING_V,
     backgroundColor: colors.light.primary,
     borderRadius: 999,
-    ...shadows.md,
+    borderWidth: 1,
+    borderColor: colors.light.primaryDark,
   },
   pillLabel: {
     ...typography.small,
