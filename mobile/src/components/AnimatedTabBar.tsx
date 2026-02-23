@@ -147,7 +147,7 @@ export default function AnimatedTabBar({
 }
 
 const PILL_MIN_WIDTH = 130;
-const PILL_MAX_WIDTH = 130;
+const PILL_MAX_WIDTH = 150;
 
 function getPillWidth(routeName: string): number {
   const label = TAB_LABELS[routeName] ?? routeName;
