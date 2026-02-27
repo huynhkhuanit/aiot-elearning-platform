@@ -117,7 +117,9 @@ export default function LearnScreen({ navigation, route }: Props) {
                 return;
             }
 
-            const chapters = chaptersRes.data;
+            const rawChapters =
+                (chaptersRes.data as any)?.chapters || chaptersRes.data;
+            const chapters = Array.isArray(rawChapters) ? rawChapters : [];
             const completedLessons: string[] =
                 progressRes.data?.completedLessons || [];
 
