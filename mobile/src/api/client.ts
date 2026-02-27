@@ -4,9 +4,11 @@ import { getToken } from "../utils/storage";
 // For development: use your machine's local network IP
 // For Expo Go on physical device: use your LAN IP (e.g. 192.168.x.x:3000)
 // For emulator: use 10.0.2.2:3000 (Android) or localhost:3000 (iOS)
-const API_BASE_URL = __DEV__
-    ? "http://10.0.2.2:3000" // Android emulator → host machine
-    : "https://your-production-url.com";
+const API_BASE_URL =
+    process.env.EXPO_PUBLIC_API_URL ||
+    (__DEV__
+        ? "http://192.168.1.9:3001" // Match Next.js server running on port 3001 (fallback if no .env)
+        : "https://your-production-url.com");
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
