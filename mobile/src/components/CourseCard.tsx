@@ -139,7 +139,9 @@ function CourseCard({ course, variant = "vertical", onPress }: Props) {
                     {course.isFree && (
                         <View style={styles.hFreeBadge}>
                             <Ionicons name="star" size={10} color="#fff" />
-                            <Text style={styles.hFreeText}>Miễn phí</Text>
+                            <Text numberOfLines={1} style={styles.hFreeText}>
+                                Miễn{"\u00A0"}phí
+                            </Text>
                         </View>
                     )}
                 </View>
@@ -286,12 +288,13 @@ function CourseCard({ course, variant = "vertical", onPress }: Props) {
                                 ]}
                             >
                                 <Text
+                                    numberOfLines={1}
                                     style={[
                                         styles.freeText,
                                         styles.badgeOverlayText,
                                     ]}
                                 >
-                                    Miễn phí
+                                    Miễn{"\u00A0"}phí
                                 </Text>
                             </View>
                         )}
