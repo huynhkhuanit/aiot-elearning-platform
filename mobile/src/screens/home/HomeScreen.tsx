@@ -274,9 +274,6 @@ export default function HomeScreen({ navigation }: Props) {
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.coursesList}
-                        snapToInterval={280 + 20}
-                        snapToAlignment="start"
-                        decelerationRate="fast"
                         ItemSeparatorComponent={() => (
                             <YStack
                                 style={{
