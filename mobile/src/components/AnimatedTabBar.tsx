@@ -1,14 +1,14 @@
 import React, { useEffect, useRef } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Easing,
-  Platform,
-  Pressable,
-  type LayoutChangeEvent,
-  Dimensions,
+    View,
+    Text,
+    StyleSheet,
+    Animated,
+    Easing,
+    Platform,
+    Pressable,
+    type LayoutChangeEvent,
+    Dimensions,
 } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,191 +24,221 @@ const BAR_PADDING_V = 4;
 const ANIM_DURATION = 280;
 
 const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
-  Home: { active: "home", inactive: "home-outline" },
-  Courses: { active: "book", inactive: "book-outline" },
-  Profile: { active: "person", inactive: "person-outline" },
+    Home: { active: "home", inactive: "home-outline" },
+    Courses: { active: "book", inactive: "book-outline" },
+    Profile: { active: "person", inactive: "person-outline" },
 };
 
 const TAB_LABELS: Record<string, string> = {
-  Home: "Trang chủ",
-  Courses: "Khoá học",
-  Profile: "Hồ sơ",
+    Home: "Trang chủ",
+    Courses: "Khoá học",
+    Profile: "Hồ sơ",
 };
 
-
 export default function AnimatedTabBar({
-  state,
-  descriptors,
-  navigation,
-  insets,
+    state,
+    descriptors,
+    navigation,
+    insets,
 }: BottomTabBarProps) {
-  const pillTranslateX = useRef(new Animated.Value(0)).current;
-  const tabsWidthRef = useRef(0);
+    const pillTranslateX = useRef(new Animated.Value(0)).current;
+    const tabsWidthRef = useRef(0);
 
-  const focusedIndex = state.index;
-  const { width: screenWidth } = Dimensions.get("window");
-  const barWidth = screenWidth - BAR_MARGIN_H * 2;
+    const focusedIndex = state.index;
+    const { width: screenWidth } = Dimensions.get("window");
+    const barWidth = screenWidth - BAR_MARGIN_H * 2;
 
-  const barPaddingH = PILL_PADDING_H;
+    const barPaddingH = PILL_PADDING_H;
 
-  useEffect(() => {
-    if (tabsWidthRef.current > 0 && state.routes.length > 0) {
-      const tabWidth = tabsWidthRef.current / state.routes.length;
-      const pillWidth = getPillWidth(state.routes[focusedIndex].name);
-      const targetX = barPaddingH + focusedIndex * tabWidth + tabWidth / 2 - pillWidth / 2;
-      Animated.timing(pillTranslateX, {
-        toValue: targetX,
-        duration: ANIM_DURATION,
-        easing: Easing.bezier(0.4, 0, 0.2, 1),
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [focusedIndex, pillTranslateX, state.routes.length, barPaddingH]);
+    useEffect(() => {
+        if (tabsWidthRef.current > 0 && state.routes.length > 0) {
+            const tabWidth = tabsWidthRef.current / state.routes.length;
+            const pillWidth = getPillWidth(state.routes[focusedIndex].name);
+            const targetX =
+                barPaddingH +
+                focusedIndex * tabWidth +
+                tabWidth / 2 -
+                pillWidth / 2;
+            Animated.timing(pillTranslateX, {
+                toValue: targetX,
+                duration: ANIM_DURATION,
+                easing: Easing.bezier(0.4, 0, 0.2, 1),
+                useNativeDriver: true,
+            }).start();
+        }
+    }, [focusedIndex, pillTranslateX, state.routes.length, barPaddingH]);
 
-  const handleTabsLayout = (e: LayoutChangeEvent) => {
-    const w = e.nativeEvent.layout.width;
-    tabsWidthRef.current = w;
-    if (w > 0 && state.routes.length > 0) {
-      const tabWidth = w / state.routes.length;
-      const pillWidth = getPillWidth(state.routes[focusedIndex].name);
-      const targetX = barPaddingH + focusedIndex * tabWidth + tabWidth / 2 - pillWidth / 2;
-      pillTranslateX.setValue(targetX);
-    }
-  };
+    const handleTabsLayout = (e: LayoutChangeEvent) => {
+        const w = e.nativeEvent.layout.width;
+        tabsWidthRef.current = w;
+        if (w > 0 && state.routes.length > 0) {
+            const tabWidth = w / state.routes.length;
+            const pillWidth = getPillWidth(state.routes[focusedIndex].name);
+            const targetX =
+                barPaddingH +
+                focusedIndex * tabWidth +
+                tabWidth / 2 -
+                pillWidth / 2;
+            pillTranslateX.setValue(targetX);
+        }
+    };
 
-  const bottomInset = insets?.bottom ?? (Platform.OS === "ios" ? 28 : 10);
-  const focusedRoute = state.routes[focusedIndex];
-  const focusedLabel = TAB_LABELS[focusedRoute.name] ?? focusedRoute.name;
-  const focusedIconName = (TAB_ICONS[focusedRoute.name]?.active ?? "ellipse") as React.ComponentProps<typeof Ionicons>["name"];
+    const bottomInset = insets?.bottom ?? (Platform.OS === "ios" ? 28 : 10);
+    const focusedRoute = state.routes[focusedIndex];
+    const focusedLabel = TAB_LABELS[focusedRoute.name] ?? focusedRoute.name;
+    const focusedIconName = (TAB_ICONS[focusedRoute.name]?.active ??
+        "ellipse") as React.ComponentProps<typeof Ionicons>["name"];
 
-  return (
-    <View
-      style={[
-        styles.wrapper,
-        {
-          paddingBottom: bottomInset,
-        },
-      ]}
-    >
-      <View style={[styles.bar, { width: barWidth }]}>
-        {/* Sliding pill - icon + label when active */}
-        <Animated.View
-          style={[
-            styles.pill,
-            {
-              width: getPillWidth(focusedRoute.name),
-              transform: [{ translateX: pillTranslateX }],
-            },
-          ]}
+    return (
+        <View
+            style={[
+                styles.wrapper,
+                {
+                    paddingBottom: bottomInset,
+                },
+            ]}
         >
-          <Ionicons name={focusedIconName} size={ICON_SIZE} color={colors.light.textOnPrimary} />
-          <Text style={styles.pillLabel} numberOfLines={1}>
-            {focusedLabel}
-          </Text>
-        </Animated.View>
+            <View style={[styles.bar, { width: barWidth }]}>
+                {/* Sliding pill - icon + label when active */}
+                <Animated.View
+                    style={[
+                        styles.pill,
+                        {
+                            width: getPillWidth(focusedRoute.name),
+                            transform: [{ translateX: pillTranslateX }],
+                        },
+                    ]}
+                >
+                    <Ionicons
+                        name={focusedIconName}
+                        size={ICON_SIZE}
+                        color={colors.light.textOnPrimary}
+                    />
+                    <Text style={styles.pillLabel} numberOfLines={1}>
+                        {focusedLabel}
+                    </Text>
+                </Animated.View>
 
-        {/* Inactive icons - only icons, no labels */}
-        <View style={styles.tabs} onLayout={handleTabsLayout}>
-          {state.routes.map((route, index) => {
-            const isFocused = state.index === index;
-            const iconConfig = TAB_ICONS[route.name] ?? { active: "ellipse", inactive: "ellipse" };
-            const iconName = (isFocused ? iconConfig.active : iconConfig.inactive) as React.ComponentProps<typeof Ionicons>["name"];
+                {/* Inactive icons - only icons, no labels */}
+                <View style={styles.tabs} onLayout={handleTabsLayout}>
+                    {state.routes.map((route, index) => {
+                        const isFocused = state.index === index;
+                        const iconConfig = TAB_ICONS[route.name] ?? {
+                            active: "ellipse",
+                            inactive: "ellipse",
+                        };
+                        const iconName = (
+                            isFocused ? iconConfig.active : iconConfig.inactive
+                        ) as React.ComponentProps<typeof Ionicons>["name"];
 
-            const onPress = () => {
-              const event = navigation.emit({
-                type: "tabPress",
-                target: route.key,
-                canPreventDefault: true,
-              });
-              if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name);
-              }
-            };
+                        const onPress = () => {
+                            const event = navigation.emit({
+                                type: "tabPress",
+                                target: route.key,
+                                canPreventDefault: true,
+                            });
+                            if (!isFocused && !event.defaultPrevented) {
+                                navigation.navigate(route.name);
+                            }
+                        };
 
-            return (
-              <Pressable
-                key={route.key}
-                onPress={onPress}
-                style={styles.tab}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <Ionicons
-                  name={iconName}
-                  size={ICON_SIZE}
-                  color={isFocused ? "transparent" : colors.light.tabInactive}
-                />
-              </Pressable>
-            );
-          })}
+                        return (
+                            <Pressable
+                                key={route.key}
+                                onPress={onPress}
+                                style={styles.tab}
+                                hitSlop={{
+                                    top: 12,
+                                    bottom: 12,
+                                    left: 12,
+                                    right: 12,
+                                }}
+                            >
+                                <View style={{ opacity: isFocused ? 0 : 1 }}>
+                                    <Ionicons
+                                        name={iconName}
+                                        size={ICON_SIZE}
+                                        color={colors.light.tabInactive}
+                                    />
+                                </View>
+                            </Pressable>
+                        );
+                    })}
+                </View>
+            </View>
         </View>
-      </View>
-    </View>
-  );
+    );
 }
 
 const PILL_MIN_WIDTH = 130;
 const PILL_MAX_WIDTH = 150;
 
 function getPillWidth(routeName: string): number {
-  const label = TAB_LABELS[routeName] ?? routeName;
-  const labelWidth = Math.min(label.length * 8, 80);
-  return Math.max(PILL_MIN_WIDTH, Math.min(PILL_MAX_WIDTH, PILL_PADDING_H * 2 + ICON_SIZE + PILL_GAP + labelWidth));
+    const label = TAB_LABELS[routeName] ?? routeName;
+    const labelWidth = Math.min(label.length * 8, 80);
+    return Math.max(
+        PILL_MIN_WIDTH,
+        Math.min(
+            PILL_MAX_WIDTH,
+            PILL_PADDING_H * 2 + ICON_SIZE + PILL_GAP + labelWidth,
+        ),
+    );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    overflow: "visible",
-  },
-  bar: {
-    backgroundColor: colors.light.tabBar,
-    borderRadius: 999,
-    marginHorizontal: BAR_MARGIN_H,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: PILL_PADDING_H,
-    paddingVertical: BAR_PADDING_V,
-    borderWidth: 1.5,
-    borderColor: colors.light.border,
-    minHeight: PILL_HEIGHT + BAR_PADDING_V * 2,
-  },
-  pill: {
-    position: "absolute",
-    top: BAR_PADDING_V,
-    left: 0,
-    zIndex: 10,
-    height: PILL_HEIGHT,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: PILL_GAP,
-    paddingHorizontal: PILL_PADDING_H,
-    paddingVertical: PILL_PADDING_V,
-    backgroundColor: colors.light.primary,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.light.primaryDark,
-  },
-  pillLabel: {
-    ...typography.small,
-    color: colors.light.textOnPrimary,
-    fontWeight: "700",
-  },
-  tabs: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-  },
-  tab: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: PILL_HEIGHT,
-  },
+    wrapper: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: "center",
+        overflow: "visible",
+    },
+    bar: {
+        backgroundColor: colors.light.tabBar,
+        borderRadius: 999,
+        marginHorizontal: BAR_MARGIN_H,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: PILL_PADDING_H,
+        paddingVertical: BAR_PADDING_V,
+        borderWidth: 1.5,
+        borderColor: colors.light.border,
+        minHeight: PILL_HEIGHT + BAR_PADDING_V * 2,
+    },
+    pill: {
+        position: "absolute",
+        top: BAR_PADDING_V,
+        left: 0,
+        zIndex: 10,
+        height: PILL_HEIGHT,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: PILL_GAP,
+        paddingHorizontal: PILL_PADDING_H,
+        paddingVertical: PILL_PADDING_V,
+        backgroundColor: colors.light.primary,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: colors.light.primaryDark,
+    },
+    pillLabel: {
+        ...typography.small,
+        color: colors.light.textOnPrimary,
+        fontWeight: "700",
+    },
+    tabs: {
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-around",
+    },
+    tab: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: PILL_HEIGHT,
+    },
 });
