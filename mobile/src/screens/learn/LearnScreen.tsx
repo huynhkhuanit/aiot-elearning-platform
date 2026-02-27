@@ -7,7 +7,6 @@ import {
     TouchableOpacity,
     Dimensions,
     ActivityIndicator,
-    Alert,
     Animated as RNAnimated,
     StatusBar,
 } from "react-native";
@@ -33,6 +32,7 @@ import {
 import LessonSidebar from "../../components/LessonSidebar";
 import GradientButton from "../../components/GradientButton";
 import ProgressBar from "../../components/ProgressBar";
+import { useNotification } from "../../components/Toast";
 
 type Props = NativeStackScreenProps<CoursesStackParamList, "LearnCourse">;
 
@@ -71,6 +71,7 @@ interface CourseLearnData {
 
 export default function LearnScreen({ navigation, route }: Props) {
     const { slug } = route.params;
+    const notification = useNotification();
     const [loading, setLoading] = useState(true);
     const [course, setCourse] = useState<CourseLearnData | null>(null);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
@@ -112,7 +113,7 @@ export default function LearnScreen({ navigation, route }: Props) {
             ]);
 
             if (!courseRes.success || !chaptersRes.success) {
-                Alert.alert("Lỗi", "Không thể tải khóa học");
+                notification.error("Không thể tải khóa học");
                 navigation.goBack();
                 return;
             }
@@ -176,7 +177,7 @@ export default function LearnScreen({ navigation, route }: Props) {
             }
         } catch (error) {
             console.error("Error loading course:", error);
-            Alert.alert("Lỗi", "Không thể tải khóa học. Vui lòng thử lại.");
+            notification.error("Không thể tải khóa học. Vui lòng thử lại.");
             navigation.goBack();
         } finally {
             setLoading(false);
@@ -219,7 +220,7 @@ export default function LearnScreen({ navigation, route }: Props) {
                 goToNextLesson();
             }
         } catch {
-            Alert.alert("Lỗi", "Không thể đánh dấu hoàn thành");
+            notification.error("Không thể đánh dấu hoàn thành");
         } finally {
             setIsMarking(false);
         }
@@ -234,9 +235,12 @@ export default function LearnScreen({ navigation, route }: Props) {
         if (currentIndex < allLessons.length - 1) {
             setCurrentLesson(allLessons[currentIndex + 1]);
         } else {
-            Alert.alert(
-                "🎉 Chúc mừng!",
-                "Bạn đã hoàn thành tất cả bài học trong khóa này!",
+            notification.success(
+                "🎉 Chúc mừng! Bạn đã hoàn thành tất cả bài học!",
+                {
+                    icon: "trophy",
+                    duration: 5000,
+                },
             );
         }
     }, [course, currentLesson]);

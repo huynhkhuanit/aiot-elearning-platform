@@ -6,8 +6,8 @@ import {
     ScrollView,
     Image,
     TouchableOpacity,
-    Alert,
 } from "react-native";
+import { useNotification } from "../../components/Toast";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -26,6 +26,7 @@ import Badge from "../../components/Badge";
 type Props = NativeStackScreenProps<CoursesStackParamList, "CourseDetail">;
 export default function CourseDetailScreen({ navigation, route }: Props) {
     const { slug } = route.params;
+    const notification = useNotification();
     const [course, setCourse] = useState<any>(null);
     const [chapters, setChapters] = useState<Chapter[]>([]);
     const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
             }
         } catch (err) {
             console.error("Error loading course:", err);
-            Alert.alert("Lỗi", "Không thể tải thông tin khoá học");
+            notification.error("Không thể tải thông tin khoá học");
         } finally {
             setIsLoading(false);
         }
@@ -59,15 +60,16 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
         try {
             const result = await enrollCourse(slug);
             if (result.success) {
-                Alert.alert(
-                    "Thành công",
-                    "Bạn đã ghi danh khoá học thành công!",
-                );
+                notification.success("Ghi danh thành công!", {
+                    description: "Bạn có thể bắt đầu học ngay",
+                    actionLabel: "Bắt đầu",
+                    onAction: () =>
+                        navigation.navigate("LearnCourse", { slug }),
+                });
                 loadCourseData();
             }
         } catch (err: any) {
-            Alert.alert(
-                "Lỗi",
+            notification.error(
                 err.response?.data?.message || "Không thể ghi danh",
             );
         } finally {
@@ -76,7 +78,7 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
     };
     const handleLessonPress = (lesson: any) => {
         if (!lesson.video_url) {
-            Alert.alert("Thông báo", "Bài học này chưa có video");
+            notification.info("Bài học này chưa có video");
             return;
         }
         navigation.navigate("LessonVideo", {

@@ -10,7 +10,6 @@ import {
     StatusBar,
     KeyboardAvoidingView,
     Platform,
-    Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -25,6 +24,7 @@ import {
 } from "../../api/qa";
 import Avatar from "../../components/Avatar";
 import GradientButton from "../../components/GradientButton";
+import { useNotification } from "../../components/Toast";
 
 type Props = NativeStackScreenProps<HomeStackParamList, "QuestionDetail">;
 
@@ -35,6 +35,7 @@ export default function QuestionDetailScreen({ navigation, route }: Props) {
     const [loading, setLoading] = useState(true);
     const [answerText, setAnswerText] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const notification = useNotification();
 
     useEffect(() => {
         loadDetail();
@@ -50,7 +51,7 @@ export default function QuestionDetailScreen({ navigation, route }: Props) {
             }
         } catch (e) {
             console.error("Error loading question:", e);
-            Alert.alert("Lỗi", "Không thể tải câu hỏi");
+            notification.error("Không thể tải câu hỏi");
         } finally {
             setLoading(false);
         }
@@ -66,7 +67,7 @@ export default function QuestionDetailScreen({ navigation, route }: Props) {
                 setAnswerText("");
             }
         } catch {
-            Alert.alert("Lỗi", "Không thể gửi câu trả lời");
+            notification.error("Không thể gửi câu trả lời");
         } finally {
             setSubmitting(false);
         }

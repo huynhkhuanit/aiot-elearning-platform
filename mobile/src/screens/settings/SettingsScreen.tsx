@@ -6,7 +6,6 @@ import {
     ScrollView,
     TextInput,
     TouchableOpacity,
-    Alert,
     StatusBar,
     Switch,
     ActivityIndicator,
@@ -28,6 +27,7 @@ import apiClient from "../../api/client";
 import Avatar from "../../components/Avatar";
 import GradientButton from "../../components/GradientButton";
 import InputField from "../../components/InputField";
+import { useNotification } from "../../components/Toast";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "Settings">;
 
@@ -37,6 +37,7 @@ export default function SettingsScreen({ navigation }: Props) {
     const { user, refreshUser } = useAuth();
     const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
     const [saving, setSaving] = useState(false);
+    const notification = useNotification();
 
     // Profile state
     const [fullName, setFullName] = useState("");
@@ -65,7 +66,7 @@ export default function SettingsScreen({ navigation }: Props) {
 
     const handlePickAvatar = useCallback(async () => {
         if (!ImagePicker) {
-            Alert.alert("Lỗi", "Image picker chưa sẵn sàng");
+            notification.warning("Image picker chưa sẵn sàng");
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -92,14 +93,14 @@ export default function SettingsScreen({ navigation }: Props) {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
             } catch {
-                Alert.alert("Lỗi", "Không thể tải lên ảnh đại diện");
+                notification.error("Không thể tải lên ảnh đại diện");
             }
         }
     }, []);
 
     const handleSaveProfile = useCallback(async () => {
         if (!fullName.trim()) {
-            Alert.alert("Lỗi", "Tên không được để trống");
+            notification.warning("Tên không được để trống");
             return;
         }
         setSaving(true);
@@ -109,9 +110,9 @@ export default function SettingsScreen({ navigation }: Props) {
                 bio: bio.trim(),
             });
             if (refreshUser) await refreshUser();
-            Alert.alert("Thành công", "Đã cập nhật hồ sơ");
+            notification.success("Đã cập nhật hồ sơ");
         } catch {
-            Alert.alert("Lỗi", "Không thể cập nhật hồ sơ");
+            notification.error("Không thể cập nhật hồ sơ");
         } finally {
             setSaving(false);
         }
@@ -119,15 +120,15 @@ export default function SettingsScreen({ navigation }: Props) {
 
     const handleChangePassword = useCallback(async () => {
         if (!currentPassword || !newPassword || !confirmPassword) {
-            Alert.alert("Lỗi", "Vui lòng điền đầy đủ các trường");
+            notification.warning("Vui lòng điền đầy đủ các trường");
             return;
         }
         if (newPassword !== confirmPassword) {
-            Alert.alert("Lỗi", "Mật khẩu mới và xác nhận không khớp");
+            notification.warning("Mật khẩu mới và xác nhận không khớp");
             return;
         }
         if (newPassword.length < 6) {
-            Alert.alert("Lỗi", "Mật khẩu mới phải có ít nhất 6 ký tự");
+            notification.warning("Mật khẩu mới phải có ít nhất 6 ký tự");
             return;
         }
         setSaving(true);
@@ -139,10 +140,10 @@ export default function SettingsScreen({ navigation }: Props) {
             setCurrentPassword("");
             setNewPassword("");
             setConfirmPassword("");
-            Alert.alert("Thành công", "Đã đổi mật khẩu");
+            notification.success("Đã đổi mật khẩu");
         } catch (e: any) {
             const msg = e.response?.data?.error || "Không thể đổi mật khẩu";
-            Alert.alert("Lỗi", msg);
+            notification.error(msg);
         } finally {
             setSaving(false);
         }
