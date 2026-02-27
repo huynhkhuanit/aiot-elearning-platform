@@ -26,12 +26,17 @@ const ANIM_DURATION = 280;
 const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
     Home: { active: "home", inactive: "home-outline" },
     Courses: { active: "book", inactive: "book-outline" },
+    AIChat: {
+        active: "chatbubble-ellipses",
+        inactive: "chatbubble-ellipses-outline",
+    },
     Profile: { active: "person", inactive: "person-outline" },
 };
 
 const TAB_LABELS: Record<string, string> = {
     Home: "Trang chủ",
     Courses: "Khoá học",
+    AIChat: "AI Chat",
     Profile: "Hồ sơ",
 };
 
