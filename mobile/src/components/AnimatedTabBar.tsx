@@ -23,6 +23,9 @@ const BAR_MARGIN_H = 16;
 const BAR_PADDING_V = 4;
 const ANIM_DURATION = 280;
 
+// Exported so screens can add bottom padding to avoid content being hidden
+export const TAB_BAR_TOTAL_HEIGHT = PILL_HEIGHT + BAR_PADDING_V * 2 + 3 + 16; // pill + padding + border + spacing
+
 const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
     Home: { active: "home", inactive: "home-outline" },
     Courses: { active: "book", inactive: "book-outline" },
@@ -192,17 +195,16 @@ function getPillWidth(routeName: string): number {
 
 const styles = StyleSheet.create({
     wrapper: {
-        position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: 0,
         alignItems: "center",
         overflow: "visible",
+        backgroundColor: colors.light.background,
+        borderTopWidth: 0,
     },
     bar: {
         backgroundColor: colors.light.tabBar,
         borderRadius: 999,
         marginHorizontal: BAR_MARGIN_H,
+        marginBottom: 4,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",

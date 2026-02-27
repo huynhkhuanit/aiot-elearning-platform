@@ -293,7 +293,7 @@ export default function HomeScreen({ navigation }: Props) {
 
             <YStack
                 style={{
-                    height: spacing["3xl"] + insets.bottom,
+                    height: spacing["2xl"] + insets.bottom,
                 }}
             />
         </ScrollView>
