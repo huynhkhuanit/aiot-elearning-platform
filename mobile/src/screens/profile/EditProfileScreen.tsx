@@ -8,28 +8,32 @@ import {
     Image,
     KeyboardAvoidingView,
     Platform,
+    TextInput,
 } from "react-native";
 import { useNotification } from "../../components/Toast";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../contexts/AuthContext";
 import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { ProfileStackParamList } from "../../navigation/types";
 import { updateProfile } from "../../api/users";
 import { getInitials } from "../../utils/format";
-import InputField from "../../components/InputField";
-import GradientButton from "../../components/GradientButton";
+
 type Props = {
     navigation: NativeStackNavigationProp<ProfileStackParamList, "EditProfile">;
 };
+
 export default function EditProfileScreen({ navigation }: Props) {
+    const insets = useSafeAreaInsets();
     const { user, refreshUser } = useAuth();
     const [fullName, setFullName] = useState(user?.full_name || "");
     const [bio, setBio] = useState(user?.bio || "");
     const [phone, setPhone] = useState(user?.phone || "");
     const [isSaving, setIsSaving] = useState(false);
     const notification = useNotification();
+
     const handleSave = async () => {
         if (!fullName.trim()) {
             notification.warning("Họ và tên không được để trống");
@@ -53,23 +57,52 @@ export default function EditProfileScreen({ navigation }: Props) {
             setIsSaving(false);
         }
     };
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.container}
         >
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={styles.headerBackBtn}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                    <Ionicons
+                        name="chevron-back"
+                        size={24}
+                        color={colors.light.text}
+                    />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Chỉnh sửa hồ sơ</Text>
+                <TouchableOpacity
+                    onPress={handleSave}
+                    disabled={isSaving}
+                    style={[styles.headerDoneBtn, isSaving && { opacity: 0.5 }]}
+                    activeOpacity={0.7}
+                >
+                    {isSaving ? (
+                        <Text style={styles.headerDoneText}>Đang lưu...</Text>
+                    ) : (
+                        <Text style={styles.headerDoneText}>Xong</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
+
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
             >
                 {/* Avatar section */}
                 <View style={styles.avatarSection}>
                     <View style={styles.avatarContainer}>
+                        <View style={styles.avatarGlow} />
                         {user?.avatar_url ? (
                             <Image
-                                source={{
-                                    uri: user.avatar_url,
-                                }}
+                                source={{ uri: user.avatar_url }}
                                 style={styles.avatar}
                             />
                         ) : (
@@ -78,6 +111,8 @@ export default function EditProfileScreen({ navigation }: Props) {
                                     colors.light.gradientFrom,
                                     colors.light.gradientTo,
                                 ]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
                                 style={[
                                     styles.avatar,
                                     styles.avatarPlaceholder,
@@ -88,69 +123,149 @@ export default function EditProfileScreen({ navigation }: Props) {
                                 </Text>
                             </LinearGradient>
                         )}
-                        <View style={styles.cameraButton}>
-                            <Ionicons name="camera" size={16} color="#ffffff" />
-                        </View>
+                        <TouchableOpacity
+                            style={styles.cameraButton}
+                            activeOpacity={0.8}
+                        >
+                            <LinearGradient
+                                colors={[
+                                    colors.light.primary,
+                                    colors.light.primaryDark,
+                                ]}
+                                style={styles.cameraGradient}
+                            >
+                                <Ionicons
+                                    name="camera"
+                                    size={14}
+                                    color="#ffffff"
+                                />
+                            </LinearGradient>
+                        </TouchableOpacity>
                     </View>
-                    <Text style={styles.changeAvatarText}>
-                        Đổi ảnh đại diện
-                    </Text>
+                    <TouchableOpacity activeOpacity={0.7}>
+                        <Text style={styles.changeAvatarText}>
+                            Đổi ảnh đại diện
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
-                {/* Form */}
+                {/* Form Card */}
                 <View style={styles.formCard}>
-                    <InputField
-                        label="Họ và tên"
-                        icon="person-outline"
-                        value={fullName}
-                        onChangeText={setFullName}
-                        placeholder="Nhập họ và tên"
-                    />
+                    {/* Full Name */}
+                    <View style={styles.fieldGroup}>
+                        <View style={styles.fieldRow}>
+                            <View style={styles.fieldIconWrap}>
+                                <Ionicons
+                                    name="person-outline"
+                                    size={18}
+                                    color={colors.light.primary}
+                                />
+                            </View>
+                            <View style={styles.fieldContent}>
+                                <Text style={styles.fieldLabel}>Họ và tên</Text>
+                                <TextInput
+                                    style={styles.fieldInput}
+                                    value={fullName}
+                                    onChangeText={setFullName}
+                                    placeholder="Nhập họ và tên"
+                                    placeholderTextColor={
+                                        colors.light.textMuted
+                                    }
+                                />
+                            </View>
+                        </View>
+                    </View>
 
-                    <View style={styles.bioGroup}>
-                        <Text style={styles.label}>Giới thiệu</Text>
-                        <View style={styles.bioWrapper}>
-                            <Ionicons
-                                name="document-text-outline"
-                                size={18}
-                                color={colors.light.textMuted}
-                                style={styles.bioIcon}
-                            />
-                            <View style={styles.bioInputWrap}>
-                                <InputField
-                                    label=""
-                                    placeholder="Viết vài dòng về bạn..."
+                    <View style={styles.fieldDivider} />
+
+                    {/* Bio */}
+                    <View style={styles.fieldGroup}>
+                        <View
+                            style={[
+                                styles.fieldRow,
+                                { alignItems: "flex-start" },
+                            ]}
+                        >
+                            <View
+                                style={[styles.fieldIconWrap, { marginTop: 2 }]}
+                            >
+                                <Ionicons
+                                    name="document-text-outline"
+                                    size={18}
+                                    color={colors.light.accent}
+                                />
+                            </View>
+                            <View style={styles.fieldContent}>
+                                <Text style={styles.fieldLabel}>
+                                    Giới thiệu
+                                </Text>
+                                <TextInput
+                                    style={[
+                                        styles.fieldInput,
+                                        styles.fieldInputMultiline,
+                                    ]}
                                     value={bio}
                                     onChangeText={setBio}
+                                    placeholder="Viết vài dòng về bạn..."
+                                    placeholderTextColor={
+                                        colors.light.textMuted
+                                    }
                                     multiline
-                                    numberOfLines={4}
+                                    numberOfLines={3}
                                     textAlignVertical="top"
                                 />
                             </View>
                         </View>
                     </View>
 
-                    <InputField
-                        label="Số điện thoại"
-                        icon="call-outline"
-                        value={phone}
-                        onChangeText={setPhone}
-                        placeholder="Nhập số điện thoại"
-                        keyboardType="phone-pad"
-                    />
+                    <View style={styles.fieldDivider} />
+
+                    {/* Phone */}
+                    <View style={styles.fieldGroup}>
+                        <View style={styles.fieldRow}>
+                            <View style={styles.fieldIconWrap}>
+                                <Ionicons
+                                    name="call-outline"
+                                    size={18}
+                                    color={colors.light.success}
+                                />
+                            </View>
+                            <View style={styles.fieldContent}>
+                                <Text style={styles.fieldLabel}>
+                                    Số điện thoại
+                                </Text>
+                                <TextInput
+                                    style={styles.fieldInput}
+                                    value={phone}
+                                    onChangeText={setPhone}
+                                    placeholder="Nhập số điện thoại"
+                                    placeholderTextColor={
+                                        colors.light.textMuted
+                                    }
+                                    keyboardType="phone-pad"
+                                />
+                            </View>
+                        </View>
+                    </View>
+
+                    <View style={styles.fieldDivider} />
 
                     {/* Email (Read-only) */}
-                    <View style={styles.readOnlyGroup}>
-                        <Text style={styles.label}>Email</Text>
-                        <View style={styles.readOnlyField}>
-                            <Ionicons
-                                name="mail-outline"
-                                size={20}
-                                color={colors.light.textMuted}
-                            />
-                            <Text style={styles.readOnlyText}>
-                                {user?.email}
-                            </Text>
+                    <View style={styles.fieldGroup}>
+                        <View style={styles.fieldRow}>
+                            <View style={styles.fieldIconWrap}>
+                                <Ionicons
+                                    name="mail-outline"
+                                    size={18}
+                                    color={colors.light.textMuted}
+                                />
+                            </View>
+                            <View style={styles.fieldContent}>
+                                <Text style={styles.fieldLabel}>Email</Text>
+                                <Text style={styles.fieldReadOnly}>
+                                    {user?.email}
+                                </Text>
+                            </View>
                             <View style={styles.lockBadge}>
                                 <Ionicons
                                     name="lock-closed"
@@ -162,39 +277,83 @@ export default function EditProfileScreen({ navigation }: Props) {
                     </View>
                 </View>
 
-                {/* Save Button */}
-                <View style={styles.saveSection}>
-                    <GradientButton
-                        title="Lưu thay đổi"
-                        onPress={handleSave}
-                        loading={isSaving}
-                        icon="checkmark"
-                    />
-                </View>
+                {/* Email note */}
+                <Text style={styles.emailNote}>
+                    Thông tin email không thể thay đổi để đảm bảo bảo mật tài
+                    khoản.
+                </Text>
             </ScrollView>
         </KeyboardAvoidingView>
     );
 }
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.light.background,
     },
+
+    // Header
+    header: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: spacing.base,
+        paddingBottom: spacing.md,
+        backgroundColor: colors.light.surfaceElevated,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: colors.light.border,
+    },
+    headerBackBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.full,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    headerTitle: {
+        ...typography.bodySemiBold,
+        color: colors.light.text,
+        fontSize: 17,
+    },
+    headerDoneBtn: {
+        paddingHorizontal: spacing.base,
+        paddingVertical: spacing.sm,
+        borderRadius: radius.full,
+        backgroundColor: colors.light.primarySoft,
+    },
+    headerDoneText: {
+        ...typography.bodySemiBold,
+        color: colors.light.primary,
+        fontSize: 15,
+    },
+
     scrollContent: {
         paddingBottom: spacing["3xl"],
     },
+
     // Avatar
     avatarSection: {
         alignItems: "center",
-        paddingVertical: spacing.xl,
+        paddingVertical: spacing["2xl"],
     },
     avatarContainer: {
         position: "relative",
-        marginBottom: spacing.sm,
+        marginBottom: spacing.md,
+    },
+    avatarGlow: {
+        position: "absolute",
+        top: -6,
+        left: -6,
+        right: -6,
+        bottom: -6,
+        borderRadius: radius.full,
+        borderWidth: 2,
+        borderColor: "rgba(99, 102, 241, 0.15)",
     },
     avatar: {
-        width: 96,
-        height: 96,
+        width: 100,
+        height: 100,
         borderRadius: radius.full,
     },
     avatarPlaceholder: {
@@ -204,82 +363,101 @@ const styles = StyleSheet.create({
     avatarText: {
         ...typography.h1,
         color: "#ffffff",
+        fontSize: 32,
     },
     cameraButton: {
         position: "absolute",
-        bottom: 0,
-        right: 0,
+        bottom: 2,
+        right: 2,
         width: 32,
         height: 32,
         borderRadius: radius.full,
-        backgroundColor: colors.light.primary,
-        justifyContent: "center",
-        alignItems: "center",
         borderWidth: 3,
         borderColor: colors.light.background,
+        overflow: "hidden",
+    },
+    cameraGradient: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
     },
     changeAvatarText: {
         ...typography.captionMedium,
         color: colors.light.primary,
     },
-    // Form
+
+    // Form Card
     formCard: {
-        marginHorizontal: spacing.xl,
+        marginHorizontal: spacing.base,
         backgroundColor: colors.light.surfaceElevated,
-        borderRadius: radius.lg,
-        padding: spacing.xl,
+        borderRadius: radius.xl,
+        paddingHorizontal: spacing.base,
+        paddingVertical: spacing.sm,
         ...shadows.sm,
+        borderWidth: 1,
+        borderColor: colors.light.border,
     },
-    label: {
-        ...typography.label,
-        color: colors.light.text,
-        marginBottom: spacing.sm,
+    fieldGroup: {
+        paddingVertical: spacing.md,
     },
-    bioGroup: {
-        marginBottom: spacing.lg,
-    },
-    bioWrapper: {
-        flexDirection: "row",
-        alignItems: "flex-start",
-    },
-    bioIcon: {
-        marginTop: spacing.base,
-        marginRight: spacing.sm,
-    },
-    bioInputWrap: {
-        flex: 1,
-    },
-    // Read-only
-    readOnlyGroup: {
-        marginBottom: spacing.sm,
-    },
-    readOnlyField: {
+    fieldRow: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: colors.light.surface,
-        borderRadius: radius.md,
-        borderWidth: 1.5,
-        borderColor: colors.light.border,
-        height: 52,
-        paddingHorizontal: spacing.base,
         gap: spacing.md,
     },
-    readOnlyText: {
-        ...typography.body,
-        color: colors.light.textMuted,
+    fieldIconWrap: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.lg,
+        backgroundColor: colors.light.surface,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    fieldContent: {
         flex: 1,
     },
+    fieldLabel: {
+        ...typography.small,
+        color: colors.light.textMuted,
+        marginBottom: 2,
+    },
+    fieldInput: {
+        ...typography.body,
+        color: colors.light.text,
+        padding: 0,
+        margin: 0,
+        fontWeight: "500",
+    },
+    fieldInputMultiline: {
+        minHeight: 48,
+        lineHeight: 20,
+        textAlignVertical: "top",
+    },
+    fieldReadOnly: {
+        ...typography.body,
+        color: colors.light.textMuted,
+    },
+    fieldDivider: {
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: colors.light.border,
+        marginLeft: 52, // icon width (36) + gap (16)
+    },
     lockBadge: {
-        width: 24,
-        height: 24,
+        width: 28,
+        height: 28,
         borderRadius: radius.sm,
         backgroundColor: colors.light.surface,
         justifyContent: "center",
         alignItems: "center",
     },
-    // Save
-    saveSection: {
-        paddingHorizontal: spacing.xl,
-        marginTop: spacing.xl,
+
+    // Email note
+    emailNote: {
+        ...typography.small,
+        color: colors.light.textMuted,
+        textAlign: "center",
+        marginHorizontal: spacing["2xl"],
+        marginTop: spacing.md,
+        lineHeight: 18,
     },
 });

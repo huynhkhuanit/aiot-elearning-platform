@@ -216,7 +216,7 @@ function ProfileNavigator() {
                 name="EditProfile"
                 component={EditProfileScreen}
                 options={{
-                    title: "Chỉnh sửa hồ sơ",
+                    headerShown: false,
                 }}
             />
             <ProfileStack.Screen
