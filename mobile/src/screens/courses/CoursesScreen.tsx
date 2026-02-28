@@ -18,10 +18,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { CoursesStackParamList } from "../../navigation/types";
 import { Course } from "../../types/course";
-import { fetchCourses } from "../../api/courses";
+import {
+    fetchCourses,
+    fetchPlatformStats,
+    PlatformStats,
+} from "../../api/courses";
 import CourseCard from "../../components/CourseCard";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
 import EmptyState from "../../components/EmptyState";
+import { formatCompactNumber } from "../../utils/format";
 
 type Props = {
     navigation: NativeStackNavigationProp<CoursesStackParamList, "CoursesList">;
@@ -68,6 +73,9 @@ export default function CoursesScreen({ navigation }: Props) {
     const [refreshing, setRefreshing] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [totalCourses, setTotalCourses] = useState(0);
+    const [platformStats, setPlatformStats] = useState<PlatformStats | null>(
+        null,
+    );
 
     const searchInputRef = useRef<TextInput>(null);
     const headerFade = useRef(new RNAnimated.Value(0)).current;
@@ -78,6 +86,12 @@ export default function CoursesScreen({ navigation }: Props) {
             duration: 500,
             useNativeDriver: true,
         }).start();
+
+        fetchPlatformStats()
+            .then((res) => {
+                if (res.success) setPlatformStats(res.data);
+            })
+            .catch(() => {});
     }, []);
 
     const loadCourses = useCallback(
@@ -183,18 +197,32 @@ export default function CoursesScreen({ navigation }: Props) {
                 <View style={styles.statsRow}>
                     <View style={styles.statCard}>
                         <Text style={styles.statNumber}>
-                            {totalCourses > 0 ? `${totalCourses}+` : "150+"}
+                            {platformStats
+                                ? `${platformStats.totalCourses}+`
+                                : isLoading
+                                  ? "--"
+                                  : `${totalCourses}+`}
                         </Text>
                         <Text style={styles.statLabel}>Khoá học</Text>
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>10k+</Text>
+                        <Text style={styles.statNumber}>
+                            {platformStats
+                                ? formatCompactNumber(
+                                      platformStats.totalStudents,
+                                  ) + "+"
+                                : "--"}
+                        </Text>
                         <Text style={styles.statLabel}>Học viên</Text>
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>50+</Text>
+                        <Text style={styles.statNumber}>
+                            {platformStats
+                                ? `${platformStats.totalInstructors}+`
+                                : "--"}
+                        </Text>
                         <Text style={styles.statLabel}>Giảng viên</Text>
                     </View>
                 </View>

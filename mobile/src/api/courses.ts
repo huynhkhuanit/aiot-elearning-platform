@@ -61,3 +61,17 @@ export async function markLessonComplete(
     const response = await apiClient.post(`/api/lessons/${lessonId}/complete`);
     return response.data;
 }
+
+export interface PlatformStats {
+    totalCourses: number;
+    totalStudents: number;
+    totalInstructors: number;
+}
+
+export async function fetchPlatformStats(): Promise<{
+    success: boolean;
+    data: PlatformStats;
+}> {
+    const response = await apiClient.get("/api/platform/stats");
+    return response.data;
+}

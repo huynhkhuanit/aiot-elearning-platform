@@ -94,6 +94,10 @@ interface Props {
 function CourseCard({ course, variant = "vertical", onPress }: Props) {
     const levelColor = getLevelColor(course.level);
     const levelLabel = getLevelLabel(course.level);
+    const hasValidDuration =
+        course.duration &&
+        course.duration !== "0h00p" &&
+        course.duration !== "0p";
 
     const accessibilityLabel = `${course.title}, ${levelLabel}, ${course.instructor.name}`;
     const accessibilityHint = "Nhấn đúp để mở khoá học";
@@ -198,14 +202,19 @@ function CourseCard({ course, variant = "vertical", onPress }: Props) {
 
                     <View style={styles.hStatsRow}>
                         <StatItem
+                            icon="book-outline"
+                            value={`${course.totalLessons} bài`}
+                        />
+                        {hasValidDuration && (
+                            <StatItem
+                                icon="time-outline"
+                                value={course.duration}
+                            />
+                        )}
+                        <StatItem
                             icon="people-outline"
                             value={formatCompactNumber(course.students)}
                         />
-                        <StatItem
-                            icon="play-circle-outline"
-                            value={`${course.totalLessons} bài`}
-                        />
-                        <StatItem icon="time-outline" value={course.duration} />
                     </View>
                 </View>
             </Card>
@@ -336,10 +345,15 @@ function CourseCard({ course, variant = "vertical", onPress }: Props) {
 
                     <View style={styles.statsRow}>
                         <StatItem
-                            icon="people-outline"
-                            value={formatCompactNumber(course.students)}
+                            icon="book-outline"
+                            value={`${course.totalLessons} bài`}
                         />
-                        <StatItem icon="time-outline" value={course.duration} />
+                        {hasValidDuration && (
+                            <StatItem
+                                icon="time-outline"
+                                value={course.duration}
+                            />
+                        )}
                         <StatItem
                             icon="star"
                             value={course.rating.toFixed(1)}
