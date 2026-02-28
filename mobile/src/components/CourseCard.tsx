@@ -348,12 +348,10 @@ function CourseCard({ course, variant = "vertical", onPress }: Props) {
                             icon="book-outline"
                             value={`${course.totalLessons} bài`}
                         />
-                        {hasValidDuration && (
-                            <StatItem
-                                icon="time-outline"
-                                value={course.duration}
-                            />
-                        )}
+                        <StatItem
+                            icon="people-outline"
+                            value={formatCompactNumber(course.students)}
+                        />
                         <StatItem
                             icon="star"
                             value={course.rating.toFixed(1)}
