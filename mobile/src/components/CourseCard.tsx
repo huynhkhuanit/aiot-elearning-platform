@@ -355,9 +355,9 @@ function CourseCard({ course, variant = "vertical", onPress }: Props) {
 export default memo(CourseCard);
 
 const VCARD_WIDTH = 280;
-const H_THUMB_WIDTH = 120;
-const H_THUMB_HEIGHT = 120; // Square-ish for a premium look in horizontal list, or keep 4:3? Let's use 120x90.
-const H_THUMB_ACTUAL_HEIGHT = 90;
+const H_THUMB_WIDTH = 110;
+const H_THUMB_HEIGHT = 110;
+const H_THUMB_ACTUAL_HEIGHT = 100;
 
 const styles = StyleSheet.create({
     // === Vertical card ===
@@ -439,8 +439,8 @@ const styles = StyleSheet.create({
     instructorRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
-        marginBottom: spacing.md,
+        gap: 5,
+        marginBottom: spacing.sm,
     },
     instructorText: {
         ...typography.caption,
@@ -461,9 +461,9 @@ const styles = StyleSheet.create({
         borderRadius: radius.lg,
         overflow: "hidden",
         borderWidth: 1,
-        borderColor: "rgba(15, 23, 42, 0.05)",
-        padding: spacing.sm,
-        gap: spacing.sm,
+        borderColor: "rgba(15, 23, 42, 0.06)",
+        padding: spacing.sm + 2,
+        gap: spacing.md,
         ...shadows.sm,
     },
     hThumbnailWrap: {
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
     hContent: {
         flex: 1,
         justifyContent: "space-between",
-        paddingVertical: 2,
+        paddingVertical: 0,
     },
     hTopRow: {
         flexDirection: "row",
@@ -506,10 +506,10 @@ const styles = StyleSheet.create({
     },
     hTitle: {
         ...typography.bodySemiBold,
-        fontSize: 15,
-        lineHeight: 20,
+        fontSize: 14,
+        lineHeight: 19,
         color: colors.light.text,
-        marginBottom: 4,
+        marginBottom: 3,
     },
     hStatsDivider: {
         height: StyleSheet.hairlineWidth,
