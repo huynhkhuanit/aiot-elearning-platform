@@ -8,6 +8,7 @@ import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { CoursesStackParamList } from "../../navigation/types";
 import { markLessonComplete } from "../../api/courses";
 import GradientButton from "../../components/GradientButton";
+import LessonCompleteModal from "../../components/LessonCompleteModal";
 type Props = NativeStackScreenProps<CoursesStackParamList, "LessonVideo">;
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const VIDEO_HEIGHT = (SCREEN_WIDTH * 9) / 16;
@@ -15,6 +16,7 @@ export default function LessonVideoScreen({ navigation, route }: Props) {
     const { lessonId, title, videoUrl } = route.params;
     const [isCompleted, setIsCompleted] = useState(false);
     const [isMarking, setIsMarking] = useState(false);
+    const [showComplete, setShowComplete] = useState(false);
     const notification = useNotification();
     const player = useVideoPlayer(videoUrl, (player) => {
         player.loop = false;
@@ -25,9 +27,7 @@ export default function LessonVideoScreen({ navigation, route }: Props) {
             const result = await markLessonComplete(lessonId);
             if (result.success) {
                 setIsCompleted(true);
-                notification.success("Bạn đã hoàn thành bài học này!", {
-                    icon: "checkmark-circle",
-                });
+                setShowComplete(true);
             }
         } catch (err) {
             notification.error("Không thể đánh dấu hoàn thành");
@@ -120,6 +120,15 @@ export default function LessonVideoScreen({ navigation, route }: Props) {
                     }}
                 />
             </ScrollView>
+
+            {/* Lesson Complete Modal */}
+            <LessonCompleteModal
+                visible={showComplete}
+                onClose={() => setShowComplete(false)}
+                lessonTitle={title}
+                onGoToList={() => navigation.goBack()}
+                hasNext={false}
+            />
         </View>
     );
 }

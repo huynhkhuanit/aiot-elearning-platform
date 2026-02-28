@@ -8,7 +8,6 @@ import {
     Image,
     ActivityIndicator,
     RefreshControl,
-    Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,6 +17,7 @@ import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { ProfileStackParamList } from "../../navigation/types";
 import { getInitials, formatStudyTime } from "../../utils/format";
 import StatCard from "../../components/StatCard";
+import ConfirmDialog from "../../components/ConfirmDialog";
 type Props = {
     navigation: NativeStackNavigationProp<
         ProfileStackParamList,
@@ -27,25 +27,15 @@ type Props = {
 export default function ProfileScreen({ navigation }: Props) {
     const { user, logout, refreshUser } = useAuth();
     const [refreshing, setRefreshing] = useState(false);
+    const [showLogout, setShowLogout] = useState(false);
     const onRefresh = async () => {
         setRefreshing(true);
         await refreshUser();
         setRefreshing(false);
     };
     const handleLogout = async () => {
-        Alert.alert("Đăng xuất", "Bạn có chắc muốn đăng xuất?", [
-            {
-                text: "Huỷ",
-                style: "cancel",
-            },
-            {
-                text: "Đăng xuất",
-                style: "destructive",
-                onPress: async () => {
-                    await logout();
-                },
-            },
-        ]);
+        setShowLogout(false);
+        await logout();
     };
     if (!user) {
         return (
@@ -266,7 +256,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
                     <TouchableOpacity
                         style={styles.menuItem}
-                        onPress={handleLogout}
+                        onPress={() => setShowLogout(true)}
                         activeOpacity={0.7}
                     >
                         <View
@@ -306,6 +296,19 @@ export default function ProfileScreen({ navigation }: Props) {
                 style={{
                     height: spacing["2xl"],
                 }}
+            />
+
+            {/* Logout Confirm Dialog */}
+            <ConfirmDialog
+                visible={showLogout}
+                onClose={() => setShowLogout(false)}
+                onConfirm={handleLogout}
+                title="Đăng xuất"
+                message="Bạn có chắc muốn đăng xuất khỏi tài khoản?"
+                confirmText="Đăng xuất"
+                cancelText="Huỷ"
+                variant="destructive"
+                icon="log-out-outline"
             />
         </ScrollView>
     );

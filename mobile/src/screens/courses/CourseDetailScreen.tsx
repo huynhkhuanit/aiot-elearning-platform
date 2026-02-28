@@ -27,6 +27,8 @@ import { getLevelLabel, getLevelColor } from "../../utils/format";
 import GradientButton from "../../components/GradientButton";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
 import Badge from "../../components/Badge";
+import SuccessModal from "../../components/SuccessModal";
+import InfoModal from "../../components/InfoModal";
 
 type Props = NativeStackScreenProps<CoursesStackParamList, "CourseDetail">;
 
@@ -42,6 +44,8 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
     const [isLoading, setIsLoading] = useState(true);
     const [isEnrolling, setIsEnrolling] = useState(false);
     const [showFullDescription, setShowFullDescription] = useState(false);
+    const [showEnrollSuccess, setShowEnrollSuccess] = useState(false);
+    const [showNoVideo, setShowNoVideo] = useState(false);
     const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(
         new Set(),
     );
@@ -133,12 +137,7 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
         try {
             const result = await enrollCourse(slug);
             if (result.success) {
-                notification.success("Ghi danh thành công!", {
-                    description: "Bạn có thể bắt đầu học ngay",
-                    actionLabel: "Bắt đầu",
-                    onAction: () =>
-                        navigation.navigate("LearnCourse", { slug }),
-                });
+                setShowEnrollSuccess(true);
                 loadCourseData();
             }
         } catch (err: any) {
@@ -152,7 +151,7 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
 
     const handleLessonPress = (lesson: any) => {
         if (!lesson.video_url) {
-            notification.info("Bài học này chưa có video");
+            setShowNoVideo(true);
             return;
         }
         navigation.navigate("LessonVideo", {
@@ -828,6 +827,23 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                     </>
                 )}
             </View>
+
+            {/* Modals */}
+            <SuccessModal
+                visible={showEnrollSuccess}
+                onClose={() => setShowEnrollSuccess(false)}
+                title="Ghi danh thành công! 🎉"
+                message="Chúc mừng bạn đã ghi danh khoá học thành công. Bắt đầu học ngay!"
+                buttonText="Bắt đầu học"
+                onAction={() => navigation.navigate("LearnCourse", { slug })}
+            />
+            <InfoModal
+                visible={showNoVideo}
+                onClose={() => setShowNoVideo(false)}
+                title="Thông báo"
+                message="Bài học này chưa có video. Vui lòng quay lại sau."
+                buttonText="Đã hiểu"
+            />
         </View>
     );
 }
