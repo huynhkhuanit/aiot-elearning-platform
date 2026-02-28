@@ -15,13 +15,22 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors, typography } from "../theme";
 
 const ICON_SIZE = 22;
-const PILL_HEIGHT = 36;
+const PILL_HEIGHT = 34;
 const PILL_PADDING_H = 10;
 const PILL_PADDING_V = 4;
 const PILL_GAP = 6;
 const BAR_MARGIN_H = 16;
-const BAR_PADDING_V = 4;
+const BAR_PADDING_V = 6;
 const ANIM_DURATION = 280;
+const BAR_BORDER_WIDTH = 1.5;
+
+// Clamp pill position so it never overflows outside the bar
+function clampPillX(x: number, pillWidth: number, barWidth: number): number {
+    const innerWidth = barWidth - BAR_BORDER_WIDTH * 2;
+    const minX = BAR_PADDING_V; // same gap as vertical for uniform spacing
+    const maxX = innerWidth - pillWidth - BAR_PADDING_V;
+    return Math.max(minX, Math.min(maxX, x));
+}
 
 // Exported so screens can add bottom padding to avoid content being hidden
 export const TAB_BAR_TOTAL_HEIGHT = PILL_HEIGHT + BAR_PADDING_V * 2 + 3 + 16; // pill + padding + border + spacing
@@ -62,11 +71,12 @@ export default function AnimatedTabBar({
         if (tabsWidthRef.current > 0 && state.routes.length > 0) {
             const tabWidth = tabsWidthRef.current / state.routes.length;
             const pillWidth = getPillWidth(state.routes[focusedIndex].name);
-            const targetX =
+            const rawX =
                 barPaddingH +
                 focusedIndex * tabWidth +
                 tabWidth / 2 -
                 pillWidth / 2;
+            const targetX = clampPillX(rawX, pillWidth, barWidth);
             Animated.timing(pillTranslateX, {
                 toValue: targetX,
                 duration: ANIM_DURATION,
@@ -74,7 +84,13 @@ export default function AnimatedTabBar({
                 useNativeDriver: true,
             }).start();
         }
-    }, [focusedIndex, pillTranslateX, state.routes.length, barPaddingH]);
+    }, [
+        focusedIndex,
+        pillTranslateX,
+        state.routes.length,
+        barPaddingH,
+        barWidth,
+    ]);
 
     const handleTabsLayout = (e: LayoutChangeEvent) => {
         const w = e.nativeEvent.layout.width;
@@ -82,12 +98,12 @@ export default function AnimatedTabBar({
         if (w > 0 && state.routes.length > 0) {
             const tabWidth = w / state.routes.length;
             const pillWidth = getPillWidth(state.routes[focusedIndex].name);
-            const targetX =
+            const rawX =
                 barPaddingH +
                 focusedIndex * tabWidth +
                 tabWidth / 2 -
                 pillWidth / 2;
-            pillTranslateX.setValue(targetX);
+            pillTranslateX.setValue(clampPillX(rawX, pillWidth, barWidth));
         }
     };
 
@@ -178,8 +194,8 @@ export default function AnimatedTabBar({
     );
 }
 
-const PILL_MIN_WIDTH = 130;
-const PILL_MAX_WIDTH = 150;
+const PILL_MIN_WIDTH = 100;
+const PILL_MAX_WIDTH = 130;
 
 function getPillWidth(routeName: string): number {
     const label = TAB_LABELS[routeName] ?? routeName;
