@@ -58,6 +58,14 @@ export default function AnimatedTabBar({
     navigation,
     insets,
 }: BottomTabBarProps) {
+    // Hide tab bar when the focused route sets tabBarStyle display: 'none'
+    const focusedRoute = state.routes[state.index];
+    const focusedDescriptor = descriptors[focusedRoute.key];
+    const tabBarStyle = focusedDescriptor?.options?.tabBarStyle as any;
+    if (tabBarStyle?.display === "none") {
+        return null;
+    }
+
     const pillTranslateX = useRef(new Animated.Value(0)).current;
     const tabsWidthRef = useRef(0);
 
@@ -108,7 +116,6 @@ export default function AnimatedTabBar({
     };
 
     const bottomInset = insets?.bottom ?? (Platform.OS === "ios" ? 28 : 10);
-    const focusedRoute = state.routes[focusedIndex];
     const focusedLabel = TAB_LABELS[focusedRoute.name] ?? focusedRoute.name;
     const focusedIconName = (TAB_ICONS[focusedRoute.name]?.active ??
         "ellipse") as React.ComponentProps<typeof Ionicons>["name"];
