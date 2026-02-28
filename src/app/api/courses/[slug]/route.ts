@@ -16,7 +16,6 @@ export async function GET(
 ) {
     try {
         const { slug } = await params;
-        const origin = new URL(request.url).origin;
 
         // Get auth token to check enrollment status
         const cookieToken = request.cookies.get("auth_token")?.value;
@@ -146,9 +145,7 @@ export async function GET(
             slug: course.slug,
             description: course.description,
             shortDescription: course.short_description,
-            thumbnailUrl: course.thumbnail_url?.startsWith("/")
-                ? `${origin}${course.thumbnail_url}`
-                : course.thumbnail_url,
+            thumbnailUrl: course.thumbnail_url,
             level: course.level,
             price: course.is_free
                 ? "Miễn phí"

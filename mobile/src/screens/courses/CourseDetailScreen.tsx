@@ -24,6 +24,13 @@ import {
     fetchCourseProgress,
 } from "../../api/courses";
 import { getLevelLabel, getLevelColor } from "../../utils/format";
+import { API_BASE_URL } from "../../api/client";
+
+function resolveImageUrl(url: string | undefined): string | undefined {
+    if (!url) return undefined;
+    if (url.startsWith("http")) return url;
+    return `${API_BASE_URL}${url}`;
+}
 import GradientButton from "../../components/GradientButton";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
 import Badge from "../../components/Badge";
@@ -253,7 +260,9 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                 <View style={styles.heroWrap}>
                     {course.thumbnailUrl ? (
                         <Image
-                            source={{ uri: course.thumbnailUrl }}
+                            source={{
+                                uri: resolveImageUrl(course.thumbnailUrl),
+                            }}
                             style={styles.heroImage}
                         />
                     ) : (

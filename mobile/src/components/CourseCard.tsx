@@ -10,6 +10,14 @@ import {
     getLevelColor,
     formatCompactNumber,
 } from "../utils/format";
+import { API_BASE_URL } from "../api/client";
+
+/** Resolve relative asset paths to full URLs the device can reach. */
+function resolveImageUrl(url: string | undefined): string | undefined {
+    if (!url) return undefined;
+    if (url.startsWith("http")) return url;
+    return `${API_BASE_URL}${url}`;
+}
 
 /** Thumbnail with placeholder. Per ui-ux-pro-max: reserve space to avoid content jumping. */
 function ThumbnailImage({
@@ -54,12 +62,13 @@ function ThumbnailImage({
                 </LinearGradient>
             )}
             <Image
-                source={{ uri }}
+                source={{ uri: resolveImageUrl(uri) }}
                 style={[
                     StyleSheet.absoluteFill,
                     { backgroundColor: "transparent" },
                 ]}
                 onLoadEnd={() => setLoaded(true)}
+                onError={() => setLoaded(false)}
             />
         </View>
     );

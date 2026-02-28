@@ -14,7 +14,6 @@ import { db as supabaseAdmin } from "@/lib/db";
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
-        const origin = new URL(request.url).origin;
         // Filters
         const level = searchParams.get("level"); // BEGINNER, INTERMEDIATE, ADVANCED
         const isFreeParam = searchParams.get("is_free"); // '1' or '0'
@@ -87,9 +86,7 @@ export async function GET(request: NextRequest) {
             title: course.title,
             slug: course.slug,
             subtitle: course.short_description,
-            thumbnailUrl: course.thumbnail_url?.startsWith("/")
-                ? `${origin}${course.thumbnail_url}`
-                : course.thumbnail_url,
+            thumbnailUrl: course.thumbnail_url,
             level: course.level,
             price: course.is_free
                 ? "Miễn phí"
