@@ -4,6 +4,7 @@ import {
     CardStyleInterpolators,
 } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import { Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../contexts/AuthContext";
@@ -128,7 +129,7 @@ function HomeNavigator() {
                 name="CourseDetail"
                 component={CourseDetailScreen}
                 options={{
-                    title: "Chi tiết khoá học",
+                    headerShown: false,
                 }}
             />
             <HomeStack.Screen
@@ -179,7 +180,7 @@ function CoursesNavigator() {
                 name="CourseDetail"
                 component={CourseDetailScreen}
                 options={{
-                    title: "Chi tiết khoá học",
+                    headerShown: false,
                 }}
             />
             <CoursesStack.Screen
@@ -230,7 +231,7 @@ function ProfileNavigator() {
                 name="CourseDetail"
                 component={CourseDetailScreen}
                 options={{
-                    title: "Chi tiết khoá học",
+                    headerShown: false,
                 }}
             />
         </ProfileStack.Navigator>
@@ -246,6 +247,30 @@ function AIChatNavigator() {
         </AIChatStack.Navigator>
     );
 }
+// --- Helper: hide tab bar on inner screens ---
+const HIDE_TAB_BAR_SCREENS = [
+    "CourseDetail",
+    "LessonVideo",
+    "LearnCourse",
+    "QuestionDetail",
+    "EditProfile",
+    "Settings",
+];
+
+function getTabBarStyle(route: any) {
+    const routeName = getFocusedRouteNameFromRoute(route) ?? "";
+    if (HIDE_TAB_BAR_SCREENS.includes(routeName)) {
+        return { display: "none" as const };
+    }
+    return {
+        position: "absolute" as const,
+        backgroundColor: "transparent",
+        borderTopWidth: 0,
+        elevation: 0,
+        shadowOpacity: 0,
+    };
+}
+
 // --- Bottom Tabs ---
 const Tab = createBottomTabNavigator<MainTabsParamList>();
 function MainTabs() {
@@ -257,13 +282,6 @@ function MainTabs() {
                 headerShown: false,
                 tabBarActiveTintColor: colors.light.primary,
                 tabBarInactiveTintColor: colors.light.tabInactive,
-                tabBarStyle: {
-                    position: "absolute",
-                    backgroundColor: "transparent",
-                    borderTopWidth: 0,
-                    elevation: 0,
-                    shadowOpacity: 0,
-                },
                 tabBarLabelStyle: {
                     ...typography.tiny,
                     marginTop: 2,
@@ -273,30 +291,34 @@ function MainTabs() {
             <Tab.Screen
                 name="Home"
                 component={HomeNavigator}
-                options={{
+                options={({ route }) => ({
                     tabBarLabel: "Trang chủ",
-                }}
+                    tabBarStyle: getTabBarStyle(route),
+                })}
             />
             <Tab.Screen
                 name="Courses"
                 component={CoursesNavigator}
-                options={{
+                options={({ route }) => ({
                     tabBarLabel: "Khoá học",
-                }}
+                    tabBarStyle: getTabBarStyle(route),
+                })}
             />
             <Tab.Screen
                 name="AIChat"
                 component={AIChatNavigator}
-                options={{
+                options={({ route }) => ({
                     tabBarLabel: "AI Chat",
-                }}
+                    tabBarStyle: getTabBarStyle(route),
+                })}
             />
             <Tab.Screen
                 name="Profile"
                 component={ProfileNavigator}
-                options={{
+                options={({ route }) => ({
                     tabBarLabel: "Hồ sơ",
-                }}
+                    tabBarStyle: getTabBarStyle(route),
+                })}
             />
         </Tab.Navigator>
     );

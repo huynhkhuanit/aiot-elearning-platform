@@ -3,35 +3,65 @@ import {
     View,
     Text,
     StyleSheet,
-    ScrollView,
     Image,
     TouchableOpacity,
+    StatusBar,
+    Animated,
 } from "react-native";
 import { useNotification } from "../../components/Toast";
 import { LinearGradient } from "expo-linear-gradient";
+
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { CoursesStackParamList } from "../../navigation/types";
-import { Chapter } from "../../types/course";
+import { Chapter, CourseDetail } from "../../types/course";
 import {
     fetchCourseDetail,
     fetchCourseChapters,
     enrollCourse,
+    fetchCourseProgress,
 } from "../../api/courses";
 import { getLevelLabel, getLevelColor } from "../../utils/format";
 import GradientButton from "../../components/GradientButton";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
 import Badge from "../../components/Badge";
+
 type Props = NativeStackScreenProps<CoursesStackParamList, "CourseDetail">;
+
+const HERO_HEIGHT = 260;
+
 export default function CourseDetailScreen({ navigation, route }: Props) {
     const { slug } = route.params;
     const notification = useNotification();
+    const insets = useSafeAreaInsets();
     const [course, setCourse] = useState<any>(null);
     const [chapters, setChapters] = useState<Chapter[]>([]);
     const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isEnrolling, setIsEnrolling] = useState(false);
+    const [showFullDescription, setShowFullDescription] = useState(false);
+    const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(
+        new Set(),
+    );
+    const [progressPercent, setProgressPercent] = useState(0);
+    const scrollY = useState(new Animated.Value(0))[0];
+
+    // Merge completion status into chapters
+    const mergeProgress = useCallback(
+        (rawChapters: Chapter[], completed: Set<string>): Chapter[] => {
+            return rawChapters.map((ch) => ({
+                ...ch,
+                lessons: ch.lessons?.map((l) => ({
+                    ...l,
+                    is_completed: completed.has(l.id),
+                })),
+            }));
+        },
+        [],
+    );
+
     const loadCourseData = useCallback(async () => {
         try {
             const [courseResult, chaptersResult] = await Promise.all([
@@ -39,22 +69,65 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                 fetchCourseChapters(slug),
             ]);
             if (courseResult.success) setCourse(courseResult.data);
+
+            let rawChapters: Chapter[] = [];
             if (chaptersResult.success) {
                 const chaptersData =
                     (chaptersResult.data as any)?.chapters ||
                     chaptersResult.data;
-                setChapters(Array.isArray(chaptersData) ? chaptersData : []);
+                rawChapters = Array.isArray(chaptersData) ? chaptersData : [];
             }
+
+            // Fetch progress to get completion status per lesson
+            let completed = new Set<string>();
+            try {
+                const progressResult = await fetchCourseProgress(slug);
+                if (progressResult.success && progressResult.data) {
+                    const ids: string[] =
+                        progressResult.data.completedLessons || [];
+                    completed = new Set(ids);
+                    setProgressPercent(progressResult.data.progress || 0);
+                }
+            } catch {
+                // Progress fetch may fail if user is not enrolled — that's OK
+            }
+
+            setCompletedLessonIds(completed);
+            setChapters(mergeProgress(rawChapters, completed));
         } catch (err) {
             console.error("Error loading course:", err);
             notification.error("Không thể tải thông tin khoá học");
         } finally {
             setIsLoading(false);
         }
-    }, [slug]);
+    }, [slug, mergeProgress]);
+
+    // Re-fetch progress when screen regains focus (e.g., after LessonVideo)
+    useEffect(() => {
+        const unsubscribe = navigation.addListener("focus", async () => {
+            if (!isLoading && course?.isEnrolled) {
+                try {
+                    const progressResult = await fetchCourseProgress(slug);
+                    if (progressResult.success && progressResult.data) {
+                        const ids: string[] =
+                            progressResult.data.completedLessons || [];
+                        const completed = new Set(ids);
+                        setCompletedLessonIds(completed);
+                        setProgressPercent(progressResult.data.progress || 0);
+                        setChapters((prev) => mergeProgress(prev, completed));
+                    }
+                } catch {
+                    // Silently fail
+                }
+            }
+        });
+        return unsubscribe;
+    }, [navigation, slug, isLoading, course?.isEnrolled, mergeProgress]);
+
     useEffect(() => {
         loadCourseData();
     }, [loadCourseData]);
+
     const handleEnroll = async () => {
         setIsEnrolling(true);
         try {
@@ -76,6 +149,7 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
             setIsEnrolling(false);
         }
     };
+
     const handleLessonPress = (lesson: any) => {
         if (!lesson.video_url) {
             notification.info("Bài học này chưa có video");
@@ -87,69 +161,101 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
             videoUrl: lesson.video_url,
         });
     };
+
     if (isLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <LoadingSkeleton variant="thumbnail" height={220} />
-                <View
-                    style={{
-                        padding: spacing.xl,
-                    }}
-                >
-                    <LoadingSkeleton variant="line" width="60%" height={20} />
+                <StatusBar barStyle="light-content" />
+                <LoadingSkeleton variant="thumbnail" height={HERO_HEIGHT} />
+                <View style={{ padding: spacing.xl }}>
+                    <LoadingSkeleton variant="line" width="40%" height={16} />
                     <LoadingSkeleton
                         variant="line"
-                        height={28}
-                        style={{
-                            marginTop: spacing.sm,
-                        }}
+                        height={26}
+                        style={{ marginTop: spacing.sm }}
                     />
                     <LoadingSkeleton
                         variant="line"
+                        width="75%"
                         height={16}
-                        style={{
-                            marginTop: spacing.sm,
-                        }}
+                        style={{ marginTop: spacing.sm }}
                     />
                     <LoadingSkeleton
                         variant="card"
-                        height={80}
-                        style={{
-                            marginTop: spacing.xl,
-                        }}
+                        height={90}
+                        style={{ marginTop: spacing.xl }}
+                    />
+                    <LoadingSkeleton
+                        variant="card"
+                        height={60}
+                        style={{ marginTop: spacing.base }}
+                    />
+                    <LoadingSkeleton
+                        variant="card"
+                        height={60}
+                        style={{ marginTop: spacing.sm }}
                     />
                 </View>
             </View>
         );
     }
+
     if (!course) {
         return (
-            <View style={styles.loadingContainer}>
-                <View style={styles.errorIcon}>
+            <View style={styles.emptyContainer}>
+                <View style={styles.emptyIconWrap}>
                     <Ionicons
-                        name="alert-circle-outline"
-                        size={48}
+                        name="search-outline"
+                        size={56}
                         color={colors.light.textMuted}
                     />
                 </View>
-                <Text style={styles.errorText}>Không tìm thấy khoá học</Text>
+                <Text style={styles.emptyTitle}>Không tìm thấy khoá học</Text>
+                <Text style={styles.emptySubtitle}>
+                    Khoá học có thể đã bị xoá hoặc không tồn tại
+                </Text>
+                <TouchableOpacity
+                    style={styles.emptyButton}
+                    onPress={() => navigation.goBack()}
+                    activeOpacity={0.8}
+                >
+                    <Ionicons
+                        name="arrow-back"
+                        size={18}
+                        color={colors.light.primary}
+                    />
+                    <Text style={styles.emptyButtonText}>Quay lại</Text>
+                </TouchableOpacity>
             </View>
         );
     }
+
     const totalLessons = Array.isArray(chapters)
         ? chapters.reduce((sum, ch) => sum + (ch.lessons?.length || 0), 0)
         : 0;
+
+    const description = course.description || "";
+    const whatYouLearn: string[] = course.whatYouLearn || [];
+
     return (
         <View style={styles.container}>
-            <ScrollView bounces={false}>
-                {/* Course Thumbnail with overlay */}
-                <View style={styles.thumbnailWrap}>
+            <StatusBar barStyle="light-content" />
+
+            <Animated.ScrollView
+                bounces={false}
+                showsVerticalScrollIndicator={false}
+                onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                    { useNativeDriver: true },
+                )}
+                scrollEventThrottle={16}
+            >
+                {/* ── Hero Section ── */}
+                <View style={styles.heroWrap}>
                     {course.thumbnailUrl ? (
                         <Image
-                            source={{
-                                uri: course.thumbnailUrl,
-                            }}
-                            style={styles.thumbnail}
+                            source={{ uri: course.thumbnailUrl }}
+                            style={styles.heroImage}
                         />
                     ) : (
                         <LinearGradient
@@ -157,25 +263,74 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                 colors.light.gradientFrom,
                                 colors.light.gradientTo,
                             ]}
-                            style={[
-                                styles.thumbnail,
-                                styles.thumbnailPlaceholder,
-                            ]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={[styles.heroImage, styles.heroPlaceholder]}
                         >
                             <Ionicons
                                 name="code-slash"
-                                size={48}
-                                color="rgba(255,255,255,0.5)"
+                                size={56}
+                                color="rgba(255,255,255,0.35)"
                             />
                         </LinearGradient>
                     )}
-                    {/* Gradient overlay */}
+
+                    {/* Dark gradient overlay */}
                     <LinearGradient
-                        colors={["transparent", "rgba(0,0,0,0.6)"]}
-                        style={styles.thumbnailOverlay}
+                        colors={[
+                            "rgba(0,0,0,0.15)",
+                            "transparent",
+                            "rgba(0,0,0,0.55)",
+                        ]}
+                        locations={[0, 0.35, 1]}
+                        style={StyleSheet.absoluteFillObject}
                     />
-                    {/* Course title on image */}
-                    <View style={styles.thumbnailContent}>
+
+                    {/* Top controls */}
+                    <View
+                        style={[
+                            styles.heroTopBar,
+                            { paddingTop: insets.top + spacing.sm },
+                        ]}
+                    >
+                        <TouchableOpacity
+                            style={styles.glassButton}
+                            onPress={() => navigation.goBack()}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons
+                                name="chevron-back"
+                                size={22}
+                                color="#fff"
+                            />
+                        </TouchableOpacity>
+
+                        <View style={styles.heroTopRight}>
+                            <TouchableOpacity
+                                style={styles.glassButton}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons
+                                    name="share-outline"
+                                    size={20}
+                                    color="#fff"
+                                />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.glassButton}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons
+                                    name="bookmark-outline"
+                                    size={20}
+                                    color="#fff"
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Bottom badge on hero */}
+                    <View style={styles.heroBadge}>
                         <Badge
                             variant="level"
                             text={getLevelLabel(course.level || "BEGINNER")}
@@ -184,46 +339,72 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                 getLevelColor(course.level || "BEGINNER") + "cc"
                             }
                         />
+                        {course.isFree && (
+                            <Badge
+                                variant="free"
+                                text="Miễn phí"
+                                color="#ffffff"
+                                bgColor="rgba(34, 197, 94, 0.8)"
+                            />
+                        )}
                     </View>
                 </View>
 
-                {/* Course Info */}
+                {/* ── Content ── */}
                 <View style={styles.content}>
-                    <View style={styles.priceRow}>
-                        <Text style={styles.title}>{course.title}</Text>
-                    </View>
+                    {/* Course Title & Subtitle */}
+                    <Text style={styles.courseTitle}>{course.title}</Text>
                     {course.subtitle && (
-                        <Text style={styles.subtitle}>{course.subtitle}</Text>
+                        <Text style={styles.courseSubtitle}>
+                            {course.subtitle}
+                        </Text>
                     )}
 
-                    <Text style={styles.price}>
-                        {course.isFree ? "Miễn phí" : course.price}
-                    </Text>
+                    {/* Price */}
+                    <View style={styles.priceRow}>
+                        <Text style={styles.price}>
+                            {course.isFree ? "Miễn phí" : course.price}
+                        </Text>
+                        {course.isEnrolled && (
+                            <View style={styles.enrolledBadge}>
+                                <Ionicons
+                                    name="checkmark-circle"
+                                    size={14}
+                                    color={colors.light.success}
+                                />
+                                <Text style={styles.enrolledText}>
+                                    Đã ghi danh
+                                </Text>
+                            </View>
+                        )}
+                    </View>
 
-                    {/* Instructor */}
-                    <View style={styles.instructorRow}>
+                    {/* Instructor Card */}
+                    <View style={styles.instructorCard}>
                         {course.instructor?.avatar ? (
                             <Image
-                                source={{
-                                    uri: course.instructor.avatar,
-                                }}
+                                source={{ uri: course.instructor.avatar }}
                                 style={styles.instructorAvatar}
                             />
                         ) : (
-                            <View
+                            <LinearGradient
+                                colors={[
+                                    colors.light.gradientFrom,
+                                    colors.light.gradientTo,
+                                ]}
                                 style={[
                                     styles.instructorAvatar,
-                                    styles.avatarPlaceholder,
+                                    styles.avatarGradient,
                                 ]}
                             >
                                 <Ionicons
                                     name="person"
-                                    size={16}
-                                    color={colors.light.textMuted}
+                                    size={18}
+                                    color="rgba(255,255,255,0.85)"
                                 />
-                            </View>
+                            </LinearGradient>
                         )}
-                        <View>
+                        <View style={styles.instructorInfo}>
                             <Text style={styles.instructorLabel}>
                                 Giảng viên
                             </Text>
@@ -231,14 +412,19 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                 {course.instructor?.name || "Giảng viên"}
                             </Text>
                         </View>
+                        <Ionicons
+                            name="chevron-forward"
+                            size={18}
+                            color={colors.light.textMuted}
+                        />
                     </View>
 
                     {/* Stats Row */}
-                    <View style={styles.statsRow}>
+                    <View style={styles.statsCard}>
                         <View style={styles.statItem}>
                             <View
                                 style={[
-                                    styles.statIconCircle,
+                                    styles.statIcon,
                                     {
                                         backgroundColor:
                                             colors.light.primarySoft,
@@ -251,18 +437,16 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                     color={colors.light.primary}
                                 />
                             </View>
-                            <View>
-                                <Text style={styles.statValue}>
-                                    {course.students || 0}
-                                </Text>
-                                <Text style={styles.statLabel}>học viên</Text>
-                            </View>
+                            <Text style={styles.statValue}>
+                                {course.students || 0}
+                            </Text>
+                            <Text style={styles.statLabel}>học viên</Text>
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.statItem}>
                             <View
                                 style={[
-                                    styles.statIconCircle,
+                                    styles.statIcon,
                                     {
                                         backgroundColor:
                                             colors.light.accentSoft,
@@ -275,18 +459,14 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                     color={colors.light.accent}
                                 />
                             </View>
-                            <View>
-                                <Text style={styles.statValue}>
-                                    {totalLessons}
-                                </Text>
-                                <Text style={styles.statLabel}>bài học</Text>
-                            </View>
+                            <Text style={styles.statValue}>{totalLessons}</Text>
+                            <Text style={styles.statLabel}>bài học</Text>
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.statItem}>
                             <View
                                 style={[
-                                    styles.statIconCircle,
+                                    styles.statIcon,
                                     {
                                         backgroundColor:
                                             colors.light.warningSoft,
@@ -299,146 +479,297 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                     color="#f59e0b"
                                 />
                             </View>
-                            <View>
-                                <Text style={styles.statValue}>
-                                    {Number(course.rating || 0).toFixed(1)}
-                                </Text>
-                                <Text style={styles.statLabel}>đánh giá</Text>
-                            </View>
+                            <Text style={styles.statValue}>
+                                {Number(course.rating || 0).toFixed(1)}
+                            </Text>
+                            <Text style={styles.statLabel}>đánh giá</Text>
                         </View>
                     </View>
 
-                    {/* Chapters */}
-                    <View style={styles.sectionHeader}>
-                        <View style={styles.sectionDot} />
-                        <Text style={styles.sectionTitle}>
-                            Nội dung khoá học
-                        </Text>
-                        <Text style={styles.chapterCount}>
-                            {chapters.length} chương
-                        </Text>
-                    </View>
+                    {/* Progress bar (if enrolled) */}
+                    {course.isEnrolled && totalLessons > 0 && (
+                        <View style={styles.progressSection}>
+                            <View style={styles.progressHeader}>
+                                <Text style={styles.progressLabel}>
+                                    Tiến độ học tập
+                                </Text>
+                                <Text style={styles.progressValue}>
+                                    {completedLessonIds.size}/{totalLessons} bài
+                                    ({progressPercent}%)
+                                </Text>
+                            </View>
+                            <View style={styles.progressBarBg}>
+                                <LinearGradient
+                                    colors={[
+                                        colors.light.gradientFrom,
+                                        colors.light.accent,
+                                    ]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={[
+                                        styles.progressBarFill,
+                                        {
+                                            width: `${progressPercent}%`,
+                                        },
+                                    ]}
+                                />
+                            </View>
+                        </View>
+                    )}
 
-                    {chapters.length === 0 ? (
-                        <Text style={styles.emptyChapters}>
-                            Chưa có nội dung
-                        </Text>
-                    ) : (
-                        chapters.map((chapter, idx) => (
-                            <View
-                                key={chapter.id}
-                                style={styles.chapterContainer}
+                    {/* ── Course Description ── */}
+                    {description ? (
+                        <View style={styles.section}>
+                            <SectionTitle title="Giới thiệu khoá học" />
+                            <Text
+                                style={styles.descriptionText}
+                                numberOfLines={
+                                    showFullDescription ? undefined : 3
+                                }
                             >
+                                {description}
+                            </Text>
+                            {description.length > 120 && (
                                 <TouchableOpacity
-                                    style={styles.chapterHeader}
                                     onPress={() =>
-                                        setExpandedChapter(
-                                            expandedChapter === chapter.id
-                                                ? null
-                                                : chapter.id,
-                                        )
+                                        setShowFullDescription((p) => !p)
                                     }
                                     activeOpacity={0.7}
+                                    style={styles.readMoreBtn}
                                 >
-                                    <View style={styles.chapterLeft}>
-                                        <View style={styles.chapterIndex}>
-                                            <Text
-                                                style={styles.chapterIndexText}
-                                            >
-                                                {idx + 1}
-                                            </Text>
-                                        </View>
-                                        <Text
-                                            style={styles.chapterTitle}
-                                            numberOfLines={1}
-                                        >
-                                            {chapter.title}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.chapterRight}>
-                                        <Text
-                                            style={styles.chapterLessonsCount}
-                                        >
-                                            {chapter.lessons?.length || 0} bài
-                                        </Text>
-                                        <Ionicons
-                                            name={
-                                                expandedChapter === chapter.id
-                                                    ? "chevron-up"
-                                                    : "chevron-down"
-                                            }
-                                            size={18}
-                                            color={colors.light.textMuted}
-                                        />
-                                    </View>
+                                    <Text style={styles.readMoreText}>
+                                        {showFullDescription
+                                            ? "Thu gọn"
+                                            : "Xem thêm"}
+                                    </Text>
+                                    <Ionicons
+                                        name={
+                                            showFullDescription
+                                                ? "chevron-up"
+                                                : "chevron-down"
+                                        }
+                                        size={14}
+                                        color={colors.light.primary}
+                                    />
                                 </TouchableOpacity>
-                                {expandedChapter === chapter.id &&
-                                    chapter.lessons?.map((lesson) => (
+                            )}
+                        </View>
+                    ) : null}
+
+                    {/* ── What You'll Learn ── */}
+                    {whatYouLearn.length > 0 && (
+                        <View style={styles.section}>
+                            <SectionTitle title="Bạn sẽ học được gì?" />
+                            <View style={styles.learnGrid}>
+                                {whatYouLearn.map((item, i) => (
+                                    <View key={i} style={styles.learnItem}>
+                                        <View style={styles.learnCheck}>
+                                            <Ionicons
+                                                name="checkmark"
+                                                size={14}
+                                                color="#fff"
+                                            />
+                                        </View>
+                                        <Text style={styles.learnText}>
+                                            {item}
+                                        </Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+
+                    {/* ── Chapters / Curriculum ── */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeaderRow}>
+                            <SectionTitle title="Nội dung khoá học" />
+                            <View style={styles.chapterBadge}>
+                                <Text style={styles.chapterBadgeText}>
+                                    {chapters.length} chương • {totalLessons}{" "}
+                                    bài
+                                </Text>
+                            </View>
+                        </View>
+
+                        {chapters.length === 0 ? (
+                            <View style={styles.emptyChapters}>
+                                <Ionicons
+                                    name="document-text-outline"
+                                    size={32}
+                                    color={colors.light.textMuted}
+                                />
+                                <Text style={styles.emptyChaptersText}>
+                                    Chưa có nội dung
+                                </Text>
+                            </View>
+                        ) : (
+                            chapters.map((chapter, idx) => {
+                                const isExpanded =
+                                    expandedChapter === chapter.id;
+                                const chapterCompleted =
+                                    chapter.lessons?.every(
+                                        (l) => l.is_completed,
+                                    ) && (chapter.lessons?.length ?? 0) > 0;
+                                return (
+                                    <View
+                                        key={chapter.id}
+                                        style={[
+                                            styles.chapterCard,
+                                            isExpanded &&
+                                                styles.chapterCardExpanded,
+                                        ]}
+                                    >
                                         <TouchableOpacity
-                                            key={lesson.id}
-                                            style={styles.lessonItem}
+                                            style={styles.chapterHeader}
                                             onPress={() =>
-                                                handleLessonPress(lesson)
+                                                setExpandedChapter(
+                                                    isExpanded
+                                                        ? null
+                                                        : chapter.id,
+                                                )
                                             }
                                             activeOpacity={0.7}
                                         >
-                                            <View
-                                                style={[
-                                                    styles.lessonIcon,
-                                                    lesson.is_completed &&
-                                                        styles.lessonIconDone,
-                                                ]}
-                                            >
-                                                <Ionicons
-                                                    name={
-                                                        lesson.is_completed
-                                                            ? "checkmark"
-                                                            : "play"
+                                            <View style={styles.chapterLeft}>
+                                                <View
+                                                    style={[
+                                                        styles.chapterNum,
+                                                        chapterCompleted &&
+                                                            styles.chapterNumDone,
+                                                    ]}
+                                                >
+                                                    {chapterCompleted ? (
+                                                        <Ionicons
+                                                            name="checkmark"
+                                                            size={14}
+                                                            color="#fff"
+                                                        />
+                                                    ) : (
+                                                        <Text
+                                                            style={
+                                                                styles.chapterNumText
+                                                            }
+                                                        >
+                                                            {idx + 1}
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                                <View
+                                                    style={
+                                                        styles.chapterTitleWrap
                                                     }
-                                                    size={12}
-                                                    color={
-                                                        lesson.is_completed
-                                                            ? "#ffffff"
-                                                            : colors.light
-                                                                  .primary
-                                                    }
-                                                />
+                                                >
+                                                    <Text
+                                                        style={
+                                                            styles.chapterTitle
+                                                        }
+                                                        numberOfLines={1}
+                                                    >
+                                                        {chapter.title}
+                                                    </Text>
+                                                    <Text
+                                                        style={
+                                                            styles.chapterMeta
+                                                        }
+                                                    >
+                                                        {chapter.lessons
+                                                            ?.length || 0}{" "}
+                                                        bài học
+                                                    </Text>
+                                                </View>
                                             </View>
-                                            <Text
-                                                style={[
-                                                    styles.lessonTitle,
-                                                    lesson.is_completed &&
-                                                        styles.lessonCompleted,
-                                                ]}
-                                                numberOfLines={1}
-                                            >
-                                                {lesson.title}
-                                            </Text>
-                                            {lesson.video_url && (
-                                                <Ionicons
-                                                    name="videocam-outline"
-                                                    size={16}
-                                                    color={
-                                                        colors.light.textMuted
-                                                    }
-                                                />
-                                            )}
+                                            <Ionicons
+                                                name={
+                                                    isExpanded
+                                                        ? "chevron-up"
+                                                        : "chevron-down"
+                                                }
+                                                size={18}
+                                                color={colors.light.textMuted}
+                                            />
                                         </TouchableOpacity>
-                                    ))}
-                            </View>
-                        ))
-                    )}
 
-                    <View
-                        style={{
-                            height: 100,
-                        }}
-                    />
+                                        {isExpanded &&
+                                            chapter.lessons?.map(
+                                                (lesson, li) => (
+                                                    <TouchableOpacity
+                                                        key={lesson.id}
+                                                        style={[
+                                                            styles.lessonRow,
+                                                            li === 0 &&
+                                                                styles.lessonRowFirst,
+                                                        ]}
+                                                        onPress={() =>
+                                                            handleLessonPress(
+                                                                lesson,
+                                                            )
+                                                        }
+                                                        activeOpacity={0.7}
+                                                    >
+                                                        <View
+                                                            style={[
+                                                                styles.lessonIcon,
+                                                                lesson.is_completed &&
+                                                                    styles.lessonIconDone,
+                                                            ]}
+                                                        >
+                                                            <Ionicons
+                                                                name={
+                                                                    lesson.is_completed
+                                                                        ? "checkmark"
+                                                                        : "play"
+                                                                }
+                                                                size={11}
+                                                                color={
+                                                                    lesson.is_completed
+                                                                        ? "#ffffff"
+                                                                        : colors
+                                                                              .light
+                                                                              .primary
+                                                                }
+                                                            />
+                                                        </View>
+                                                        <Text
+                                                            style={[
+                                                                styles.lessonTitle,
+                                                                lesson.is_completed &&
+                                                                    styles.lessonDone,
+                                                            ]}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {lesson.title}
+                                                        </Text>
+                                                        {lesson.video_url && (
+                                                            <Ionicons
+                                                                name="videocam-outline"
+                                                                size={15}
+                                                                color={
+                                                                    colors.light
+                                                                        .textMuted
+                                                                }
+                                                            />
+                                                        )}
+                                                    </TouchableOpacity>
+                                                ),
+                                            )}
+                                    </View>
+                                );
+                            })
+                        )}
+                    </View>
+
+                    {/* Bottom spacer for sticky bar */}
+                    <View style={{ height: 110 }} />
                 </View>
-            </ScrollView>
+            </Animated.ScrollView>
 
-            {/* Bottom Enroll Button */}
-            <View style={styles.bottomBar}>
+            {/* ── Sticky Bottom Bar ── */}
+            <View
+                style={[
+                    styles.bottomBar,
+                    { paddingBottom: Math.max(insets.bottom, spacing.base) },
+                ]}
+            >
                 <View style={styles.bottomPriceCol}>
                     <Text style={styles.bottomPriceLabel}>Giá</Text>
                     <Text style={styles.bottomPrice}>
@@ -446,25 +777,41 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                     </Text>
                 </View>
                 <View style={styles.bottomBtnCol}>
-                    <GradientButton
-                        title={
-                            course.isEnrolled ? "Đã ghi danh" : "Ghi danh ngay"
-                        }
-                        onPress={course.isEnrolled ? () => {} : handleEnroll}
-                        loading={isEnrolling}
-                        disabled={course.isEnrolled}
-                        variant={course.isEnrolled ? "success" : "primary"}
-                        icon={
-                            course.isEnrolled
-                                ? "checkmark-circle"
-                                : "rocket-outline"
-                        }
-                    />
+                    {course.isEnrolled ? (
+                        <GradientButton
+                            title="Tiếp tục học"
+                            onPress={() =>
+                                navigation.navigate("LearnCourse", { slug })
+                            }
+                            variant="primary"
+                            icon="play"
+                        />
+                    ) : (
+                        <GradientButton
+                            title="Ghi danh ngay"
+                            onPress={handleEnroll}
+                            loading={isEnrolling}
+                            variant="primary"
+                            icon="rocket-outline"
+                        />
+                    )}
                 </View>
             </View>
         </View>
     );
 }
+
+/* ── Section Title Component ── */
+function SectionTitle({ title }: { title: string }) {
+    return (
+        <View style={styles.sectionTitleRow}>
+            <View style={styles.sectionAccent} />
+            <Text style={styles.sectionTitleText}>{title}</Text>
+        </View>
+    );
+}
+
+/* ─────────── Styles ─────────── */
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -474,79 +821,157 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.light.background,
     },
-    errorIcon: {
-        alignItems: "center",
-        justifyContent: "center",
+
+    // ── Empty State ──
+    emptyContainer: {
         flex: 1,
+        backgroundColor: colors.light.background,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: spacing["2xl"],
     },
-    errorText: {
-        ...typography.body,
+    emptyIconWrap: {
+        width: 88,
+        height: 88,
+        borderRadius: radius.full,
+        backgroundColor: colors.light.surface,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: spacing.xl,
+    },
+    emptyTitle: {
+        ...typography.h3,
+        color: colors.light.text,
+        marginBottom: spacing.sm,
+    },
+    emptySubtitle: {
+        ...typography.caption,
         color: colors.light.textMuted,
         textAlign: "center",
-        marginTop: -100,
+        marginBottom: spacing.xl,
     },
-    // Thumbnail
-    thumbnailWrap: {
+    emptyButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.md,
+        borderRadius: radius.md,
+        backgroundColor: colors.light.primarySoft,
+    },
+    emptyButtonText: {
+        ...typography.captionMedium,
+        color: colors.light.primary,
+    },
+
+    // ── Hero ──
+    heroWrap: {
+        height: HERO_HEIGHT,
         position: "relative",
     },
-    thumbnail: {
+    heroImage: {
         width: "100%",
-        height: 220,
+        height: HERO_HEIGHT,
         backgroundColor: colors.light.surface,
     },
-    thumbnailPlaceholder: {
+    heroPlaceholder: {
         justifyContent: "center",
         alignItems: "center",
     },
-    thumbnailOverlay: {
+    heroTopBar: {
         position: "absolute",
+        top: 0,
         left: 0,
         right: 0,
-        bottom: 0,
-        height: 100,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal: spacing.base,
     },
-    thumbnailContent: {
+    heroTopRight: {
+        flexDirection: "row",
+        gap: spacing.sm,
+    },
+    glassButton: {
+        width: 40,
+        height: 40,
+        borderRadius: radius.full,
+        overflow: "hidden",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0,0,0,0.25)",
+    },
+    heroBadge: {
         position: "absolute",
         bottom: spacing.base,
-        left: spacing.xl,
+        left: spacing.base,
+        flexDirection: "row",
+        gap: spacing.sm,
     },
-    // Content
+
+    // ── Content ──
     content: {
-        padding: spacing.xl,
+        paddingHorizontal: spacing.xl,
+        paddingTop: spacing.xl,
     },
-    priceRow: {
-        marginBottom: spacing.xs,
-    },
-    title: {
+    courseTitle: {
         ...typography.h2,
         color: colors.light.text,
+        marginBottom: spacing.xs,
     },
-    subtitle: {
-        ...typography.body,
+    courseSubtitle: {
+        ...typography.caption,
         color: colors.light.textSecondary,
         marginBottom: spacing.sm,
+    },
+    priceRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.md,
+        marginBottom: spacing.lg,
     },
     price: {
         ...typography.bodySemiBold,
         color: colors.light.primary,
-        marginBottom: spacing.base,
     },
-    // Instructor
-    instructorRow: {
+    enrolledBadge: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: spacing.xl,
+        gap: 4,
+        backgroundColor: colors.light.successLight,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 3,
+        borderRadius: radius.sm,
+    },
+    enrolledText: {
+        ...typography.small,
+        color: colors.light.success,
+        fontWeight: "600",
+    },
+
+    // ── Instructor ──
+    instructorCard: {
+        flexDirection: "row",
+        alignItems: "center",
+        padding: spacing.base,
+        backgroundColor: colors.light.surfaceElevated,
+        borderRadius: radius.lg,
+        marginBottom: spacing.base,
         gap: spacing.md,
+        ...shadows.sm,
     },
     instructorAvatar: {
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         borderRadius: radius.full,
         backgroundColor: colors.light.surface,
     },
-    avatarPlaceholder: {
+    avatarGradient: {
         justifyContent: "center",
         alignItems: "center",
+    },
+    instructorInfo: {
+        flex: 1,
     },
     instructorLabel: {
         ...typography.small,
@@ -555,31 +980,32 @@ const styles = StyleSheet.create({
     instructorName: {
         ...typography.captionMedium,
         color: colors.light.text,
+        marginTop: 1,
     },
-    // Stats
-    statsRow: {
+
+    // ── Stats ──
+    statsCard: {
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: colors.light.surfaceElevated,
         borderRadius: radius.lg,
-        paddingVertical: spacing.base,
-        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.lg,
+        paddingHorizontal: spacing.base,
         marginBottom: spacing.xl,
         ...shadows.sm,
     },
     statItem: {
         flex: 1,
-        flexDirection: "row",
         alignItems: "center",
-        gap: spacing.sm,
-        justifyContent: "center",
+        gap: 4,
     },
-    statIconCircle: {
-        width: 36,
-        height: 36,
+    statIcon: {
+        width: 38,
+        height: 38,
         borderRadius: radius.md,
         justifyContent: "center",
         alignItems: "center",
+        marginBottom: 2,
     },
     statValue: {
         ...typography.captionMedium,
@@ -591,45 +1017,140 @@ const styles = StyleSheet.create({
     },
     statDivider: {
         width: 1,
-        height: 32,
+        height: 36,
         backgroundColor: colors.light.border,
     },
-    // Section
-    sectionHeader: {
+
+    // ── Progress ──
+    progressSection: {
+        marginBottom: spacing.xl,
+    },
+    progressHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: spacing.sm,
+    },
+    progressLabel: {
+        ...typography.captionMedium,
+        color: colors.light.text,
+    },
+    progressValue: {
+        ...typography.small,
+        color: colors.light.primary,
+        fontWeight: "600",
+    },
+    progressBarBg: {
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: colors.light.surface,
+        overflow: "hidden",
+    },
+    progressBarFill: {
+        height: 6,
+        borderRadius: 3,
+    },
+
+    // ── Sections ──
+    section: {
+        marginBottom: spacing.xl,
+    },
+    sectionHeaderRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    sectionTitleRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: spacing.base,
         gap: spacing.sm,
+        marginBottom: spacing.base,
     },
-    sectionDot: {
+    sectionAccent: {
         width: 4,
         height: 20,
         borderRadius: 2,
         backgroundColor: colors.light.primary,
     },
-    sectionTitle: {
+    sectionTitleText: {
         ...typography.h3,
         color: colors.light.text,
-        flex: 1,
     },
-    chapterCount: {
+
+    // ── Description ──
+    descriptionText: {
+        ...typography.caption,
+        color: colors.light.textSecondary,
+        lineHeight: 22,
+    },
+    readMoreBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        marginTop: spacing.sm,
+    },
+    readMoreText: {
+        ...typography.captionMedium,
+        color: colors.light.primary,
+    },
+
+    // ── What You'll Learn ──
+    learnGrid: {
+        gap: spacing.md,
+    },
+    learnItem: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: spacing.md,
+    },
+    learnCheck: {
+        width: 24,
+        height: 24,
+        borderRadius: radius.full,
+        backgroundColor: colors.light.accent,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: 1,
+    },
+    learnText: {
+        ...typography.caption,
+        color: colors.light.text,
+        flex: 1,
+        lineHeight: 22,
+    },
+
+    // ── Chapters ──
+    chapterBadge: {
+        backgroundColor: colors.light.surface,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: radius.sm,
+        marginBottom: spacing.base,
+    },
+    chapterBadgeText: {
         ...typography.small,
         color: colors.light.textMuted,
     },
     emptyChapters: {
-        ...typography.body,
-        color: colors.light.textMuted,
-        textAlign: "center",
-        paddingVertical: spacing.xl,
+        alignItems: "center",
+        paddingVertical: spacing["2xl"],
+        gap: spacing.sm,
     },
-    // Chapters
-    chapterContainer: {
+    emptyChaptersText: {
+        ...typography.caption,
+        color: colors.light.textMuted,
+    },
+    chapterCard: {
         marginBottom: spacing.sm,
         borderRadius: radius.lg,
         borderWidth: 1,
         borderColor: colors.light.border,
         overflow: "hidden",
         backgroundColor: colors.light.surfaceElevated,
+    },
+    chapterCardExpanded: {
+        borderColor: colors.light.primarySoft,
+        ...shadows.sm,
     },
     chapterHeader: {
         flexDirection: "row",
@@ -643,47 +1164,53 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: spacing.md,
     },
-    chapterIndex: {
-        width: 28,
-        height: 28,
+    chapterNum: {
+        width: 30,
+        height: 30,
         borderRadius: radius.sm,
         backgroundColor: colors.light.primarySoft,
         justifyContent: "center",
         alignItems: "center",
     },
-    chapterIndexText: {
+    chapterNumDone: {
+        backgroundColor: colors.light.success,
+    },
+    chapterNumText: {
         ...typography.smallBold,
         color: colors.light.primary,
+    },
+    chapterTitleWrap: {
+        flex: 1,
     },
     chapterTitle: {
         ...typography.captionMedium,
         color: colors.light.text,
-        flex: 1,
     },
-    chapterRight: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: spacing.sm,
-    },
-    chapterLessonsCount: {
+    chapterMeta: {
         ...typography.small,
         color: colors.light.textMuted,
+        marginTop: 2,
     },
-    // Lessons
-    lessonItem: {
+
+    // ── Lessons ──
+    lessonRow: {
         flexDirection: "row",
         alignItems: "center",
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.base,
-        paddingLeft: spacing.xl + spacing.md,
+        paddingLeft: spacing.xl + spacing.lg,
         gap: spacing.md,
         borderTopWidth: 1,
         borderTopColor: colors.light.border,
         backgroundColor: colors.light.surface,
     },
+    lessonRowFirst: {
+        borderTopWidth: 1,
+        borderTopColor: colors.light.border,
+    },
     lessonIcon: {
-        width: 24,
-        height: 24,
+        width: 26,
+        height: 26,
         borderRadius: radius.full,
         backgroundColor: colors.light.primarySoft,
         justifyContent: "center",
@@ -697,11 +1224,12 @@ const styles = StyleSheet.create({
         color: colors.light.text,
         flex: 1,
     },
-    lessonCompleted: {
+    lessonDone: {
         color: colors.light.textMuted,
         textDecorationLine: "line-through",
     },
-    // Bottom bar
+
+    // ── Bottom Bar ──
     bottomBar: {
         position: "absolute",
         bottom: 0,
@@ -710,7 +1238,6 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         padding: spacing.base,
-        paddingBottom: spacing.xl,
         backgroundColor: colors.light.surfaceElevated,
         borderTopWidth: 1,
         borderTopColor: colors.light.border,
