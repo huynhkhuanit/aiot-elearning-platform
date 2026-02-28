@@ -493,19 +493,15 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                 <Text style={styles.progressLabel}>
                                     Tiến độ học tập
                                 </Text>
-                                <Text style={styles.progressValue}>
-                                    {completedLessonIds.size}/{totalLessons} bài
-                                    ({progressPercent}%)
-                                </Text>
+                                <View style={styles.progressBadge}>
+                                    <Text style={styles.progressBadgeText}>
+                                        {completedLessonIds.size}/{totalLessons}{" "}
+                                        bài
+                                    </Text>
+                                </View>
                             </View>
                             <View style={styles.progressBarBg}>
-                                <LinearGradient
-                                    colors={[
-                                        colors.light.gradientFrom,
-                                        colors.light.accent,
-                                    ]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
+                                <View
                                     style={[
                                         styles.progressBarFill,
                                         {
@@ -514,6 +510,9 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                     ]}
                                 />
                             </View>
+                            <Text style={styles.progressPercentText}>
+                                {progressPercent}% hoàn thành
+                            </Text>
                         </View>
                     )}
 
@@ -698,6 +697,8 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                                             styles.lessonRow,
                                                             li === 0 &&
                                                                 styles.lessonRowFirst,
+                                                            lesson.is_completed &&
+                                                                styles.lessonRowCompleted,
                                                         ]}
                                                         onPress={() =>
                                                             handleLessonPress(
@@ -716,29 +717,53 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                                             <Ionicons
                                                                 name={
                                                                     lesson.is_completed
-                                                                        ? "checkmark"
+                                                                        ? "checkmark-circle"
                                                                         : "play"
                                                                 }
-                                                                size={11}
+                                                                size={
+                                                                    lesson.is_completed
+                                                                        ? 28
+                                                                        : 12
+                                                                }
                                                                 color={
                                                                     lesson.is_completed
-                                                                        ? "#ffffff"
+                                                                        ? colors
+                                                                              .light
+                                                                              .success
                                                                         : colors
                                                                               .light
                                                                               .primary
                                                                 }
                                                             />
                                                         </View>
-                                                        <Text
-                                                            style={[
-                                                                styles.lessonTitle,
-                                                                lesson.is_completed &&
-                                                                    styles.lessonDone,
-                                                            ]}
-                                                            numberOfLines={1}
+                                                        <View
+                                                            style={
+                                                                styles.lessonTextWrap
+                                                            }
                                                         >
-                                                            {lesson.title}
-                                                        </Text>
+                                                            <Text
+                                                                style={[
+                                                                    styles.lessonTitle,
+                                                                    lesson.is_completed &&
+                                                                        styles.lessonDone,
+                                                                ]}
+                                                                numberOfLines={
+                                                                    1
+                                                                }
+                                                            >
+                                                                {lesson.title}
+                                                            </Text>
+                                                            {lesson.is_completed && (
+                                                                <Text
+                                                                    style={
+                                                                        styles.lessonCompletedTag
+                                                                    }
+                                                                >
+                                                                    Đã hoàn
+                                                                    thành
+                                                                </Text>
+                                                            )}
+                                                        </View>
                                                         {lesson.video_url && (
                                                             <Ionicons
                                                                 name="videocam-outline"
@@ -770,14 +795,9 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                     { paddingBottom: Math.max(insets.bottom, spacing.base) },
                 ]}
             >
-                <View style={styles.bottomPriceCol}>
-                    <Text style={styles.bottomPriceLabel}>Giá</Text>
-                    <Text style={styles.bottomPrice}>
-                        {course.isFree ? "Miễn phí" : course.price}
-                    </Text>
-                </View>
-                <View style={styles.bottomBtnCol}>
-                    {course.isEnrolled ? (
+                {course.isEnrolled ? (
+                    /* Enrolled: full-width continue button, no price */
+                    <View style={styles.bottomBtnFull}>
                         <GradientButton
                             title="Tiếp tục học"
                             onPress={() =>
@@ -786,16 +806,27 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                             variant="primary"
                             icon="play"
                         />
-                    ) : (
-                        <GradientButton
-                            title="Ghi danh ngay"
-                            onPress={handleEnroll}
-                            loading={isEnrolling}
-                            variant="primary"
-                            icon="rocket-outline"
-                        />
-                    )}
-                </View>
+                    </View>
+                ) : (
+                    /* Not enrolled: price + enroll button */
+                    <>
+                        <View style={styles.bottomPriceCol}>
+                            <Text style={styles.bottomPriceLabel}>Giá</Text>
+                            <Text style={styles.bottomPrice}>
+                                {course.isFree ? "Miễn phí" : course.price}
+                            </Text>
+                        </View>
+                        <View style={styles.bottomBtnCol}>
+                            <GradientButton
+                                title="Ghi danh ngay"
+                                onPress={handleEnroll}
+                                loading={isEnrolling}
+                                variant="primary"
+                                icon="rocket-outline"
+                            />
+                        </View>
+                    </>
+                )}
             </View>
         </View>
     );
@@ -1035,20 +1066,33 @@ const styles = StyleSheet.create({
         ...typography.captionMedium,
         color: colors.light.text,
     },
-    progressValue: {
+    progressBadge: {
+        backgroundColor: colors.light.accentSoft || colors.light.accent + "18",
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: radius.full,
+    },
+    progressBadgeText: {
         ...typography.small,
-        color: colors.light.primary,
-        fontWeight: "600",
+        color: colors.light.accent,
+        fontWeight: "700",
     },
     progressBarBg: {
-        height: 6,
-        borderRadius: 3,
+        height: 8,
+        borderRadius: 4,
         backgroundColor: colors.light.surface,
-        overflow: "hidden",
+        overflow: "hidden" as const,
     },
     progressBarFill: {
-        height: 6,
-        borderRadius: 3,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: colors.light.accent,
+    },
+    progressPercentText: {
+        ...typography.small,
+        color: colors.light.textMuted,
+        marginTop: spacing.xs,
+        textAlign: "right" as const,
     },
 
     // ── Sections ──
@@ -1208,25 +1252,36 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: colors.light.border,
     },
+    lessonRowCompleted: {
+        backgroundColor:
+            colors.light.successSoft || colors.light.success + "08",
+    },
     lessonIcon: {
-        width: 26,
-        height: 26,
+        width: 28,
+        height: 28,
         borderRadius: radius.full,
         backgroundColor: colors.light.primarySoft,
-        justifyContent: "center",
-        alignItems: "center",
+        justifyContent: "center" as const,
+        alignItems: "center" as const,
     },
     lessonIconDone: {
-        backgroundColor: colors.light.success,
+        backgroundColor: "transparent",
+    },
+    lessonTextWrap: {
+        flex: 1,
     },
     lessonTitle: {
         ...typography.caption,
         color: colors.light.text,
-        flex: 1,
     },
     lessonDone: {
-        color: colors.light.textMuted,
-        textDecorationLine: "line-through",
+        color: colors.light.textSecondary,
+    },
+    lessonCompletedTag: {
+        ...typography.small,
+        color: colors.light.success,
+        fontWeight: "500" as const,
+        marginTop: 2,
     },
 
     // ── Bottom Bar ──
@@ -1245,7 +1300,7 @@ const styles = StyleSheet.create({
         ...shadows.lg,
     },
     bottomPriceCol: {
-        minWidth: 80,
+        minWidth: 90,
     },
     bottomPriceLabel: {
         ...typography.small,
@@ -1254,8 +1309,12 @@ const styles = StyleSheet.create({
     bottomPrice: {
         ...typography.bodySemiBold,
         color: colors.light.primary,
+        marginTop: 2,
     },
     bottomBtnCol: {
+        flex: 1,
+    },
+    bottomBtnFull: {
         flex: 1,
     },
 });
