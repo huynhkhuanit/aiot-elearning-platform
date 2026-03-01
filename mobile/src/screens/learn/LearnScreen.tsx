@@ -9,6 +9,7 @@ import {
     ActivityIndicator,
     Animated as RNAnimated,
     StatusBar,
+    Linking,
 } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { Ionicons } from "@expo/vector-icons";
@@ -48,6 +49,7 @@ interface Lesson {
     isFree: boolean;
     order: number;
     videoUrl?: string;
+    youtubeBackupUrl?: string;
     videoDuration?: number;
 }
 
@@ -81,6 +83,7 @@ export default function LearnScreen({ navigation, route }: Props) {
     // Animation values
     const fadeAnim = useRef(new RNAnimated.Value(0)).current;
     const slideAnim = useRef(new RNAnimated.Value(30)).current;
+    const buttonScale = useRef(new RNAnimated.Value(1)).current;
 
     useEffect(() => {
         loadCourseData();
@@ -141,7 +144,8 @@ export default function LearnScreen({ navigation, route }: Props) {
                     isCompleted: completedLessons.includes(lesson.id),
                     isFree: lesson.isPreview || false,
                     order: lesson.order,
-                    videoUrl: lesson.videoUrl,
+                    videoUrl: lesson.videoUrl || lesson.youtubeBackupUrl,
+                    youtubeBackupUrl: lesson.youtubeBackupUrl,
                     videoDuration: lesson.videoDuration,
                 })),
             }));
@@ -186,11 +190,25 @@ export default function LearnScreen({ navigation, route }: Props) {
 
     const handleMarkComplete = useCallback(async () => {
         if (!currentLesson || isMarking) return;
+
+        // Haptic-like press animation
+        RNAnimated.sequence([
+            RNAnimated.timing(buttonScale, {
+                toValue: 0.95,
+                duration: 100,
+                useNativeDriver: true,
+            }),
+            RNAnimated.timing(buttonScale, {
+                toValue: 1,
+                duration: 100,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
         setIsMarking(true);
         try {
             const result = await markLessonComplete(currentLesson.id);
             if (result.success) {
-                // Optimistic update
                 setCourse((prev) => {
                     if (!prev) return prev;
                     const updatedSections = prev.sections.map((section) => ({
@@ -216,7 +234,6 @@ export default function LearnScreen({ navigation, route }: Props) {
                     };
                 });
 
-                // Auto-advance to next lesson
                 goToNextLesson();
             }
         } catch {
@@ -261,15 +278,21 @@ export default function LearnScreen({ navigation, route }: Props) {
         setSidebarVisible(false);
     }, []);
 
-    // Video player
-    const player = useVideoPlayer(currentLesson?.videoUrl || "", (p) => {
+    // Detect YouTube URL
+    const isYouTubeUrl =
+        currentLesson?.videoUrl?.includes("youtube.com") ||
+        currentLesson?.videoUrl?.includes("youtu.be");
+
+    // ✅ FIX: Only use useVideoPlayer for non-YouTube URLs
+    const videoSource = isYouTubeUrl ? "" : currentLesson?.videoUrl || "";
+    const player = useVideoPlayer(videoSource, (p) => {
         p.loop = false;
     });
 
-    // Update video source when lesson changes
+    // ✅ FIX: Use replaceAsync instead of deprecated sync replace
     useEffect(() => {
-        if (currentLesson?.videoUrl && player) {
-            player.replace(currentLesson.videoUrl);
+        if (currentLesson?.videoUrl && player && !isYouTubeUrl) {
+            player.replaceAsync(currentLesson.videoUrl);
         }
     }, [currentLesson?.id]);
 
@@ -284,8 +307,13 @@ export default function LearnScreen({ navigation, route }: Props) {
                     ]}
                     style={StyleSheet.absoluteFill}
                 />
-                <ActivityIndicator size="large" color="#ffffff" />
-                <Text style={styles.loadingText}>Đang tải khóa học...</Text>
+                <View style={styles.loadingContent}>
+                    <ActivityIndicator size="large" color="#ffffff" />
+                    <Text style={styles.loadingText}>Đang tải khóa học...</Text>
+                    <Text style={styles.loadingSubtext}>
+                        Vui lòng đợi trong giây lát
+                    </Text>
+                </View>
             </View>
         );
     }
@@ -358,29 +386,63 @@ export default function LearnScreen({ navigation, route }: Props) {
                     },
                 ]}
             >
-                {currentLesson.videoUrl ? (
+                {isYouTubeUrl ? (
+                    /* YouTube Video — show branded fallback */
+                    <View style={styles.youtubeContainer}>
+                        <Ionicons
+                            name="logo-youtube"
+                            size={48}
+                            color="#FF0000"
+                        />
+                        <Text style={styles.youtubeText}>Video YouTube</Text>
+                        <TouchableOpacity
+                            style={styles.youtubePlayBtn}
+                            onPress={() => {
+                                if (currentLesson.videoUrl) {
+                                    Linking.openURL(currentLesson.videoUrl);
+                                }
+                            }}
+                            activeOpacity={0.8}
+                        >
+                            <LinearGradient
+                                colors={["#FF0000", "#CC0000"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.youtubePlayGradient}
+                            >
+                                <Ionicons name="play" size={16} color="#fff" />
+                                <Text style={styles.youtubePlayText}>
+                                    Xem trên YouTube
+                                </Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
+                ) : currentLesson.videoUrl ? (
                     <View style={styles.videoContainer}>
+                        {/* ✅ FIX: fullscreenOptions replaces deprecated allowsFullscreen */}
                         <VideoView
                             player={player}
                             style={styles.video}
-                            allowsFullscreen
+                            fullscreenOptions={{ enable: true }}
                             allowsPictureInPicture
                         />
                     </View>
                 ) : (
                     <View style={styles.noVideoContainer}>
                         <View style={styles.noVideoContent}>
-                            <Ionicons
-                                name={
-                                    currentLesson.type === "reading"
-                                        ? "document-text"
-                                        : currentLesson.type === "quiz"
-                                          ? "flag"
-                                          : "play-circle"
-                                }
-                                size={48}
-                                color={colors.light.textMuted}
-                            />
+                            <View style={styles.noVideoIconWrapper}>
+                                <Ionicons
+                                    name={
+                                        currentLesson.type === "reading"
+                                            ? "document-text"
+                                            : currentLesson.type === "quiz"
+                                              ? "flag"
+                                              : "play-circle"
+                                    }
+                                    size={36}
+                                    color={colors.light.textMuted}
+                                />
+                            </View>
                             <Text style={styles.noVideoText}>
                                 {currentLesson.type === "reading"
                                     ? "Bài học dạng đọc"
@@ -388,19 +450,32 @@ export default function LearnScreen({ navigation, route }: Props) {
                                       ? "Bài kiểm tra"
                                       : "Video đang cập nhật"}
                             </Text>
+                            <Text style={styles.noVideoSubtext}>
+                                Xem nội dung bên dưới
+                            </Text>
                         </View>
                     </View>
                 )}
             </RNAnimated.View>
 
-            {/* Lesson Content */}
+            {/* Content */}
             <ScrollView
                 style={styles.content}
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.contentContainer}
             >
                 {/* Lesson Info Card */}
-                <View style={styles.lessonCard}>
-                    <View style={styles.lessonBadgeRow}>
+                <RNAnimated.View
+                    style={[
+                        styles.lessonCard,
+                        {
+                            opacity: fadeAnim,
+                            transform: [{ translateY: slideAnim }],
+                        },
+                    ]}
+                >
+                    {/* Badge Row */}
+                    <View style={styles.badgeRow}>
                         <View style={styles.typeBadge}>
                             <Ionicons
                                 name={
@@ -415,12 +490,26 @@ export default function LearnScreen({ navigation, route }: Props) {
                             />
                             <Text style={styles.typeBadgeText}>
                                 {currentLesson.type === "video"
-                                    ? "Video"
+                                    ? "Video bài học"
                                     : currentLesson.type === "reading"
-                                      ? "Đọc"
+                                      ? "Bài đọc"
                                       : "Quiz"}
                             </Text>
                         </View>
+
+                        {isYouTubeUrl && (
+                            <View style={styles.youtubeBadge}>
+                                <Ionicons
+                                    name="logo-youtube"
+                                    size={12}
+                                    color="#FF0000"
+                                />
+                                <Text style={styles.youtubeBadgeText}>
+                                    YouTube
+                                </Text>
+                            </View>
+                        )}
+
                         {currentLesson.duration ? (
                             <View style={styles.durationBadge}>
                                 <Ionicons
@@ -433,6 +522,7 @@ export default function LearnScreen({ navigation, route }: Props) {
                                 </Text>
                             </View>
                         ) : null}
+
                         {currentLesson.isCompleted && (
                             <View style={styles.completedBadge}>
                                 <Ionicons
@@ -447,30 +537,124 @@ export default function LearnScreen({ navigation, route }: Props) {
                         )}
                     </View>
 
+                    {/* Lesson Title */}
                     <Text style={styles.lessonTitle}>
                         {currentLesson.title}
                     </Text>
 
-                    <Text style={styles.lessonMeta}>
-                        Bài {currentIndex + 1} / {allLessons.length}
-                    </Text>
-                </View>
+                    {/* Meta Row */}
+                    <View style={styles.metaRow}>
+                        <View style={styles.metaItem}>
+                            <Ionicons
+                                name="book-outline"
+                                size={14}
+                                color={colors.light.textMuted}
+                            />
+                            <Text style={styles.metaText}>
+                                Bài {currentIndex + 1} / {allLessons.length}
+                            </Text>
+                        </View>
+                        <View style={styles.metaDot} />
+                        <View style={styles.metaItem}>
+                            <Ionicons
+                                name="eye-outline"
+                                size={14}
+                                color={colors.light.textMuted}
+                            />
+                            <Text style={styles.metaText}>
+                                {currentLesson.type === "video"
+                                    ? "Video bài giảng"
+                                    : currentLesson.type === "reading"
+                                      ? "Bài đọc"
+                                      : "Kiểm tra"}
+                            </Text>
+                        </View>
+                    </View>
 
-                {/* Progress Overview */}
-                <View style={styles.progressCard}>
+                    {/* Divider */}
+                    <View style={styles.divider} />
+
+                    {/* Complete Button */}
+                    <RNAnimated.View
+                        style={{ transform: [{ scale: buttonScale }] }}
+                    >
+                        <GradientButton
+                            title={
+                                currentLesson.isCompleted
+                                    ? "Đã hoàn thành ✓"
+                                    : "Đánh dấu hoàn thành"
+                            }
+                            onPress={handleMarkComplete}
+                            loading={isMarking}
+                            disabled={currentLesson.isCompleted}
+                            variant={
+                                currentLesson.isCompleted
+                                    ? "success"
+                                    : "primary"
+                            }
+                            icon={
+                                currentLesson.isCompleted
+                                    ? "checkmark-circle"
+                                    : "checkmark-circle-outline"
+                            }
+                        />
+                    </RNAnimated.View>
+                </RNAnimated.View>
+
+                {/* Progress Overview Card */}
+                <RNAnimated.View
+                    style={[
+                        styles.progressCard,
+                        {
+                            opacity: fadeAnim,
+                            transform: [
+                                {
+                                    translateY: RNAnimated.multiply(
+                                        slideAnim,
+                                        1.1,
+                                    ),
+                                },
+                            ],
+                        },
+                    ]}
+                >
                     <View style={styles.progressHeader}>
-                        <Text style={styles.progressLabel}>
-                            Tiến độ khóa học
-                        </Text>
+                        <View style={styles.progressLabelRow}>
+                            <View style={styles.progressIconWrapper}>
+                                <Ionicons
+                                    name="stats-chart"
+                                    size={14}
+                                    color={colors.light.primary}
+                                />
+                            </View>
+                            <Text style={styles.progressLabel}>
+                                Tiến độ khóa học
+                            </Text>
+                        </View>
                         <Text style={styles.progressValue}>
                             {course.completedLessons}/{course.totalLessons} bài
                         </Text>
                     </View>
                     <ProgressBar progress={course.progress} />
-                </View>
+                </RNAnimated.View>
 
-                {/* Action Buttons */}
-                <View style={styles.actionRow}>
+                {/* Navigation Buttons */}
+                <RNAnimated.View
+                    style={[
+                        styles.actionRow,
+                        {
+                            opacity: fadeAnim,
+                            transform: [
+                                {
+                                    translateY: RNAnimated.multiply(
+                                        slideAnim,
+                                        1.2,
+                                    ),
+                                },
+                            ],
+                        },
+                    ]}
+                >
                     <TouchableOpacity
                         style={[
                             styles.navBtn,
@@ -523,46 +707,121 @@ export default function LearnScreen({ navigation, route }: Props) {
                             }
                         />
                     </TouchableOpacity>
-                </View>
+                </RNAnimated.View>
 
-                {/* Mark Complete Button */}
-                {!currentLesson.isCompleted && (
-                    <GradientButton
-                        title="Đánh dấu hoàn thành"
-                        onPress={handleMarkComplete}
-                        loading={isMarking}
-                        icon="checkmark-circle-outline"
-                    />
-                )}
-
-                {currentLesson.isCompleted && (
-                    <View style={styles.completedCard}>
-                        <Ionicons
-                            name="checkmark-circle"
-                            size={24}
-                            color={colors.light.success}
-                        />
-                        <Text style={styles.completedCardText}>
-                            Bạn đã hoàn thành bài học này
-                        </Text>
-                    </View>
-                )}
-
-                {/* Tips */}
-                <View style={styles.tipsCard}>
+                {/* Learning Tips Card */}
+                <RNAnimated.View
+                    style={[
+                        styles.tipsCard,
+                        {
+                            opacity: fadeAnim,
+                            transform: [
+                                {
+                                    translateY: RNAnimated.multiply(
+                                        slideAnim,
+                                        1.3,
+                                    ),
+                                },
+                            ],
+                        },
+                    ]}
+                >
                     <View style={styles.tipsHeader}>
-                        <Ionicons
-                            name="bulb-outline"
-                            size={18}
-                            color={colors.light.warning}
-                        />
+                        <View style={styles.tipsIconContainer}>
+                            <Ionicons
+                                name="bulb"
+                                size={16}
+                                color={colors.light.warning}
+                            />
+                        </View>
                         <Text style={styles.tipsTitle}>Mẹo học tập</Text>
                     </View>
                     <Text style={styles.tipsText}>
                         Hãy ghi chú lại những điểm quan trọng và thực hành ngay
-                        sau khi xem video để nắm bài tốt hơn.
+                        sau khi xem video để nắm bài tốt hơn. Dùng Code
+                        Playground để viết code thực hành.
                     </Text>
-                </View>
+                </RNAnimated.View>
+
+                {/* Quick Actions */}
+                <RNAnimated.View
+                    style={[
+                        styles.actionsCard,
+                        {
+                            opacity: fadeAnim,
+                            transform: [
+                                {
+                                    translateY: RNAnimated.multiply(
+                                        slideAnim,
+                                        1.4,
+                                    ),
+                                },
+                            ],
+                        },
+                    ]}
+                >
+                    <TouchableOpacity
+                        style={styles.actionItem}
+                        onPress={() => setSidebarVisible(true)}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.actionIconWrapper}>
+                            <Ionicons
+                                name="list-outline"
+                                size={18}
+                                color={colors.light.primary}
+                            />
+                        </View>
+                        <View style={styles.actionTextWrapper}>
+                            <Text style={styles.actionTitle}>
+                                Danh sách bài học
+                            </Text>
+                            <Text style={styles.actionSubtitle}>
+                                Xem tất cả chương và bài học
+                            </Text>
+                        </View>
+                        <Ionicons
+                            name="chevron-forward"
+                            size={16}
+                            color={colors.light.textMuted}
+                        />
+                    </TouchableOpacity>
+
+                    <View style={styles.actionDivider} />
+
+                    <TouchableOpacity
+                        style={styles.actionItem}
+                        activeOpacity={0.7}
+                    >
+                        <View
+                            style={[
+                                styles.actionIconWrapper,
+                                {
+                                    backgroundColor: colors.light.warningSoft,
+                                },
+                            ]}
+                        >
+                            <Ionicons
+                                name="bookmark-outline"
+                                size={18}
+                                color={colors.light.warning}
+                            />
+                        </View>
+                        <View style={styles.actionTextWrapper}>
+                            <Text style={styles.actionTitle}>
+                                Đánh dấu ghi nhớ
+                            </Text>
+                            <Text style={styles.actionSubtitle}>
+                                Lưu bài học để xem lại sau
+                            </Text>
+                        </View>
+                        <Ionicons
+                            name="chevron-forward"
+                            size={16}
+                            color={colors.light.textMuted}
+                        />
+                    </TouchableOpacity>
+                </RNAnimated.View>
 
                 <View style={{ height: spacing["4xl"] }} />
             </ScrollView>
@@ -591,10 +850,19 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
     },
+    loadingContent: {
+        alignItems: "center",
+        gap: spacing.sm,
+    },
     loadingText: {
         ...typography.body,
         color: "#ffffff",
         marginTop: spacing.base,
+        fontWeight: "600",
+    },
+    loadingSubtext: {
+        ...typography.caption,
+        color: "rgba(255,255,255,0.7)",
     },
 
     // Header
@@ -656,6 +924,40 @@ const styles = StyleSheet.create({
         width: SCREEN_WIDTH,
         height: VIDEO_HEIGHT,
     },
+
+    // YouTube fallback
+    youtubeContainer: {
+        width: SCREEN_WIDTH,
+        height: VIDEO_HEIGHT,
+        backgroundColor: "#0f0f0f",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: spacing.md,
+    },
+    youtubeText: {
+        ...typography.caption,
+        color: "rgba(255,255,255,0.6)",
+    },
+    youtubePlayBtn: {
+        borderRadius: radius.md,
+        overflow: "hidden",
+        marginTop: spacing.xs,
+    },
+    youtubePlayGradient: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.xs,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: radius.md,
+    },
+    youtubePlayText: {
+        ...typography.captionMedium,
+        color: "#ffffff",
+        fontWeight: "700",
+    },
+
+    // No video
     noVideoContainer: {
         width: SCREEN_WIDTH,
         height: VIDEO_HEIGHT,
@@ -665,28 +967,44 @@ const styles = StyleSheet.create({
     },
     noVideoContent: {
         alignItems: "center",
-        gap: spacing.md,
+        gap: spacing.sm,
+    },
+    noVideoIconWrapper: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: colors.light.background,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: spacing.xs,
     },
     noVideoText: {
         ...typography.body,
+        color: colors.light.textMuted,
+        fontWeight: "600",
+    },
+    noVideoSubtext: {
+        ...typography.caption,
         color: colors.light.textMuted,
     },
 
     // Content
     content: {
         flex: 1,
-        padding: spacing.xl,
+    },
+    contentContainer: {
+        padding: spacing.lg,
+        gap: spacing.md,
     },
 
-    // Lesson card
+    // Lesson Card
     lessonCard: {
         backgroundColor: colors.light.surfaceElevated,
-        borderRadius: radius.lg,
+        borderRadius: radius.xl,
         padding: spacing.xl,
-        marginBottom: spacing.base,
         ...shadows.md,
     },
-    lessonBadgeRow: {
+    badgeRow: {
         flexDirection: "row",
         flexWrap: "wrap",
         gap: spacing.sm,
@@ -697,22 +1015,36 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 4,
         paddingHorizontal: spacing.sm,
-        paddingVertical: 4,
-        borderRadius: radius.sm,
+        paddingVertical: 5,
+        borderRadius: radius.full,
         backgroundColor: colors.light.primarySoft,
     },
     typeBadgeText: {
-        ...typography.small,
+        fontSize: 12,
         fontWeight: "600",
         color: colors.light.primary,
+    },
+    youtubeBadge: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 5,
+        borderRadius: radius.full,
+        backgroundColor: "#FFF0F0",
+    },
+    youtubeBadgeText: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: "#FF0000",
     },
     durationBadge: {
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
         paddingHorizontal: spacing.sm,
-        paddingVertical: 4,
-        borderRadius: radius.sm,
+        paddingVertical: 5,
+        borderRadius: radius.full,
         backgroundColor: colors.light.surface,
     },
     durationText: {
@@ -724,31 +1056,53 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 4,
         paddingHorizontal: spacing.sm,
-        paddingVertical: 4,
-        borderRadius: radius.sm,
+        paddingVertical: 5,
+        borderRadius: radius.full,
         backgroundColor: colors.light.successSoft,
     },
     completedBadgeText: {
-        ...typography.small,
+        fontSize: 12,
         fontWeight: "600",
         color: colors.light.success,
     },
     lessonTitle: {
         ...typography.h2,
         color: colors.light.text,
-        marginBottom: spacing.xs,
+        marginBottom: spacing.sm,
+        lineHeight: 28,
     },
-    lessonMeta: {
-        ...typography.caption,
+    metaRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+        marginBottom: spacing.lg,
+    },
+    metaItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+    },
+    metaText: {
+        ...typography.small,
         color: colors.light.textMuted,
     },
+    metaDot: {
+        width: 3,
+        height: 3,
+        borderRadius: 1.5,
+        backgroundColor: colors.light.textMuted,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: colors.light.border,
+        marginBottom: spacing.lg,
+    },
 
-    // Progress
+    // Progress Card
     progressCard: {
         backgroundColor: colors.light.surfaceElevated,
-        borderRadius: radius.lg,
-        padding: spacing.base,
-        marginBottom: spacing.base,
+        borderRadius: radius.xl,
+        padding: spacing.lg,
         ...shadows.sm,
     },
     progressHeader: {
@@ -757,21 +1111,34 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginBottom: spacing.sm,
     },
+    progressLabelRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+    },
+    progressIconWrapper: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: colors.light.primarySoft,
+        justifyContent: "center",
+        alignItems: "center",
+    },
     progressLabel: {
         ...typography.captionMedium,
         color: colors.light.text,
+        fontWeight: "600",
     },
     progressValue: {
         ...typography.caption,
         color: colors.light.primary,
-        fontWeight: "600",
+        fontWeight: "700",
     },
 
     // Navigation
     actionRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginBottom: spacing.base,
         gap: spacing.md,
     },
     navBtn: {
@@ -781,10 +1148,11 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         gap: spacing.xs,
         paddingVertical: spacing.md,
-        borderRadius: radius.md,
+        borderRadius: radius.xl,
         backgroundColor: colors.light.surfaceElevated,
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: colors.light.border,
+        ...shadows.sm,
     },
     navBtnDisabled: {
         opacity: 0.4,
@@ -797,30 +1165,13 @@ const styles = StyleSheet.create({
         color: colors.light.textMuted,
     },
 
-    // Completed
-    completedCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: spacing.md,
-        backgroundColor: colors.light.successSoft,
-        borderRadius: radius.lg,
-        padding: spacing.base,
-        marginBottom: spacing.base,
-        borderWidth: 1,
-        borderColor: colors.light.success + "30",
-    },
-    completedCardText: {
-        ...typography.captionMedium,
-        color: colors.light.success,
-    },
-
-    // Tips
+    // Tips Card
     tipsCard: {
         backgroundColor: colors.light.warningSoft,
-        borderRadius: radius.lg,
-        padding: spacing.base,
+        borderRadius: radius.xl,
+        padding: spacing.lg,
         borderWidth: 1,
-        borderColor: colors.light.warning + "30",
+        borderColor: colors.light.warning + "20",
     },
     tipsHeader: {
         flexDirection: "row",
@@ -828,13 +1179,62 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
         marginBottom: spacing.sm,
     },
+    tipsIconContainer: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: colors.light.warning + "20",
+        justifyContent: "center",
+        alignItems: "center",
+    },
     tipsTitle: {
         ...typography.captionMedium,
         color: colors.light.text,
+        fontWeight: "700",
     },
     tipsText: {
         ...typography.caption,
         color: colors.light.textSecondary,
         lineHeight: 22,
+    },
+
+    // Quick Actions Card
+    actionsCard: {
+        backgroundColor: colors.light.surfaceElevated,
+        borderRadius: radius.xl,
+        overflow: "hidden",
+        ...shadows.sm,
+    },
+    actionItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        padding: spacing.lg,
+        gap: spacing.md,
+    },
+    actionIconWrapper: {
+        width: 40,
+        height: 40,
+        borderRadius: radius.md,
+        backgroundColor: colors.light.primarySoft,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    actionTextWrapper: {
+        flex: 1,
+    },
+    actionTitle: {
+        ...typography.captionMedium,
+        color: colors.light.text,
+        fontWeight: "600",
+        marginBottom: 2,
+    },
+    actionSubtitle: {
+        ...typography.small,
+        color: colors.light.textMuted,
+    },
+    actionDivider: {
+        height: 1,
+        backgroundColor: colors.light.border,
+        marginHorizontal: spacing.lg,
     },
 });
