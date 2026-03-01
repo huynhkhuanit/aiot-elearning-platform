@@ -10,6 +10,7 @@ import {
     Animated as RNAnimated,
     StatusBar,
     Linking,
+    Platform,
 } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { Ionicons } from "@expo/vector-icons";
@@ -71,26 +72,39 @@ interface CourseLearnData {
     completedLessons: number;
 }
 
+// ── Helpers ───────────────────────────────────────────────────
+const isYouTube = (url?: string) =>
+    url?.includes("youtube.com") || url?.includes("youtu.be");
+
+const formatDuration = (dur?: string) => dur || "~15 phút";
+
+// ── Component ─────────────────────────────────────────────────
 export default function LearnScreen({ navigation, route }: Props) {
     const { slug } = route.params;
     const notification = useNotification();
+
     const [loading, setLoading] = useState(true);
     const [course, setCourse] = useState<CourseLearnData | null>(null);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const [isMarking, setIsMarking] = useState(false);
 
-    // Animation values
+    // Animations
     const fadeAnim = useRef(new RNAnimated.Value(0)).current;
-    const slideAnim = useRef(new RNAnimated.Value(30)).current;
+    const slideAnim = useRef(new RNAnimated.Value(40)).current;
     const buttonScale = useRef(new RNAnimated.Value(1)).current;
+    const cardAnims = useRef(
+        [0, 1, 2, 3, 4].map(() => new RNAnimated.Value(0)),
+    ).current;
 
+    // ── Data loading ──────────────────────────────────────────
     useEffect(() => {
         loadCourseData();
     }, [slug]);
 
     useEffect(() => {
         if (!loading && course) {
+            // Main fade + slide
             RNAnimated.parallel([
                 RNAnimated.timing(fadeAnim, {
                     toValue: 1,
@@ -103,6 +117,19 @@ export default function LearnScreen({ navigation, route }: Props) {
                     useNativeDriver: true,
                 }),
             ]).start();
+
+            // Staggered card entrance
+            RNAnimated.stagger(
+                80,
+                cardAnims.map((anim) =>
+                    RNAnimated.spring(anim, {
+                        toValue: 1,
+                        damping: 18,
+                        stiffness: 160,
+                        useNativeDriver: true,
+                    }),
+                ),
+            ).start();
         }
     }, [loading, course]);
 
@@ -127,9 +154,7 @@ export default function LearnScreen({ navigation, route }: Props) {
             const completedLessons: string[] =
                 progressRes.data?.completedLessons || [];
 
-            const sections: Section[] = (
-                Array.isArray(chapters) ? chapters : []
-            ).map((chapter: any) => ({
+            const sections: Section[] = chapters.map((chapter: any) => ({
                 id: chapter.id,
                 title: chapter.title,
                 duration: chapter.duration || "",
@@ -171,14 +196,11 @@ export default function LearnScreen({ navigation, route }: Props) {
 
             setCourse(courseData);
 
-            // Set first uncompleted or first lesson
             const firstUncompleted =
                 sections
                     .flatMap((s) => s.lessons)
                     .find((l) => !l.isCompleted) || sections[0]?.lessons[0];
-            if (firstUncompleted) {
-                setCurrentLesson(firstUncompleted);
-            }
+            if (firstUncompleted) setCurrentLesson(firstUncompleted);
         } catch (error) {
             console.error("Error loading course:", error);
             notification.error("Không thể tải khóa học. Vui lòng thử lại.");
@@ -188,19 +210,20 @@ export default function LearnScreen({ navigation, route }: Props) {
         }
     };
 
+    // ── Actions ───────────────────────────────────────────────
     const handleMarkComplete = useCallback(async () => {
         if (!currentLesson || isMarking) return;
 
-        // Haptic-like press animation
         RNAnimated.sequence([
             RNAnimated.timing(buttonScale, {
-                toValue: 0.95,
-                duration: 100,
+                toValue: 0.94,
+                duration: 80,
                 useNativeDriver: true,
             }),
-            RNAnimated.timing(buttonScale, {
+            RNAnimated.spring(buttonScale, {
                 toValue: 1,
-                duration: 100,
+                damping: 12,
+                stiffness: 200,
                 useNativeDriver: true,
             }),
         ]).start();
@@ -219,7 +242,7 @@ export default function LearnScreen({ navigation, route }: Props) {
                                 : lesson,
                         ),
                     }));
-                    const completedCount = updatedSections.reduce(
+                    const cc = updatedSections.reduce(
                         (acc, s) =>
                             acc + s.lessons.filter((l) => l.isCompleted).length,
                         0,
@@ -227,14 +250,12 @@ export default function LearnScreen({ navigation, route }: Props) {
                     return {
                         ...prev,
                         sections: updatedSections,
-                        completedLessons: completedCount,
-                        progress: Math.round(
-                            (completedCount / prev.totalLessons) * 100,
-                        ),
+                        completedLessons: cc,
+                        progress: Math.round((cc / prev.totalLessons) * 100),
                     };
                 });
-
                 goToNextLesson();
+                notification.success("Bài học đã hoàn thành! 🎉");
             }
         } catch {
             notification.error("Không thể đánh dấu hoàn thành");
@@ -245,32 +266,23 @@ export default function LearnScreen({ navigation, route }: Props) {
 
     const goToNextLesson = useCallback(() => {
         if (!course || !currentLesson) return;
-        const allLessons = course.sections.flatMap((s) => s.lessons);
-        const currentIndex = allLessons.findIndex(
-            (l) => l.id === currentLesson.id,
-        );
-        if (currentIndex < allLessons.length - 1) {
-            setCurrentLesson(allLessons[currentIndex + 1]);
+        const all = course.sections.flatMap((s) => s.lessons);
+        const idx = all.findIndex((l) => l.id === currentLesson.id);
+        if (idx < all.length - 1) {
+            setCurrentLesson(all[idx + 1]);
         } else {
             notification.success(
                 "🎉 Chúc mừng! Bạn đã hoàn thành tất cả bài học!",
-                {
-                    icon: "trophy",
-                    duration: 5000,
-                },
+                { icon: "trophy", duration: 5000 },
             );
         }
     }, [course, currentLesson]);
 
     const goToPreviousLesson = useCallback(() => {
         if (!course || !currentLesson) return;
-        const allLessons = course.sections.flatMap((s) => s.lessons);
-        const currentIndex = allLessons.findIndex(
-            (l) => l.id === currentLesson.id,
-        );
-        if (currentIndex > 0) {
-            setCurrentLesson(allLessons[currentIndex - 1]);
-        }
+        const all = course.sections.flatMap((s) => s.lessons);
+        const idx = all.findIndex((l) => l.id === currentLesson.id);
+        if (idx > 0) setCurrentLesson(all[idx - 1]);
     }, [course, currentLesson]);
 
     const handleLessonSelect = useCallback((lesson: Lesson) => {
@@ -278,12 +290,8 @@ export default function LearnScreen({ navigation, route }: Props) {
         setSidebarVisible(false);
     }, []);
 
-    // Detect YouTube URL
-    const isYouTubeUrl =
-        currentLesson?.videoUrl?.includes("youtube.com") ||
-        currentLesson?.videoUrl?.includes("youtu.be");
-
-    // ✅ FIX: Only use useVideoPlayer for non-YouTube URLs
+    // ── Video player ──────────────────────────────────────────
+    const isYouTubeUrl = isYouTube(currentLesson?.videoUrl);
     const videoSource = isYouTubeUrl ? "" : currentLesson?.videoUrl || "";
     const player = useVideoPlayer(videoSource, (p) => {
         p.loop = false;
@@ -296,6 +304,26 @@ export default function LearnScreen({ navigation, route }: Props) {
         }
     }, [currentLesson?.id]);
 
+    // ── Card animation helper ─────────────────────────────────
+    const cardStyle = (index: number) => ({
+        opacity: cardAnims[index],
+        transform: [
+            {
+                translateY: cardAnims[index].interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [24, 0],
+                }),
+            },
+            {
+                scale: cardAnims[index].interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.97, 1],
+                }),
+            },
+        ],
+    });
+
+    // ── Loading ───────────────────────────────────────────────
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -305,10 +333,14 @@ export default function LearnScreen({ navigation, route }: Props) {
                         colors.light.gradientFrom,
                         colors.light.gradientTo,
                     ]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
                     style={StyleSheet.absoluteFill}
                 />
                 <View style={styles.loadingContent}>
-                    <ActivityIndicator size="large" color="#ffffff" />
+                    <View style={styles.loadingIconWrapper}>
+                        <ActivityIndicator size="large" color="#ffffff" />
+                    </View>
                     <Text style={styles.loadingText}>Đang tải khóa học...</Text>
                     <Text style={styles.loadingSubtext}>
                         Vui lòng đợi trong giây lát
@@ -325,11 +357,12 @@ export default function LearnScreen({ navigation, route }: Props) {
     const isFirst = currentIndex === 0;
     const isLast = currentIndex === allLessons.length - 1;
 
+    // ── Render ────────────────────────────────────────────────
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" />
 
-            {/* Header */}
+            {/* ─── Header ─── */}
             <View style={styles.header}>
                 <LinearGradient
                     colors={[
@@ -376,7 +409,7 @@ export default function LearnScreen({ navigation, route }: Props) {
                 </TouchableOpacity>
             </View>
 
-            {/* Video Player */}
+            {/* ─── Video Player ─── */}
             <RNAnimated.View
                 style={[
                     styles.videoSection,
@@ -387,14 +420,20 @@ export default function LearnScreen({ navigation, route }: Props) {
                 ]}
             >
                 {isYouTubeUrl ? (
-                    /* YouTube Video — show branded fallback */
                     <View style={styles.youtubeContainer}>
-                        <Ionicons
-                            name="logo-youtube"
-                            size={48}
-                            color="#FF0000"
-                        />
-                        <Text style={styles.youtubeText}>Video YouTube</Text>
+                        <View style={styles.youtubeIconCircle}>
+                            <Ionicons
+                                name="logo-youtube"
+                                size={36}
+                                color="#FF0000"
+                            />
+                        </View>
+                        <Text style={styles.youtubeTitle}>
+                            Video trên YouTube
+                        </Text>
+                        <Text style={styles.youtubeSubtext}>
+                            Nhấn để mở trong ứng dụng YouTube
+                        </Text>
                         <TouchableOpacity
                             style={styles.youtubePlayBtn}
                             onPress={() => {
@@ -402,7 +441,7 @@ export default function LearnScreen({ navigation, route }: Props) {
                                     Linking.openURL(currentLesson.videoUrl);
                                 }
                             }}
-                            activeOpacity={0.8}
+                            activeOpacity={0.85}
                         >
                             <LinearGradient
                                 colors={["#FF0000", "#CC0000"]}
@@ -429,54 +468,44 @@ export default function LearnScreen({ navigation, route }: Props) {
                     </View>
                 ) : (
                     <View style={styles.noVideoContainer}>
-                        <View style={styles.noVideoContent}>
-                            <View style={styles.noVideoIconWrapper}>
-                                <Ionicons
-                                    name={
-                                        currentLesson.type === "reading"
-                                            ? "document-text"
-                                            : currentLesson.type === "quiz"
-                                              ? "flag"
-                                              : "play-circle"
-                                    }
-                                    size={36}
-                                    color={colors.light.textMuted}
-                                />
-                            </View>
-                            <Text style={styles.noVideoText}>
-                                {currentLesson.type === "reading"
-                                    ? "Bài học dạng đọc"
-                                    : currentLesson.type === "quiz"
-                                      ? "Bài kiểm tra"
-                                      : "Video đang cập nhật"}
-                            </Text>
-                            <Text style={styles.noVideoSubtext}>
-                                Xem nội dung bên dưới
-                            </Text>
+                        <View style={styles.noVideoIconCircle}>
+                            <Ionicons
+                                name={
+                                    currentLesson.type === "reading"
+                                        ? "document-text"
+                                        : currentLesson.type === "quiz"
+                                          ? "flag"
+                                          : "play-circle"
+                                }
+                                size={32}
+                                color={colors.light.textMuted}
+                            />
                         </View>
+                        <Text style={styles.noVideoText}>
+                            {currentLesson.type === "reading"
+                                ? "Bài học dạng đọc"
+                                : currentLesson.type === "quiz"
+                                  ? "Bài kiểm tra"
+                                  : "Video đang cập nhật"}
+                        </Text>
+                        <Text style={styles.noVideoSubtext}>
+                            Xem nội dung bên dưới
+                        </Text>
                     </View>
                 )}
             </RNAnimated.View>
 
-            {/* Content */}
+            {/* ─── Content ─── */}
             <ScrollView
                 style={styles.content}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.contentContainer}
             >
-                {/* Lesson Info Card */}
-                <RNAnimated.View
-                    style={[
-                        styles.lessonCard,
-                        {
-                            opacity: fadeAnim,
-                            transform: [{ translateY: slideAnim }],
-                        },
-                    ]}
-                >
+                {/* Card 1 — Lesson Info */}
+                <RNAnimated.View style={[styles.card, cardStyle(0)]}>
                     {/* Badge Row */}
                     <View style={styles.badgeRow}>
-                        <View style={styles.typeBadge}>
+                        <View style={styles.pillBadge}>
                             <Ionicons
                                 name={
                                     currentLesson.type === "video"
@@ -485,10 +514,10 @@ export default function LearnScreen({ navigation, route }: Props) {
                                           ? "document-text"
                                           : "flag"
                                 }
-                                size={14}
+                                size={13}
                                 color={colors.light.primary}
                             />
-                            <Text style={styles.typeBadgeText}>
+                            <Text style={styles.pillBadgeText}>
                                 {currentLesson.type === "video"
                                     ? "Video bài học"
                                     : currentLesson.type === "reading"
@@ -498,46 +527,44 @@ export default function LearnScreen({ navigation, route }: Props) {
                         </View>
 
                         {isYouTubeUrl && (
-                            <View style={styles.youtubeBadge}>
+                            <View style={styles.pillBadgeYoutube}>
                                 <Ionicons
                                     name="logo-youtube"
-                                    size={12}
+                                    size={11}
                                     color="#FF0000"
                                 />
-                                <Text style={styles.youtubeBadgeText}>
+                                <Text style={styles.pillBadgeYoutubeText}>
                                     YouTube
                                 </Text>
                             </View>
                         )}
 
-                        {currentLesson.duration ? (
-                            <View style={styles.durationBadge}>
-                                <Ionicons
-                                    name="time-outline"
-                                    size={13}
-                                    color={colors.light.textMuted}
-                                />
-                                <Text style={styles.durationText}>
-                                    {currentLesson.duration}
-                                </Text>
-                            </View>
-                        ) : null}
+                        <View style={styles.pillBadgeGray}>
+                            <Ionicons
+                                name="time-outline"
+                                size={13}
+                                color={colors.light.textMuted}
+                            />
+                            <Text style={styles.pillBadgeGrayText}>
+                                {formatDuration(currentLesson.duration)}
+                            </Text>
+                        </View>
 
                         {currentLesson.isCompleted && (
-                            <View style={styles.completedBadge}>
+                            <View style={styles.pillBadgeSuccess}>
                                 <Ionicons
                                     name="checkmark-circle"
-                                    size={14}
+                                    size={13}
                                     color={colors.light.success}
                                 />
-                                <Text style={styles.completedBadgeText}>
+                                <Text style={styles.pillBadgeSuccessText}>
                                     Hoàn thành
                                 </Text>
                             </View>
                         )}
                     </View>
 
-                    {/* Lesson Title */}
+                    {/* Title */}
                     <Text style={styles.lessonTitle}>
                         {currentLesson.title}
                     </Text>
@@ -551,7 +578,7 @@ export default function LearnScreen({ navigation, route }: Props) {
                                 color={colors.light.textMuted}
                             />
                             <Text style={styles.metaText}>
-                                Bài {currentIndex + 1} / {allLessons.length}
+                                Bài {currentIndex + 1}/{allLessons.length}
                             </Text>
                         </View>
                         <View style={styles.metaDot} />
@@ -564,17 +591,13 @@ export default function LearnScreen({ navigation, route }: Props) {
                             <Text style={styles.metaText}>
                                 {currentLesson.type === "video"
                                     ? "Video bài giảng"
-                                    : currentLesson.type === "reading"
-                                      ? "Bài đọc"
-                                      : "Kiểm tra"}
+                                    : "Nội dung bài học"}
                             </Text>
                         </View>
                     </View>
 
-                    {/* Divider */}
+                    {/* Divider + Button */}
                     <View style={styles.divider} />
-
-                    {/* Complete Button */}
                     <RNAnimated.View
                         style={{ transform: [{ scale: buttonScale }] }}
                     >
@@ -601,26 +624,11 @@ export default function LearnScreen({ navigation, route }: Props) {
                     </RNAnimated.View>
                 </RNAnimated.View>
 
-                {/* Progress Overview Card */}
-                <RNAnimated.View
-                    style={[
-                        styles.progressCard,
-                        {
-                            opacity: fadeAnim,
-                            transform: [
-                                {
-                                    translateY: RNAnimated.multiply(
-                                        slideAnim,
-                                        1.1,
-                                    ),
-                                },
-                            ],
-                        },
-                    ]}
-                >
+                {/* Card 2 — Progress */}
+                <RNAnimated.View style={[styles.card, cardStyle(1)]}>
                     <View style={styles.progressHeader}>
                         <View style={styles.progressLabelRow}>
-                            <View style={styles.progressIconWrapper}>
+                            <View style={styles.iconCircle}>
                                 <Ionicons
                                     name="stats-chart"
                                     size={14}
@@ -638,23 +646,8 @@ export default function LearnScreen({ navigation, route }: Props) {
                     <ProgressBar progress={course.progress} />
                 </RNAnimated.View>
 
-                {/* Navigation Buttons */}
-                <RNAnimated.View
-                    style={[
-                        styles.actionRow,
-                        {
-                            opacity: fadeAnim,
-                            transform: [
-                                {
-                                    translateY: RNAnimated.multiply(
-                                        slideAnim,
-                                        1.2,
-                                    ),
-                                },
-                            ],
-                        },
-                    ]}
-                >
+                {/* Card 3 — Navigation */}
+                <RNAnimated.View style={[styles.navRow, cardStyle(2)]}>
                     <TouchableOpacity
                         style={[
                             styles.navBtn,
@@ -676,7 +669,7 @@ export default function LearnScreen({ navigation, route }: Props) {
                         <Text
                             style={[
                                 styles.navBtnText,
-                                isFirst && styles.navBtnTextDisabled,
+                                isFirst && styles.navBtnTextMuted,
                             ]}
                         >
                             Bài trước
@@ -692,7 +685,7 @@ export default function LearnScreen({ navigation, route }: Props) {
                         <Text
                             style={[
                                 styles.navBtnText,
-                                isLast && styles.navBtnTextDisabled,
+                                isLast && styles.navBtnTextMuted,
                             ]}
                         >
                             Bài tiếp
@@ -709,74 +702,44 @@ export default function LearnScreen({ navigation, route }: Props) {
                     </TouchableOpacity>
                 </RNAnimated.View>
 
-                {/* Learning Tips Card */}
-                <RNAnimated.View
-                    style={[
-                        styles.tipsCard,
-                        {
-                            opacity: fadeAnim,
-                            transform: [
-                                {
-                                    translateY: RNAnimated.multiply(
-                                        slideAnim,
-                                        1.3,
-                                    ),
-                                },
-                            ],
-                        },
-                    ]}
-                >
+                {/* Card 4 — Tips */}
+                <RNAnimated.View style={[styles.tipsCard, cardStyle(3)]}>
                     <View style={styles.tipsHeader}>
-                        <View style={styles.tipsIconContainer}>
+                        <View style={styles.tipsIconCircle}>
                             <Ionicons
                                 name="bulb"
-                                size={16}
+                                size={15}
                                 color={colors.light.warning}
                             />
                         </View>
                         <Text style={styles.tipsTitle}>Mẹo học tập</Text>
                     </View>
                     <Text style={styles.tipsText}>
-                        Hãy ghi chú lại những điểm quan trọng và thực hành ngay
-                        sau khi xem video để nắm bài tốt hơn. Dùng Code
-                        Playground để viết code thực hành.
+                        Hãy ghi chú những điểm quan trọng và thực hành ngay sau
+                        khi xem video. Dùng Code Playground để viết code luyện
+                        tập.
                     </Text>
                 </RNAnimated.View>
 
-                {/* Quick Actions */}
-                <RNAnimated.View
-                    style={[
-                        styles.actionsCard,
-                        {
-                            opacity: fadeAnim,
-                            transform: [
-                                {
-                                    translateY: RNAnimated.multiply(
-                                        slideAnim,
-                                        1.4,
-                                    ),
-                                },
-                            ],
-                        },
-                    ]}
-                >
+                {/* Card 5 — Quick Actions */}
+                <RNAnimated.View style={[styles.actionsCard, cardStyle(4)]}>
                     <TouchableOpacity
                         style={styles.actionItem}
                         onPress={() => setSidebarVisible(true)}
-                        activeOpacity={0.7}
+                        activeOpacity={0.65}
                     >
-                        <View style={styles.actionIconWrapper}>
+                        <View style={styles.actionIconCircle}>
                             <Ionicons
                                 name="list-outline"
                                 size={18}
                                 color={colors.light.primary}
                             />
                         </View>
-                        <View style={styles.actionTextWrapper}>
+                        <View style={styles.actionTextBlock}>
                             <Text style={styles.actionTitle}>
                                 Danh sách bài học
                             </Text>
-                            <Text style={styles.actionSubtitle}>
+                            <Text style={styles.actionSub}>
                                 Xem tất cả chương và bài học
                             </Text>
                         </View>
@@ -791,14 +754,12 @@ export default function LearnScreen({ navigation, route }: Props) {
 
                     <TouchableOpacity
                         style={styles.actionItem}
-                        activeOpacity={0.7}
+                        activeOpacity={0.65}
                     >
                         <View
                             style={[
-                                styles.actionIconWrapper,
-                                {
-                                    backgroundColor: colors.light.warningSoft,
-                                },
+                                styles.actionIconCircle,
+                                { backgroundColor: colors.light.warningSoft },
                             ]}
                         >
                             <Ionicons
@@ -807,11 +768,11 @@ export default function LearnScreen({ navigation, route }: Props) {
                                 color={colors.light.warning}
                             />
                         </View>
-                        <View style={styles.actionTextWrapper}>
+                        <View style={styles.actionTextBlock}>
                             <Text style={styles.actionTitle}>
                                 Đánh dấu ghi nhớ
                             </Text>
-                            <Text style={styles.actionSubtitle}>
+                            <Text style={styles.actionSub}>
                                 Lưu bài học để xem lại sau
                             </Text>
                         </View>
@@ -826,7 +787,7 @@ export default function LearnScreen({ navigation, route }: Props) {
                 <View style={{ height: spacing["4xl"] }} />
             </ScrollView>
 
-            {/* Lesson Sidebar (BottomSheet) */}
+            {/* ─── Lesson Sidebar ─── */}
             <LessonSidebar
                 visible={sidebarVisible}
                 onClose={() => setSidebarVisible(false)}
@@ -840,11 +801,14 @@ export default function LearnScreen({ navigation, route }: Props) {
     );
 }
 
+// ── Styles ────────────────────────────────────────────────────
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.light.background,
     },
+
+    // Loading
     loadingContainer: {
         flex: 1,
         justifyContent: "center",
@@ -852,13 +816,20 @@ const styles = StyleSheet.create({
     },
     loadingContent: {
         alignItems: "center",
-        gap: spacing.sm,
+        gap: spacing.md,
+    },
+    loadingIconWrapper: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: "rgba(255,255,255,0.15)",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: spacing.sm,
     },
     loadingText: {
-        ...typography.body,
-        color: "#ffffff",
-        marginTop: spacing.base,
-        fontWeight: "600",
+        ...typography.bodySemiBold,
+        color: "#fff",
     },
     loadingSubtext: {
         ...typography.caption,
@@ -869,7 +840,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: "row",
         alignItems: "center",
-        paddingTop: 48,
+        paddingTop: Platform.OS === "ios" ? 54 : 42,
         paddingBottom: spacing.md,
         paddingHorizontal: spacing.base,
         overflow: "hidden",
@@ -888,7 +859,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         ...typography.captionMedium,
-        color: "#ffffff",
+        color: "#fff",
         marginBottom: 4,
     },
     headerProgress: {
@@ -905,7 +876,7 @@ const styles = StyleSheet.create({
     },
     headerProgressFill: {
         height: 4,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#fff",
         borderRadius: 2,
     },
     headerProgressText: {
@@ -925,18 +896,31 @@ const styles = StyleSheet.create({
         height: VIDEO_HEIGHT,
     },
 
-    // YouTube fallback
+    // YouTube
     youtubeContainer: {
         width: SCREEN_WIDTH,
         height: VIDEO_HEIGHT,
         backgroundColor: "#0f0f0f",
         justifyContent: "center",
         alignItems: "center",
-        gap: spacing.md,
+        gap: spacing.sm,
     },
-    youtubeText: {
-        ...typography.caption,
-        color: "rgba(255,255,255,0.6)",
+    youtubeIconCircle: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: "rgba(255,0,0,0.1)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    youtubeTitle: {
+        ...typography.captionMedium,
+        color: "rgba(255,255,255,0.85)",
+        fontWeight: "600",
+    },
+    youtubeSubtext: {
+        ...typography.small,
+        color: "rgba(255,255,255,0.45)",
     },
     youtubePlayBtn: {
         borderRadius: radius.md,
@@ -947,13 +931,12 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: spacing.xs,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: radius.md,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.sm + 2,
     },
     youtubePlayText: {
         ...typography.captionMedium,
-        color: "#ffffff",
+        color: "#fff",
         fontWeight: "700",
     },
 
@@ -964,24 +947,19 @@ const styles = StyleSheet.create({
         backgroundColor: colors.light.surface,
         justifyContent: "center",
         alignItems: "center",
-    },
-    noVideoContent: {
-        alignItems: "center",
         gap: spacing.sm,
     },
-    noVideoIconWrapper: {
+    noVideoIconCircle: {
         width: 64,
         height: 64,
         borderRadius: 32,
         backgroundColor: colors.light.background,
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: spacing.xs,
     },
     noVideoText: {
-        ...typography.body,
-        color: colors.light.textMuted,
-        fontWeight: "600",
+        ...typography.bodyMedium,
+        color: colors.light.textSecondary,
     },
     noVideoSubtext: {
         ...typography.caption,
@@ -997,79 +975,83 @@ const styles = StyleSheet.create({
         gap: spacing.md,
     },
 
-    // Lesson Card
-    lessonCard: {
+    // Generic Card
+    card: {
         backgroundColor: colors.light.surfaceElevated,
         borderRadius: radius.xl,
         padding: spacing.xl,
         ...shadows.md,
     },
+
+    // ── Pill Badges ──
     badgeRow: {
         flexDirection: "row",
         flexWrap: "wrap",
         gap: spacing.sm,
         marginBottom: spacing.md,
     },
-    typeBadge: {
+    pillBadge: {
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
-        paddingHorizontal: spacing.sm,
+        paddingHorizontal: spacing.sm + 2,
         paddingVertical: 5,
         borderRadius: radius.full,
         backgroundColor: colors.light.primarySoft,
     },
-    typeBadgeText: {
+    pillBadgeText: {
         fontSize: 12,
         fontWeight: "600",
         color: colors.light.primary,
     },
-    youtubeBadge: {
+    pillBadgeYoutube: {
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
-        paddingHorizontal: spacing.sm,
+        paddingHorizontal: spacing.sm + 2,
         paddingVertical: 5,
         borderRadius: radius.full,
         backgroundColor: "#FFF0F0",
     },
-    youtubeBadgeText: {
+    pillBadgeYoutubeText: {
         fontSize: 12,
         fontWeight: "600",
         color: "#FF0000",
     },
-    durationBadge: {
+    pillBadgeGray: {
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
-        paddingHorizontal: spacing.sm,
+        paddingHorizontal: spacing.sm + 2,
         paddingVertical: 5,
         borderRadius: radius.full,
         backgroundColor: colors.light.surface,
     },
-    durationText: {
+    pillBadgeGrayText: {
         ...typography.small,
         color: colors.light.textMuted,
     },
-    completedBadge: {
+    pillBadgeSuccess: {
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
-        paddingHorizontal: spacing.sm,
+        paddingHorizontal: spacing.sm + 2,
         paddingVertical: 5,
         borderRadius: radius.full,
         backgroundColor: colors.light.successSoft,
     },
-    completedBadgeText: {
+    pillBadgeSuccessText: {
         fontSize: 12,
         fontWeight: "600",
         color: colors.light.success,
     },
+
+    // Lesson info
     lessonTitle: {
         ...typography.h2,
         color: colors.light.text,
         marginBottom: spacing.sm,
-        lineHeight: 28,
+        lineHeight: 30,
     },
     metaRow: {
         flexDirection: "row",
@@ -1098,28 +1080,22 @@ const styles = StyleSheet.create({
         marginBottom: spacing.lg,
     },
 
-    // Progress Card
-    progressCard: {
-        backgroundColor: colors.light.surfaceElevated,
-        borderRadius: radius.xl,
-        padding: spacing.lg,
-        ...shadows.sm,
-    },
+    // Progress
     progressHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: spacing.sm,
+        marginBottom: spacing.md,
     },
     progressLabelRow: {
         flexDirection: "row",
         alignItems: "center",
         gap: spacing.sm,
     },
-    progressIconWrapper: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+    iconCircle: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
         backgroundColor: colors.light.primarySoft,
         justifyContent: "center",
         alignItems: "center",
@@ -1130,15 +1106,14 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
     progressValue: {
-        ...typography.caption,
+        ...typography.captionMedium,
         color: colors.light.primary,
         fontWeight: "700",
     },
 
     // Navigation
-    actionRow: {
+    navRow: {
         flexDirection: "row",
-        justifyContent: "space-between",
         gap: spacing.md,
     },
     navBtn: {
@@ -1147,7 +1122,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         gap: spacing.xs,
-        paddingVertical: spacing.md,
+        paddingVertical: spacing.md + 2,
         borderRadius: radius.xl,
         backgroundColor: colors.light.surfaceElevated,
         borderWidth: 1.5,
@@ -1161,11 +1136,11 @@ const styles = StyleSheet.create({
         ...typography.buttonSmall,
         color: colors.light.primary,
     },
-    navBtnTextDisabled: {
+    navBtnTextMuted: {
         color: colors.light.textMuted,
     },
 
-    // Tips Card
+    // Tips
     tipsCard: {
         backgroundColor: colors.light.warningSoft,
         borderRadius: radius.xl,
@@ -1179,10 +1154,10 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
         marginBottom: spacing.sm,
     },
-    tipsIconContainer: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+    tipsIconCircle: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
         backgroundColor: colors.light.warning + "20",
         justifyContent: "center",
         alignItems: "center",
@@ -1198,7 +1173,7 @@ const styles = StyleSheet.create({
         lineHeight: 22,
     },
 
-    // Quick Actions Card
+    // Quick Actions
     actionsCard: {
         backgroundColor: colors.light.surfaceElevated,
         borderRadius: radius.xl,
@@ -1211,15 +1186,15 @@ const styles = StyleSheet.create({
         padding: spacing.lg,
         gap: spacing.md,
     },
-    actionIconWrapper: {
-        width: 40,
-        height: 40,
+    actionIconCircle: {
+        width: 42,
+        height: 42,
         borderRadius: radius.md,
         backgroundColor: colors.light.primarySoft,
         justifyContent: "center",
         alignItems: "center",
     },
-    actionTextWrapper: {
+    actionTextBlock: {
         flex: 1,
     },
     actionTitle: {
@@ -1228,7 +1203,7 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         marginBottom: 2,
     },
-    actionSubtitle: {
+    actionSub: {
         ...typography.small,
         color: colors.light.textMuted,
     },

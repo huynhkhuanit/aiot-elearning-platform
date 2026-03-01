@@ -7,18 +7,13 @@ import {
     FlatList,
     Modal,
     Pressable,
-    Animated,
     Dimensions,
+    Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import {
-    colors,
-    typography,
-    spacing,
-    radius,
-    shadows,
-    animation,
-} from "../theme";
+import { LinearGradient } from "expo-linear-gradient";
+import { colors, typography, spacing, radius, shadows } from "../theme";
+import ProgressBar from "./ProgressBar";
 
 interface Lesson {
     id: string;
@@ -50,7 +45,7 @@ interface Props {
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const SIDEBAR_HEIGHT = SCREEN_HEIGHT * 0.75;
+const SIDEBAR_HEIGHT = SCREEN_HEIGHT * 0.78;
 
 export default function LessonSidebar({
     visible,
@@ -63,7 +58,6 @@ export default function LessonSidebar({
 }: Props) {
     const [expandedSections, setExpandedSections] = useState<Set<string>>(
         () => {
-            // Auto-expand section containing current lesson
             const sectionWithCurrent = sections.find((s) =>
                 s.lessons.some((l) => l.id === currentLessonId),
             );
@@ -122,78 +116,146 @@ export default function LessonSidebar({
         const sectionCompleted = section.lessons.filter(
             (l) => l.isCompleted,
         ).length;
+        const allDone =
+            sectionCompleted === section.lessons.length &&
+            section.lessons.length > 0;
 
         return (
             <View style={styles.sectionContainer}>
+                {/* Section Header */}
                 <TouchableOpacity
                     style={styles.sectionHeader}
                     onPress={() => toggleSection(section.id)}
                     activeOpacity={0.7}
                 >
                     <View style={styles.sectionLeft}>
-                        <Ionicons
-                            name={
-                                isExpanded ? "chevron-down" : "chevron-forward"
-                            }
-                            size={16}
-                            color={colors.light.textSecondary}
-                        />
+                        <View
+                            style={[
+                                styles.chevronCircle,
+                                isExpanded && styles.chevronCircleExpanded,
+                            ]}
+                        >
+                            <Ionicons
+                                name={
+                                    isExpanded
+                                        ? "chevron-down"
+                                        : "chevron-forward"
+                                }
+                                size={14}
+                                color={
+                                    isExpanded
+                                        ? colors.light.primary
+                                        : colors.light.textSecondary
+                                }
+                            />
+                        </View>
                         <View style={styles.sectionInfo}>
                             <Text style={styles.sectionTitle} numberOfLines={2}>
                                 {section.title}
                             </Text>
-                            <Text style={styles.sectionMeta}>
-                                {sectionCompleted}/{section.lessons.length} bài
-                                {section.duration
-                                    ? ` · ${section.duration}`
-                                    : ""}
-                            </Text>
-                        </View>
-                    </View>
-                    {sectionCompleted === section.lessons.length &&
-                        section.lessons.length > 0 && (
-                            <View style={styles.sectionCompletedDot} />
-                        )}
-                </TouchableOpacity>
-
-                {isExpanded &&
-                    section.lessons.map((lesson) => (
-                        <TouchableOpacity
-                            key={lesson.id}
-                            style={[
-                                styles.lessonItem,
-                                lesson.id === currentLessonId &&
-                                    styles.lessonItemActive,
-                            ]}
-                            onPress={() => onLessonSelect(lesson)}
-                            activeOpacity={0.7}
-                        >
-                            <Ionicons
-                                name={getLessonIcon(lesson) as any}
-                                size={20}
-                                color={getLessonIconColor(lesson)}
-                            />
-                            <View style={styles.lessonInfo}>
-                                <Text
-                                    style={[
-                                        styles.lessonTitle,
-                                        lesson.id === currentLessonId &&
-                                            styles.lessonTitleActive,
-                                        lesson.isCompleted &&
-                                            styles.lessonTitleCompleted,
-                                    ]}
-                                    numberOfLines={2}
-                                >
-                                    {lesson.title}
+                            <View style={styles.sectionMetaRow}>
+                                <Text style={styles.sectionMeta}>
+                                    {sectionCompleted}/{section.lessons.length}{" "}
+                                    bài
                                 </Text>
-                                {lesson.duration ? (
-                                    <Text style={styles.lessonDuration}>
-                                        {lesson.duration}
-                                    </Text>
+                                {section.duration ? (
+                                    <>
+                                        <View style={styles.sectionMetaDot} />
+                                        <Text style={styles.sectionMeta}>
+                                            {section.duration}
+                                        </Text>
+                                    </>
                                 ) : null}
                             </View>
-                        </TouchableOpacity>
-                    ))}
+                        </View>
+                    </View>
+                    {allDone && (
+                        <View style={styles.sectionCompleteBadge}>
+                            <Ionicons
+                                name="checkmark-circle"
+                                size={16}
+                                color={colors.light.success}
+                            />
+                        </View>
+                    )}
+                </TouchableOpacity>
+
+                {/* Lessons */}
+                {isExpanded &&
+                    section.lessons.map((lesson, idx) => {
+                        const isCurrent = lesson.id === currentLessonId;
+                        return (
+                            <TouchableOpacity
+                                key={lesson.id}
+                                style={[
+                                    styles.lessonItem,
+                                    isCurrent && styles.lessonItemActive,
+                                ]}
+                                onPress={() => onLessonSelect(lesson)}
+                                activeOpacity={0.65}
+                            >
+                                {/* Left indicator */}
+                                {isCurrent && (
+                                    <View style={styles.lessonActiveBar} />
+                                )}
+
+                                <View
+                                    style={[
+                                        styles.lessonIconCircle,
+                                        lesson.isCompleted &&
+                                            styles.lessonIconCircleCompleted,
+                                        isCurrent &&
+                                            styles.lessonIconCircleActive,
+                                    ]}
+                                >
+                                    <Ionicons
+                                        name={getLessonIcon(lesson) as any}
+                                        size={18}
+                                        color={getLessonIconColor(lesson)}
+                                    />
+                                </View>
+
+                                <View style={styles.lessonInfo}>
+                                    <Text
+                                        style={[
+                                            styles.lessonTitle,
+                                            isCurrent &&
+                                                styles.lessonTitleActive,
+                                            lesson.isCompleted &&
+                                                styles.lessonTitleCompleted,
+                                        ]}
+                                        numberOfLines={2}
+                                    >
+                                        {lesson.title}
+                                    </Text>
+                                    <View style={styles.lessonMetaRow}>
+                                        {lesson.type === "video" && (
+                                            <Ionicons
+                                                name="play-circle-outline"
+                                                size={12}
+                                                color={colors.light.textMuted}
+                                            />
+                                        )}
+                                        {lesson.duration ? (
+                                            <Text style={styles.lessonDuration}>
+                                                {lesson.duration}
+                                            </Text>
+                                        ) : null}
+                                    </View>
+                                </View>
+
+                                {lesson.isCompleted && (
+                                    <View style={styles.lessonCheckBadge}>
+                                        <Ionicons
+                                            name="checkmark"
+                                            size={12}
+                                            color="#fff"
+                                        />
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        );
+                    })}
             </View>
         );
     };
@@ -211,7 +273,7 @@ export default function LessonSidebar({
                     style={styles.sheet}
                     onPress={(e) => e.stopPropagation()}
                 >
-                    {/* Handle / Drag indicator */}
+                    {/* Drag Handle */}
                     <View style={styles.handleBar}>
                         <View style={styles.handle} />
                     </View>
@@ -219,19 +281,28 @@ export default function LessonSidebar({
                     {/* Sheet Header */}
                     <View style={styles.sheetHeader}>
                         <View style={styles.sheetTitleRow}>
-                            <Ionicons
-                                name="book-outline"
-                                size={20}
-                                color={colors.light.primary}
-                            />
-                            <Text style={styles.sheetTitle}>
-                                Nội dung khóa học
-                            </Text>
+                            <View style={styles.sheetIconCircle}>
+                                <Ionicons
+                                    name="book"
+                                    size={16}
+                                    color={colors.light.primary}
+                                />
+                            </View>
+                            <View>
+                                <Text style={styles.sheetTitle}>
+                                    Nội dung khóa học
+                                </Text>
+                                <Text style={styles.sheetSubtitle}>
+                                    {stats.completed}/{stats.total} bài ·{" "}
+                                    {progress}% hoàn thành
+                                </Text>
+                            </View>
                         </View>
-                        <Text style={styles.sheetSubtitle}>
-                            {stats.completed}/{stats.total} bài · {progress}%
-                            hoàn thành
-                        </Text>
+
+                        {/* Mini progress bar */}
+                        <View style={styles.sheetProgressWrap}>
+                            <ProgressBar progress={progress} height={4} />
+                        </View>
                     </View>
 
                     {/* Section List */}
@@ -259,17 +330,17 @@ const styles = StyleSheet.create({
         backgroundColor: colors.light.surfaceElevated,
         borderTopLeftRadius: radius["2xl"],
         borderTopRightRadius: radius["2xl"],
-        paddingBottom: 34,
+        paddingBottom: Platform.OS === "ios" ? 34 : 20,
     },
     handleBar: {
         alignItems: "center",
         paddingVertical: spacing.md,
     },
     handle: {
-        width: 36,
-        height: 4,
+        width: 40,
+        height: 5,
         backgroundColor: colors.light.border,
-        borderRadius: 2,
+        borderRadius: 2.5,
     },
 
     // Header
@@ -282,16 +353,28 @@ const styles = StyleSheet.create({
     sheetTitleRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: spacing.sm,
-        marginBottom: spacing.xs,
+        gap: spacing.md,
+        marginBottom: spacing.sm,
+    },
+    sheetIconCircle: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.light.primarySoft,
+        justifyContent: "center",
+        alignItems: "center",
     },
     sheetTitle: {
         ...typography.h3,
         color: colors.light.text,
     },
     sheetSubtitle: {
-        ...typography.caption,
+        ...typography.small,
         color: colors.light.textMuted,
+        marginTop: 2,
+    },
+    sheetProgressWrap: {
+        marginTop: spacing.sm,
     },
 
     // List
@@ -301,7 +384,7 @@ const styles = StyleSheet.create({
 
     // Section
     sectionContainer: {
-        marginBottom: spacing.xs,
+        marginBottom: 2,
     },
     sectionHeader: {
         flexDirection: "row",
@@ -317,23 +400,43 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
         flex: 1,
     },
+    chevronCircle: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: colors.light.background,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    chevronCircleExpanded: {
+        backgroundColor: colors.light.primarySoft,
+    },
     sectionInfo: {
         flex: 1,
     },
     sectionTitle: {
         ...typography.captionMedium,
         color: colors.light.text,
+        fontWeight: "600",
+    },
+    sectionMetaRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        marginTop: 2,
     },
     sectionMeta: {
         ...typography.small,
         color: colors.light.textMuted,
-        marginTop: 2,
     },
-    sectionCompletedDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: colors.light.success,
+    sectionMetaDot: {
+        width: 3,
+        height: 3,
+        borderRadius: 1.5,
+        backgroundColor: colors.light.textMuted,
+    },
+    sectionCompleteBadge: {
+        marginLeft: spacing.sm,
     },
 
     // Lesson
@@ -343,12 +446,37 @@ const styles = StyleSheet.create({
         gap: spacing.md,
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.xl,
-        paddingLeft: spacing.xl + spacing.xl,
+        paddingLeft: spacing.xl + spacing.lg,
+        position: "relative",
     },
     lessonItemActive: {
         backgroundColor: colors.light.primarySoft,
-        borderLeftWidth: 3,
-        borderLeftColor: colors.light.primary,
+    },
+    lessonActiveBar: {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 3,
+        backgroundColor: colors.light.primary,
+        borderTopRightRadius: 2,
+        borderBottomRightRadius: 2,
+    },
+    lessonIconCircle: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.light.background,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    lessonIconCircleCompleted: {
+        backgroundColor: colors.light.successSoft,
+    },
+    lessonIconCircleActive: {
+        backgroundColor: colors.light.primarySoft,
+        borderWidth: 1.5,
+        borderColor: colors.light.primary,
     },
     lessonInfo: {
         flex: 1,
@@ -364,9 +492,22 @@ const styles = StyleSheet.create({
     lessonTitleCompleted: {
         color: colors.light.textMuted,
     },
+    lessonMetaRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        marginTop: 3,
+    },
     lessonDuration: {
         ...typography.small,
         color: colors.light.textMuted,
-        marginTop: 2,
+    },
+    lessonCheckBadge: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: colors.light.success,
+        justifyContent: "center",
+        alignItems: "center",
     },
 });
