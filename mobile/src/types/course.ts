@@ -44,6 +44,7 @@ export interface Lesson {
     id: string;
     title: string;
     video_url: string | null;
+    youtube_backup_url: string | null;
     duration: number;
     order_index: number;
     is_completed: boolean;
