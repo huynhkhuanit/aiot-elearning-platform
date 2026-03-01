@@ -12,7 +12,6 @@ import {
     Zap,
 } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
-import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -566,20 +565,21 @@ function SlideContent({
                         `Khám phá khóa học chất lượng cao từ các chuyên gia hàng đầu. Nâng cao kỹ năng và xây dựng sự nghiệp vững chắc.`}
                 </p>
 
-                {/* Instructor */}
-                {course.instructor && (
-                    <div className="flex items-center gap-2 mb-4">
-                        <AvatarWithProBadge
-                            avatarUrl={course.instructor.avatar}
-                            fullName={course.instructor.name || "Giảng viên"}
-                            isPro={course.isPro}
-                            size="xs"
-                        />
-                        <span className="text-sm text-white/70">
-                            {course.instructor.name || "Giảng viên"}
-                        </span>
-                    </div>
-                )}
+                {/* Marketing stats */}
+                <div className="flex items-center gap-4 mb-4 text-white/70 text-sm">
+                    <span className="flex items-center gap-1">
+                        <Users className="w-3.5 h-3.5" />
+                        {course.students.toLocaleString()} học viên
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <BookOpen className="w-3.5 h-3.5" />
+                        {levelDisplay}
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 fill-current" />
+                        {course.rating > 0 ? course.rating.toFixed(1) : "4.8"}
+                    </span>
+                </div>
 
                 {/* CTA + Price */}
                 <div className="flex items-center gap-4">
