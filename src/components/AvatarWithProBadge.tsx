@@ -4,11 +4,12 @@ interface AvatarWithProBadgeProps {
     avatarUrl?: string | null;
     fullName?: string | null;
     isPro: boolean;
-    size?: "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
+    size?: "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
     className?: string;
 }
 
 const sizeMap = {
+    "2xs": { outer: 20, border: 1, gap: 0, text: "text-[7px]" },
     xs: { outer: 32, border: 2.5, gap: 1.5, text: "text-xs" },
     sm: { outer: 40, border: 3, gap: 1.5, text: "text-sm" },
     md: { outer: 48, border: 3, gap: 2, text: "text-base" },

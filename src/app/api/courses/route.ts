@@ -65,17 +65,23 @@ export async function GET(request: NextRequest) {
                     .filter(Boolean),
             ),
         ];
-        const instructorAvatars: Record<string, string | null> = {};
+        const instructorData: Record<
+            string,
+            { avatar_url: string | null; is_pro: boolean }
+        > = {};
 
         if (instructorIds.length > 0 && supabaseAdmin) {
             const { data: instructors } = await supabaseAdmin
                 .from("users")
-                .select("id, avatar_url")
+                .select("id, avatar_url, is_pro")
                 .in("id", instructorIds);
 
             if (instructors) {
                 instructors.forEach((instructor: any) => {
-                    instructorAvatars[instructor.id] = instructor.avatar_url;
+                    instructorData[instructor.id] = {
+                        avatar_url: instructor.avatar_url,
+                        is_pro: Boolean(instructor.is_pro),
+                    };
                 });
             }
         }
@@ -107,8 +113,9 @@ export async function GET(request: NextRequest) {
                 username: course.instructor_username,
                 avatar:
                     course.instructor_avatar_url ||
-                    instructorAvatars[course.instructor_id] ||
+                    instructorData[course.instructor_id]?.avatar_url ||
                     null,
+                isPro: instructorData[course.instructor_id]?.is_pro ?? false,
             },
             createdAt: course.created_at,
         }));
