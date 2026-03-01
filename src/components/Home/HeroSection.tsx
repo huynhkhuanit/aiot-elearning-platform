@@ -12,6 +12,7 @@ import {
     Zap,
 } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
+import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -568,17 +569,12 @@ function SlideContent({
                 {/* Instructor */}
                 {course.instructor && (
                     <div className="flex items-center gap-2 mb-4">
-                        {course.instructor.avatar ? (
-                            <img
-                                src={course.instructor.avatar}
-                                alt=""
-                                className="w-6 h-6 rounded-full border border-white/30"
-                            />
-                        ) : (
-                            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold text-white">
-                                {course.instructor.name?.[0] || "G"}
-                            </div>
-                        )}
+                        <AvatarWithProBadge
+                            avatarUrl={course.instructor.avatar}
+                            fullName={course.instructor.name || "Giảng viên"}
+                            isPro={course.isPro}
+                            size="xs"
+                        />
                         <span className="text-sm text-white/70">
                             {course.instructor.name || "Giảng viên"}
                         </span>
