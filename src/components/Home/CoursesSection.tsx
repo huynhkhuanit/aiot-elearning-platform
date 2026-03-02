@@ -196,8 +196,9 @@ export default function CoursesSection() {
     };
 
     const handleProCourseClick = async (course: Course) => {
+        // If not authenticated, navigate to course landing page directly
         if (!isAuthenticated) {
-            toast.error("Vui lòng đăng nhập để tiếp tục");
+            router.push(`/courses/${course.slug}`);
             return;
         }
 
@@ -225,7 +226,6 @@ export default function CoursesSection() {
             console.log(`[PRO COURSE] Course status:`, data);
 
             if (data.success) {
-                // ✅ Check the isEnrolled field from API
                 if (data.data.isEnrolled) {
                     console.log(
                         `[PRO COURSE] User already enrolled, navigating to learn page`,
@@ -238,17 +238,12 @@ export default function CoursesSection() {
                     router.push(`/courses/${course.slug}`);
                 }
             } else {
-                console.log(
-                    `[PRO COURSE] Error checking status, navigating to course details as fallback`,
-                );
                 router.push(`/courses/${course.slug}`);
             }
         } catch (error) {
             console.error("[PRO COURSE] Error checking enrollment:", error);
-            // Fallback to course details page
             router.push(`/courses/${course.slug}`);
         } finally {
-            // ✅ IMPORTANT: Always clear the enrolling state
             setEnrollingCourse(null);
         }
     };
@@ -472,36 +467,31 @@ function CourseCard({
     const router = useRouter();
 
     const handleCardClick = () => {
+        if (isEnrolling) return;
+
+        // If not authenticated, always go to course landing page
         if (!isAuthenticated) {
-            toast.error("Vui lòng đăng nhập để tiếp tục");
+            router.push(`/courses/${course.slug}`);
             return;
         }
 
-        if (course.isFree) {
-            if (isEnrolling) return;
+        // If authenticated, check enrollment status
+        (async () => {
+            try {
+                const response = await fetch(`/api/courses/${course.slug}`, {
+                    credentials: "include",
+                });
+                const data = await response.json();
 
-            (async () => {
-                try {
-                    const response = await fetch(
-                        `/api/courses/${course.slug}`,
-                        {
-                            credentials: "include",
-                        },
-                    );
-                    const data = await response.json();
-
-                    if (data.success && data.data.isEnrolled) {
-                        router.push(`/learn/${course.slug}`);
-                    } else {
-                        onEnroll();
-                    }
-                } catch {
-                    toast.error("Có lỗi xảy ra. Vui lòng thử lại");
+                if (data.success && data.data.isEnrolled) {
+                    router.push(`/learn/${course.slug}`);
+                } else {
+                    router.push(`/courses/${course.slug}`);
                 }
-            })();
-        } else {
-            if (onProClick) onProClick();
-        }
+            } catch {
+                router.push(`/courses/${course.slug}`);
+            }
+        })();
     };
 
     const instructorName =

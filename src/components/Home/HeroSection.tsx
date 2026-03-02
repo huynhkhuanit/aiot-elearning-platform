@@ -163,8 +163,9 @@ export default function HeroSection() {
     };
 
     const handleProCourseClick = async (course: Course) => {
+        // If not authenticated, navigate to course landing page directly
         if (!isAuthenticated) {
-            toast.error("Vui lòng đăng nhập để tiếp tục");
+            router.push(`/courses/${course.slug}`);
             return;
         }
         if (enrollingCourse) return;
