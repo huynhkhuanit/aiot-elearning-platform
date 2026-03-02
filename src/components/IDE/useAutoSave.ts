@@ -7,8 +7,8 @@ const SAVE_KEY_PREFIX = "ide_playground_";
 
 export function useAutoSave(code: CodeState, lessonId: string) {
     const [status, setStatus] = useState<"saved" | "saving" | "">("");
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const statusTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (timerRef.current) clearTimeout(timerRef.current);
