@@ -168,7 +168,7 @@ function getSellingPoints(course: CourseDetail) {
             icon: Rocket,
             title: "Lộ trình học bài bản",
             desc: "Nội dung được sắp xếp từ cơ bản đến nâng cao, không bỏ sót kiến thức nào.",
-            gradient: "from-cyan-500 to-blue-500",
+            gradient: "from-indigo-500 to-violet-500",
         },
         {
             icon: Code2,
@@ -356,9 +356,8 @@ export default function CourseDetailPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-[#0a0c10]">
-                {/* Loading header */}
-                <header className="sticky top-0 z-50 bg-[#1a1c2e]/95 backdrop-blur-xl border-b border-white/5">
-                    <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+                <header className="sticky top-0 z-50 bg-transparent backdrop-blur-xl border-b border-white/5">
+                    <div className="max-w-7xl mx-auto px-6 h-16 flex items-center">
                         <Link
                             href="/"
                             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
@@ -366,24 +365,16 @@ export default function CourseDetailPage() {
                             <img
                                 src="/assets/img/logo.png"
                                 alt="DHV LearnX Logo"
-                                className="w-[38px] h-[38px] rounded-lg object-contain"
+                                className="w-[48px] h-[48px] rounded-lg object-contain"
                             />
                             <span className="font-bold text-white text-sm hidden sm:inline uppercase tracking-wide">
                                 Học lập trình thông minh với AI &amp; IoT
                             </span>
                         </Link>
-                        <div className="flex items-center gap-3">
-                            <Link
-                                href="/auth/login"
-                                className="text-sm text-gray-300 hover:text-white transition-colors font-medium"
-                            >
-                                Đăng nhập
-                            </Link>
-                        </div>
                     </div>
                 </header>
                 <div className="py-20 text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-400 mx-auto mb-4" />
                     <p className="text-gray-400 font-medium">
                         Đang tải khóa học...
                     </p>
@@ -428,7 +419,7 @@ export default function CourseDetailPage() {
             style={{
                 background: course.isEnrolled
                     ? "linear-gradient(135deg, #10b981, #059669)"
-                    : "linear-gradient(135deg, #2cccff, #22dfbf)",
+                    : "linear-gradient(135deg, #6366f1, #9333ea)",
             }}
         >
             <span className="relative z-10 flex items-center justify-center gap-2 text-white drop-shadow-sm">
@@ -461,11 +452,10 @@ export default function CourseDetailPage() {
     return (
         <div className="min-h-screen bg-[#0a0c10] text-white">
             {/* ═══════════════════════════════════════════════════════════
-                HEADER (F8-style: Logo + Tagline)
+                HEADER (F8-style: Logo + Tagline only)
                ═══════════════════════════════════════════════════════════ */}
-            <header className="sticky top-0 z-50 bg-[#1a1c2e]/95 backdrop-blur-xl border-b border-white/5">
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    {/* Left: Logo + Tagline (F8 style) */}
+            <header className="sticky top-0 z-50 bg-transparent backdrop-blur-xl border-b border-white/5">
+                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center">
                     <Link
                         href="/"
                         className="flex items-center gap-3 hover:opacity-80 transition-opacity"
@@ -473,43 +463,12 @@ export default function CourseDetailPage() {
                         <img
                             src="/assets/img/logo.png"
                             alt="DHV LearnX Logo"
-                            className="w-[38px] h-[38px] rounded-lg object-contain"
+                            className="w-[48px] h-[48px] rounded-lg object-contain"
                         />
                         <span className="font-bold text-white text-sm hidden sm:inline uppercase tracking-wide">
                             Học lập trình thông minh với AI &amp; IoT
                         </span>
                     </Link>
-
-                    {/* Right: Auth buttons or user info */}
-                    <div className="flex items-center gap-3">
-                        {isAuthenticated ? (
-                            <Link
-                                href="/"
-                                className="text-sm text-gray-300 hover:text-white transition-colors font-medium"
-                            >
-                                Về trang chủ
-                            </Link>
-                        ) : (
-                            <>
-                                <Link
-                                    href="/auth/login"
-                                    className="text-sm text-gray-300 hover:text-white transition-colors font-medium"
-                                >
-                                    Đăng nhập
-                                </Link>
-                                <Link
-                                    href="/auth/register"
-                                    className="text-sm font-bold px-4 py-2 rounded-lg text-white transition-all"
-                                    style={{
-                                        background:
-                                            "linear-gradient(135deg, #2cccff, #22dfbf)",
-                                    }}
-                                >
-                                    Đăng ký
-                                </Link>
-                            </>
-                        )}
-                    </div>
                 </div>
             </header>
 
@@ -519,8 +478,8 @@ export default function CourseDetailPage() {
             <section className="relative overflow-hidden">
                 {/* Background gradient */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#0a0c10] via-[#111827] to-[#0a0c10]" />
-                <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-cyan-900/10 to-transparent" />
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
+                <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-indigo-900/10 to-transparent" />
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl" />
 
                 <PageContainer className="relative z-10 py-16 lg:py-24">
                     {/* Breadcrumb */}
@@ -539,7 +498,7 @@ export default function CourseDetailPage() {
                             Khóa học
                         </Link>
                         <ChevronRight className="w-4 h-4" />
-                        <span className="text-cyan-400 truncate max-w-[200px]">
+                        <span className="text-indigo-400 truncate max-w-[200px]">
                             {course.title}
                         </span>
                     </div>
@@ -550,7 +509,7 @@ export default function CourseDetailPage() {
                             {/* Category badge + Level */}
                             <div className="flex items-center gap-3 flex-wrap">
                                 {course.category?.name && (
-                                    <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                                    <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
                                         {course.category.name}
                                     </span>
                                 )}
@@ -594,7 +553,7 @@ export default function CourseDetailPage() {
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2 text-gray-300">
-                                    <Users className="w-4 h-4 text-cyan-400" />
+                                    <Users className="w-4 h-4 text-indigo-400" />
                                     <span className="font-semibold">
                                         {course.students.toLocaleString()}
                                     </span>
@@ -607,7 +566,7 @@ export default function CourseDetailPage() {
                             {/* Stats row */}
                             <div className="grid grid-cols-3 gap-4 max-w-lg">
                                 <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center">
-                                    <div className="text-2xl font-bold text-cyan-400">
+                                    <div className="text-2xl font-bold text-indigo-400">
                                         {totalChapters}
                                     </div>
                                     <div className="text-xs text-gray-400 mt-1">
@@ -615,7 +574,7 @@ export default function CourseDetailPage() {
                                     </div>
                                 </div>
                                 <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center">
-                                    <div className="text-2xl font-bold text-cyan-400">
+                                    <div className="text-2xl font-bold text-indigo-400">
                                         {totalLessons}
                                     </div>
                                     <div className="text-xs text-gray-400 mt-1">
@@ -623,7 +582,7 @@ export default function CourseDetailPage() {
                                     </div>
                                 </div>
                                 <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center">
-                                    <div className="text-2xl font-bold text-cyan-400">
+                                    <div className="text-2xl font-bold text-indigo-400">
                                         {course.duration}
                                     </div>
                                     <div className="text-xs text-gray-400 mt-1">
@@ -644,7 +603,7 @@ export default function CourseDetailPage() {
                                     <span className="text-sm text-gray-400">
                                         Giảng viên
                                     </span>
-                                    <p className="text-cyan-400 font-semibold">
+                                    <p className="text-indigo-400 font-semibold">
                                         {course.instructor.name}
                                     </p>
                                 </div>
@@ -719,7 +678,7 @@ export default function CourseDetailPage() {
                     <div className="text-center mb-14">
                         <h2 className="text-3xl lg:text-4xl font-extrabold mb-4">
                             Sau khi hoàn thành,{" "}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">
                                 bạn sẽ...
                             </span>
                         </h2>
@@ -737,9 +696,9 @@ export default function CourseDetailPage() {
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: idx * 0.05 }}
-                                className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-xl p-4 hover:border-cyan-500/30 transition-colors"
+                                className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-xl p-4 hover:border-indigo-500/30 transition-colors"
                             >
-                                <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                                <CheckCircle className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
                                 <span className="text-gray-300 text-sm leading-relaxed">
                                     {item}
                                 </span>
@@ -757,7 +716,7 @@ export default function CourseDetailPage() {
                     <div className="text-center mb-14">
                         <h2 className="text-3xl lg:text-4xl font-extrabold mb-4">
                             Chương trình{" "}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">
                                 học chi tiết
                             </span>
                         </h2>
@@ -803,7 +762,7 @@ export default function CourseDetailPage() {
                                         className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors text-left"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <span className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 text-sm font-bold">
+                                            <span className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-sm font-bold">
                                                 {idx + 1}
                                             </span>
                                             <span className="font-bold text-white">
@@ -836,7 +795,7 @@ export default function CourseDetailPage() {
                                                                 key={lesson.id}
                                                                 className="flex items-center justify-between text-sm py-2 px-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
                                                             >
-                                                                <div className="flex items-center gap-3 text-gray-300 group-hover:text-cyan-400 transition-colors">
+                                                                <div className="flex items-center gap-3 text-gray-300 group-hover:text-indigo-400 transition-colors">
                                                                     <PlayCircle className="w-4 h-4 flex-shrink-0" />
                                                                     <span>
                                                                         {
@@ -884,7 +843,7 @@ export default function CourseDetailPage() {
                     <div className="text-center mb-14">
                         <h2 className="text-3xl lg:text-4xl font-extrabold mb-4">
                             Điểm{" "}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-400">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">
                                 khác biệt
                             </span>
                         </h2>
@@ -901,7 +860,7 @@ export default function CourseDetailPage() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: idx * 0.1 }}
-                                className="relative bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-cyan-500/30 transition-all duration-300 group overflow-hidden"
+                                className="relative bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-indigo-500/30 transition-all duration-300 group overflow-hidden"
                             >
                                 <div
                                     className={`w-12 h-12 rounded-xl bg-gradient-to-br ${point.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
@@ -925,59 +884,88 @@ export default function CourseDetailPage() {
             </section>
 
             {/* ═══════════════════════════════════════════════════════════
-                SECTION 6: INSTRUCTOR
+                SECTION 6: INSTRUCTOR (F8-style centered cards)
                ═══════════════════════════════════════════════════════════ */}
             <section className="py-20 bg-[#111827]">
                 <PageContainer>
-                    <div className="text-center mb-14">
+                    <div className="text-center mb-6">
                         <h2 className="text-3xl lg:text-4xl font-extrabold mb-4">
-                            Giảng viên{" "}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+                            Người{" "}
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">
                                 hướng dẫn
                             </span>
                         </h2>
+                        <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+                            Được hướng dẫn bởi đội ngũ giảng viên giàu kinh
+                            nghiệm và đội ngũ mentor tận tâm
+                        </p>
                     </div>
 
-                    <div className="max-w-3xl mx-auto">
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 flex flex-col md:flex-row items-center md:items-start gap-8">
-                            <div className="flex-shrink-0">
-                                <AvatarWithProBadge
-                                    avatarUrl={course.instructor.avatar}
-                                    fullName={course.instructor.name}
-                                    isPro={course.isPro}
-                                    size="lg"
-                                />
+                    <div className="max-w-lg mx-auto">
+                        {/* Instructor Card - F8 style centered */}
+                        <div className="text-center py-8">
+                            {/* Circular avatar */}
+                            <div className="w-[140px] h-[140px] mx-auto mb-6 rounded-full overflow-hidden border-2 border-indigo-500/30 shadow-xl shadow-indigo-500/10">
+                                {course.instructor.avatar ? (
+                                    <Image
+                                        src={course.instructor.avatar}
+                                        alt={course.instructor.name}
+                                        width={140}
+                                        height={140}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white text-4xl font-bold">
+                                        {course.instructor.name?.charAt(0)}
+                                    </div>
+                                )}
                             </div>
-                            <div className="flex-1 text-center md:text-left">
-                                <h3 className="text-2xl font-bold text-cyan-400 mb-1">
-                                    {course.instructor.name}
-                                </h3>
-                                <p className="text-gray-400 text-sm mb-5">
-                                    Senior Software Engineer & Instructor
-                                </p>
 
-                                <div className="flex items-center justify-center md:justify-start gap-6 text-sm text-gray-400 mb-6">
-                                    <div className="flex items-center gap-1.5">
-                                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                                        <span>{course.rating} Xếp hạng</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <Users className="w-4 h-4 text-cyan-400" />
-                                        <span>
-                                            {course.students.toLocaleString()}{" "}
-                                            Học viên
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <PlayCircle className="w-4 h-4 text-emerald-400" />
-                                        <span>10+ Khóa học</span>
-                                    </div>
+                            {/* Name */}
+                            <h3 className="text-2xl font-bold text-white mb-2">
+                                {course.instructor.name}
+                            </h3>
+
+                            {/* Role */}
+                            <p className="text-indigo-400 text-sm font-semibold uppercase tracking-wider mb-3">
+                                Senior Software Engineer & Instructor
+                            </p>
+
+                            {/* Experience */}
+                            <p className="text-gray-400 text-sm mb-6">
+                                10+ năm kinh nghiệm
+                            </p>
+
+                            {/* Bio */}
+                            <p className="text-gray-300 text-sm leading-relaxed max-w-md mx-auto mb-6">
+                                {course.instructor.bio ||
+                                    "Kỹ sư phần mềm với hơn 10 năm kinh nghiệm phát triển phần mềm, từng giữ vị trí quan trọng tại các công ty công nghệ. Đã giúp hàng nghìn người mới bắt đầu lập trình viên thông qua nền tảng học tập."}
+                            </p>
+
+                            {/* Strengths */}
+                            <p className="text-gray-400 text-xs leading-relaxed max-w-sm mx-auto mb-6">
+                                Thế mạnh: Backend, API, Database, Microservices,
+                                Cloud (AWS). Trực tiếp thiết kế kiến trúc và dẫn
+                                dắt team kỹ thuật.
+                            </p>
+
+                            {/* Stats row */}
+                            <div className="flex items-center justify-center gap-6 text-sm text-gray-400">
+                                <div className="flex items-center gap-1.5">
+                                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                    <span>{course.rating} Xếp hạng</span>
                                 </div>
-
-                                <p className="text-gray-300 text-sm leading-relaxed">
-                                    {course.instructor.bio ||
-                                        "Tôi là một kỹ sư phần mềm với hơn 10 năm kinh nghiệm, đam mê giảng dạy và chia sẻ kiến thức. Sứ mệnh của tôi là giúp bạn trở thành một lập trình viên chuyên nghiệp thông qua các khóa học thực tế, dễ hiểu."}
-                                </p>
+                                <div className="flex items-center gap-1.5">
+                                    <Users className="w-4 h-4 text-indigo-400" />
+                                    <span>
+                                        {course.students.toLocaleString()} Học
+                                        viên
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <PlayCircle className="w-4 h-4 text-indigo-400" />
+                                    <span>10+ Khóa học</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1080,7 +1068,7 @@ export default function CourseDetailPage() {
                     <div className="text-center mb-14">
                         <h2 className="text-3xl lg:text-4xl font-extrabold mb-4">
                             Câu hỏi{" "}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">
                                 thường gặp
                             </span>
                         </h2>
@@ -1104,7 +1092,7 @@ export default function CourseDetailPage() {
                                         {faq.q}
                                     </span>
                                     {expandedFAQ === idx ? (
-                                        <Minus className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                                        <Minus className="w-5 h-5 text-indigo-400 flex-shrink-0" />
                                     ) : (
                                         <Plus className="w-5 h-5 text-gray-400 flex-shrink-0" />
                                     )}
@@ -1133,8 +1121,8 @@ export default function CourseDetailPage() {
                 SECTION 9: FINAL CTA
                ═══════════════════════════════════════════════════════════ */}
             <section className="py-20 bg-[#0a0c10] relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-cyan-900/10 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-cyan-500/5 rounded-full blur-3xl" />
+                <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/10 via-transparent to-transparent" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-500/5 rounded-full blur-3xl" />
 
                 <PageContainer className="relative z-10">
                     <div className="text-center max-w-2xl mx-auto">
@@ -1300,7 +1288,7 @@ function EnrollmentCard({
                         style={{
                             background: course.isEnrolled
                                 ? "linear-gradient(135deg, #10b981, #059669)"
-                                : "linear-gradient(135deg, #2cccff, #22dfbf)",
+                                : "linear-gradient(135deg, #6366f1, #9333ea)",
                         }}
                     >
                         {enrolling ? (
@@ -1339,23 +1327,23 @@ function EnrollmentCard({
                     </h4>
                     <ul className="space-y-3 text-sm text-gray-400">
                         <li className="flex items-center gap-3">
-                            <MonitorPlay className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                            <MonitorPlay className="w-4 h-4 text-indigo-400 flex-shrink-0" />
                             <span>{course.duration} video bài giảng</span>
                         </li>
                         <li className="flex items-center gap-3">
-                            <FileText className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                            <FileText className="w-4 h-4 text-indigo-400 flex-shrink-0" />
                             <span>{course.totalLessons} bài học</span>
                         </li>
                         <li className="flex items-center gap-3">
-                            <Download className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                            <Download className="w-4 h-4 text-indigo-400 flex-shrink-0" />
                             <span>Tài liệu tải xuống</span>
                         </li>
                         <li className="flex items-center gap-3">
-                            <Code2 className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                            <Code2 className="w-4 h-4 text-indigo-400 flex-shrink-0" />
                             <span>Bài tập thực hành</span>
                         </li>
                         <li className="flex items-center gap-3">
-                            <Globe className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                            <Globe className="w-4 h-4 text-indigo-400 flex-shrink-0" />
                             <span>Truy cập trọn đời</span>
                         </li>
                         {course.isPro && (
