@@ -41,6 +41,7 @@ import {
     HelpCircle,
     Minus,
     Plus,
+    X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -84,6 +85,7 @@ interface CourseDetail {
     updatedAt?: string;
     thumbnailUrl?: string;
     thumbnail_url?: string;
+    trailerUrl?: string;
     sections?: {
         id: string;
         title: string;
@@ -282,6 +284,7 @@ export default function CourseDetailPage() {
     const [enrolling, setEnrolling] = useState(false);
     const [expandedSection, setExpandedSection] = useState<string | null>(null);
     const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
+    const [showTrailer, setShowTrailer] = useState(false);
     const { isAuthenticated } = useAuth();
     const toast = useToast();
 
@@ -620,6 +623,7 @@ export default function CourseDetailPage() {
                                     onEnroll={handleEnroll}
                                     enrolling={enrolling}
                                     isAuthenticated={isAuthenticated}
+                                    onPlayTrailer={() => setShowTrailer(true)}
                                 />
                             </div>
                         </div>
@@ -1199,7 +1203,104 @@ export default function CourseDetailPage() {
                     <CTAButton size="md" className="flex-shrink-0" />
                 </div>
             </div>
+
+            {/* Video Trailer Modal */}
+            {showTrailer && course.trailerUrl && (
+                <VideoTrailerModal
+                    url={course.trailerUrl}
+                    title={`Giới thiệu: ${course.title}`}
+                    onClose={() => setShowTrailer(false)}
+                />
+            )}
         </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════
+// VIDEO TRAILER MODAL
+// ═══════════════════════════════════════════════════════════
+function VideoTrailerModal({
+    url,
+    title,
+    onClose,
+}: {
+    url: string;
+    title: string;
+    onClose: () => void;
+}) {
+    // Auto-detect YouTube
+    const getYouTubeId = (u: string) => {
+        const match = u.match(
+            /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([-\w]{11})/,
+        );
+        return match ? match[1] : null;
+    };
+
+    const youtubeId = getYouTubeId(url);
+
+    // ESC to close
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === "Escape") onClose();
+        };
+        document.addEventListener("keydown", handler);
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.removeEventListener("keydown", handler);
+            document.body.style.overflow = "";
+        };
+    }, [onClose]);
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+                onClick={onClose}
+            >
+                {/* Backdrop */}
+                <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
+
+                {/* Close button */}
+                <button
+                    onClick={onClose}
+                    className="absolute top-6 right-6 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                >
+                    <X className="w-5 h-5 text-white" />
+                </button>
+
+                {/* Video */}
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    transition={{ type: "spring", damping: 25 }}
+                    className="relative w-full max-w-4xl aspect-video rounded-2xl overflow-hidden shadow-2xl"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {youtubeId ? (
+                        <iframe
+                            src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1`}
+                            title={title}
+                            allow="autoplay; encrypted-media; picture-in-picture"
+                            allowFullScreen
+                            className="w-full h-full"
+                        />
+                    ) : (
+                        <video
+                            src={url}
+                            controls
+                            autoPlay
+                            className="w-full h-full bg-black"
+                        >
+                            <source src={url} />
+                        </video>
+                    )}
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
     );
 }
 
@@ -1213,6 +1314,7 @@ function EnrollmentCard({
     onEnroll,
     enrolling,
     isAuthenticated,
+    onPlayTrailer,
 }: {
     course: CourseDetail;
     pricing: {
@@ -1224,11 +1326,17 @@ function EnrollmentCard({
     onEnroll: () => void;
     enrolling: boolean;
     isAuthenticated: boolean;
+    onPlayTrailer?: () => void;
 }) {
     return (
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden shadow-2xl shadow-black/20">
             {/* Thumbnail */}
-            <div className="relative aspect-video bg-gray-900 group cursor-pointer">
+            <div
+                className="relative aspect-video bg-gray-900 group cursor-pointer"
+                onClick={() => {
+                    if (course.trailerUrl && onPlayTrailer) onPlayTrailer();
+                }}
+            >
                 {thumbnailUrl ? (
                     <Image
                         src={thumbnailUrl}

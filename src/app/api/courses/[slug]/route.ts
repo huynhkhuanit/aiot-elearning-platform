@@ -51,6 +51,7 @@ export async function GET(
         total_lessons,
         created_at,
         updated_at,
+        trailer_url,
         categories!left(id, name, slug),
         users!left(id, full_name, username, avatar_url, bio),
         chapters!left (
@@ -177,6 +178,7 @@ export async function GET(
             sections: sections,
             createdAt: course.created_at,
             updatedAt: course.updated_at,
+            trailerUrl: course.trailer_url || null,
         };
 
         return NextResponse.json({

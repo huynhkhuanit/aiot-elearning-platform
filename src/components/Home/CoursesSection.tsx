@@ -284,7 +284,7 @@ export default function CoursesSection() {
                         <div className="mb-16">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <div className="text-lg font-bold text-gray-900 mb-2">
+                                    <div className="text-xl font-black text-gray-900 mb-2">
                                         Khóa học Pro
                                         <span className="ml-3 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1 rounded-full">
                                             PRO
@@ -313,7 +313,7 @@ export default function CoursesSection() {
                         <div>
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <div className="text-lg font-bold text-gray-900 mb-2">
+                                    <div className="text-xl font-black text-gray-900 mb-2">
                                         Khóa học miễn phí
                                     </div>
                                     <p className="text-gray-600">
@@ -346,7 +346,7 @@ export default function CoursesSection() {
                             >
                                 <div className="flex items-center justify-between mb-8">
                                     <div>
-                                        <div className="text-lg font-bold text-gray-900 mb-2">
+                                        <div className="text-xl font-black text-gray-900 mb-2">
                                             Khóa học Pro
                                             <span className="ml-3 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1 rounded-full">
                                                 PRO
@@ -402,7 +402,7 @@ export default function CoursesSection() {
                             >
                                 <div className="flex items-center justify-between mb-8">
                                     <div>
-                                        <div className="text-lg font-bold text-gray-900 mb-2">
+                                        <div className="text-xl font-black text-gray-900 mb-2">
                                             Khóa học miễn phí
                                         </div>
                                         <p className="text-gray-600">
