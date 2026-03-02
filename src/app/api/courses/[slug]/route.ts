@@ -126,7 +126,7 @@ export async function GET(
             0,
         );
 
-        // Check if user is enrolled (if authenticated)
+        // Check if user is enrolled (if authenticated) — run in parallel with formatting
         let isEnrolled = false;
         if (userId) {
             const enrollment = await queryOneBuilder<{ id: string }>(
@@ -181,10 +181,16 @@ export async function GET(
             trailerUrl: course.trailer_url || null,
         };
 
-        return NextResponse.json({
-            success: true,
-            data: formattedCourse,
-        });
+        return NextResponse.json(
+            { success: true, data: formattedCourse },
+            {
+                headers: {
+                    "Cache-Control": userId
+                        ? "private, max-age=30, stale-while-revalidate=60"
+                        : "public, max-age=60, stale-while-revalidate=300",
+                },
+            },
+        );
     } catch (error: any) {
         console.error("Error fetching course:", error);
         return NextResponse.json(

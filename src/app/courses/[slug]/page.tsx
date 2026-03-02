@@ -1328,13 +1328,22 @@ function EnrollmentCard({
     isAuthenticated: boolean;
     onPlayTrailer?: () => void;
 }) {
+    const toast = useToast();
+    const hasTrailer = !!course.trailerUrl;
+
     return (
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden shadow-2xl shadow-black/20">
             {/* Thumbnail */}
             <div
-                className="relative aspect-video bg-gray-900 group cursor-pointer"
+                className={`relative aspect-video bg-gray-900 group ${hasTrailer ? "cursor-pointer" : "cursor-default"}`}
                 onClick={() => {
-                    if (course.trailerUrl && onPlayTrailer) onPlayTrailer();
+                    if (hasTrailer && onPlayTrailer) {
+                        onPlayTrailer();
+                    } else if (!hasTrailer) {
+                        toast.info(
+                            "Video giới thiệu khóa học đang được chuẩn bị. Vui lòng quay lại sau!",
+                        );
+                    }
                 }}
             >
                 {thumbnailUrl ? (
@@ -1342,7 +1351,7 @@ function EnrollmentCard({
                         src={thumbnailUrl}
                         alt={course.title}
                         fill
-                        className="object-cover opacity-80 group-hover:opacity-60 transition-opacity"
+                        className={`object-cover transition-opacity ${hasTrailer ? "opacity-80 group-hover:opacity-60" : "opacity-60"}`}
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
@@ -1350,12 +1359,27 @@ function EnrollmentCard({
                     </div>
                 )}
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform border border-white/30">
-                        <Play className="w-6 h-6 text-white fill-white ml-1" />
-                    </div>
+                    {hasTrailer ? (
+                        <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform border border-white/30">
+                            <Play className="w-6 h-6 text-white fill-white ml-1" />
+                        </div>
+                    ) : (
+                        <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/10">
+                            <Play className="w-6 h-6 text-white/40 fill-white/40 ml-1" />
+                        </div>
+                    )}
                 </div>
-                <div className="absolute bottom-3 left-0 right-0 text-center text-white text-sm font-medium drop-shadow-md">
-                    Xem giới thiệu khóa học
+                <div className="absolute bottom-3 left-0 right-0 text-center text-sm font-medium drop-shadow-md">
+                    {hasTrailer ? (
+                        <span className="text-white">
+                            Xem giới thiệu khóa học
+                        </span>
+                    ) : (
+                        <span className="text-white/50 flex items-center justify-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" />
+                            Video giới thiệu sắp ra mắt
+                        </span>
+                    )}
                 </div>
             </div>
 

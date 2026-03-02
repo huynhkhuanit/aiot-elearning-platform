@@ -120,19 +120,27 @@ export async function GET(request: NextRequest) {
             createdAt: course.created_at,
         }));
 
-        return NextResponse.json({
-            success: true,
-            data: {
-                courses: formattedCourses,
-                pagination: {
-                    total: total || 0,
-                    page,
-                    limit,
-                    totalPages: Math.ceil((total || 0) / limit),
-                    hasMore: page * limit < (total || 0),
+        return NextResponse.json(
+            {
+                success: true,
+                data: {
+                    courses: formattedCourses,
+                    pagination: {
+                        total: total || 0,
+                        page,
+                        limit,
+                        totalPages: Math.ceil((total || 0) / limit),
+                        hasMore: page * limit < (total || 0),
+                    },
                 },
             },
-        });
+            {
+                headers: {
+                    "Cache-Control":
+                        "public, max-age=30, stale-while-revalidate=120",
+                },
+            },
+        );
     } catch (error: any) {
         console.error("Error fetching courses:", error);
         return NextResponse.json(
