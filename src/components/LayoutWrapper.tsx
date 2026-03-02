@@ -29,14 +29,19 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
     const isCourseLandingPage =
         pathname?.startsWith("/courses/") && pathname !== "/courses";
 
-    // Nếu là trang admin, học tập, playground, hoặc landing page khóa học → không hiển thị layout
-    if (
-        isAdminPage ||
-        isLearningPage ||
-        isPlaygroundPage ||
-        isCourseLandingPage
-    ) {
+    // Nếu là trang admin, học tập, hoặc playground → không hiển thị layout
+    if (isAdminPage || isLearningPage || isPlaygroundPage) {
         return <>{children}</>;
+    }
+
+    // Nếu là trang landing page khóa học → chỉ hiển thị Footer, không có Header/Menu
+    if (isCourseLandingPage) {
+        return (
+            <div style={{ backgroundColor: "#0a0c10", minHeight: "100vh" }}>
+                <main>{children}</main>
+                <Footer />
+            </div>
+        );
     }
 
     // Các trang khác (trang chủ, courses, etc.) hiển thị layout bình thường

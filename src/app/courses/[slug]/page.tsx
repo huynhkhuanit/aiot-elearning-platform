@@ -357,17 +357,19 @@ export default function CourseDetailPage() {
         return (
             <div className="min-h-screen bg-[#0a0c10]">
                 {/* Loading header */}
-                <header className="sticky top-0 z-50 bg-[#0a0c10]/80 backdrop-blur-xl border-b border-white/5">
+                <header className="sticky top-0 z-50 bg-[#1a1c2e]/95 backdrop-blur-xl border-b border-white/5">
                     <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                         <Link
                             href="/"
-                            className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"
+                            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                         >
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                                <Code2 className="w-4 h-4 text-white" />
-                            </div>
-                            <span className="font-bold text-sm hidden sm:inline">
-                                Trang chủ
+                            <img
+                                src="/assets/img/logo.png"
+                                alt="DHV LearnX Logo"
+                                className="w-[38px] h-[38px] rounded-lg object-contain"
+                            />
+                            <span className="font-bold text-white text-sm hidden sm:inline uppercase tracking-wide">
+                                Học lập trình thông minh với AI &amp; IoT
                             </span>
                         </Link>
                         <div className="flex items-center gap-3">
@@ -459,28 +461,24 @@ export default function CourseDetailPage() {
     return (
         <div className="min-h-screen bg-[#0a0c10] text-white">
             {/* ═══════════════════════════════════════════════════════════
-                STANDALONE HEADER (no layout wrapper)
+                HEADER (F8-style: Logo + Tagline)
                ═══════════════════════════════════════════════════════════ */}
-            <header className="sticky top-0 z-50 bg-[#0a0c10]/80 backdrop-blur-xl border-b border-white/5">
+            <header className="sticky top-0 z-50 bg-[#1a1c2e]/95 backdrop-blur-xl border-b border-white/5">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    {/* Left: Logo + Back */}
-                    <div className="flex items-center gap-4">
-                        <Link
-                            href="/"
-                            className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"
-                        >
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                                <Code2 className="w-4 h-4 text-white" />
-                            </div>
-                            <span className="font-bold text-sm hidden sm:inline">
-                                Trang chủ
-                            </span>
-                        </Link>
-                        <div className="w-px h-6 bg-white/10 hidden sm:block" />
-                        <span className="text-sm text-gray-400 truncate max-w-[200px] hidden sm:inline">
-                            {course.title}
+                    {/* Left: Logo + Tagline (F8 style) */}
+                    <Link
+                        href="/"
+                        className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                    >
+                        <img
+                            src="/assets/img/logo.png"
+                            alt="DHV LearnX Logo"
+                            className="w-[38px] h-[38px] rounded-lg object-contain"
+                        />
+                        <span className="font-bold text-white text-sm hidden sm:inline uppercase tracking-wide">
+                            Học lập trình thông minh với AI &amp; IoT
                         </span>
-                    </div>
+                    </Link>
 
                     {/* Right: Auth buttons or user info */}
                     <div className="flex items-center gap-3">
@@ -1182,45 +1180,6 @@ export default function CourseDetailPage() {
                     </div>
                 </PageContainer>
             </section>
-
-            {/* ═══════════════════════════════════════════════════════════
-                STANDALONE FOOTER
-               ═══════════════════════════════════════════════════════════ */}
-            <footer className="bg-[#080a0e] border-t border-white/5 py-10 lg:pb-10 pb-24">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                                <Code2 className="w-3.5 h-3.5 text-white" />
-                            </div>
-                            <span className="text-sm text-gray-400">
-                                © {new Date().getFullYear()} AIoT Learning
-                                Platform
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-6 text-sm text-gray-500">
-                            <Link
-                                href="/"
-                                className="hover:text-gray-300 transition-colors"
-                            >
-                                Trang chủ
-                            </Link>
-                            <Link
-                                href="/about"
-                                className="hover:text-gray-300 transition-colors"
-                            >
-                                Giới thiệu
-                            </Link>
-                            <Link
-                                href="/contact"
-                                className="hover:text-gray-300 transition-colors"
-                            >
-                                Liên hệ
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </footer>
 
             {/* ═══════════════════════════════════════════════════════════
                 MOBILE STICKY CTA (Bottom bar)
