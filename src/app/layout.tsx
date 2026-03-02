@@ -1,17 +1,10 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import { ReactNode } from "react";
-
-const inter = Inter({
-    subsets: ["latin", "vietnamese"],
-    display: "swap",
-    variable: "--font-inter",
-});
 
 export const metadata: Metadata = {
     title: "Nền tảng học tập thông minh AIoT | Hệ thống E-Learning cho giáo dục Việt Nam",
@@ -37,8 +30,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="vi" className={inter.variable} suppressHydrationWarning>
-            <body className="antialiased font-sans">
+        <html lang="vi" suppressHydrationWarning>
+            <body className="antialiased">
                 <ToastProvider>
                     <AuthProvider>
                         <ThemeProvider
