@@ -356,6 +356,30 @@ export default function CourseDetailPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-[#0a0c10]">
+                {/* Loading header */}
+                <header className="sticky top-0 z-50 bg-[#0a0c10]/80 backdrop-blur-xl border-b border-white/5">
+                    <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+                        <Link
+                            href="/"
+                            className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"
+                        >
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                                <Code2 className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="font-bold text-sm hidden sm:inline">
+                                Trang chủ
+                            </span>
+                        </Link>
+                        <div className="flex items-center gap-3">
+                            <Link
+                                href="/auth/login"
+                                className="text-sm text-gray-300 hover:text-white transition-colors font-medium"
+                            >
+                                Đăng nhập
+                            </Link>
+                        </div>
+                    </div>
+                </header>
                 <div className="py-20 text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4" />
                     <p className="text-gray-400 font-medium">
@@ -434,6 +458,63 @@ export default function CourseDetailPage() {
 
     return (
         <div className="min-h-screen bg-[#0a0c10] text-white">
+            {/* ═══════════════════════════════════════════════════════════
+                STANDALONE HEADER (no layout wrapper)
+               ═══════════════════════════════════════════════════════════ */}
+            <header className="sticky top-0 z-50 bg-[#0a0c10]/80 backdrop-blur-xl border-b border-white/5">
+                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+                    {/* Left: Logo + Back */}
+                    <div className="flex items-center gap-4">
+                        <Link
+                            href="/"
+                            className="flex items-center gap-2 text-white hover:text-cyan-400 transition-colors"
+                        >
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                                <Code2 className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="font-bold text-sm hidden sm:inline">
+                                Trang chủ
+                            </span>
+                        </Link>
+                        <div className="w-px h-6 bg-white/10 hidden sm:block" />
+                        <span className="text-sm text-gray-400 truncate max-w-[200px] hidden sm:inline">
+                            {course.title}
+                        </span>
+                    </div>
+
+                    {/* Right: Auth buttons or user info */}
+                    <div className="flex items-center gap-3">
+                        {isAuthenticated ? (
+                            <Link
+                                href="/"
+                                className="text-sm text-gray-300 hover:text-white transition-colors font-medium"
+                            >
+                                Về trang chủ
+                            </Link>
+                        ) : (
+                            <>
+                                <Link
+                                    href="/auth/login"
+                                    className="text-sm text-gray-300 hover:text-white transition-colors font-medium"
+                                >
+                                    Đăng nhập
+                                </Link>
+                                <Link
+                                    href="/auth/register"
+                                    className="text-sm font-bold px-4 py-2 rounded-lg text-white transition-all"
+                                    style={{
+                                        background:
+                                            "linear-gradient(135deg, #2cccff, #22dfbf)",
+                                    }}
+                                >
+                                    Đăng ký
+                                </Link>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </header>
+
             {/* ═══════════════════════════════════════════════════════════
                 SECTION 1: HERO
                ═══════════════════════════════════════════════════════════ */}
@@ -1101,6 +1182,45 @@ export default function CourseDetailPage() {
                     </div>
                 </PageContainer>
             </section>
+
+            {/* ═══════════════════════════════════════════════════════════
+                STANDALONE FOOTER
+               ═══════════════════════════════════════════════════════════ */}
+            <footer className="bg-[#080a0e] border-t border-white/5 py-10 lg:pb-10 pb-24">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                                <Code2 className="w-3.5 h-3.5 text-white" />
+                            </div>
+                            <span className="text-sm text-gray-400">
+                                © {new Date().getFullYear()} AIoT Learning
+                                Platform
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-6 text-sm text-gray-500">
+                            <Link
+                                href="/"
+                                className="hover:text-gray-300 transition-colors"
+                            >
+                                Trang chủ
+                            </Link>
+                            <Link
+                                href="/about"
+                                className="hover:text-gray-300 transition-colors"
+                            >
+                                Giới thiệu
+                            </Link>
+                            <Link
+                                href="/contact"
+                                className="hover:text-gray-300 transition-colors"
+                            >
+                                Liên hệ
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </footer>
 
             {/* ═══════════════════════════════════════════════════════════
                 MOBILE STICKY CTA (Bottom bar)

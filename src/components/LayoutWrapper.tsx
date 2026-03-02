@@ -25,8 +25,17 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
     // Kiểm tra nếu đang ở trang playground (/playground)
     const isPlaygroundPage = pathname?.startsWith("/playground");
 
-    // Nếu là trang admin, học tập, hoặc playground, không hiển thị Menu, Header, Footer
-    if (isAdminPage || isLearningPage || isPlaygroundPage) {
+    // Kiểm tra nếu đang ở trang chi tiết khóa học (/courses/*)
+    const isCourseLandingPage =
+        pathname?.startsWith("/courses/") && pathname !== "/courses";
+
+    // Nếu là trang admin, học tập, playground, hoặc landing page khóa học → không hiển thị layout
+    if (
+        isAdminPage ||
+        isLearningPage ||
+        isPlaygroundPage ||
+        isCourseLandingPage
+    ) {
         return <>{children}</>;
     }
 
