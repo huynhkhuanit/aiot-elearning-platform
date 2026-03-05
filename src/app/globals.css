@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 @import "./tiptap.css";
 @import "prismjs/themes/prism-tomorrow.css";
 @import "./roadmap-nodes.css";
@@ -183,7 +183,7 @@ html {
     transition: color-scheme 0.3s ease;
 }
 
-/* Dark mode classes - giữ background trắng */
+/* Dark mode classes - giá»¯ background tráº¯ng */
 html.dark {
     color-scheme: dark;
 }
@@ -459,7 +459,7 @@ button,
 
 /* Course Title Font Size Override */
 .course-title-header {
-    font-size: 1rem !important; /* 25.6px - nếu muốn 16px thì dùng 1rem */
+    font-size: 1rem !important; /* 25.6px - náº¿u muá»‘n 16px thÃ¬ dÃ¹ng 1rem */
 }
 
 /* Admin Scrollbar - Dark theme */
@@ -919,7 +919,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     pointer-events: auto;
 }
 
-/* Khi CodePlayground đang mở, sidebar sẽ nằm bên phải của CodePlayground */
+/* Khi CodePlayground Ä‘ang má»Ÿ, sidebar sáº½ náº±m bÃªn pháº£i cá»§a CodePlayground */
 .learn-course-sidebar.code-playground-open {
     right: 0;
 }
@@ -955,7 +955,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         Arial, sans-serif;
 }
 
-/* Khi Sidebar đang mở, CodePlayground sẽ nằm bên trái của Sidebar */
+/* Khi Sidebar Ä‘ang má»Ÿ, CodePlayground sáº½ náº±m bÃªn trÃ¡i cá»§a Sidebar */
 .code-playground.sidebar-open {
     right: 24rem;
 }
@@ -1018,7 +1018,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     box-shadow: 0 4px 8px rgba(139, 92, 246, 0.4);
 }
 
-/* Animation khi chuyển từ OFF sang ON - Chỉ trượt mượt mà */
+/* Animation khi chuyá»ƒn tá»« OFF sang ON - Chá»‰ trÆ°á»£t mÆ°á»£t mÃ  */
 @keyframes switchToOn {
     0% {
         transform: translateX(0);
@@ -1036,7 +1036,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     }
 }
 
-/* Animation khi chuyển từ ON sang OFF - Chỉ trượt mượt mà */
+/* Animation khi chuyá»ƒn tá»« ON sang OFF - Chá»‰ trÆ°á»£t mÆ°á»£t mÃ  */
 @keyframes switchToOff {
     0% {
         transform: translateX(28px);
@@ -1064,7 +1064,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     transition: none !important;
 }
 
-/* Hiệu ứng pulse khi hover */
+/* Hiá»‡u á»©ng pulse khi hover */
 .dev-mode-toggle:hover .dev-mode-toggle-thumb.off {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
@@ -1102,21 +1102,21 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     background-color: transparent;
 }
 
-/* Hover state for "Bài trước" - glowing gradient border */
+/* Hover state for "BÃ i trÆ°á»›c" - glowing gradient border */
 .nav-button-wrapper-prev:hover {
     box-shadow:
         0 0 15px rgba(99, 102, 241, 0.6),
         0 0 30px rgba(147, 51, 234, 0.4);
 }
 
-/* Hover state for "Bài tiếp theo" - solid gradient fill */
+/* Hover state for "BÃ i tiáº¿p theo" - solid gradient fill */
 .nav-button-wrapper-next:hover {
     box-shadow:
         0 4px 12px rgba(99, 102, 241, 0.3),
         0 2px 4px rgba(147, 51, 234, 0.2);
 }
 
-/* Fill button with gradient on hover for "Bài tiếp theo" */
+/* Fill button with gradient on hover for "BÃ i tiáº¿p theo" */
 .nav-button-wrapper-next:hover button {
     background: linear-gradient(
         to right,

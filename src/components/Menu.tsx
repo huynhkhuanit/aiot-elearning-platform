@@ -1,20 +1,12 @@
-"use client";
+﻿"use client";
 
-import {
-    Home,
-    BookOpen,
-    SettingsIcon,
-    Map,
-    MessageCircle,
-    Terminal,
-} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface MenuItem {
     id: string;
-    icon: React.ComponentType<{ className?: string }>;
+    iconClass: string;
     label: string;
     href: string;
 }
@@ -22,31 +14,31 @@ interface MenuItem {
 const publicMenuItems: MenuItem[] = [
     {
         id: "home",
-        icon: Home,
+        iconClass: "fa-solid fa-house",
         label: "Trang chủ",
         href: "/",
     },
     {
         id: "roadmap",
-        icon: Map,
+        iconClass: "fa-solid fa-road",
         label: "Lộ trình",
         href: "/roadmap",
     },
     {
         id: "articles",
-        icon: BookOpen,
+        iconClass: "fa-solid fa-newspaper",
         label: "Bài viết",
         href: "/articles",
     },
     {
         id: "qa",
-        icon: MessageCircle,
+        iconClass: "fa-solid fa-comment-dots",
         label: "Hỏi Đáp",
         href: "/qa",
     },
     {
         id: "playground",
-        icon: Terminal,
+        iconClass: "fa-solid fa-laptop-code",
         label: "Playground",
         href: "/playground",
     },
@@ -54,7 +46,7 @@ const publicMenuItems: MenuItem[] = [
 
 const adminMenuItem: MenuItem = {
     id: "admin",
-    icon: SettingsIcon,
+    iconClass: "fa-solid fa-shield-halved",
     label: "Admin",
     href: "/admin/lessons",
 };
@@ -89,7 +81,6 @@ export default function Menu() {
                 }}
             >
                 {mobileMenuItems.map((item: MenuItem, index: number) => {
-                    const Icon = item.icon;
                     const isActive =
                         pathname === item.href ||
                         (item.href !== "/" && pathname?.startsWith(item.href));
@@ -110,9 +101,10 @@ export default function Menu() {
                             }}
                             title={item.label}
                         >
-                            <Icon
+                            <i
+                                aria-hidden="true"
                                 className={`
-                  h-5 w-5 mb-1 transition-colors duration-200 flex-shrink-0
+                  ${item.iconClass} h-5 w-5 mb-1 text-[18px] leading-none transition-colors duration-200 flex-shrink-0
                   ${isActive ? "text-primary" : "text-[#9ca3af]"}
                 `}
                             />
@@ -142,7 +134,6 @@ export default function Menu() {
             >
                 <nav className="flex flex-col items-start space-y-2 w-full">
                     {desktopMenuItems.map((item: MenuItem) => {
-                        const Icon = item.icon;
                         const isActive =
                             pathname === item.href ||
                             (item.href !== "/" &&
@@ -170,9 +161,10 @@ export default function Menu() {
                 `}
                                 title={item.label}
                             >
-                                <Icon
+                                <i
+                                    aria-hidden="true"
                                     className={`
-                    h-5 w-5 mb-1 transition-colors duration-200 flex-shrink-0
+                    ${item.iconClass} h-5 w-5 mb-1 text-[18px] leading-none transition-colors duration-200 flex-shrink-0
                     ${
                         isActive
                             ? isAdminItem
