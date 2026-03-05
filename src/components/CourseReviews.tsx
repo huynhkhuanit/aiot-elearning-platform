@@ -60,6 +60,8 @@ interface CourseReviewsProps {
     ratingCount: number;
     isEnrolled: boolean;
     readOnly?: boolean;
+    /** When true, removes section wrapper/header — used inside modals */
+    embedded?: boolean;
 }
 
 const SORT_OPTIONS = [
@@ -68,6 +70,8 @@ const SORT_OPTIONS = [
     { value: "lowest", label: "Đánh giá thấp" },
     { value: "helpful", label: "Hữu ích nhất" },
 ];
+
+const REVIEWS_PER_PAGE = 3;
 
 function timeAgo(dateStr: string): string {
     const now = new Date();
@@ -156,6 +160,13 @@ function RatingBreakdown({
                 </p>
             </div>
 
+            {/* Chi tiết đánh giá */}
+            <div className="mb-4">
+                <p className="text-sm font-semibold text-gray-300 mb-3">
+                    Chi tiết đánh giá
+                </p>
+            </div>
+
             {/* Distribution Bars */}
             <div className="space-y-2.5">
                 {[5, 4, 3, 2, 1].map((star) => {
@@ -207,6 +218,7 @@ function ReviewCard({
     isOwnReview,
     onEdit,
     onDelete,
+    readOnly,
 }: {
     review: Review;
     onLike: (reviewId: string) => void;
@@ -214,6 +226,7 @@ function ReviewCard({
     isOwnReview: boolean;
     onEdit?: () => void;
     onDelete?: () => void;
+    readOnly?: boolean;
 }) {
     return (
         <motion.div
@@ -241,7 +254,7 @@ function ReviewCard({
                 </div>
                 <div className="flex items-center gap-2">
                     <StarPicker value={review.rating} readonly size={16} />
-                    {isOwnReview && (
+                    {!readOnly && isOwnReview && (
                         <div className="flex items-center gap-1 ml-2">
                             <button
                                 onClick={onEdit}
@@ -342,7 +355,8 @@ function ReviewForm({
             {/* Star Picker */}
             <div className="mb-4">
                 <label className="text-sm text-gray-400 mb-2 block">
-                    Đánh giá của bạn *
+                    Đánh giá:{" "}
+                    <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400 inline" />
                 </label>
                 <StarPicker value={rating} onChange={setRating} size={32} />
                 {rating > 0 && (
@@ -363,7 +377,7 @@ function ReviewForm({
             {/* Comment */}
             <div className="mb-4">
                 <label className="text-sm text-gray-400 mb-2 block">
-                    Nhận xét (không bắt buộc)
+                    Chia sẻ trải nghiệm của bạn về khóa học...
                 </label>
                 <textarea
                     value={comment}
@@ -379,7 +393,16 @@ function ReviewForm({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 justify-end">
+                {onCancel && (
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="text-gray-400 hover:text-white text-sm transition-colors"
+                    >
+                        Hủy
+                    </button>
+                )}
                 <button
                     type="submit"
                     disabled={rating === 0 || submitting}
@@ -399,15 +422,6 @@ function ReviewForm({
                         "Gửi đánh giá"
                     )}
                 </button>
-                {onCancel && (
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="text-gray-400 hover:text-white text-sm transition-colors"
-                    >
-                        Hủy
-                    </button>
-                )}
             </div>
         </form>
     );
@@ -422,15 +436,19 @@ export default function CourseReviews({
     ratingCount,
     isEnrolled,
     readOnly = false,
+    embedded = false,
 }: CourseReviewsProps) {
     const { isAuthenticated, user } = useAuth();
     const toast = useToast();
 
+    const [allReviews, setAllReviews] = useState<Review[]>([]);
     const [data, setData] = useState<ReviewData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [sort, setSort] = useState("newest");
     const [filterRating, setFilterRating] = useState<number | null>(null);
     const [page, setPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const [liking, setLiking] = useState<string | null>(null);
     const [showForm, setShowForm] = useState(false);
@@ -441,36 +459,63 @@ export default function CourseReviews({
     const avgRating = data ? (data.pagination.total > 0 ? courseRating : 0) : 0;
     const totalReviews = data?.pagination.total || ratingCount || 0;
 
-    const fetchReviews = useCallback(async () => {
-        try {
-            setLoading(true);
-            const params = new URLSearchParams({
-                page: page.toString(),
-                limit: "10",
-                sort,
-            });
-            if (filterRating) params.set("rating", filterRating.toString());
+    const fetchReviews = useCallback(
+        async (pageNum: number, append = false) => {
+            try {
+                if (append) {
+                    setLoadingMore(true);
+                } else {
+                    setLoading(true);
+                }
 
-            const res = await fetch(
-                `/api/courses/${courseSlug}/reviews?${params}`,
-                {
-                    credentials: "include",
-                },
-            );
-            const json = await res.json();
-            if (json.success) {
-                setData(json.data);
+                const params = new URLSearchParams({
+                    page: pageNum.toString(),
+                    limit: REVIEWS_PER_PAGE.toString(),
+                    sort,
+                });
+                if (filterRating) params.set("rating", filterRating.toString());
+
+                const res = await fetch(
+                    `/api/courses/${courseSlug}/reviews?${params}`,
+                    { credentials: "include" },
+                );
+                const json = await res.json();
+                if (json.success) {
+                    setData(json.data);
+                    setTotalCount(json.data.pagination.total);
+
+                    if (append) {
+                        setAllReviews((prev) => [
+                            ...prev,
+                            ...json.data.reviews,
+                        ]);
+                    } else {
+                        setAllReviews(json.data.reviews);
+                    }
+                }
+            } catch {
+                console.error("Failed to fetch reviews");
+            } finally {
+                setLoading(false);
+                setLoadingMore(false);
             }
-        } catch {
-            console.error("Failed to fetch reviews");
-        } finally {
-            setLoading(false);
-        }
-    }, [courseSlug, page, sort, filterRating]);
+        },
+        [courseSlug, sort, filterRating],
+    );
 
     useEffect(() => {
-        fetchReviews();
+        setPage(1);
+        setAllReviews([]);
+        fetchReviews(1);
     }, [fetchReviews]);
+
+    const handleLoadMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchReviews(nextPage, true);
+    };
+
+    const hasMoreReviews = allReviews.length < totalCount;
 
     // Submit review
     const handleSubmitReview = async (rating: number, comment: string) => {
@@ -487,7 +532,9 @@ export default function CourseReviews({
                 toast.success(json.message);
                 setShowForm(false);
                 setEditMode(false);
-                fetchReviews();
+                setPage(1);
+                setAllReviews([]);
+                fetchReviews(1);
             } else {
                 toast.error(json.message);
             }
@@ -509,7 +556,9 @@ export default function CourseReviews({
             const json = await res.json();
             if (json.success) {
                 toast.success(json.message);
-                fetchReviews();
+                setPage(1);
+                setAllReviews([]);
+                fetchReviews(1);
             } else {
                 toast.error(json.message);
             }
@@ -534,22 +583,17 @@ export default function CourseReviews({
             });
             const json = await res.json();
             if (json.success) {
-                // Optimistic update
-                setData((prev) => {
-                    if (!prev) return prev;
-                    return {
-                        ...prev,
-                        reviews: prev.reviews.map((r) =>
-                            r.id === reviewId
-                                ? {
-                                      ...r,
-                                      isLiked: json.data.liked,
-                                      helpfulCount: json.data.helpfulCount,
-                                  }
-                                : r,
-                        ),
-                    };
-                });
+                setAllReviews((prev) =>
+                    prev.map((r) =>
+                        r.id === reviewId
+                            ? {
+                                  ...r,
+                                  isLiked: json.data.liked,
+                                  helpfulCount: json.data.helpfulCount,
+                              }
+                            : r,
+                    ),
+                );
             } else {
                 toast.error(json.message);
             }
@@ -564,11 +608,13 @@ export default function CourseReviews({
     const handleFilterClick = (star: number | null) => {
         setFilterRating(star);
         setPage(1);
+        setAllReviews([]);
     };
 
     const handleSortChange = (value: string) => {
         setSort(value);
         setPage(1);
+        setAllReviews([]);
         setShowSortDropdown(false);
     };
 
@@ -578,12 +624,14 @@ export default function CourseReviews({
     const shouldShowEditForm =
         !readOnly && isEnrolled && editMode && hasUserReview;
 
-    return (
-        <section className="py-20 bg-[#0a0c10]" id="reviews">
-            <div className="max-w-7xl mx-auto px-6">
-                {/* Section Header */}
+    // ═══════════════════ RENDER ═══════════════════
+
+    const reviewsContent = (
+        <div className={embedded ? "p-6" : "max-w-7xl mx-auto px-6"}>
+            {/* Section Header — only for non-embedded (landing page) */}
+            {!embedded && (
                 <div className="text-center mb-14">
-                    <h2 className="text-3xl lg:text-4xl font-extrabold mb-4">
+                    <h2 className="text-3xl lg:text-4xl font-extrabold mb-4 text-white">
                         Đánh giá từ{" "}
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">
                             học viên
@@ -594,254 +642,237 @@ export default function CourseReviews({
                         khóa học
                     </p>
                 </div>
+            )}
 
-                <div className="grid lg:grid-cols-3 gap-8">
-                    {/* Left: Rating Breakdown */}
-                    <div className="lg:col-span-1">
-                        <RatingBreakdown
-                            distribution={
-                                data?.distribution || {
-                                    1: 0,
-                                    2: 0,
-                                    3: 0,
-                                    4: 0,
-                                    5: 0,
-                                }
+            <div className="grid lg:grid-cols-3 gap-8">
+                {/* Left: Rating Breakdown */}
+                <div className="lg:col-span-1">
+                    <RatingBreakdown
+                        distribution={
+                            data?.distribution || {
+                                1: 0,
+                                2: 0,
+                                3: 0,
+                                4: 0,
+                                5: 0,
                             }
-                            avgRating={avgRating}
-                            totalReviews={totalReviews}
-                            onFilterClick={handleFilterClick}
-                            activeFilter={filterRating}
-                        />
+                        }
+                        avgRating={avgRating}
+                        totalReviews={totalReviews}
+                        onFilterClick={handleFilterClick}
+                        activeFilter={filterRating}
+                    />
 
-                        {/* Write Review Button (Desktop) */}
-                        {!readOnly &&
-                            isEnrolled &&
-                            !hasUserReview &&
-                            !showForm && (
-                                <motion.button
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    onClick={() => setShowForm(true)}
-                                    className="w-full mt-4 py-3 px-4 rounded-xl font-semibold text-sm text-white transition-all flex items-center justify-center gap-2"
-                                    style={{
-                                        background:
-                                            "linear-gradient(135deg, #6366f1, #9333ea)",
-                                    }}
-                                >
-                                    <MessageSquare className="w-4 h-4" />
-                                    Viết đánh giá
-                                </motion.button>
-                            )}
+                    {/* Write Review Button (Desktop) */}
+                    {!readOnly && isEnrolled && !hasUserReview && !showForm && (
+                        <motion.button
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            onClick={() => setShowForm(true)}
+                            className="w-full mt-4 py-3 px-4 rounded-xl font-semibold text-sm text-white transition-all flex items-center justify-center gap-2"
+                            style={{
+                                background:
+                                    "linear-gradient(135deg, #6366f1, #9333ea)",
+                            }}
+                        >
+                            <MessageSquare className="w-4 h-4" />
+                            Viết đánh giá
+                        </motion.button>
+                    )}
 
-                        {!readOnly &&
-                            isEnrolled &&
-                            hasUserReview &&
-                            !editMode && (
-                                <div className="mt-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 text-center">
-                                    <p className="text-indigo-400 text-sm font-medium">
-                                        ✓ Bạn đã đánh giá khóa học này
-                                    </p>
-                                </div>
-                            )}
+                    {!readOnly && isEnrolled && hasUserReview && !editMode && (
+                        <div className="mt-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 text-center">
+                            <p className="text-indigo-400 text-sm font-medium">
+                                ✓ Bạn đã đánh giá khóa học này
+                            </p>
+                        </div>
+                    )}
 
-                        {!isEnrolled && isAuthenticated && (
-                            <div className="mt-4 bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-                                <p className="text-gray-400 text-sm">
-                                    Đăng ký khóa học để viết đánh giá
-                                </p>
-                            </div>
-                        )}
-                    </div>
+                    {!isEnrolled && isAuthenticated && (
+                        <div className="mt-4 bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+                            <p className="text-gray-400 text-sm">
+                                Đăng ký khóa học để viết đánh giá
+                            </p>
+                        </div>
+                    )}
+                </div>
 
-                    {/* Right: Reviews */}
-                    <div className="lg:col-span-2 space-y-5">
-                        {/* Review Form */}
-                        <AnimatePresence>
-                            {(shouldShowForm || shouldShowEditForm) && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "auto", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden"
-                                >
-                                    <ReviewForm
-                                        existingReview={
-                                            editMode ? data?.userReview : null
-                                        }
-                                        onSubmit={handleSubmitReview}
-                                        submitting={submitting}
-                                        onCancel={() => {
-                                            setShowForm(false);
-                                            setEditMode(false);
-                                        }}
-                                    />
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Sort & Filter Controls */}
-                        <div className="flex items-center justify-between flex-wrap gap-3">
-                            {/* Sort Dropdown */}
-                            <div className="relative">
+                {/* Right: Reviews */}
+                <div className="lg:col-span-2 space-y-5">
+                    {/* Filter chips row */}
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                        {/* Star filter chips */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                                onClick={() => handleFilterClick(null)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                                    filterRating === null
+                                        ? "bg-indigo-500/20 border-indigo-500/30 text-indigo-400"
+                                        : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20"
+                                }`}
+                            >
+                                Tất cả
+                            </button>
+                            {[5, 4, 3, 2, 1].map((star) => (
                                 <button
+                                    key={star}
                                     onClick={() =>
-                                        setShowSortDropdown(!showSortDropdown)
+                                        handleFilterClick(
+                                            filterRating === star ? null : star,
+                                        )
                                     }
-                                    className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 hover:border-white/20 transition-colors"
+                                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                                        filterRating === star
+                                            ? "bg-indigo-500/20 border-indigo-500/30 text-indigo-400"
+                                            : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20"
+                                    }`}
                                 >
-                                    <span>
-                                        {
-                                            SORT_OPTIONS.find(
-                                                (o) => o.value === sort,
-                                            )?.label
-                                        }
-                                    </span>
-                                    <ChevronDown className="w-4 h-4" />
+                                    {star}
+                                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                                 </button>
-                                <AnimatePresence>
-                                    {showSortDropdown && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -8 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -8 }}
-                                            className="absolute top-full left-0 mt-1 bg-[#1a1d27] border border-white/10 rounded-lg shadow-xl overflow-hidden z-20 min-w-[160px]"
-                                        >
-                                            {SORT_OPTIONS.map((opt) => (
-                                                <button
-                                                    key={opt.value}
-                                                    onClick={() =>
-                                                        handleSortChange(
-                                                            opt.value,
-                                                        )
-                                                    }
-                                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${sort === opt.value ? "bg-indigo-500/20 text-indigo-400" : "text-gray-300 hover:bg-white/5"}`}
-                                                >
-                                                    {opt.label}
-                                                </button>
-                                            ))}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            {/* Star filter chips */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                                {filterRating && (
-                                    <button
-                                        onClick={() => handleFilterClick(null)}
-                                        className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
-                                    >
-                                        Xóa bộ lọc
-                                    </button>
-                                )}
-                                {[5, 4, 3, 2, 1].map((star) => (
-                                    <button
-                                        key={star}
-                                        onClick={() =>
-                                            handleFilterClick(
-                                                filterRating === star
-                                                    ? null
-                                                    : star,
-                                            )
-                                        }
-                                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                                            filterRating === star
-                                                ? "bg-indigo-500/20 border-indigo-500/30 text-indigo-400"
-                                                : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20"
-                                        }`}
-                                    >
-                                        {star}
-                                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                                    </button>
-                                ))}
-                            </div>
+                            ))}
                         </div>
 
-                        {/* Reviews List */}
-                        {loading ? (
-                            <div className="text-center py-12">
-                                <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mx-auto mb-3" />
-                                <p className="text-gray-400 text-sm">
-                                    Đang tải đánh giá...
-                                </p>
-                            </div>
-                        ) : data && data.reviews.length > 0 ? (
-                            <>
-                                <div className="space-y-4">
-                                    {data.reviews.map((review) => (
-                                        <ReviewCard
-                                            key={review.id}
-                                            review={review}
-                                            onLike={handleLike}
-                                            liking={liking}
-                                            isOwnReview={
-                                                review.user.id ===
-                                                (user as any)?.id
-                                            }
-                                            onEdit={() => setEditMode(true)}
-                                            onDelete={handleDeleteReview}
-                                        />
-                                    ))}
-                                </div>
-
-                                {/* Pagination */}
-                                {data.pagination.totalPages > 1 && (
-                                    <div className="flex items-center justify-center gap-2 pt-4">
-                                        <button
-                                            onClick={() =>
-                                                setPage((p) =>
-                                                    Math.max(1, p - 1),
-                                                )
-                                            }
-                                            disabled={page === 1}
-                                            className="px-3 py-1.5 rounded-lg text-sm border border-white/10 text-gray-400 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                        >
-                                            Trước
-                                        </button>
-                                        <span className="text-sm text-gray-400">
-                                            Trang {page}/
-                                            {data.pagination.totalPages}
-                                        </span>
-                                        <button
-                                            onClick={() =>
-                                                setPage((p) =>
-                                                    Math.min(
-                                                        data.pagination
-                                                            .totalPages,
-                                                        p + 1,
-                                                    ),
-                                                )
-                                            }
-                                            disabled={
-                                                page ===
-                                                data.pagination.totalPages
-                                            }
-                                            className="px-3 py-1.5 rounded-lg text-sm border border-white/10 text-gray-400 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                        >
-                                            Sau
-                                        </button>
-                                    </div>
+                        {/* Sort Dropdown */}
+                        <div className="relative">
+                            <button
+                                onClick={() =>
+                                    setShowSortDropdown(!showSortDropdown)
+                                }
+                                className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 hover:border-white/20 transition-colors"
+                            >
+                                <span>
+                                    {
+                                        SORT_OPTIONS.find(
+                                            (o) => o.value === sort,
+                                        )?.label
+                                    }
+                                </span>
+                                <ChevronDown className="w-4 h-4" />
+                            </button>
+                            <AnimatePresence>
+                                {showSortDropdown && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        className="absolute top-full right-0 mt-1 bg-[#1a1d27] border border-white/10 rounded-lg shadow-xl overflow-hidden z-20 min-w-[160px]"
+                                    >
+                                        {SORT_OPTIONS.map((opt) => (
+                                            <button
+                                                key={opt.value}
+                                                onClick={() =>
+                                                    handleSortChange(opt.value)
+                                                }
+                                                className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${sort === opt.value ? "bg-indigo-500/20 text-indigo-400" : "text-gray-300 hover:bg-white/5"}`}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </motion.div>
                                 )}
-                            </>
-                        ) : (
-                            <div className="text-center py-16 bg-white/5 border border-white/10 rounded-2xl">
-                                <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                                <h3 className="text-gray-300 font-semibold mb-1">
-                                    {filterRating
-                                        ? "Không có đánh giá nào"
-                                        : "Chưa có đánh giá"}
-                                </h3>
-                                <p className="text-gray-500 text-sm">
-                                    {filterRating
-                                        ? `Không có đánh giá ${filterRating} sao. Hãy thử bỏ bộ lọc.`
-                                        : "Hãy là người đầu tiên đánh giá khóa học này!"}
-                                </p>
-                            </div>
-                        )}
+                            </AnimatePresence>
+                        </div>
                     </div>
+
+                    {/* Reviews List */}
+                    {loading ? (
+                        <div className="text-center py-12">
+                            <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mx-auto mb-3" />
+                            <p className="text-gray-400 text-sm">
+                                Đang tải đánh giá...
+                            </p>
+                        </div>
+                    ) : allReviews.length > 0 ? (
+                        <>
+                            <div className="space-y-4">
+                                {allReviews.map((review) => (
+                                    <ReviewCard
+                                        key={review.id}
+                                        review={review}
+                                        onLike={handleLike}
+                                        liking={liking}
+                                        isOwnReview={
+                                            review.user.id === (user as any)?.id
+                                        }
+                                        onEdit={() => setEditMode(true)}
+                                        onDelete={handleDeleteReview}
+                                        readOnly={readOnly}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* Xem thêm đánh giá */}
+                            {hasMoreReviews && (
+                                <div className="pt-2">
+                                    <button
+                                        onClick={handleLoadMore}
+                                        disabled={loadingMore}
+                                        className="w-full py-3.5 bg-white/5 border border-white/10 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {loadingMore ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Đang tải...
+                                            </>
+                                        ) : (
+                                            `Xem thêm đánh giá (${totalCount - allReviews.length} còn lại)`
+                                        )}
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className="text-center py-16 bg-white/5 border border-white/10 rounded-2xl">
+                            <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                            <h3 className="text-gray-300 font-semibold mb-1">
+                                {filterRating
+                                    ? "Không có đánh giá nào"
+                                    : "Chưa có đánh giá"}
+                            </h3>
+                            <p className="text-gray-500 text-sm">
+                                {filterRating
+                                    ? `Không có đánh giá ${filterRating} sao. Hãy thử bỏ bộ lọc.`
+                                    : "Hãy là người đầu tiên đánh giá khóa học này!"}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Review Form — shown below reviews list */}
+                    <AnimatePresence>
+                        {(shouldShowForm || shouldShowEditForm) && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                            >
+                                <ReviewForm
+                                    existingReview={
+                                        editMode ? data?.userReview : null
+                                    }
+                                    onSubmit={handleSubmitReview}
+                                    submitting={submitting}
+                                    onCancel={() => {
+                                        setShowForm(false);
+                                        setEditMode(false);
+                                    }}
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
+        </div>
+    );
+
+    if (embedded) {
+        return reviewsContent;
+    }
+
+    return (
+        <section className="py-20 bg-[#0a0c10]" id="reviews">
+            {reviewsContent}
         </section>
     );
 }

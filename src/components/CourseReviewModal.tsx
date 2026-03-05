@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Star, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CourseReviews from "@/components/CourseReviews";
@@ -61,13 +60,14 @@ export default function CourseReviewModal({
                             </button>
                         </div>
 
-                        {/* Content */}
+                        {/* Content — embedded mode strips the section wrapper */}
                         <div className="flex-1 overflow-y-auto">
                             <CourseReviews
                                 courseSlug={courseSlug}
                                 courseRating={0}
                                 ratingCount={0}
                                 isEnrolled={true}
+                                embedded={true}
                             />
                         </div>
                     </motion.div>
