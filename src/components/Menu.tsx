@@ -46,7 +46,7 @@ const publicMenuItems: MenuItem[] = [
 
 const adminMenuItem: MenuItem = {
     id: "admin",
-    iconClass: "fa-solid fa-shield-halved",
+    iconClass: "fa-solid fa-screwdriver-wrench",
     label: "Admin",
     href: "/admin/lessons",
 };
@@ -139,9 +139,6 @@ export default function Menu() {
                             (item.href !== "/" &&
                                 pathname?.startsWith(item.href));
 
-                        // Highlight admin item differently
-                        const isAdminItem = item.id === "admin";
-
                         return (
                             <Link
                                 key={item.id}
@@ -151,12 +148,8 @@ export default function Menu() {
                   transition-all duration-200 cursor-pointer pointer-events-auto
                   ${
                       isActive
-                          ? isAdminItem
-                              ? "bg-purple-500/15 text-purple-600"
-                              : "bg-primary/10 text-primary"
-                          : isAdminItem
-                            ? "text-muted-foreground hover:text-purple-600 hover:bg-purple-500/10"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                   }
                 `}
                                 title={item.label}
@@ -167,12 +160,8 @@ export default function Menu() {
                     ${item.iconClass} h-5 w-5 mb-1 text-[18px] leading-none transition-colors duration-200 flex-shrink-0
                     ${
                         isActive
-                            ? isAdminItem
-                                ? "text-purple-600"
-                                : "text-primary"
-                            : isAdminItem
-                              ? "text-muted-foreground group-hover:text-purple-600"
-                              : "text-muted-foreground group-hover:text-foreground"
+                            ? "text-primary"
+                            : "text-muted-foreground group-hover:text-foreground"
                     }
                   `}
                                 />
@@ -181,12 +170,8 @@ export default function Menu() {
                     text-xs font-medium transition-colors duration-200 text-center leading-tight
                     ${
                         isActive
-                            ? isAdminItem
-                                ? "text-purple-600"
-                                : "text-primary"
-                            : isAdminItem
-                              ? "text-muted-foreground group-hover:text-purple-600"
-                              : "text-muted-foreground group-hover:text-foreground"
+                            ? "text-primary"
+                            : "text-muted-foreground group-hover:text-foreground"
                     }
                   `}
                                 >
