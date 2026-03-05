@@ -59,6 +59,7 @@ interface CourseReviewsProps {
     courseRating: number;
     ratingCount: number;
     isEnrolled: boolean;
+    readOnly?: boolean;
 }
 
 const SORT_OPTIONS = [
@@ -420,6 +421,7 @@ export default function CourseReviews({
     courseRating,
     ratingCount,
     isEnrolled,
+    readOnly = false,
 }: CourseReviewsProps) {
     const { isAuthenticated, user } = useAuth();
     const toast = useToast();
@@ -572,8 +574,9 @@ export default function CourseReviews({
 
     const hasUserReview = !!data?.userReview;
     const shouldShowForm =
-        isEnrolled && (showForm || editMode) && !hasUserReview;
-    const shouldShowEditForm = isEnrolled && editMode && hasUserReview;
+        !readOnly && isEnrolled && (showForm || editMode) && !hasUserReview;
+    const shouldShowEditForm =
+        !readOnly && isEnrolled && editMode && hasUserReview;
 
     return (
         <section className="py-20 bg-[#0a0c10]" id="reviews">
@@ -612,29 +615,35 @@ export default function CourseReviews({
                         />
 
                         {/* Write Review Button (Desktop) */}
-                        {isEnrolled && !hasUserReview && !showForm && (
-                            <motion.button
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                onClick={() => setShowForm(true)}
-                                className="w-full mt-4 py-3 px-4 rounded-xl font-semibold text-sm text-white transition-all flex items-center justify-center gap-2"
-                                style={{
-                                    background:
-                                        "linear-gradient(135deg, #6366f1, #9333ea)",
-                                }}
-                            >
-                                <MessageSquare className="w-4 h-4" />
-                                Viết đánh giá
-                            </motion.button>
-                        )}
+                        {!readOnly &&
+                            isEnrolled &&
+                            !hasUserReview &&
+                            !showForm && (
+                                <motion.button
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    onClick={() => setShowForm(true)}
+                                    className="w-full mt-4 py-3 px-4 rounded-xl font-semibold text-sm text-white transition-all flex items-center justify-center gap-2"
+                                    style={{
+                                        background:
+                                            "linear-gradient(135deg, #6366f1, #9333ea)",
+                                    }}
+                                >
+                                    <MessageSquare className="w-4 h-4" />
+                                    Viết đánh giá
+                                </motion.button>
+                            )}
 
-                        {isEnrolled && hasUserReview && !editMode && (
-                            <div className="mt-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 text-center">
-                                <p className="text-indigo-400 text-sm font-medium">
-                                    ✓ Bạn đã đánh giá khóa học này
-                                </p>
-                            </div>
-                        )}
+                        {!readOnly &&
+                            isEnrolled &&
+                            hasUserReview &&
+                            !editMode && (
+                                <div className="mt-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 text-center">
+                                    <p className="text-indigo-400 text-sm font-medium">
+                                        ✓ Bạn đã đánh giá khóa học này
+                                    </p>
+                                </div>
+                            )}
 
                         {!isEnrolled && isAuthenticated && (
                             <div className="mt-4 bg-white/5 border border-white/10 rounded-xl p-4 text-center">

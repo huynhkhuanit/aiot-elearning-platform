@@ -42,6 +42,9 @@ import QuestionDetailModal from "@/components/QuestionDetailModal";
 import CodePlayground from "@/components/CodePlayground";
 import LearnCourseSidebar from "@/components/LearnCourseSidebar";
 import CertificateModal from "@/components/CertificateModal";
+import CourseReviewModal, {
+    CourseReviewButton,
+} from "@/components/CourseReviewModal";
 import "@/app/markdown.css";
 import "@/app/markdown.css";
 
@@ -118,6 +121,7 @@ export default function LearnCoursePage() {
         null,
     );
     const [showCertificateModal, setShowCertificateModal] = useState(false);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const { isAuthenticated, user, isLoading: authLoading } = useAuth();
     const toast = useToast();
 
@@ -997,6 +1001,23 @@ export default function LearnCoursePage() {
                     />
                 )}
             </div>
+
+            {/* Review Button - Fixed on bottom left (next to Q&A) */}
+            {course && (
+                <CourseReviewButton
+                    onClick={() => setIsReviewModalOpen(true)}
+                />
+            )}
+
+            {/* Review Modal */}
+            {course && (
+                <CourseReviewModal
+                    isOpen={isReviewModalOpen}
+                    onClose={() => setIsReviewModalOpen(false)}
+                    courseSlug={slug as string}
+                    courseTitle={course.title}
+                />
+            )}
 
             {/* Q&A Button - Fixed on bottom left */}
             {currentLesson && (

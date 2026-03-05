@@ -1131,6 +1131,7 @@ export default function CourseDetailPage() {
                 courseRating={course.rating}
                 ratingCount={course.ratingCount || 0}
                 isEnrolled={!!course.isEnrolled}
+                readOnly={true}
             />
 
             {/* ═══════════════════════════════════════════════════════════
