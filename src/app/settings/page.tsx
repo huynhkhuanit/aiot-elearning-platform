@@ -746,51 +746,48 @@ export default function SettingsPage() {
                                         ) : (
                                             <form
                                                 onSubmit={handleProfileSubmit}
-                                                className="space-y-6"
+                                                className="space-y-0"
                                             >
-                                                {/* Avatar */}
-                                                <div className="flex items-center gap-5 p-4 bg-gray-50 rounded-xl">
-                                                    <div className="relative">
-                                                        <AvatarWithProBadge
-                                                            avatarUrl={
-                                                                avatarPreview
-                                                            }
-                                                            fullName={
-                                                                user?.full_name ||
-                                                                "User"
-                                                            }
-                                                            isPro={
-                                                                user?.membership_type ===
-                                                                "PRO"
-                                                            }
-                                                            size="xl"
-                                                        />
-                                                        {uploadingAvatar && (
-                                                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                                                                <div className="animate-spin rounded-full h-7 w-7 border-2 border-white/30 border-t-white" />
-                                                            </div>
-                                                        )}
-                                                        <button
-                                                            type="button"
-                                                            onClick={
-                                                                handleAvatarClick
-                                                            }
-                                                            disabled={
-                                                                uploadingAvatar
-                                                            }
-                                                            className="absolute -bottom-1 -right-1 bg-indigo-600 text-white p-1.5 rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-lg"
-                                                        >
-                                                            <Camera className="w-3.5 h-3.5" />
-                                                        </button>
+                                                {/* Avatar Section - Stitch Style */}
+                                                <div className="flex items-center justify-between pb-6 border-b border-gray-100">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="relative">
+                                                            <AvatarWithProBadge
+                                                                avatarUrl={
+                                                                    avatarPreview
+                                                                }
+                                                                fullName={
+                                                                    user?.full_name ||
+                                                                    "User"
+                                                                }
+                                                                isPro={
+                                                                    user?.membership_type ===
+                                                                    "PRO"
+                                                                }
+                                                                size="xl"
+                                                            />
+                                                            {uploadingAvatar && (
+                                                                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                                                                    <div className="animate-spin rounded-full h-7 w-7 border-2 border-white/30 border-t-white" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-base font-bold text-gray-900">
+                                                                {user?.full_name ||
+                                                                    "Chưa cập nhật"}
+                                                            </p>
+                                                            <p className="text-sm text-gray-500 mt-0.5">
+                                                                Thành viên từ{" "}
+                                                                {user?.created_at
+                                                                    ? new Date(
+                                                                          user.created_at,
+                                                                      ).getFullYear()
+                                                                    : new Date().getFullYear()}
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                     <div>
-                                                        <p className="font-semibold text-gray-900">
-                                                            {user?.full_name ||
-                                                                "Chưa cập nhật"}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500 mt-0.5">
-                                                            @{user?.username}
-                                                        </p>
                                                         <input
                                                             ref={fileInputRef}
                                                             type="file"
@@ -811,17 +808,17 @@ export default function SettingsPage() {
                                                             disabled={
                                                                 uploadingAvatar
                                                             }
-                                                            className="text-xs text-indigo-600 hover:text-indigo-700 font-medium mt-2 disabled:opacity-50"
+                                                            className="px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 active:scale-[0.98] transition-all disabled:opacity-50"
                                                         >
                                                             {uploadingAvatar
                                                                 ? "Đang tải lên..."
-                                                                : "Thay đổi ảnh đại diện"}
+                                                                : "Chọn ảnh mới"}
                                                         </button>
                                                     </div>
                                                 </div>
 
-                                                {/* Name + Username */}
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {/* Name + Username - 2 cols */}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-6">
                                                     <InputField
                                                         label="Họ và tên"
                                                         value={
@@ -847,32 +844,45 @@ export default function SettingsPage() {
                                                             })
                                                         }
                                                         placeholder="huynhkhuanit"
-                                                        hint="Xuất hiện trong URL profile của bạn"
                                                     />
                                                 </div>
 
-                                                {/* Phone */}
-                                                <InputField
-                                                    label="Số điện thoại"
-                                                    icon={
-                                                        <Phone className="w-4 h-4" />
-                                                    }
-                                                    value={profileForm.phone}
-                                                    onChange={(v) =>
-                                                        setProfileForm({
-                                                            ...profileForm,
-                                                            phone: v.replace(
-                                                                /[^\d+\-\s()]/g,
-                                                                "",
-                                                            ),
-                                                        })
-                                                    }
-                                                    placeholder="0123456789 hoặc +84..."
-                                                    hint="Dùng để khôi phục mật khẩu và nhận mã OTP"
-                                                />
+                                                {/* Email + Phone - 2 cols */}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-5">
+                                                    <div>
+                                                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                                            Email
+                                                        </label>
+                                                        <input
+                                                            type="email"
+                                                            value={
+                                                                user?.email ||
+                                                                ""
+                                                            }
+                                                            disabled
+                                                            className="w-full px-3.5 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-500 cursor-not-allowed"
+                                                        />
+                                                    </div>
+                                                    <InputField
+                                                        label="Số điện thoại"
+                                                        value={
+                                                            profileForm.phone
+                                                        }
+                                                        onChange={(v) =>
+                                                            setProfileForm({
+                                                                ...profileForm,
+                                                                phone: v.replace(
+                                                                    /[^\d+\-\s()]/g,
+                                                                    "",
+                                                                ),
+                                                            })
+                                                        }
+                                                        placeholder="+84 987 654 321"
+                                                    />
+                                                </div>
 
                                                 {/* Bio */}
-                                                <div>
+                                                <div className="pt-5">
                                                     <label className="block text-sm font-semibold text-gray-900 mb-2">
                                                         Giới thiệu
                                                     </label>
@@ -886,35 +896,28 @@ export default function SettingsPage() {
                                                             })
                                                         }
                                                         rows={3}
-                                                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none"
-                                                        placeholder="Viết giới thiệu ngắn về bạn..."
+                                                        className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none"
+                                                        placeholder="Đam mê AI và IoT, đang học hỏi để áp dụng vào các dự án thực tế."
                                                     />
                                                 </div>
 
-                                                {/* Social Links */}
-                                                <div className="border-t border-gray-100 pt-6">
-                                                    <h3 className="text-sm font-bold text-gray-900 mb-1">
+                                                {/* Social Links - 2 col grid */}
+                                                <div className="border-t border-gray-100 mt-6 pt-6">
+                                                    <h3 className="text-sm font-bold text-gray-900 mb-4">
                                                         Liên kết mạng xã hội
                                                     </h3>
-                                                    <p className="text-xs text-gray-500 mb-4">
-                                                        Hiển thị trên trang cá
-                                                        nhân của bạn.
-                                                    </p>
-                                                    <div className="space-y-3">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {socialLinks.map(
                                                             ({
                                                                 key,
                                                                 icon: SIcon,
-                                                                label,
                                                                 placeholder,
                                                             }) => (
                                                                 <div
                                                                     key={key}
-                                                                    className="flex items-center gap-3"
+                                                                    className="relative"
                                                                 >
-                                                                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                                                                        <SIcon className="w-4 h-4 text-gray-500" />
-                                                                    </div>
+                                                                    <SIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                                                     <input
                                                                         type="url"
                                                                         value={
@@ -936,7 +939,7 @@ export default function SettingsPage() {
                                                                                 },
                                                                             )
                                                                         }
-                                                                        className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm placeholder:text-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all"
+                                                                        className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all"
                                                                         placeholder={
                                                                             placeholder
                                                                         }
@@ -948,7 +951,7 @@ export default function SettingsPage() {
                                                 </div>
 
                                                 {/* Submit */}
-                                                <div className="flex justify-end pt-2">
+                                                <div className="flex justify-end pt-6">
                                                     <button
                                                         type="submit"
                                                         disabled={loading}
