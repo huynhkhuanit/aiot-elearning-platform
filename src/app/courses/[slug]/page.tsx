@@ -48,6 +48,7 @@ import Link from "next/link";
 import Image from "next/image";
 import PageContainer from "@/components/PageContainer";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
+import CourseReviews from "@/components/CourseReviews";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 
@@ -61,6 +62,7 @@ interface CourseDetail {
     price: string;
     priceAmount: number;
     rating: number;
+    ratingCount?: number;
     students: number;
     duration: string;
     durationMinutes?: number;
@@ -1122,7 +1124,17 @@ export default function CourseDetailPage() {
             </section>
 
             {/* ═══════════════════════════════════════════════════════════
-                SECTION 9: FINAL CTA
+                SECTION 9: STUDENT REVIEWS
+               ═══════════════════════════════════════════════════════════ */}
+            <CourseReviews
+                courseSlug={slug}
+                courseRating={course.rating}
+                ratingCount={course.ratingCount || 0}
+                isEnrolled={!!course.isEnrolled}
+            />
+
+            {/* ═══════════════════════════════════════════════════════════
+                SECTION 10: FINAL CTA
                ═══════════════════════════════════════════════════════════ */}
             <section className="py-20 bg-[#0a0c10] relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/10 via-transparent to-transparent" />

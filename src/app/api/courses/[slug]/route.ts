@@ -47,6 +47,7 @@ export async function GET(
         is_published,
         estimated_duration,
         rating,
+        rating_count,
         total_students,
         total_lessons,
         created_at,
@@ -160,6 +161,7 @@ export async function GET(
             durationMinutes:
                 computedDurationMinutes || course.estimated_duration,
             rating: parseFloat(course.rating || "0"),
+            ratingCount: course.rating_count || 0,
             students: course.total_students,
             totalLessons: computedTotalLessons || course.total_lessons,
             isEnrolled: isEnrolled,
