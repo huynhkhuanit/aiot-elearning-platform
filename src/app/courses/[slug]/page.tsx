@@ -979,92 +979,240 @@ export default function CourseDetailPage() {
             </section>
 
             {/* ═══════════════════════════════════════════════════════════
-                SECTION 7: REVIEWS
+                SECTION 7: TESTIMONIAL MARQUEE WALL
                ═══════════════════════════════════════════════════════════ */}
-            <section className="py-20 bg-[#0a0c10]">
-                <PageContainer>
-                    <div className="text-center mb-14">
-                        <h2 className="text-3xl lg:text-4xl font-extrabold mb-4">
-                            Học viên{" "}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">
-                                nói gì?
-                            </span>
-                        </h2>
-                        <div className="flex items-center justify-center gap-3 mt-4">
-                            <div className="flex text-yellow-400">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star
-                                        key={i}
-                                        className="w-5 h-5 fill-current"
-                                    />
-                                ))}
+            {(() => {
+                const testimonials = [
+                    {
+                        name: "Minh Tuấn",
+                        role: "Frontend Developer",
+                        text: "Khóa học giúp mình xây dựng kiến thức vững chắc. Giảng viên dạy rất dễ hiểu, bài tập thực tế giúp mình áp dụng ngay vào công việc.",
+                        rating: 5,
+                        isPro: true,
+                    },
+                    {
+                        name: "Thu Hà",
+                        role: "Sinh viên CNTT",
+                        text: "Mình đã tự học rất lâu nhưng không có hệ thống. Khóa học này giúp mình sắp xếp lại kiến thức và tự tin hơn rất nhiều.",
+                        rating: 5,
+                        isPro: false,
+                    },
+                    {
+                        name: "Đức Anh",
+                        role: "Junior Developer",
+                        text: "Sau khi hoàn thành khóa học, mình đã tự tin apply và nhận được offer tại một công ty phần mềm. Rất đáng!",
+                        rating: 5,
+                        isPro: true,
+                    },
+                    {
+                        name: "Phương Linh",
+                        role: "UI/UX Designer",
+                        text: "Nội dung rất chi tiết và cập nhật. Mình đã áp dụng được kiến thức ngay trong dự án thực tế của công ty.",
+                        rating: 5,
+                        isPro: false,
+                    },
+                    {
+                        name: "Hoàng Nam",
+                        role: "Fullstack Developer",
+                        text: "Giảng viên rất nhiệt tình, giải đáp thắc mắc rất nhanh. Đây là khóa học đáng đầu tư nhất mà mình từng học.",
+                        rating: 5,
+                        isPro: true,
+                    },
+                    {
+                        name: "Thanh Trúc",
+                        role: "Product Manager",
+                        text: "Dù không phải dev nhưng khóa học giúp mình hiểu sâu hơn về kỹ thuật, làm việc với team hiệu quả hơn rất nhiều.",
+                        rating: 4,
+                        isPro: false,
+                    },
+                    {
+                        name: "Văn Hùng",
+                        role: "DevOps Engineer",
+                        text: "Kiến thức cơ bản được trình bày rõ ràng, dễ hiểu. Rất phù hợp cho những ai muốn chuyển ngành sang lập trình.",
+                        rating: 5,
+                        isPro: true,
+                    },
+                    {
+                        name: "Ngọc Ánh",
+                        role: "QA Engineer",
+                        text: "Bài tập cuối khóa rất thực tế. Mình đã xây dựng được portfolio ấn tượng nhờ những project trong khóa học.",
+                        rating: 5,
+                        isPro: false,
+                    },
+                    {
+                        name: "Quốc Bảo",
+                        role: "Mobile Developer",
+                        text: "Lộ trình học rất rõ ràng, từ cơ bản đến nâng cao. Mình tiết kiệm được rất nhiều thời gian tự tìm tài liệu.",
+                        rating: 5,
+                        isPro: true,
+                    },
+                    {
+                        name: "Hải Yến",
+                        role: "Fresher Frontend",
+                        text: "Nhờ khóa học mà mình đã pass được buổi phỏng vấn đầu tiên. Cảm ơn giảng viên rất nhiều!",
+                        rating: 5,
+                        isPro: false,
+                    },
+                    {
+                        name: "Trọng Nhân",
+                        role: "Backend Developer",
+                        text: "Code mẫu rất clean, best practices được áp dụng xuyên suốt. Mình học được rất nhiều pattern hay.",
+                        rating: 4,
+                        isPro: true,
+                    },
+                    {
+                        name: "Mai Lan",
+                        role: "Data Analyst",
+                        text: "Mình chuyển từ Data sang Dev, khóa học này là bước đệm hoàn hảo. Nội dung sát thực tế, dễ áp dụng.",
+                        rating: 5,
+                        isPro: false,
+                    },
+                ];
+
+                const row1 = testimonials.slice(0, 6);
+                const row2 = testimonials.slice(6, 12);
+
+                const TestimonialCard = ({
+                    review,
+                }: {
+                    review: (typeof testimonials)[0];
+                }) => (
+                    <div className="flex-shrink-0 w-[340px] bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:bg-white/[0.07] hover:border-white/[0.15] transition-all duration-300 group">
+                        {/* Stars */}
+                        <div className="flex gap-0.5 mb-4">
+                            {[...Array(5)].map((_, j) => (
+                                <Star
+                                    key={j}
+                                    className={`w-4 h-4 transition-colors ${
+                                        j < review.rating
+                                            ? "fill-yellow-400 text-yellow-400"
+                                            : "fill-gray-700 text-gray-700"
+                                    }`}
+                                />
+                            ))}
+                        </div>
+                        {/* Quote */}
+                        <p className="text-gray-300/90 text-sm leading-relaxed mb-5 line-clamp-4 group-hover:text-gray-200 transition-colors">
+                            &ldquo;{review.text}&rdquo;
+                        </p>
+                        {/* Author */}
+                        <div className="flex items-center gap-3 mt-auto">
+                            <AvatarWithProBadge
+                                fullName={review.name}
+                                isPro={review.isPro}
+                                size="sm"
+                            />
+                            <div>
+                                <p className="font-semibold text-sm text-white/90">
+                                    {review.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {review.role}
+                                </p>
                             </div>
-                            <span className="text-yellow-400 font-bold text-lg">
-                                {course.rating}
-                            </span>
-                            <span className="text-gray-400">
-                                ({course.students.toLocaleString()} đánh giá)
-                            </span>
                         </div>
                     </div>
+                );
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                        {[
-                            {
-                                name: "Minh Tuấn",
-                                role: "Frontend Developer",
-                                text: "Khóa học giúp mình xây dựng kiến thức vững chắc. Giảng viên dạy rất dễ hiểu, bài tập thực tế giúp mình áp dụng ngay vào công việc.",
-                            },
-                            {
-                                name: "Thu Hà",
-                                role: "Sinh viên CNTT",
-                                text: "Mình đã tự học rất lâu nhưng không có hệ thống. Khóa học này giúp mình sắp xếp lại kiến thức và tự tin hơn rất nhiều.",
-                            },
-                            {
-                                name: "Đức Anh",
-                                role: "Junior Developer",
-                                text: "Sau khi hoàn thành khóa học, mình đã tự tin apply và nhận được offer tại một công ty phần mềm. Rất đáng!",
-                            },
-                        ].map((review, i) => (
-                            <motion.div
-                                key={i}
+                return (
+                    <section className="py-20 bg-[#0a0c10] overflow-hidden">
+                        {/* Inline keyframes for marquee */}
+                        <style
+                            dangerouslySetInnerHTML={{
+                                __html: `
+                            @keyframes marquee-left {
+                                0% { transform: translateX(0); }
+                                100% { transform: translateX(-50%); }
+                            }
+                            @keyframes marquee-right {
+                                0% { transform: translateX(-50%); }
+                                100% { transform: translateX(0); }
+                            }
+                            .marquee-track-left {
+                                animation: marquee-left 60s linear infinite;
+                            }
+                            .marquee-track-right {
+                                animation: marquee-right 60s linear infinite;
+                            }
+                            .marquee-container:hover .marquee-track-left,
+                            .marquee-container:hover .marquee-track-right {
+                                animation-play-state: paused;
+                            }
+                        `,
+                            }}
+                        />
+
+                        {/* Section Header */}
+                        <div className="text-center mb-14 px-6">
+                            <motion.h2
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
-                                transition={{ delay: i * 0.1 }}
-                                className="bg-white/5 border border-white/10 rounded-2xl p-6"
+                                className="text-3xl lg:text-4xl font-extrabold mb-4"
                             >
-                                <div className="flex text-yellow-400 mb-4">
-                                    {[...Array(5)].map((_, j) => (
+                                Học viên{" "}
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">
+                                    nói gì?
+                                </span>
+                            </motion.h2>
+                            <motion.div
+                                initial={{ opacity: 0, y: 12 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: 0.1 }}
+                                className="flex items-center justify-center gap-3 mt-4"
+                            >
+                                <div className="flex text-yellow-400">
+                                    {[...Array(5)].map((_, i) => (
                                         <Star
-                                            key={j}
-                                            className="w-4 h-4 fill-current"
+                                            key={i}
+                                            className="w-5 h-5 fill-current"
                                         />
                                     ))}
                                 </div>
-                                <p className="text-gray-300 text-sm leading-relaxed mb-5 italic">
-                                    &ldquo;{review.text}&rdquo;
-                                </p>
-                                <div className="flex items-center gap-3">
-                                    <AvatarWithProBadge
-                                        fullName={review.name}
-                                        isPro={i % 2 === 0}
-                                        size="sm"
-                                    />
-                                    <div>
-                                        <p className="font-semibold text-sm">
-                                            {review.name}
-                                        </p>
-                                        <p className="text-xs text-gray-400">
-                                            {review.role}
-                                        </p>
-                                    </div>
-                                </div>
+                                <span className="text-yellow-400 font-bold text-lg">
+                                    {course.rating}
+                                </span>
+                                <span className="text-gray-400">
+                                    ({course.students.toLocaleString()} đánh
+                                    giá)
+                                </span>
                             </motion.div>
-                        ))}
-                    </div>
-                </PageContainer>
-            </section>
+                        </div>
+
+                        {/* Marquee Wall */}
+                        <div className="marquee-container space-y-5 relative">
+                            {/* Gradient fade edges */}
+                            <div className="pointer-events-none absolute inset-y-0 left-0 w-24 lg:w-40 bg-gradient-to-r from-[#0a0c10] to-transparent z-10" />
+                            <div className="pointer-events-none absolute inset-y-0 right-0 w-24 lg:w-40 bg-gradient-to-l from-[#0a0c10] to-transparent z-10" />
+
+                            {/* Row 1 — scrolls left */}
+                            <div
+                                className="flex marquee-track-left"
+                                style={{ width: "max-content" }}
+                            >
+                                {[...row1, ...row1].map((review, i) => (
+                                    <div key={`r1-${i}`} className="px-2.5">
+                                        <TestimonialCard review={review} />
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Row 2 — scrolls right */}
+                            <div
+                                className="flex marquee-track-right"
+                                style={{ width: "max-content" }}
+                            >
+                                {[...row2, ...row2].map((review, i) => (
+                                    <div key={`r2-${i}`} className="px-2.5">
+                                        <TestimonialCard review={review} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                );
+            })()}
 
             {/* ═══════════════════════════════════════════════════════════
                 SECTION 8: FAQ

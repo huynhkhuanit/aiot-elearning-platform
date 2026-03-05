@@ -82,9 +82,9 @@ export default function AvatarWithProBadge({
                         className="w-full h-full object-cover"
                     />
                 ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center">
+                    <div className="w-full h-full bg-gradient-to-br from-teal-500 to-cyan-700 flex items-center justify-center">
                         <span
-                            className={`${s.text} font-bold text-white leading-none`}
+                            className={`${s.text} font-light text-white/90 leading-none tracking-wide`}
                         >
                             {initials}
                         </span>
