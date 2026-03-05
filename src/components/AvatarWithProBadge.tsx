@@ -9,19 +9,51 @@ interface AvatarWithProBadgeProps {
 }
 
 const sizeMap = {
-    "2xs": { outer: 20, border: 1, gap: 0, text: "text-[7px]" },
-    xs: { outer: 32, border: 2.5, gap: 1.5, text: "text-xs" },
-    sm: { outer: 40, border: 3, gap: 1.5, text: "text-sm" },
-    md: { outer: 48, border: 3, gap: 2, text: "text-base" },
-    lg: { outer: 64, border: 3.5, gap: 2.5, text: "text-lg" },
-    xl: { outer: 80, border: 4, gap: 3, text: "text-xl" },
-    "2xl": { outer: 128, border: 5, gap: 4, text: "text-3xl" },
+    "2xs": { outer: 20, ring: 2, gap: 1, text: "text-[7px]" },
+    xs: { outer: 32, ring: 2, gap: 1, text: "text-xs" },
+    sm: { outer: 40, ring: 3, gap: 2, text: "text-sm" },
+    md: { outer: 48, ring: 3, gap: 2, text: "text-base" },
+    lg: { outer: 64, ring: 3, gap: 2, text: "text-lg" },
+    xl: { outer: 80, ring: 4, gap: 2, text: "text-xl" },
+    "2xl": { outer: 128, ring: 5, gap: 3, text: "text-3xl" },
 };
 
-// Google 4-color ring — customized angles to match exact UI reference
-// Red (top), Blue (right), Green (bottom), Yellow (narrow left strip)
+// Google 4-color ring
 const GOOGLE_RING =
     "conic-gradient(from 0deg, #EA4335 0deg 45deg, #4285F4 45deg 135deg, #34A853 135deg 250deg, #FBBC05 250deg 290deg, #EA4335 290deg 360deg)";
+
+function AvatarContent({
+    avatarUrl,
+    fullName,
+    initials,
+    textClass,
+}: {
+    avatarUrl?: string | null;
+    fullName: string;
+    initials: string;
+    textClass: string;
+}) {
+    if (avatarUrl) {
+        return (
+            <Image
+                src={avatarUrl}
+                alt={fullName}
+                width={128}
+                height={128}
+                className="w-full h-full object-cover"
+            />
+        );
+    }
+    return (
+        <div className="w-full h-full bg-gradient-to-br from-teal-500 to-cyan-700 flex items-center justify-center">
+            <span
+                className={`${textClass} font-light text-white/90 leading-none tracking-wide`}
+            >
+                {initials}
+            </span>
+        </div>
+    );
+}
 
 export default function AvatarWithProBadge({
     avatarUrl,
@@ -31,9 +63,6 @@ export default function AvatarWithProBadge({
     className = "",
 }: AvatarWithProBadgeProps) {
     const s = sizeMap[size];
-    const inset = s.border + s.gap;
-    const inner = s.outer - inset * 2;
-
     const initials = (fullName || "U")
         .split(" ")
         .map((n) => n[0])
@@ -41,55 +70,54 @@ export default function AvatarWithProBadge({
         .toUpperCase()
         .slice(0, 2);
 
+    // FREE users: clean avatar, no ring — Google-style
+    if (!isPro) {
+        return (
+            <div
+                className={`relative inline-flex items-center justify-center shrink-0 rounded-full overflow-hidden ${className}`}
+                style={{ width: s.outer, height: s.outer }}
+            >
+                <AvatarContent
+                    avatarUrl={avatarUrl}
+                    fullName={fullName || "User"}
+                    initials={initials}
+                    textClass={s.text}
+                />
+            </div>
+        );
+    }
+
+    // PRO users: Google 4-color ring + white gap + avatar
+    const avatarInset = s.ring + s.gap;
+
     return (
         <div
             className={`relative inline-flex items-center justify-center shrink-0 ${className}`}
             style={{ width: s.outer, height: s.outer }}
         >
-            {/* Gradient ring */}
+            {/* Google gradient ring */}
             <div
                 className="absolute inset-0 rounded-full"
-                style={{ background: isPro ? GOOGLE_RING : "#d1d5db" }}
+                style={{ background: GOOGLE_RING }}
             />
 
-            {/* White gap */}
+            {/* White gap ring */}
             <div
                 className="absolute rounded-full bg-white"
-                style={{
-                    top: s.border,
-                    left: s.border,
-                    right: s.border,
-                    bottom: s.border,
-                }}
+                style={{ inset: s.ring }}
             />
 
-            {/* Avatar — centered via top/left/right/bottom with fixed size */}
+            {/* Avatar — centered via inset shorthand */}
             <div
                 className="absolute rounded-full overflow-hidden"
-                style={{
-                    top: inset,
-                    left: inset,
-                    width: inner,
-                    height: inner,
-                }}
+                style={{ inset: avatarInset }}
             >
-                {avatarUrl ? (
-                    <Image
-                        src={avatarUrl}
-                        alt={fullName || "User"}
-                        width={128}
-                        height={128}
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-teal-500 to-cyan-700 flex items-center justify-center">
-                        <span
-                            className={`${s.text} font-light text-white/90 leading-none tracking-wide`}
-                        >
-                            {initials}
-                        </span>
-                    </div>
-                )}
+                <AvatarContent
+                    avatarUrl={avatarUrl}
+                    fullName={fullName || "User"}
+                    initials={initials}
+                    textClass={s.text}
+                />
             </div>
         </div>
     );
