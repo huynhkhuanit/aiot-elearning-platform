@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { ArrowRight, Clock, Eye } from "lucide-react";
 
@@ -482,11 +482,17 @@ function CourseCard({
     const instructorAvatar = course.instructor?.avatar;
     const instructorIsPro = course.instructor?.isPro ?? false;
 
+    const cardBg = "#f7f7f7";
     return (
         <div
-            className="group rounded-2xl hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden bg-[#f7f7f7] h-full flex flex-col cursor-pointer transform hover:-translate-y-1 transition-[transform,box-shadow] duration-200 ease-out"
+            className="group cursor-pointer pb-1"
             onClick={handleCardClick}
         >
+            <div
+                data-course-card
+                className="rounded-2xl overflow-hidden h-full flex flex-col transform transition-[transform,box-shadow] duration-200 ease-out group-hover:-translate-y-1 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+                style={{ backgroundColor: cardBg }}
+            >
             {/* Banner */}
             <div
                 className={`relative aspect-video flex-shrink-0 overflow-hidden rounded-t-2xl ${isEnrolling ? "opacity-50" : ""}`}
@@ -535,8 +541,9 @@ function CourseCard({
 
             {/* Content */}
             <div
-                className="flex-1 flex flex-col bg-[#f7f7f7] rounded-b-2xl"
-                style={{ padding: "16px 20px" }}
+                data-course-card-content
+                className="flex-1 flex flex-col rounded-b-2xl"
+                style={{ padding: "16px 20px", backgroundColor: cardBg }}
             >
                 {/* Title */}
                 <h3 className="course-card-title text-gray-900 mb-2 line-clamp-2">
@@ -597,6 +604,7 @@ function CourseCard({
                         <span>{course.duration}</span>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     );

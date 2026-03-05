@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 @import "./tiptap.css";
 @import "prismjs/themes/prism-tomorrow.css";
 @import "./roadmap-nodes.css";
@@ -338,6 +338,18 @@ h6,
     font-size: 1rem !important; /* 16px - not responsive */
     line-height: 1.4;
     font-weight: 700; /* font-bold */
+}
+
+/* Course card - Force gray background on hover (override @layer base / Tailwind cascade) */
+#courses-section [data-course-card],
+#courses-section [data-course-card]:hover,
+#courses-section .group:hover [data-course-card] {
+    background-color: #f7f7f7 !important;
+}
+#courses-section [data-course-card-content],
+#courses-section [data-course-card-content]:hover,
+#courses-section .group:hover [data-course-card-content] {
+    background-color: #f7f7f7 !important;
 }
 
 /* Roadmap card title - Fixed 16px, single line */
