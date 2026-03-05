@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import PageContainer from "@/components/PageContainer";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import SettingsSkeleton from "@/components/SettingsSkeleton";
-import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
+
 import {
     User,
     Lock,
@@ -985,89 +985,127 @@ export default function SettingsPage() {
                                         </div>
 
                                         {/* Change Password Card */}
-                                        <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <Lock className="w-4 h-4 text-indigo-600" />
-                                                <h3 className="text-sm font-bold text-gray-900">
+                                        <div className="p-6 bg-white rounded-xl border border-gray-200">
+                                            <div className="flex items-center gap-2 mb-5">
+                                                <Lock className="w-5 h-5 text-indigo-600" />
+                                                <h3 className="text-base font-bold text-gray-900">
                                                     Đổi mật khẩu
                                                 </h3>
                                             </div>
 
                                             <form
                                                 onSubmit={handlePasswordSubmit}
-                                                className="space-y-4"
                                             >
-                                                <PasswordField
-                                                    label="Mật khẩu hiện tại"
-                                                    value={
-                                                        passwordForm.current_password
-                                                    }
-                                                    onChange={(v) =>
-                                                        setPasswordForm({
-                                                            ...passwordForm,
-                                                            current_password: v,
-                                                        })
-                                                    }
-                                                    show={showCurrentPwd}
-                                                    onToggle={() =>
-                                                        setShowCurrentPwd(
-                                                            !showCurrentPwd,
-                                                        )
-                                                    }
-                                                />
-                                                <div>
-                                                    <PasswordField
-                                                        label="Mật khẩu mới"
-                                                        value={
-                                                            passwordForm.new_password
-                                                        }
-                                                        onChange={(v) =>
-                                                            setPasswordForm({
-                                                                ...passwordForm,
-                                                                new_password: v,
-                                                            })
-                                                        }
-                                                        show={showNewPwd}
-                                                        onToggle={() =>
-                                                            setShowNewPwd(
-                                                                !showNewPwd,
-                                                            )
-                                                        }
-                                                    />
-                                                    {passwordForm.new_password && (
-                                                        <div className="mt-2">
-                                                            <PasswordStrengthMeter
+                                                <div className="flex flex-col lg:flex-row gap-6">
+                                                    {/* Left: Password Fields */}
+                                                    <div className="flex-1 space-y-4">
+                                                        <PasswordField
+                                                            label="Mật khẩu hiện tại"
+                                                            value={
+                                                                passwordForm.current_password
+                                                            }
+                                                            onChange={(v) =>
+                                                                setPasswordForm(
+                                                                    {
+                                                                        ...passwordForm,
+                                                                        current_password:
+                                                                            v,
+                                                                    },
+                                                                )
+                                                            }
+                                                            show={
+                                                                showCurrentPwd
+                                                            }
+                                                            onToggle={() =>
+                                                                setShowCurrentPwd(
+                                                                    !showCurrentPwd,
+                                                                )
+                                                            }
+                                                            placeholder="Nhập mật khẩu hiện tại"
+                                                        />
+
+                                                        <div>
+                                                            <PasswordField
+                                                                label="Mật khẩu mới"
+                                                                value={
+                                                                    passwordForm.new_password
+                                                                }
+                                                                onChange={(v) =>
+                                                                    setPasswordForm(
+                                                                        {
+                                                                            ...passwordForm,
+                                                                            new_password:
+                                                                                v,
+                                                                        },
+                                                                    )
+                                                                }
+                                                                show={
+                                                                    showNewPwd
+                                                                }
+                                                                onToggle={() =>
+                                                                    setShowNewPwd(
+                                                                        !showNewPwd,
+                                                                    )
+                                                                }
+                                                                placeholder="Nhập mật khẩu mới"
+                                                            />
+                                                            {/* Inline Strength Meter */}
+                                                            {passwordForm.new_password && (
+                                                                <PasswordStrengthBar
+                                                                    password={
+                                                                        passwordForm.new_password
+                                                                    }
+                                                                />
+                                                            )}
+                                                        </div>
+
+                                                        <PasswordField
+                                                            label="Xác nhận mật khẩu mới"
+                                                            value={
+                                                                passwordForm.confirm_password
+                                                            }
+                                                            onChange={(v) =>
+                                                                setPasswordForm(
+                                                                    {
+                                                                        ...passwordForm,
+                                                                        confirm_password:
+                                                                            v,
+                                                                    },
+                                                                )
+                                                            }
+                                                            show={
+                                                                showConfirmPwd
+                                                            }
+                                                            onToggle={() =>
+                                                                setShowConfirmPwd(
+                                                                    !showConfirmPwd,
+                                                                )
+                                                            }
+                                                            placeholder="Nhập lại mật khẩu mới"
+                                                        />
+                                                    </div>
+
+                                                    {/* Right: Password Requirements Checklist */}
+                                                    <div className="lg:w-[240px] shrink-0">
+                                                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 h-fit">
+                                                            <p className="text-sm font-semibold text-gray-900 mb-3">
+                                                                Yêu cầu mật
+                                                                khẩu:
+                                                            </p>
+                                                            <PasswordChecklist
                                                                 password={
                                                                     passwordForm.new_password
                                                                 }
                                                             />
                                                         </div>
-                                                    )}
+                                                    </div>
                                                 </div>
-                                                <PasswordField
-                                                    label="Xác nhận mật khẩu mới"
-                                                    value={
-                                                        passwordForm.confirm_password
-                                                    }
-                                                    onChange={(v) =>
-                                                        setPasswordForm({
-                                                            ...passwordForm,
-                                                            confirm_password: v,
-                                                        })
-                                                    }
-                                                    show={showConfirmPwd}
-                                                    onToggle={() =>
-                                                        setShowConfirmPwd(
-                                                            !showConfirmPwd,
-                                                        )
-                                                    }
-                                                />
 
-                                                <div className="flex justify-end pt-2">
+                                                <div className="flex justify-end mt-5 pt-4 border-t border-gray-100">
                                                     <button
                                                         type="submit"
                                                         disabled={loading}
-                                                        className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-medium text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-sm shadow-indigo-600/20 disabled:opacity-50"
+                                                        className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-medium text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-sm shadow-indigo-600/20 disabled:opacity-50"
                                                     >
                                                         {loading
                                                             ? "Đang cập nhật..."
@@ -1077,47 +1115,75 @@ export default function SettingsPage() {
                                             </form>
                                         </div>
 
-                                        {/* Account Security Info */}
-                                        <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <Shield className="w-4 h-4 text-emerald-600" />
-                                                <h3 className="text-sm font-bold text-gray-900">
-                                                    Bảo mật tài khoản
-                                                </h3>
+                                        {/* Account Security Info - Redesigned */}
+                                        <div className="p-6 bg-white rounded-xl border border-gray-200">
+                                            <div className="flex items-center justify-between mb-5">
+                                                <div className="flex items-center gap-2">
+                                                    <Shield className="w-5 h-5 text-gray-700" />
+                                                    <h3 className="text-base font-bold text-gray-900">
+                                                        Bảo mật tài khoản
+                                                    </h3>
+                                                </div>
+                                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
+                                                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                    Hoạt động
+                                                </span>
                                             </div>
-                                            <div className="space-y-3">
-                                                <SecurityInfoRow
-                                                    icon={
-                                                        <Clock className="w-4 h-4" />
-                                                    }
-                                                    label="Trạng thái tài khoản"
-                                                >
-                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                                                        <CheckCircle2 className="w-3 h-3" />{" "}
-                                                        Hoạt động
-                                                    </span>
-                                                </SecurityInfoRow>
-                                                <SecurityInfoRow
-                                                    icon={
-                                                        <Shield className="w-4 h-4" />
-                                                    }
-                                                    label="Giới hạn đăng nhập"
-                                                >
-                                                    <span className="text-xs text-gray-600">
-                                                        5 lần / phút
-                                                    </span>
-                                                </SecurityInfoRow>
-                                                <SecurityInfoRow
-                                                    icon={
-                                                        <AlertTriangle className="w-4 h-4" />
-                                                    }
-                                                    label="Khóa tài khoản"
-                                                >
-                                                    <span className="text-xs text-gray-600">
-                                                        Sau 5 lần sai → khóa 15
-                                                        phút
-                                                    </span>
-                                                </SecurityInfoRow>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                                {/* Last Login */}
+                                                <div className="flex items-start gap-3 p-3.5 bg-gray-50 rounded-xl">
+                                                    <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center shrink-0">
+                                                        <ExternalLink className="w-4 h-4 text-indigo-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-semibold text-gray-900">
+                                                            Đăng nhập lần cuối
+                                                        </p>
+                                                        <p className="text-[11px] text-gray-500 mt-0.5">
+                                                            {new Date().toLocaleString(
+                                                                "vi-VN",
+                                                                {
+                                                                    hour: "2-digit",
+                                                                    minute: "2-digit",
+                                                                    day: "2-digit",
+                                                                    month: "2-digit",
+                                                                    year: "numeric",
+                                                                },
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {/* Failed Attempts */}
+                                                <div className="flex items-start gap-3 p-3.5 bg-gray-50 rounded-xl">
+                                                    <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+                                                        <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-semibold text-gray-900">
+                                                            Số lần đăng nhập
+                                                            thất bại
+                                                        </p>
+                                                        <p className="text-[11px] text-gray-500 mt-0.5">
+                                                            0 lần
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Rate Limit Warning */}
+                                            <div className="flex items-start gap-3 p-3.5 bg-amber-50 rounded-xl border border-amber-100">
+                                                <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                                                <p className="text-xs text-amber-800">
+                                                    <span className="font-semibold">
+                                                        Lưu ý bảo mật:
+                                                    </span>{" "}
+                                                    Để bảo vệ tài khoản của bạn,
+                                                    hệ thống giới hạn 5 lần đăng
+                                                    nhập / phút. Vượt quá giới
+                                                    hạn này sẽ tạm khóa đăng
+                                                    nhập trong 15 phút.
+                                                </p>
                                             </div>
                                         </div>
                                     </motion.div>
@@ -1221,12 +1287,14 @@ function PasswordField({
     onChange,
     show,
     onToggle,
+    placeholder,
 }: {
     label: string;
     value: string;
     onChange: (val: string) => void;
     show: boolean;
     onToggle: () => void;
+    placeholder?: string;
 }) {
     return (
         <div>
@@ -1240,7 +1308,7 @@ function PasswordField({
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     className="w-full pl-10 pr-11 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all"
-                    placeholder="••••••••"
+                    placeholder={placeholder || "••••••••"}
                     required
                 />
                 <button
@@ -1278,5 +1346,97 @@ function SecurityInfoRow({
             </div>
             {children}
         </div>
+    );
+}
+
+// Password Strength Bar (Stitch design: 4-segment gradient bar)
+function PasswordStrengthBar({ password }: { password: string }) {
+    const checks = [
+        password.length >= 8,
+        /[A-Z]/.test(password),
+        /[a-z]/.test(password),
+        /[0-9]/.test(password),
+        /[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\/~`]/.test(password),
+    ];
+    const passed = checks.filter(Boolean).length;
+
+    const getLevel = () => {
+        if (passed <= 1)
+            return { label: "Yếu", color: "text-red-500", segments: 1 };
+        if (passed <= 2)
+            return {
+                label: "Trung bình",
+                color: "text-orange-500",
+                segments: 2,
+            };
+        if (passed <= 3)
+            return { label: "Khá", color: "text-amber-500", segments: 3 };
+        if (passed <= 4)
+            return { label: "Mạnh", color: "text-green-500", segments: 4 };
+        return { label: "Rất mạnh", color: "text-emerald-600", segments: 5 };
+    };
+
+    const { label, color, segments } = getLevel();
+    const segmentColors = [
+        "bg-red-500",
+        "bg-orange-500",
+        "bg-amber-400",
+        "bg-green-400",
+        "bg-emerald-500",
+    ];
+
+    return (
+        <div className="mt-2">
+            <div className="flex gap-1">
+                {[0, 1, 2, 3, 4].map((i) => (
+                    <div
+                        key={i}
+                        className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
+                            i < segments ? segmentColors[i] : "bg-gray-200"
+                        }`}
+                    />
+                ))}
+            </div>
+            <p className={`text-xs font-medium mt-1 text-right ${color}`}>
+                {label}
+            </p>
+        </div>
+    );
+}
+
+// Password Requirements Checklist (Stitch design: checkmark/circle icons)
+function PasswordChecklist({ password }: { password: string }) {
+    const rules = [
+        { label: "Ít nhất 8 ký tự", met: password.length >= 8 },
+        { label: "Chữ hoa (A-Z)", met: /[A-Z]/.test(password) },
+        { label: "Chữ thường (a-z)", met: /[a-z]/.test(password) },
+        { label: "Số (0-9)", met: /[0-9]/.test(password) },
+        {
+            label: "Ký tự đặc biệt (!@#$...)",
+            met: /[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\/~`]/.test(password),
+        },
+    ];
+
+    return (
+        <ul className="space-y-2.5">
+            {rules.map((rule, i) => (
+                <li key={i} className="flex items-center gap-2">
+                    {rule.met && password.length > 0 ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    ) : (
+                        <div className="w-4 h-4 rounded-full border-2 border-gray-300 shrink-0" />
+                    )}
+                    <span
+                        className={`text-xs transition-colors ${
+                            rule.met && password.length > 0
+                                ? "text-gray-700 font-medium"
+                                : "text-gray-400"
+                        }`}
+                    >
+                        {rule.label}
+                    </span>
+                </li>
+            ))}
+        </ul>
     );
 }
