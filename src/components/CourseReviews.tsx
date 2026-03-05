@@ -20,6 +20,7 @@ interface ReviewUser {
     name: string;
     username: string;
     avatar: string;
+    isPro: boolean;
 }
 
 interface Review {
@@ -46,6 +47,7 @@ interface ReviewData {
     reviews: Review[];
     userReview: UserReview | null;
     distribution: Record<number, number>;
+    avgRating: number;
     pagination: {
         page: number;
         limit: number;
@@ -240,7 +242,7 @@ function ReviewCard({
                     <AvatarWithProBadge
                         avatarUrl={review.user.avatar}
                         fullName={review.user.name || "User"}
-                        isPro={false}
+                        isPro={review.user.isPro}
                         size="sm"
                     />
                     <div>
@@ -455,8 +457,12 @@ export default function CourseReviews({
     const [editMode, setEditMode] = useState(false);
     const [showSortDropdown, setShowSortDropdown] = useState(false);
 
-    // Derived state
-    const avgRating = data ? (data.pagination.total > 0 ? courseRating : 0) : 0;
+    // Derived state — use API-calculated avgRating when available, fallback to prop
+    const avgRating = data
+        ? data.avgRating > 0
+            ? data.avgRating
+            : courseRating
+        : courseRating;
     const totalReviews = data?.pagination.total || ratingCount || 0;
 
     const fetchReviews = useCallback(

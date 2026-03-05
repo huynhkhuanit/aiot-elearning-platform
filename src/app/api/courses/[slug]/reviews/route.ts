@@ -65,7 +65,7 @@ export async function GET(
                 helpful_count,
                 created_at,
                 updated_at,
-                users!course_reviews_user_id_fkey(id, full_name, username, avatar_url)
+                users!course_reviews_user_id_fkey(id, full_name, username, avatar_url, membership_type)
             `,
                 { count: "exact" },
             )
@@ -149,6 +149,18 @@ export async function GET(
             userReview = myReview;
         }
 
+        // Calculate average rating from distribution
+        const totalRatingSum = Object.entries(distribution).reduce(
+            (sum, [star, count]) => sum + Number(star) * count,
+            0,
+        );
+        const totalReviewCount = Object.values(distribution).reduce(
+            (a, b) => a + b,
+            0,
+        );
+        const calculatedAvgRating =
+            totalReviewCount > 0 ? totalRatingSum / totalReviewCount : 0;
+
         // Format response
         const formattedReviews = (reviews || []).map((review: any) => ({
             id: review.id,
@@ -163,6 +175,7 @@ export async function GET(
                 name: review.users?.full_name,
                 username: review.users?.username,
                 avatar: review.users?.avatar_url,
+                isPro: review.users?.membership_type?.toUpperCase() === "PRO",
             },
         }));
 
@@ -172,6 +185,7 @@ export async function GET(
                 reviews: formattedReviews,
                 userReview,
                 distribution,
+                avgRating: calculatedAvgRating,
                 pagination: {
                     page,
                     limit,
