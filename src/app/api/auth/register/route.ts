@@ -12,10 +12,12 @@ export async function POST(request: NextRequest) {
         // Validate input
         const validation = registerSchema.safeParse(body);
         if (!validation.success) {
+            const firstError =
+                validation.error.issues[0]?.message || "Dữ liệu không hợp lệ";
             return NextResponse.json(
                 {
                     success: false,
-                    message: "Dữ liệu không hợp lệ",
+                    message: firstError,
                 },
                 { status: 400 },
             );

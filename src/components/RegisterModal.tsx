@@ -11,11 +11,11 @@ import {
     EyeOff,
     ArrowRight,
     CheckCircle2,
-    Info,
     Check,
 } from "lucide-react";
 import Modal from "./Modal";
 import RecoveryKeysModal from "./RecoveryKeysModal";
+import PasswordStrengthMeter from "./PasswordStrengthMeter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 
@@ -52,18 +52,46 @@ export default function RegisterModal({
         e.preventDefault();
         setSuccess(false);
 
-        if (formData.password !== formData.confirmPassword) {
-            toast.error("Mật khẩu xác nhận không khớp");
+        if (!formData.full_name || formData.full_name.trim().length < 2) {
+            toast.error("Họ tên phải có ít nhất 2 ký tự");
             return;
         }
 
-        if (formData.password.length < 6) {
-            toast.error("Mật khẩu phải có ít nhất 6 ký tự");
+        if (!formData.username || formData.username.trim().length < 3) {
+            toast.error("Tên đăng nhập phải có ít nhất 3 ký tự");
+            return;
+        }
+
+        if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+            toast.error("Tên đăng nhập chỉ chứa chữ, số và dấu gạch dưới");
+            return;
+        }
+
+        if (
+            !formData.email ||
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
+        ) {
+            toast.error("Email không hợp lệ");
+            return;
+        }
+
+        if (formData.password.length < 8) {
+            toast.error("Mật khẩu phải có ít nhất 8 ký tự");
             return;
         }
 
         if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
             toast.error("Mật khẩu phải chứa chữ hoa, chữ thường và số");
+            return;
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+            toast.error("Mật khẩu xác nhận không khớp");
+            return;
+        }
+
+        if (!agreedTerms) {
+            toast.error("Vui lòng đồng ý với điều khoản dịch vụ");
             return;
         }
 
@@ -337,15 +365,9 @@ export default function RegisterModal({
                         </motion.div>
                     </div>
 
-                    {/* Password hint */}
-                    <motion.div
-                        variants={itemVariants}
-                        className="flex items-center gap-1.5 -mt-1"
-                    >
-                        <Info className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                        <p className="text-[11px] text-gray-400">
-                            Tối thiểu 6 ký tự, bao gồm chữ hoa, chữ thường và số
-                        </p>
+                    {/* Password Strength Meter */}
+                    <motion.div variants={itemVariants} className="-mt-1">
+                        <PasswordStrengthMeter password={formData.password} />
                     </motion.div>
 
                     {/* Terms */}
