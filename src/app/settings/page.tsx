@@ -688,25 +688,25 @@ export default function SettingsPage() {
                                         onClick={() => setActiveTab(tab.id)}
                                         className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-left transition-all duration-200 mb-1 last:mb-0 ${
                                             isActive
-                                                ? "bg-gray-900 text-white shadow-sm"
-                                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                                                : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-700"
                                         }`}
                                     >
                                         <Icon
-                                            className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-white" : "text-gray-400"}`}
+                                            className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-white" : "text-gray-400 group-hover:text-indigo-500"}`}
                                         />
                                         <div className="min-w-0 flex-1">
                                             <p className="text-sm font-medium truncate">
                                                 {tab.label}
                                             </p>
                                             <p
-                                                className={`text-[11px] truncate mt-0.5 ${isActive ? "text-gray-400" : "text-gray-400"}`}
+                                                className={`text-[11px] truncate mt-0.5 ${isActive ? "text-indigo-200" : "text-gray-400"}`}
                                             >
                                                 {tab.description}
                                             </p>
                                         </div>
                                         {isActive && (
-                                            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                                            <ChevronRight className="w-4 h-4 text-indigo-200 shrink-0" />
                                         )}
                                     </button>
                                 );
