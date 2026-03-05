@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { ArrowRight, Clock, Eye } from "lucide-react";
-import PageContainer from "@/components/PageContainer";
+
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -248,10 +248,13 @@ export default function CoursesSection() {
         }
     };
 
+    const GRID_CLASS =
+        "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6";
+
     // Skeleton loading component
     const SkeletonCard = () => (
-        <div className="rounded-2xl shadow-lg overflow-hidden border border-gray-100 h-full flex flex-col bg-[#f7f7f7] animate-pulse">
-            <div className="relative h-32 bg-gray-200 flex-shrink-0"></div>
+        <div className="rounded-2xl overflow-hidden border border-gray-100 h-full flex flex-col bg-[#f7f7f7] animate-pulse">
+            <div className="relative aspect-video bg-gray-200 flex-shrink-0 rounded-t-2xl"></div>
             <div className="p-4 flex-1 flex flex-col">
                 <div className="mb-3 flex-1">
                     <div className="h-5 w-3/4 bg-gray-200 rounded mb-2"></div>
@@ -277,14 +280,14 @@ export default function CoursesSection() {
             id="courses-section"
             className="py-16 bg-gradient-to-br from-gray-50 to-white"
         >
-            <PageContainer size="lg">
+            <div className="px-4 sm:px-6 md:px-10 lg:px-16 xl:px-[90px] 2xl:px-16">
                 {loading ? (
                     <>
                         {/* PRO Courses Skeleton */}
                         <div className="mb-16">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <div className="text-xl font-black text-gray-900 mb-2">
+                                    <div className="text-2xl font-black text-gray-900 mb-2">
                                         Khóa học Pro
                                         <span className="ml-3 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1 rounded-full">
                                             PRO
@@ -303,7 +306,7 @@ export default function CoursesSection() {
                                     <ArrowRight className="w-4 h-4 ml-2" />
                                 </a>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            <div className={GRID_CLASS}>
                                 {[...Array(4)].map((_, index) => (
                                     <SkeletonCard key={index} />
                                 ))}
@@ -313,7 +316,7 @@ export default function CoursesSection() {
                         <div>
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <div className="text-xl font-black text-gray-900 mb-2">
+                                    <div className="text-2xl font-black text-gray-900 mb-2">
                                         Khóa học miễn phí
                                     </div>
                                     <p className="text-gray-600">
@@ -328,7 +331,7 @@ export default function CoursesSection() {
                                     <ArrowRight className="w-4 h-4 ml-2" />
                                 </a>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            <div className={GRID_CLASS}>
                                 {[...Array(4)].map((_, index) => (
                                     <SkeletonCard key={index} />
                                 ))}
@@ -346,7 +349,7 @@ export default function CoursesSection() {
                             >
                                 <div className="flex items-center justify-between mb-8">
                                     <div>
-                                        <div className="text-xl font-black text-gray-900 mb-2">
+                                        <div className="text-2xl font-black text-gray-900 mb-2">
                                             Khóa học Pro
                                             <span className="ml-3 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1 rounded-full">
                                                 PRO
@@ -365,31 +368,21 @@ export default function CoursesSection() {
                                         <ArrowRight className="w-4 h-4 ml-2" />
                                     </a>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                    {proCourses.map((course, index) => (
-                                        <motion.div
+                                <div className={GRID_CLASS}>
+                                    {proCourses.map((course) => (
+                                        <CourseCard
                                             key={course.id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            transition={{
-                                                duration: 0.3,
-                                                delay: index * 0.03,
-                                            }}
-                                        >
-                                            <CourseCard
-                                                course={course}
-                                                onEnroll={() =>
-                                                    handleEnroll(course)
-                                                }
-                                                onProClick={() =>
-                                                    handleProCourseClick(course)
-                                                }
-                                                isEnrolling={
-                                                    enrollingCourse ===
-                                                    course.id
-                                                }
-                                            />
-                                        </motion.div>
+                                            course={course}
+                                            onEnroll={() =>
+                                                handleEnroll(course)
+                                            }
+                                            onProClick={() =>
+                                                handleProCourseClick(course)
+                                            }
+                                            isEnrolling={
+                                                enrollingCourse === course.id
+                                            }
+                                        />
                                     ))}
                                 </div>
                             </motion.div>
@@ -402,7 +395,7 @@ export default function CoursesSection() {
                             >
                                 <div className="flex items-center justify-between mb-8">
                                     <div>
-                                        <div className="text-xl font-black text-gray-900 mb-2">
+                                        <div className="text-2xl font-black text-gray-900 mb-2">
                                             Khóa học miễn phí
                                         </div>
                                         <p className="text-gray-600">
@@ -418,35 +411,25 @@ export default function CoursesSection() {
                                         <ArrowRight className="w-4 h-4 ml-2" />
                                     </a>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                    {freeCourses.map((course, index) => (
-                                        <motion.div
+                                <div className={GRID_CLASS}>
+                                    {freeCourses.map((course) => (
+                                        <CourseCard
                                             key={course.id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            transition={{
-                                                duration: 0.3,
-                                                delay: index * 0.02,
-                                            }}
-                                        >
-                                            <CourseCard
-                                                course={course}
-                                                onEnroll={() =>
-                                                    handleEnroll(course)
-                                                }
-                                                isEnrolling={
-                                                    enrollingCourse ===
-                                                    course.id
-                                                }
-                                            />
-                                        </motion.div>
+                                            course={course}
+                                            onEnroll={() =>
+                                                handleEnroll(course)
+                                            }
+                                            isEnrolling={
+                                                enrollingCourse === course.id
+                                            }
+                                        />
                                     ))}
                                 </div>
                             </motion.div>
                         )}
                     </>
                 )}
-            </PageContainer>
+            </div>
         </section>
     );
 }
@@ -500,14 +483,13 @@ function CourseCard({
     const instructorIsPro = course.instructor?.isPro ?? false;
 
     return (
-        <motion.div
-            whileHover={{ y: -4 }}
-            className="group rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden bg-white h-full flex flex-col cursor-pointer border border-gray-100"
+        <div
+            className="group rounded-2xl hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden bg-[#f7f7f7] h-full flex flex-col cursor-pointer transform hover:-translate-y-1 transition-[transform,box-shadow] duration-200 ease-out"
             onClick={handleCardClick}
         >
             {/* Banner */}
             <div
-                className={`relative h-[170px] flex-shrink-0 overflow-hidden ${isEnrolling ? "opacity-50" : ""}`}
+                className={`relative aspect-video flex-shrink-0 overflow-hidden rounded-t-2xl ${isEnrolling ? "opacity-50" : ""}`}
             >
                 {course.thumbnailUrl ? (
                     <img
@@ -519,7 +501,7 @@ function CourseCard({
                             target.style.display = "none";
                             const parent = target.parentElement;
                             if (parent) {
-                                parent.className = `relative h-[170px] bg-gradient-to-br ${course.gradient} flex items-center justify-center flex-shrink-0 overflow-hidden ${isEnrolling ? "opacity-50" : ""}`;
+                                parent.className = `relative aspect-video bg-gradient-to-br ${course.gradient} flex items-center justify-center flex-shrink-0 overflow-hidden rounded-t-2xl ${isEnrolling ? "opacity-50" : ""}`;
                             }
                         }}
                     />
@@ -552,9 +534,12 @@ function CourseCard({
             </div>
 
             {/* Content */}
-            <div className="p-4 flex-1 flex flex-col">
+            <div
+                className="flex-1 flex flex-col bg-[#f7f7f7] rounded-b-2xl"
+                style={{ padding: "16px 20px" }}
+            >
                 {/* Title */}
-                <h3 className="course-card-title text-gray-900 mb-2 line-clamp-1 group-hover:text-primary transition-colors duration-200">
+                <h3 className="course-card-title text-gray-900 mb-2 line-clamp-2">
                     {course.title}
                 </h3>
 
@@ -613,6 +598,6 @@ function CourseCard({
                     </div>
                 </div>
             </div>
-        </motion.div>
+        </div>
     );
 }
