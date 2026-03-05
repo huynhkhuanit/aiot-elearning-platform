@@ -11,6 +11,8 @@ import {
     EyeOff,
     ArrowRight,
     CheckCircle2,
+    Info,
+    Check,
 } from "lucide-react";
 import Modal from "./Modal";
 import RecoveryKeysModal from "./RecoveryKeysModal";
@@ -44,6 +46,7 @@ export default function RegisterModal({
     const [success, setSuccess] = useState(false);
     const [recoveryKeys, setRecoveryKeys] = useState<string[]>([]);
     const [showRecoveryKeysModal, setShowRecoveryKeysModal] = useState(false);
+    const [agreedTerms, setAgreedTerms] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -94,9 +97,7 @@ export default function RegisterModal({
                     });
                     setSuccess(false);
                     onClose();
-                    if (onSwitchToLogin) {
-                        onSwitchToLogin();
-                    }
+                    if (onSwitchToLogin) onSwitchToLogin();
                 }, 1500);
             }
         } catch (err: any) {
@@ -107,17 +108,12 @@ export default function RegisterModal({
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSwitchToLogin = () => {
         onClose();
-        if (onSwitchToLogin) {
-            onSwitchToLogin();
-        }
+        if (onSwitchToLogin) onSwitchToLogin();
     };
 
     const handleRecoveryKeysModalClose = () => {
@@ -132,9 +128,7 @@ export default function RegisterModal({
         });
         setSuccess(false);
         onClose();
-        if (onSwitchToLogin) {
-            onSwitchToLogin();
-        }
+        if (onSwitchToLogin) onSwitchToLogin();
     };
 
     const containerVariants = {
@@ -146,7 +140,7 @@ export default function RegisterModal({
     };
 
     const itemVariants = {
-        hidden: { opacity: 0, y: 12 },
+        hidden: { opacity: 0, y: 10 },
         visible: {
             opacity: 1,
             y: 0,
@@ -154,18 +148,17 @@ export default function RegisterModal({
         },
     };
 
-    const inputClasses =
-        "w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[14px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200";
-    const inputWithToggleClasses =
-        "w-full pl-10 pr-11 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[14px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200";
-    const labelClasses = "block text-[13px] font-semibold text-gray-700 mb-1.5";
-    const iconClasses =
-        "absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-gray-400 group-focus-within:text-indigo-600 transition-colors duration-200";
+    const inputBase =
+        "w-full py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[14px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200";
+    const iconBase =
+        "absolute left-3.5 top-1/2 -translate-y-1/2 w-[17px] h-[17px] text-gray-400 group-focus-within:text-indigo-600 transition-colors duration-200";
+    const labelBase = "block text-[13px] font-semibold text-gray-700 mb-2";
 
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
+            title="Đăng ký"
             size="lg"
             showCloseButton={true}
             closeOnBackdropClick={true}
@@ -177,32 +170,28 @@ export default function RegisterModal({
                 className="space-y-5"
             >
                 {/* Header */}
-                <motion.div
-                    variants={itemVariants}
-                    className="text-center space-y-1.5"
-                >
+                <motion.div variants={itemVariants} className="space-y-1">
                     <h2 className="text-[22px] font-bold text-gray-900 tracking-tight">
                         Tạo tài khoản mới
                     </h2>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-[13px] text-gray-500 leading-relaxed">
                         Bắt đầu hành trình học tập cùng AIoT
                     </p>
                 </motion.div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-3.5">
+                <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Name & Username Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        {/* Full Name */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <motion.div variants={itemVariants}>
                             <label
                                 htmlFor="reg-full_name"
-                                className={labelClasses}
+                                className={labelBase}
                             >
                                 Họ và tên
                             </label>
                             <div className="relative group">
-                                <UserCircle className={iconClasses} />
+                                <UserCircle className={iconBase} />
                                 <input
                                     type="text"
                                     id="reg-full_name"
@@ -211,22 +200,19 @@ export default function RegisterModal({
                                     onChange={handleChange}
                                     autoComplete="name"
                                     required
-                                    className={inputClasses}
-                                    placeholder="Nguyễn Văn A"
+                                    className={`${inputBase} pr-4`}
+                                    style={{ paddingLeft: "42px" }}
+                                    placeholder="Nhập họ và tên"
                                 />
                             </div>
                         </motion.div>
 
-                        {/* Username */}
                         <motion.div variants={itemVariants}>
-                            <label
-                                htmlFor="reg-username"
-                                className={labelClasses}
-                            >
+                            <label htmlFor="reg-username" className={labelBase}>
                                 Tên đăng nhập
                             </label>
                             <div className="relative group">
-                                <User className={iconClasses} />
+                                <User className={iconBase} />
                                 <input
                                     type="text"
                                     id="reg-username"
@@ -235,8 +221,9 @@ export default function RegisterModal({
                                     onChange={handleChange}
                                     autoComplete="username"
                                     required
-                                    className={inputClasses}
-                                    placeholder="nguyen_van_a"
+                                    className={`${inputBase} pr-4`}
+                                    style={{ paddingLeft: "42px" }}
+                                    placeholder="Nhập tên đăng nhập"
                                 />
                             </div>
                         </motion.div>
@@ -244,11 +231,11 @@ export default function RegisterModal({
 
                     {/* Email */}
                     <motion.div variants={itemVariants}>
-                        <label htmlFor="reg-email" className={labelClasses}>
+                        <label htmlFor="reg-email" className={labelBase}>
                             Email
                         </label>
                         <div className="relative group">
-                            <Mail className={iconClasses} />
+                            <Mail className={iconBase} />
                             <input
                                 type="email"
                                 id="reg-email"
@@ -257,24 +244,21 @@ export default function RegisterModal({
                                 onChange={handleChange}
                                 autoComplete="email"
                                 required
-                                className={inputClasses}
-                                placeholder="name@example.com"
+                                className={`${inputBase} pr-4`}
+                                style={{ paddingLeft: "42px" }}
+                                placeholder="example@email.com"
                             />
                         </div>
                     </motion.div>
 
                     {/* Password Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        {/* Password */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <motion.div variants={itemVariants}>
-                            <label
-                                htmlFor="reg-password"
-                                className={labelClasses}
-                            >
+                            <label htmlFor="reg-password" className={labelBase}>
                                 Mật khẩu
                             </label>
                             <div className="relative group">
-                                <Lock className={iconClasses} />
+                                <Lock className={iconBase} />
                                 <input
                                     type={showPassword ? "text" : "password"}
                                     id="reg-password"
@@ -285,7 +269,8 @@ export default function RegisterModal({
                                     data-1p-ignore
                                     data-lpignore="true"
                                     required
-                                    className={inputWithToggleClasses}
+                                    className={`${inputBase} pr-11`}
+                                    style={{ paddingLeft: "42px" }}
                                     placeholder="••••••••"
                                 />
                                 <button
@@ -297,24 +282,23 @@ export default function RegisterModal({
                                     tabIndex={-1}
                                 >
                                     {showPassword ? (
-                                        <EyeOff className="w-[18px] h-[18px]" />
+                                        <EyeOff className="w-[17px] h-[17px]" />
                                     ) : (
-                                        <Eye className="w-[18px] h-[18px]" />
+                                        <Eye className="w-[17px] h-[17px]" />
                                     )}
                                 </button>
                             </div>
                         </motion.div>
 
-                        {/* Confirm Password */}
                         <motion.div variants={itemVariants}>
                             <label
                                 htmlFor="reg-confirmPassword"
-                                className={labelClasses}
+                                className={labelBase}
                             >
                                 Xác nhận mật khẩu
                             </label>
                             <div className="relative group">
-                                <Lock className={iconClasses} />
+                                <Lock className={iconBase} />
                                 <input
                                     type={
                                         showConfirmPassword
@@ -329,7 +313,8 @@ export default function RegisterModal({
                                     data-1p-ignore
                                     data-lpignore="true"
                                     required
-                                    className={inputWithToggleClasses}
+                                    className={`${inputBase} pr-11`}
+                                    style={{ paddingLeft: "42px" }}
                                     placeholder="••••••••"
                                 />
                                 <button
@@ -343,9 +328,9 @@ export default function RegisterModal({
                                     tabIndex={-1}
                                 >
                                     {showConfirmPassword ? (
-                                        <EyeOff className="w-[18px] h-[18px]" />
+                                        <EyeOff className="w-[17px] h-[17px]" />
                                     ) : (
-                                        <Eye className="w-[18px] h-[18px]" />
+                                        <Eye className="w-[17px] h-[17px]" />
                                     )}
                                 </button>
                             </div>
@@ -353,51 +338,64 @@ export default function RegisterModal({
                     </div>
 
                     {/* Password hint */}
-                    <motion.p
+                    <motion.div
                         variants={itemVariants}
-                        className="text-[11px] text-gray-400 -mt-1"
+                        className="flex items-center gap-1.5 -mt-1"
                     >
-                        Tối thiểu 6 ký tự, bao gồm chữ hoa, chữ thường và số
-                    </motion.p>
+                        <Info className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                        <p className="text-[11px] text-gray-400">
+                            Tối thiểu 6 ký tự, bao gồm chữ hoa, chữ thường và số
+                        </p>
+                    </motion.div>
 
                     {/* Terms */}
                     <motion.div
                         variants={itemVariants}
-                        className="flex items-start gap-2.5 pt-0.5"
+                        className="flex items-center"
                     >
                         <input
                             type="checkbox"
                             id="reg-terms"
                             required
-                            className="w-3.5 h-3.5 mt-0.5 text-indigo-600 bg-white border border-gray-300 rounded focus:ring-indigo-500 focus:ring-offset-0 focus:ring-1 cursor-pointer transition-colors flex-shrink-0"
+                            checked={agreedTerms}
+                            onChange={() => setAgreedTerms(!agreedTerms)}
+                            className="sr-only"
                         />
-                        <label
-                            htmlFor="reg-terms"
-                            className="text-[12px] text-gray-500 leading-relaxed cursor-pointer select-none"
+                        <button
+                            type="button"
+                            onClick={() => setAgreedTerms(!agreedTerms)}
+                            className="flex items-start gap-2.5 cursor-pointer select-none group text-left"
                         >
-                            Tôi đồng ý với{" "}
-                            <button
-                                type="button"
-                                className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors cursor-pointer"
+                            <span
+                                className={`flex items-center justify-center w-[18px] h-[18px] mt-[1px] rounded-[5px] border-[1.5px] transition-all duration-200 flex-shrink-0 ${
+                                    agreedTerms
+                                        ? "bg-indigo-600 border-indigo-600"
+                                        : "border-gray-300 bg-white group-hover:border-gray-400"
+                                }`}
                             >
-                                Điều khoản dịch vụ
-                            </button>{" "}
-                            và{" "}
-                            <button
-                                type="button"
-                                className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors cursor-pointer"
-                            >
-                                Chính sách bảo mật
-                            </button>
-                        </label>
+                                {agreedTerms && (
+                                    <Check className="w-3 h-3 text-white" />
+                                )}
+                            </span>
+                            <span className="text-[13px] text-gray-500 leading-relaxed">
+                                Tôi đồng ý với{" "}
+                                <span className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors">
+                                    Điều khoản dịch vụ
+                                </span>{" "}
+                                và{" "}
+                                <span className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors">
+                                    Chính sách bảo mật
+                                </span>
+                            </span>
+                        </button>
                     </motion.div>
 
                     {/* Submit */}
-                    <motion.div variants={itemVariants} className="pt-0.5">
+                    <motion.div variants={itemVariants}>
                         <button
                             type="submit"
                             disabled={isLoading || success}
-                            className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-[14px] font-semibold rounded-xl active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-[14px] font-semibold rounded-xl active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 shadow-sm shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
                             {isLoading ? (
                                 <>

@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import {
+    Mail,
+    Lock,
+    Eye,
+    EyeOff,
+    ArrowRight,
+    Sparkles,
+    Check,
+} from "lucide-react";
 import Modal from "./Modal";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,6 +37,7 @@ export default function LoginModal({
 
     const [showPassword, setShowPassword] = useState(false);
     const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,11 +77,11 @@ export default function LoginModal({
     };
 
     const itemVariants = {
-        hidden: { opacity: 0, y: 12 },
+        hidden: { opacity: 0, y: 10 },
         visible: {
             opacity: 1,
             y: 0,
-            transition: { duration: 0.35, ease: "easeOut" },
+            transition: { duration: 0.3, ease: "easeOut" },
         },
     };
 
@@ -80,6 +89,7 @@ export default function LoginModal({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
+            title="Đăng nhập"
             size="md"
             showCloseButton={true}
             closeOnBackdropClick={true}
@@ -88,33 +98,41 @@ export default function LoginModal({
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
-                className="space-y-5"
+                className="space-y-6"
             >
-                {/* Header */}
-                <motion.div
-                    variants={itemVariants}
-                    className="text-center space-y-1.5"
-                >
-                    <h2 className="text-[22px] font-bold text-gray-900 tracking-tight">
-                        Chào mừng trở lại
-                    </h2>
-                    <p className="text-sm text-gray-500">
-                        Đăng nhập để tiếp tục hành trình học tập
-                    </p>
+                {/* Brand + Header */}
+                <motion.div variants={itemVariants} className="space-y-3">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                            <Sparkles className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="text-[14px] font-semibold text-gray-800">
+                            AI & IoT Learning
+                        </span>
+                    </div>
+                    <div>
+                        <h2 className="text-[22px] font-bold text-gray-900 tracking-tight">
+                            Chào mừng trở lại
+                        </h2>
+                        <p className="text-[13px] text-gray-500 mt-1 leading-relaxed">
+                            Đăng nhập để tiếp tục hành trình học tập của bạn
+                            cùng chuyên gia.
+                        </p>
+                    </div>
                 </motion.div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Email */}
                     <motion.div variants={itemVariants}>
                         <label
                             htmlFor="login-email"
-                            className="block text-[13px] font-semibold text-gray-700 mb-1.5"
+                            className="block text-[13px] font-semibold text-gray-700 mb-2"
                         >
                             Email
                         </label>
                         <div className="relative group">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-gray-400 group-focus-within:text-indigo-600 transition-colors duration-200" />
+                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[17px] h-[17px] text-gray-400 group-focus-within:text-indigo-600 transition-colors duration-200" />
                             <input
                                 type="email"
                                 id="login-email"
@@ -123,7 +141,8 @@ export default function LoginModal({
                                 onChange={handleChange}
                                 autoComplete="email"
                                 required
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[14px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200"
+                                className="w-full pl-10.5 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[14px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200"
+                                style={{ paddingLeft: "42px" }}
                                 placeholder="name@example.com"
                             />
                         </div>
@@ -131,7 +150,7 @@ export default function LoginModal({
 
                     {/* Password */}
                     <motion.div variants={itemVariants}>
-                        <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center justify-between mb-2">
                             <label
                                 htmlFor="login-password"
                                 className="block text-[13px] font-semibold text-gray-700"
@@ -141,13 +160,13 @@ export default function LoginModal({
                             <button
                                 type="button"
                                 onClick={() => setIsForgotPasswordOpen(true)}
-                                className="text-[12px] text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+                                className="text-[12px] text-indigo-600 hover:text-indigo-700 font-medium transition-colors cursor-pointer"
                             >
                                 Quên mật khẩu?
                             </button>
                         </div>
                         <div className="relative group">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-gray-400 group-focus-within:text-indigo-600 transition-colors duration-200" />
+                            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[17px] h-[17px] text-gray-400 group-focus-within:text-indigo-600 transition-colors duration-200" />
                             <input
                                 type={showPassword ? "text" : "password"}
                                 id="login-password"
@@ -158,7 +177,8 @@ export default function LoginModal({
                                 data-1p-ignore
                                 data-lpignore="true"
                                 required
-                                className="w-full pl-10 pr-11 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[14px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200"
+                                className="w-full pr-11 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[14px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200"
+                                style={{ paddingLeft: "42px" }}
                                 placeholder="Nhập mật khẩu"
                             />
                             <button
@@ -168,9 +188,9 @@ export default function LoginModal({
                                 tabIndex={-1}
                             >
                                 {showPassword ? (
-                                    <EyeOff className="w-[18px] h-[18px]" />
+                                    <EyeOff className="w-[17px] h-[17px]" />
                                 ) : (
-                                    <Eye className="w-[18px] h-[18px]" />
+                                    <Eye className="w-[17px] h-[17px]" />
                                 )}
                             </button>
                         </div>
@@ -181,17 +201,26 @@ export default function LoginModal({
                         variants={itemVariants}
                         className="flex items-center"
                     >
-                        <input
-                            type="checkbox"
-                            id="login-remember"
-                            className="w-3.5 h-3.5 text-indigo-600 bg-white border border-gray-300 rounded focus:ring-indigo-500 focus:ring-offset-0 focus:ring-1 cursor-pointer transition-colors"
-                        />
-                        <label
-                            htmlFor="login-remember"
-                            className="ml-2 text-[13px] text-gray-600 cursor-pointer select-none"
+                        <button
+                            type="button"
+                            onClick={() => setRememberMe(!rememberMe)}
+                            className="flex items-center gap-2.5 cursor-pointer select-none group"
                         >
-                            Ghi nhớ đăng nhập
-                        </label>
+                            <span
+                                className={`flex items-center justify-center w-[18px] h-[18px] rounded-[5px] border-[1.5px] transition-all duration-200 ${
+                                    rememberMe
+                                        ? "bg-indigo-600 border-indigo-600"
+                                        : "border-gray-300 bg-white group-hover:border-gray-400"
+                                }`}
+                            >
+                                {rememberMe && (
+                                    <Check className="w-3 h-3 text-white" />
+                                )}
+                            </span>
+                            <span className="text-[13px] text-gray-600">
+                                Ghi nhớ đăng nhập
+                            </span>
+                        </button>
                     </motion.div>
 
                     {/* Submit */}
@@ -199,7 +228,7 @@ export default function LoginModal({
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-[14px] font-semibold rounded-xl active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-[14px] font-semibold rounded-xl active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 shadow-sm shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
                             {isLoading ? (
                                 <>
@@ -242,6 +271,33 @@ export default function LoginModal({
                         Đăng ký ngay
                     </button>
                 </motion.p>
+
+                {/* Footer Links */}
+                <motion.div
+                    variants={itemVariants}
+                    className="flex items-center justify-center gap-3 pt-1"
+                >
+                    <button
+                        type="button"
+                        className="text-[11px] text-gray-400 hover:text-gray-500 transition-colors cursor-pointer"
+                    >
+                        Điều khoản dịch vụ
+                    </button>
+                    <span className="text-gray-300 text-[11px]">·</span>
+                    <button
+                        type="button"
+                        className="text-[11px] text-gray-400 hover:text-gray-500 transition-colors cursor-pointer"
+                    >
+                        Chính sách bảo mật
+                    </button>
+                    <span className="text-gray-300 text-[11px]">·</span>
+                    <button
+                        type="button"
+                        className="text-[11px] text-gray-400 hover:text-gray-500 transition-colors cursor-pointer"
+                    >
+                        Hỗ trợ
+                    </button>
+                </motion.div>
             </motion.div>
 
             {/* Forgot Password Modal */}
