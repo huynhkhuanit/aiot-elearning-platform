@@ -7,6 +7,25 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { Playfair_Display } from "next/font/google";
+import Prism from "prismjs";
+import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-typescript";
+import "prismjs/components/prism-jsx";
+import "prismjs/components/prism-tsx";
+import "prismjs/components/prism-python";
+import "prismjs/components/prism-java";
+import "prismjs/components/prism-c";
+import "prismjs/components/prism-cpp";
+import "prismjs/components/prism-json";
+import "prismjs/components/prism-bash";
+import "prismjs/components/prism-sql";
+import "prismjs/components/prism-markup";
+import "prismjs/components/prism-css";
+import "prismjs/components/prism-go";
+import "prismjs/components/prism-rust";
+import "prismjs/components/prism-yaml";
+import "prismjs/components/prism-markdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import PageContainer from "@/components/PageContainer";
@@ -36,6 +55,73 @@ interface TableOfContentsItem {
     text: string;
     level: number;
 }
+
+const CODE_LANG_MAP: Record<string, string> = {
+    js: "javascript",
+    ts: "typescript",
+    py: "python",
+    html: "markup",
+    xml: "markup",
+    shell: "bash",
+    sh: "bash",
+    "c++": "cpp",
+    yml: "yaml",
+    md: "markdown",
+    rs: "rust",
+};
+
+function normalizeCodeLanguage(raw?: string): string {
+    if (!raw) return "plaintext";
+    const normalized = raw.toLowerCase();
+    return CODE_LANG_MAP[normalized] || normalized;
+}
+
+function detectLanguageFromCode(code: string): string {
+    const source = code.trim();
+    if (!source) return "plaintext";
+
+    if (/^\s*[{[]/.test(source) && /"\w+"\s*:/.test(source)) return "json";
+    if (/^\s*#include\s+<|\bstd::|\bcout\s*<</m.test(source)) return "cpp";
+    if (/^\s*fn\s+\w+\s*\(|\buse\s+std::|\blet\s+mut\b/m.test(source)) return "rust";
+    if (/^\s*func\s+\w+\s*\(|\bfmt\.Println\(|\bpackage\s+main\b/m.test(source)) return "go";
+    if (/^\s*def\s+\w+\s*\(|\bimport\s+\w+|\bfrom\s+\w+\s+import\b/m.test(source)) return "python";
+    if (/\binterface\s+\w+\s*\{|\btype\s+\w+\s*=|:\s*(string|number|boolean)\b/m.test(source)) return "typescript";
+    if (/\bconst\s+\w+\s*=|\blet\s+\w+\s*=|=>|console\.log\(/m.test(source)) return "javascript";
+    if (/^\s*select\s+|\binsert\s+into\s+|\bfrom\s+\w+/im.test(source)) return "sql";
+    if (/^\s*<\/?[a-z][\s\S]*>/i.test(source)) return "markup";
+    if (/^[\w-]+:\s+.+/m.test(source)) return "yaml";
+
+    return "plaintext";
+}
+
+function languageLabel(language: string): string {
+    const labels: Record<string, string> = {
+        javascript: "JavaScript",
+        typescript: "TypeScript",
+        jsx: "JSX",
+        tsx: "TSX",
+        python: "Python",
+        java: "Java",
+        c: "C",
+        cpp: "C++",
+        json: "JSON",
+        bash: "Bash",
+        sql: "SQL",
+        markup: "HTML",
+        css: "CSS",
+        go: "Go",
+        rust: "Rust",
+        yaml: "YAML",
+        markdown: "Markdown",
+        plaintext: "Text",
+    };
+    return labels[language] || language;
+}
+
+const playfair = Playfair_Display({
+    subsets: ["latin", "vietnamese"],
+    weight: ["400", "600", "700"],
+});
 
 export default function ArticlePage() {
     const params = useParams();
@@ -113,6 +199,118 @@ export default function ArticlePage() {
             setTableOfContents(toc);
         }
     }, [post]);
+
+    useEffect(() => {
+        if (!contentRef.current) return;
+
+        const codeBlocks = contentRef.current.querySelectorAll("pre code");
+        codeBlocks.forEach((code) => {
+            const element = code as HTMLElement;
+            const matchedClass = Array.from(code.classList).find(
+                (className) =>
+                    className.startsWith("language-") ||
+                    className.startsWith("lang-"),
+            );
+
+            const rawLang = matchedClass
+                ?.replace("language-", "")
+                .replace("lang-", "");
+            const inferredLang = detectLanguageFromCode(code.textContent || "");
+            const lang = normalizeCodeLanguage(rawLang || inferredLang);
+
+            const removableLanguageClasses = Array.from(code.classList).filter(
+                (className) =>
+                    className.startsWith("language-") ||
+                    className.startsWith("lang-"),
+            );
+
+            if (removableLanguageClasses.length > 0) {
+                code.classList.remove(...removableLanguageClasses);
+            }
+            code.classList.add(`language-${lang}`);
+
+            const pre = code.parentElement;
+            if (pre?.tagName === "PRE") {
+                const preElement = pre as HTMLElement;
+                const preLanguageClasses = Array.from(pre.classList).filter(
+                    (className) => className.startsWith("language-"),
+                );
+                if (preLanguageClasses.length > 0) {
+                    pre.classList.remove(...preLanguageClasses);
+                }
+                pre.classList.add(`language-${lang}`);
+
+                let shell = pre.parentElement as HTMLElement | null;
+                if (!shell || !shell.classList.contains("article-code-shell")) {
+                    shell = document.createElement("div");
+                    shell.className =
+                        "article-code-shell not-prose my-6 overflow-hidden rounded-md border border-zinc-800 bg-zinc-950";
+                    pre.parentNode?.insertBefore(shell, pre);
+                    shell.appendChild(pre);
+                }
+
+                shell.setAttribute("data-lang", lang);
+
+                let toolbar = shell.querySelector(
+                    ".article-code-toolbar",
+                ) as HTMLDivElement | null;
+                if (!toolbar) {
+                    toolbar = document.createElement("div");
+                    toolbar.className =
+                        "article-code-toolbar flex items-center justify-between px-3 py-2 border-b border-zinc-800 bg-zinc-900";
+                    shell.insertBefore(toolbar, pre);
+                }
+
+                let badge = toolbar.querySelector(
+                    ".article-code-language",
+                ) as HTMLSpanElement | null;
+                if (!badge) {
+                    badge = document.createElement("span");
+                    badge.className =
+                        "article-code-language text-xs font-medium text-zinc-300";
+                    toolbar.appendChild(badge);
+                }
+                badge.textContent = languageLabel(lang);
+
+                let copyButton = toolbar.querySelector(
+                    ".article-code-copy",
+                ) as HTMLButtonElement | null;
+                if (!copyButton) {
+                    copyButton = document.createElement("button");
+                    copyButton.type = "button";
+                    copyButton.className =
+                        "article-code-copy inline-flex h-7 items-center rounded border border-zinc-700 bg-zinc-900 px-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800";
+                    toolbar.appendChild(copyButton);
+                }
+
+                copyButton.textContent = "Copy";
+                copyButton.onclick = async () => {
+                    await navigator.clipboard.writeText(element.textContent || "");
+                    copyButton!.textContent = "Copied";
+                    toast.success("Đã sao chép code");
+                    window.setTimeout(() => {
+                        if (copyButton) {
+                            copyButton.textContent = "Copy";
+                        }
+                    }, 1400);
+                };
+            }
+
+            // Force-highlight every block to avoid missing tokenization in dynamic HTML content.
+            const source = element.textContent || "";
+            const grammar = Prism.languages[lang as keyof typeof Prism.languages];
+            if (grammar) {
+                element.innerHTML = Prism.highlight(source, grammar, lang);
+            } else {
+                element.textContent = source;
+                Prism.highlightElement(element);
+            }
+
+            if (grammar) {
+                Prism.highlightElement(element);
+            }
+        });
+    }, [post?.content, toast]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -330,448 +528,219 @@ export default function ArticlePage() {
     const likeCount = post.like_count + (isLiked ? 1 : 0);
 
     return (
-        <div className="min-h-screen bg-[#f8f9fd] [background-image:radial-gradient(circle_at_20%_0%,rgba(99,102,241,0.14),transparent_45%),radial-gradient(circle_at_80%_8%,rgba(59,130,246,0.12),transparent_35%),linear-gradient(to_bottom,#f8f9fd,#ffffff_35%)]">
+        <div className="min-h-screen bg-[#fafafa] text-slate-800 antialiased selection:bg-indigo-500/20">
             <motion.div
-                className="fixed top-0 left-0 right-0 h-[2px] bg-indigo-600 z-50 origin-left"
-                style={{ scaleX: readingProgress / 100 }}
-                initial={{ scaleX: 0 }}
+                className="fixed top-0 left-0 right-0 h-[2px] bg-slate-200 z-50"
+                initial={{ width: 0 }}
+                animate={{ width: `${readingProgress}%` }}
+                transition={{ type: "tween", ease: "linear", duration: 0.15 }}
             />
 
-            <header className="md:hidden sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur">
-                <div className="h-14 px-4 flex items-center justify-between">
+            <header className="sticky top-[2px] z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/50 xl:hidden">
+                <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
                     <Link
                         href="/articles"
-                        className="inline-flex items-center gap-2 text-sm font-medium text-slate-700"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-indigo-600"
                     >
                         <ChevronLeft className="w-4 h-4" />
-                        Quay lại
+                        Bài viết
                     </Link>
-                    <button
-                        onClick={() => setShowShareMenu((prev) => !prev)}
-                        className="p-2 rounded-lg text-slate-700 hover:bg-slate-100"
-                    >
-                        <Share2 className="w-4 h-4" />
+                    <button onClick={() => setShowTOC((prev) => !prev)} className="p-2 rounded-lg text-slate-700 hover:bg-slate-100">
+                        {showTOC ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
                     </button>
                 </div>
             </header>
 
-            <PageContainer size="lg" className="pt-6 pb-20 md:pb-14">
-                <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.45 }}
-                    className="grid grid-cols-1 xl:grid-cols-[72px_minmax(0,1fr)_300px] gap-6 lg:gap-8"
-                >
-                    <aside className="hidden xl:block">
-                        <div className="sticky top-24 flex flex-col gap-3">
+            <main className="w-full pt-10 pb-24">
+                <section className="max-w-4xl mx-auto px-6 mb-14 text-center">
+                    <div className="flex items-center justify-center gap-2 text-sm text-slate-500 mb-6">
+                        <Link href="/articles" className="hover:text-indigo-600 transition-colors">
+                            Bài viết
+                        </Link>
+                        <span>·</span>
+                        <span className="text-indigo-600 font-medium">AI & IoT</span>
+                    </div>
+
+                    <h1 className={`${playfair.className} text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.15] text-slate-900 mb-6`}>
+                        {post.title}
+                    </h1>
+
+                    {post.excerpt && (
+                        <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed font-light">
+                            {post.excerpt}
+                        </p>
+                    )}
+
+                    <div className="flex flex-wrap items-center justify-center gap-3 py-4 border-y border-slate-200 text-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <Link href={`/${post.author.username}`} className="shrink-0">
+                                {post.author.avatar_url ? (
+                                    <Image src={post.author.avatar_url} alt={post.author.full_name} width={24} height={24} className="rounded-full" />
+                                ) : (
+                                    <div className="size-6 rounded-full bg-indigo-600 text-white text-xs font-semibold flex items-center justify-center">
+                                        {post.author.full_name.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                            </Link>
+                            <span className="font-medium text-slate-900">{post.author.full_name}</span>
+                        </div>
+                        <span className="text-slate-300">|</span>
+                        <span className="text-slate-500">{formatDate(post.published_at)}</span>
+                        <span className="text-slate-300">|</span>
+                        <span className="text-slate-500">{formatReadingTime(post.content)}</span>
+                        <span className="text-slate-300 hidden sm:inline">|</span>
+                        <span className="text-slate-500 hidden sm:inline">{post.view_count.toLocaleString()} lượt xem</span>
+                    </div>
+                </section>
+
+                <section className="max-w-7xl mx-auto px-6 grid grid-cols-12 gap-8 relative">
+                    <aside className="hidden lg:block col-span-2">
+                        <div className="sticky top-24 flex flex-col items-end pr-8 gap-6 text-slate-400">
                             <button
                                 onClick={() => setIsLiked((prev) => !prev)}
-                                className={`rounded-xl border px-3 py-3 flex flex-col items-center gap-1.5 transition ${
-                                    isLiked
-                                        ? "border-rose-200 bg-rose-50 text-rose-600"
-                                        : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
+                                className={`flex items-center gap-2 transition-colors group ${
+                                    isLiked ? "text-indigo-600" : "hover:text-indigo-600"
                                 }`}
                             >
-                                <Heart
-                                    className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`}
-                                />
-                                <span className="text-[11px] font-semibold">
+                                <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                                     {likeCount}
                                 </span>
+                                <Heart className={`w-7 h-7 ${isLiked ? "fill-current" : ""}`} />
                             </button>
 
                             <button
                                 onClick={handleBookmark}
                                 disabled={isBookmarking}
-                                className={`rounded-xl border px-3 py-3 flex flex-col items-center gap-1.5 transition ${
+                                className={`transition-colors ${
                                     isBookmarked
-                                        ? "border-indigo-200 bg-indigo-50 text-indigo-600"
-                                        : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
+                                        ? "text-indigo-600"
+                                        : "hover:text-indigo-600"
                                 } ${isBookmarking ? "opacity-60 cursor-not-allowed" : ""}`}
                             >
-                                <Bookmark
-                                    className={`w-5 h-5 ${isBookmarked ? "fill-current" : ""}`}
-                                />
-                                <span className="text-[11px] font-semibold">
-                                    {isBookmarking ? "..." : "Lưu"}
-                                </span>
+                                <Bookmark className={`w-7 h-7 ${isBookmarked ? "fill-current" : ""}`} />
                             </button>
 
                             <button
                                 onClick={() => setShowShareMenu((prev) => !prev)}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-3 flex flex-col items-center gap-1.5 text-slate-600 hover:border-indigo-200 hover:text-indigo-600 transition"
+                                className="transition-colors hover:text-indigo-600"
                             >
-                                <Share2 className="w-5 h-5" />
-                                <span className="text-[11px] font-semibold">
-                                    Share
-                                </span>
+                                <Share2 className="w-7 h-7" />
                             </button>
-
-                            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 flex flex-col items-center gap-1.5 text-slate-600">
-                                <MessageCircle className="w-5 h-5" />
-                                <span className="text-[11px] font-semibold">
-                                    {post.comment_count}
-                                </span>
-                            </div>
                         </div>
                     </aside>
 
-                    <article className="min-w-0">
-                        <div className="mb-7 hidden md:block">
-                            <Link
-                                href="/articles"
-                                className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-indigo-600"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                                Quay lại danh sách bài viết
-                            </Link>
-                        </div>
-
-                        {post.categories && post.categories.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-5">
-                                {post.categories.map((category) => (
-                                    <Link
-                                        key={category.id}
-                                        href={`/articles?category=${category.id}`}
-                                        className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold tracking-wide text-indigo-700"
-                                    >
-                                        {category.name}
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-
-                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 leading-tight mb-5">
-                            {post.title}
-                        </h1>
-
-                        {post.excerpt && (
-                            <p className="text-base sm:text-lg leading-8 text-slate-600 mb-7">
-                                {post.excerpt}
-                            </p>
-                        )}
-
-                        <section className="rounded-2xl border border-slate-200/90 bg-white/95 p-4 sm:p-5 mb-8 shadow-sm">
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Link
-                                        href={`/${post.author.username}`}
-                                        className="shrink-0"
-                                    >
-                                        {post.author.avatar_url ? (
-                                            <Image
-                                                src={post.author.avatar_url}
-                                                alt={post.author.full_name}
-                                                width={48}
-                                                height={48}
-                                                className="rounded-full"
-                                            />
-                                        ) : (
-                                            <div className="h-12 w-12 rounded-full bg-indigo-600 text-white text-lg font-bold flex items-center justify-center">
-                                                {post.author.full_name
-                                                    .charAt(0)
-                                                    .toUpperCase()}
-                                            </div>
-                                        )}
-                                    </Link>
-                                    <div className="min-w-0">
-                                        <Link
-                                            href={`/${post.author.username}`}
-                                            className="text-sm sm:text-base font-semibold text-slate-900 hover:text-indigo-600"
-                                        >
-                                            {post.author.full_name}
-                                        </Link>
-                                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-500">
-                                            <span>{formatDate(post.published_at)}</span>
-                                            <span>•</span>
-                                            <span className="inline-flex items-center gap-1">
-                                                <Clock className="w-3.5 h-3.5" />
-                                                {formatReadingTime(post.content)}
-                                            </span>
-                                            <span>•</span>
-                                            <span className="inline-flex items-center gap-1">
-                                                <Eye className="w-3.5 h-3.5" />
-                                                {post.view_count.toLocaleString()} lượt xem
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="hidden md:flex items-center gap-2">
-                                    <button
-                                        onClick={() => setIsLiked((prev) => !prev)}
-                                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                                            isLiked
-                                                ? "border-rose-200 bg-rose-50 text-rose-600"
-                                                : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
-                                        }`}
-                                    >
-                                        <Heart
-                                            className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`}
-                                        />
-                                        {likeCount}
-                                    </button>
-                                    <button
-                                        onClick={handleBookmark}
-                                        disabled={isBookmarking}
-                                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                                            isBookmarked
-                                                ? "border-indigo-200 bg-indigo-50 text-indigo-600"
-                                                : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
-                                        }`}
-                                    >
-                                        <Bookmark
-                                            className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`}
-                                        />
-                                        {isBookmarking ? "Đang lưu..." : "Lưu"}
-                                    </button>
-                                    <button
-                                        onClick={() =>
-                                            setShowShareMenu((prev) => !prev)
-                                        }
-                                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
-                                    >
-                                        <Share2 className="w-4 h-4" />
-                                        Chia sẻ
-                                    </button>
-                                </div>
-                            </div>
-                        </section>
+                    <article className="col-span-12 lg:col-span-7 max-w-none text-slate-700 leading-8">
+                        <p className="lead text-xl !text-slate-600">{post.excerpt}</p>
 
                         {post.cover_image && (
-                            <div className="mb-8 sm:mb-10 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+                            <figure className="my-10">
                                 <Image
                                     src={post.cover_image}
                                     alt={post.title}
                                     width={1200}
                                     height={675}
-                                    className="w-full h-auto object-cover"
+                                    className="w-full rounded-xl object-cover max-h-[420px]"
                                     priority
                                 />
-                            </div>
+                                <figcaption className="text-center text-sm text-slate-500 mt-3 font-light">
+                                    Hình minh họa cho bài viết.
+                                </figcaption>
+                            </figure>
                         )}
-
-                        <div className="md:hidden sticky top-14 z-30 mb-6">
-                            <div className="grid grid-cols-4 gap-2 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur">
-                                <button
-                                    onClick={() => setIsLiked((prev) => !prev)}
-                                    className={`h-9 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1 ${
-                                        isLiked
-                                            ? "bg-rose-50 text-rose-600"
-                                            : "bg-slate-50 text-slate-700"
-                                    }`}
-                                >
-                                    <Heart
-                                        className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`}
-                                    />
-                                    {likeCount}
-                                </button>
-                                <button
-                                    onClick={handleBookmark}
-                                    className={`h-9 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1 ${
-                                        isBookmarked
-                                            ? "bg-indigo-50 text-indigo-600"
-                                            : "bg-slate-50 text-slate-700"
-                                    }`}
-                                >
-                                    <Bookmark
-                                        className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`}
-                                    />
-                                    Lưu
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        setShowShareMenu((prev) => !prev)
-                                    }
-                                    className="h-9 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1 bg-slate-50 text-slate-700"
-                                >
-                                    <Share2 className="w-4 h-4" />
-                                    Share
-                                </button>
-                                <button
-                                    onClick={() => setShowTOC((prev) => !prev)}
-                                    className="h-9 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1 bg-slate-50 text-slate-700"
-                                >
-                                    <Menu className="w-4 h-4" />
-                                    Mục lục
-                                </button>
-                            </div>
-                        </div>
 
                         <div
                             ref={contentRef}
-                            className="prose prose-slate max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-headings:scroll-mt-24 prose-h2:text-3xl prose-h2:mt-14 prose-h2:mb-5 prose-h3:text-2xl prose-h3:mt-9 prose-h3:mb-4 prose-p:text-[1.06rem] prose-p:leading-8 prose-p:text-slate-700 prose-strong:text-slate-900 prose-a:text-indigo-700 hover:prose-a:text-indigo-800 prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-a:underline-offset-4 prose-code:text-indigo-700 prose-code:bg-indigo-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-[''] prose-code:after:content-[''] prose-pre:overflow-x-auto prose-pre:bg-slate-900 prose-pre:border prose-pre:border-slate-800 prose-pre:rounded-2xl prose-pre:px-5 prose-pre:py-4 prose-pre:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-indigo-500 prose-blockquote:bg-indigo-50/70 prose-blockquote:rounded-r-xl prose-blockquote:px-5 prose-blockquote:py-3 prose-img:rounded-2xl prose-img:border prose-img:border-slate-200 prose-img:shadow-sm"
+                            className="article-markdown [&_h2]:text-3xl [&_h2]:font-semibold [&_h2]:text-slate-900 [&_h2]:mt-12 [&_h2]:mb-6 [&_h3]:text-2xl [&_h3]:font-semibold [&_h3]:text-slate-900 [&_h3]:mt-8 [&_h3]:mb-4 [&_p]:text-[1.125rem] [&_p]:leading-[1.8] [&_p]:text-slate-700 [&_a]:text-indigo-600 [&_a]:font-medium hover:[&_a]:text-indigo-500 [&_img]:rounded-xl [&_img]:w-full [&_img]:my-10"
                             dangerouslySetInnerHTML={{ __html: post.content }}
                         />
-
-                        {post.tags && post.tags.length > 0 && (
-                            <section className="mt-14 pt-7 border-t border-slate-200">
-                                <h2 className="text-sm font-semibold tracking-wide text-slate-900 mb-4 uppercase">
-                                    Thẻ bài viết
-                                </h2>
-                                <div className="flex flex-wrap gap-2">
-                                    {post.tags.map((tag) => (
-                                        <Link
-                                            key={tag.id}
-                                            href={`/articles?tag=${tag.slug}`}
-                                            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-200 hover:text-indigo-700"
-                                        >
-                                            #{tag.name}
-                                        </Link>
-                                    ))}
-                                </div>
-                            </section>
-                        )}
-
-                        <section className="mt-12 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
-                            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-5">
-                                Bài viết liên quan
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-                                {relatedArticles.map((article) => (
-                                    <Link
-                                        key={article.id}
-                                        href={`/articles/${article.slug}`}
-                                        className="group rounded-xl overflow-hidden border border-slate-200 bg-white hover:shadow-md transition"
-                                    >
-                                        <div className="relative aspect-[16/9] overflow-hidden">
-                                            <Image
-                                                src={article.cover_image}
-                                                alt={article.title}
-                                                fill
-                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                            />
-                                        </div>
-                                        <div className="p-4">
-                                            <h3 className="text-sm font-semibold leading-6 text-slate-900 group-hover:text-indigo-700 line-clamp-2">
-                                                {article.title}
-                                            </h3>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </section>
-
-                        <section className="mt-8 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 sm:p-8">
-                            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">
-                                Tham gia thảo luận
-                            </h2>
-                            <p className="text-slate-600 mb-5">
-                                Chia sẻ câu hỏi hoặc ý kiến của bạn về bài viết.
-                                Đội ngũ và cộng đồng sẽ phản hồi sớm.
-                            </p>
-                            <div className="flex flex-wrap items-center gap-3">
-                                <button className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
-                                    <MessageCircle className="w-4 h-4" />
-                                    Mở thảo luận
-                                </button>
-                                <span className="text-sm text-slate-500">
-                                    Hiện có {post.comment_count} phản hồi
-                                </span>
-                            </div>
-                        </section>
-
-                        <section className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 sm:p-7">
-                            <div className="flex flex-col sm:flex-row gap-4 sm:items-start">
-                                <Link
-                                    href={`/${post.author.username}`}
-                                    className="shrink-0"
-                                >
-                                    {post.author.avatar_url ? (
-                                        <Image
-                                            src={post.author.avatar_url}
-                                            alt={post.author.full_name}
-                                            width={72}
-                                            height={72}
-                                            className="rounded-2xl"
-                                        />
-                                    ) : (
-                                        <div className="w-[72px] h-[72px] rounded-2xl bg-indigo-600 text-white text-2xl font-bold flex items-center justify-center">
-                                            {post.author.full_name
-                                                .charAt(0)
-                                                .toUpperCase()}
-                                        </div>
-                                    )}
-                                </Link>
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-900">
-                                        {post.author.full_name}
-                                    </h3>
-                                    <p className="text-sm text-indigo-700 mb-3">
-                                        @{post.author.username}
-                                    </p>
-                                    {post.author.bio && (
-                                        <p className="text-sm leading-7 text-slate-600 mb-4">
-                                            {post.author.bio}
-                                        </p>
-                                    )}
-                                    <Link
-                                        href={`/${post.author.username}`}
-                                        className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-700 hover:text-indigo-800"
-                                    >
-                                        Xem trang cá nhân
-                                        <ChevronLeft className="w-4 h-4 rotate-180" />
-                                    </Link>
-                                </div>
-                            </div>
-                        </section>
                     </article>
 
-                    <aside className="hidden xl:block">
-                        <div className="sticky top-24 space-y-4">
+                    <aside className="hidden lg:block col-span-3">
+                        <div className="sticky top-24 pl-8">
                             {tableOfContents.length > 0 && (
-                                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <h3 className="text-sm font-bold tracking-wide uppercase text-slate-900">
-                                            Mục lục
-                                        </h3>
-                                        <span className="text-xs text-slate-500">
-                                            {Math.round(readingProgress)}%
-                                        </span>
-                                    </div>
-                                    <nav className="space-y-1 max-h-[55vh] overflow-auto pr-1">
+                                <>
+                                    <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-widest mb-6">
+                                        Mục lục
+                                    </h4>
+                                    <nav className="flex flex-col text-sm border-l border-slate-200">
                                         {tableOfContents.map((item) => (
                                             <button
                                                 key={item.id}
                                                 onClick={() =>
                                                     scrollToHeading(item.id)
                                                 }
-                                                className={`w-full text-left rounded-lg py-2 px-3 text-sm transition ${
+                                                className={`text-left py-2 -ml-[1px] transition-colors ${
                                                     item.level === 3
-                                                        ? "pl-6"
+                                                        ? "pl-8"
                                                         : ""
                                                 } ${
                                                     activeHeading === item.id
-                                                        ? "bg-indigo-50 text-indigo-700 font-semibold"
-                                                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                                        ? "pl-4 border-l-2 border-indigo-600 text-indigo-600 font-medium"
+                                                        : item.level === 3
+                                                          ? "border-l border-transparent text-slate-500 hover:text-slate-900"
+                                                          : "pl-4 border-l border-transparent text-slate-500 hover:text-slate-900"
                                                 }`}
                                             >
                                                 {item.text}
                                             </button>
                                         ))}
                                     </nav>
-                                </div>
+                                </>
                             )}
-
-                            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                                <h3 className="text-base font-bold text-slate-900 mb-2">
-                                    Theo dõi bài viết
-                                </h3>
-                                <p className="text-sm text-slate-600 mb-4">
-                                    Lưu lại để đọc tiếp và chia sẻ cho đồng đội.
-                                </p>
-                                <button
-                                    onClick={handleBookmark}
-                                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
-                                >
-                                    <Bookmark className="w-4 h-4" />
-                                    {isBookmarked ? "Đã lưu" : "Lưu bài viết"}
-                                </button>
-                            </div>
                         </div>
                     </aside>
-                </motion.div>
-            </PageContainer>
+                </section>
+
+                <section className="max-w-3xl mx-auto px-6 mt-20">
+                    {post.tags && post.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-12 mb-12 text-sm">
+                            {post.tags.map((tag) => (
+                                <Link key={tag.id} href={`/articles?tag=${tag.slug}`} className="text-slate-500 hover:text-indigo-600 transition-colors">
+                                    #{tag.name}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="border border-slate-200 rounded-2xl p-10 text-center mb-20 bg-white/50">
+                        <h3 className={`${playfair.className} text-3xl text-slate-900 mb-4`}>
+                            Tham gia thảo luận
+                        </h3>
+                        <p className="text-slate-600 mb-8 max-w-md mx-auto">
+                            Cùng chia sẻ góc nhìn của bạn hoặc đặt câu hỏi cho tác giả và cộng đồng AIOT.
+                        </p>
+                        <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-full font-medium transition-all shadow-sm inline-flex items-center gap-2">
+                            <MessageCircle className="w-4 h-4" />
+                            Viết bình luận
+                        </button>
+                    </div>
+
+                    <div>
+                        <h3 className={`${playfair.className} text-2xl text-slate-900 mb-8`}>
+                            Bài viết liên quan
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {relatedArticles.slice(0, 2).map((article) => (
+                                <Link key={article.id} href={`/articles/${article.slug}`} className="group block">
+                                    <div className="aspect-[16/9] bg-slate-100 rounded-xl mb-4 overflow-hidden">
+                                        <Image
+                                            src={article.cover_image}
+                                            alt={article.title}
+                                            width={640}
+                                            height={360}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                    </div>
+                                    <h4 className={`${playfair.className} text-lg font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors mb-2`}>
+                                        {article.title}
+                                    </h4>
+                                    <p className="text-sm text-slate-500">{formatDate(post.published_at)}</p>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            </main>
 
             <AnimatePresence>
                 {showShareMenu && (
@@ -846,7 +815,7 @@ export default function ArticlePage() {
                 )}
             </AnimatePresence>
 
-            <div className="xl:hidden fixed bottom-6 left-6 z-40">
+            <div className="lg:hidden fixed bottom-6 left-6 z-40">
                 <button
                     onClick={() => setShowTOC((prev) => !prev)}
                     className="p-3 rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg"

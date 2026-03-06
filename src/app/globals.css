@@ -164,6 +164,235 @@
     }
 }
 
+/* Article detail markdown rendering */
+.article-markdown pre,
+.article-markdown pre[class*="language-"] {
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #1e293b !important;
+    border-radius: 0.75rem !important;
+    padding: 1.25rem !important;
+    margin: 1.5rem 0 !important;
+    overflow-x: auto !important;
+    line-height: 1.65 !important;
+    text-shadow: none !important;
+}
+
+.article-code-shell {
+    margin: 1.5rem 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid #27272a;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.14);
+}
+
+.article-code-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: #18181b;
+    border-bottom: 1px solid #27272a;
+}
+
+.article-code-language {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+.article-code-copy {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    border: 1px solid #334155;
+    background: transparent;
+    border-radius: 0.375rem;
+    padding: 0.2rem 0.55rem;
+    cursor: pointer;
+    transition:
+        color 0.15s ease,
+        border-color 0.15s ease,
+        background-color 0.15s ease;
+}
+
+.article-code-copy:hover {
+    color: #ffffff;
+    border-color: #64748b;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.article-code-shell pre,
+.article-code-shell pre[class*="language-"] {
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.article-code-shell[data-lang="typescript"] .article-code-toolbar,
+.article-code-shell[data-lang="tsx"] .article-code-toolbar,
+.article-code-shell[data-lang="javascript"] .article-code-toolbar,
+.article-code-shell[data-lang="jsx"] .article-code-toolbar {
+    border-top: 2px solid #60a5fa;
+}
+
+.article-code-shell[data-lang="python"] .article-code-toolbar {
+    border-top: 2px solid #facc15;
+}
+
+.article-code-shell[data-lang="java"] .article-code-toolbar,
+.article-code-shell[data-lang="cpp"] .article-code-toolbar,
+.article-code-shell[data-lang="c"] .article-code-toolbar,
+.article-code-shell[data-lang="go"] .article-code-toolbar,
+.article-code-shell[data-lang="rust"] .article-code-toolbar {
+    border-top: 2px solid #fb7185;
+}
+
+.article-code-shell[data-lang="sql"] .article-code-toolbar,
+.article-code-shell[data-lang="json"] .article-code-toolbar,
+.article-code-shell[data-lang="yaml"] .article-code-toolbar {
+    border-top: 2px solid #a78bfa;
+}
+
+.article-code-shell[data-lang="markup"] .article-code-toolbar,
+.article-code-shell[data-lang="css"] .article-code-toolbar,
+.article-code-shell[data-lang="markdown"] .article-code-toolbar {
+    border-top: 2px solid #34d399;
+}
+
+.article-markdown pre code,
+.article-markdown code[class*="language-"] {
+    background: transparent !important;
+    color: inherit;
+    text-shadow: none !important;
+    font-family:
+        "SF Mono", Monaco, Inconsolata, "Roboto Mono", monospace !important;
+    font-size: 0.9rem !important;
+    line-height: 1.65 !important;
+}
+
+.article-markdown :not(pre) > code {
+    background: #eef2ff;
+    color: #3730a3;
+    border-radius: 0.375rem;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.9em;
+}
+
+.article-markdown .token.comment,
+.article-markdown .token.prolog,
+.article-markdown .token.doctype,
+.article-markdown .token.cdata {
+    color: #94a3b8 !important;
+}
+
+.article-markdown pre .token.comment,
+.article-markdown pre .token.prolog,
+.article-markdown pre .token.doctype,
+.article-markdown pre .token.cdata {
+    color: #94a3b8 !important;
+}
+
+.article-markdown .token.punctuation {
+    color: #cbd5e1 !important;
+}
+
+.article-markdown pre .token.punctuation {
+    color: #cbd5e1 !important;
+}
+
+.article-markdown .token.property,
+.article-markdown .token.tag,
+.article-markdown .token.boolean,
+.article-markdown .token.number,
+.article-markdown .token.constant,
+.article-markdown .token.symbol,
+.article-markdown .token.deleted {
+    color: #fda4af !important;
+}
+
+.article-markdown pre .token.property,
+.article-markdown pre .token.tag,
+.article-markdown pre .token.boolean,
+.article-markdown pre .token.number,
+.article-markdown pre .token.constant,
+.article-markdown pre .token.symbol,
+.article-markdown pre .token.deleted {
+    color: #fda4af !important;
+}
+
+.article-markdown .token.selector,
+.article-markdown .token.attr-name,
+.article-markdown .token.string,
+.article-markdown .token.char,
+.article-markdown .token.builtin,
+.article-markdown .token.inserted {
+    color: #86efac !important;
+}
+
+.article-markdown pre .token.selector,
+.article-markdown pre .token.attr-name,
+.article-markdown pre .token.string,
+.article-markdown pre .token.char,
+.article-markdown pre .token.builtin,
+.article-markdown pre .token.inserted {
+    color: #86efac !important;
+}
+
+.article-markdown .token.operator,
+.article-markdown .token.entity,
+.article-markdown .token.url,
+.article-markdown .language-css .token.string,
+.article-markdown .style .token.string {
+    color: #c4b5fd !important;
+}
+
+.article-markdown pre .token.operator,
+.article-markdown pre .token.entity,
+.article-markdown pre .token.url,
+.article-markdown pre.language-css .token.string,
+.article-markdown pre .style .token.string {
+    color: #c4b5fd !important;
+}
+
+.article-markdown .token.atrule,
+.article-markdown .token.attr-value,
+.article-markdown .token.keyword {
+    color: #93c5fd !important;
+}
+
+.article-markdown pre .token.atrule,
+.article-markdown pre .token.attr-value,
+.article-markdown pre .token.keyword {
+    color: #93c5fd !important;
+}
+
+.article-markdown .token.function,
+.article-markdown .token.class-name {
+    color: #fcd34d !important;
+}
+
+.article-markdown pre .token.function,
+.article-markdown pre .token.class-name {
+    color: #fcd34d !important;
+}
+
+.article-markdown .token.regex,
+.article-markdown .token.important,
+.article-markdown .token.variable {
+    color: #fdba74 !important;
+}
+
+.article-markdown pre .token.regex,
+.article-markdown pre .token.important,
+.article-markdown pre .token.variable {
+    color: #fdba74 !important;
+}
+
 body {
     background: #ffffff;
     font-family:
