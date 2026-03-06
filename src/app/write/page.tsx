@@ -1,13 +1,28 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/contexts/ToastContext"
 import TipTapEditor from "@/components/TipTapEditor"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Save,
-  Eye,
   Send,
   X,
   Image as ImageIcon,
@@ -16,6 +31,11 @@ import {
   Clock,
   Tag,
   Folder,
+  CheckCircle2,
+  Loader2,
+  PenSquare,
+  BookOpen,
+  ImagePlus,
 } from "lucide-react"
 import { motion } from "framer-motion"
 
@@ -23,6 +43,17 @@ interface Category {
   id: number
   name: string
   slug: string
+}
+
+function getInitials(name?: string | null) {
+  if (!name) return "AI"
+
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("")
 }
 
 export default function WriteBlogPage() {
@@ -37,11 +68,42 @@ export default function WriteBlogPage() {
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState("")
   const [categories, setCategories] = useState<Category[]>([])
-  const [status, setStatus] = useState<"draft" | "published">("draft")
   const [isSaving, setIsSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [autoSaveStatus, setAutoSaveStatus] = useState<"" | "saving" | "saved">("")
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+
+  const plainTextContent = useMemo(() => {
+    return content
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  }, [content])
+
+  const wordCount = plainTextContent ? plainTextContent.split(" ").length : 0
+  const readingMinutes = wordCount > 0 ? Math.max(1, Math.ceil(wordCount / 220)) : 0
+  const hasTitle = title.trim().length > 0
+  const hasContent = plainTextContent.length > 0
+  const hasCategory = selectedCategories.length > 0
+  const hasCover = coverImage.trim().length > 0
+
+  const completionChecklist = [
+    { label: "Tiêu đề rõ ràng", done: hasTitle },
+    { label: "Nội dung chính", done: hasContent },
+    { label: "Danh mục", done: hasCategory },
+    { label: "Ảnh bìa", done: hasCover },
+  ]
+
+  const completionValue = Math.round(
+    (completionChecklist.filter((item) => item.done).length /
+      completionChecklist.length) *
+      100,
+  )
+  const editorMode = showPreview ? "preview" : "editor"
+  const authorName = user?.full_name || user?.username || "Bạn"
+  const authorHandle = user?.username ? `@${user.username}` : "Tác giả"
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -207,8 +269,6 @@ export default function WriteBlogPage() {
     }
   }
 
-  const [isUploading, setIsUploading] = useState(false)
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -254,8 +314,11 @@ export default function WriteBlogPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.12),_transparent_38%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
+        <div className="flex items-center gap-3 rounded-full border bg-background/90 px-5 py-3 shadow-sm backdrop-blur">
+          <Loader2 className="size-5 animate-spin text-primary" />
+          <span className="text-sm font-medium text-muted-foreground">Đang mở không gian viết...</span>
+        </div>
       </div>
     )
   }
@@ -265,267 +328,443 @@ export default function WriteBlogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-[66px] z-30 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Left */}
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.back()}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Quay lại"
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <div className="flex items-center space-x-2">
-                <FileText className="w-5 h-5 text-blue-500" />
-                <h1 className="text-lg font-semibold text-gray-900">Viết Blog</h1>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.12),_transparent_32%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_48%,#f8fafc_100%)]">
+      <header className="sticky top-[66px] z-30 border-b bg-background/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-start gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              onClick={() => router.back()}
+              title="Quay lại"
+              className="mt-1"
+            >
+              <ArrowLeft className="size-4" />
+            </Button>
+
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.14em]">
+                  Blog Studio
+                </Badge>
+                {autoSaveStatus === "saving" ? (
+                  <Badge variant="secondary" className="rounded-full px-3 py-1">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Đang lưu
+                  </Badge>
+                ) : autoSaveStatus === "saved" ? (
+                  <Badge variant="secondary" className="rounded-full px-3 py-1 text-emerald-700">
+                    <CheckCircle2 className="size-3.5" />
+                    {lastSaved ? `Đã lưu ${lastSaved.toLocaleTimeString()}` : "Đã lưu"}
+                  </Badge>
+                ) : null}
               </div>
-              {/* Auto-save status */}
-              {autoSaveStatus && (
-                <div className="flex items-center space-x-2 text-sm">
-                  {autoSaveStatus === "saving" ? (
-                    <>
-                      <Clock className="w-4 h-4 text-yellow-500 animate-pulse" />
-                      <span className="text-yellow-600">Đang lưu...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Clock className="w-4 h-4 text-green-500" />
-                      <span className="text-green-600">
-                        Đã lưu {lastSaved ? `lúc ${lastSaved.toLocaleTimeString()}` : ""}
-                      </span>
-                    </>
-                  )}
-                </div>
-              )}
+
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                  Không gian viết bài blog
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Xây dựng bài viết rõ ràng, giàu ngữ cảnh và sẵn sàng xuất bản cho cộng đồng AIOT.
+                </p>
+              </div>
             </div>
+          </div>
 
-            {/* Right */}
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setShowPreview(!showPreview)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center space-x-2"
-              >
-                <Eye className="w-4 h-4" />
-                <span className="hidden sm:inline">{showPreview ? "Chỉnh sửa" : "Xem trước"}</span>
-              </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => handleSaveDraft(false)}
+              disabled={isSaving}
+            >
+              {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+              Lưu nháp
+            </Button>
 
-              <button
-                onClick={() => handleSaveDraft(false)}
-                disabled={isSaving}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center space-x-2 disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                <span className="hidden sm:inline">Lưu nháp</span>
-              </button>
-
-              <button
-                onClick={handlePublish}
-                disabled={isSaving}
-                className="px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors flex items-center space-x-2 disabled:opacity-50 shadow-sm"
-              >
-                <Send className="w-4 h-4" />
-                <span>Đăng bài</span>
-              </button>
-            </div>
+            <Button type="button" onClick={handlePublish} disabled={isSaving}>
+              {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+              Đăng bài
+            </Button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Editor Area - Left (2/3) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Cover Image */}
-            <div className="space-y-4">
-              {coverImage ? (
-                <div className="relative group">
-                  <img
-                    src={coverImage}
-                    alt="Cover"
-                    className="w-full h-64 object-cover rounded-lg"
-                  />
-                  <button
-                    onClick={() => setCoverImage("")}
-                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <section className="space-y-6">
+            <Card className="overflow-hidden border-white/70 bg-white/85 shadow-[0_24px_70px_-40px_rgba(15,23,42,0.35)] backdrop-blur">
+              <CardHeader className="border-b border-slate-100">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary" className="rounded-full px-3 py-1">
+                    <PenSquare className="size-3.5" />
+                    Draft workspace
+                  </Badge>
+                  <Badge variant="outline" className="rounded-full px-3 py-1">
+                    {wordCount} từ
+                  </Badge>
+                  <Badge variant="outline" className="rounded-full px-3 py-1">
+                    {readingMinutes} phút đọc
+                  </Badge>
                 </div>
-              ) : (
-                <div className="w-full">
-                  <label
-                    htmlFor="cover-upload"
-                    className={`w-full h-64 border-2 border-dashed rounded-lg flex flex-col items-center justify-center space-y-2 cursor-pointer transition-colors ${
-                      isUploading
-                        ? "border-gray-300 bg-gray-50"
-                        : "border-gray-300 hover:border-blue-500 hover:bg-blue-50"
-                    }`}
-                  >
-                    {isUploading ? (
-                      <div className="flex flex-col items-center space-y-2">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                        <span className="text-sm text-gray-500">Đang tải lên...</span>
+                <div className="space-y-2">
+                  <CardTitle className="text-xl">Bài viết của bạn</CardTitle>
+                  <CardDescription>
+                    Bắt đầu từ tiêu đề, ảnh bìa và dàn nội dung. Khu vực bên phải giữ mọi cài đặt xuất bản ở một chỗ.
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-3 rounded-full border bg-slate-50/80 px-3 py-2">
+                    <Avatar size="sm">
+                      <AvatarImage src={user?.avatar_url || undefined} alt={authorName} />
+                      <AvatarFallback>{getInitials(authorName)}</AvatarFallback>
+                    </Avatar>
+                    <div className="leading-tight">
+                      <p className="font-medium text-foreground">{authorName}</p>
+                      <p className="text-xs text-muted-foreground">{authorHandle}</p>
+                    </div>
+                  </div>
+                  <Separator orientation="vertical" className="hidden h-8 md:block" />
+                  <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                    <span>Blog editor</span>
+                    <span>•</span>
+                    <span>{hasTitle ? "Có tiêu đề" : "Chưa có tiêu đề"}</span>
+                    <span>•</span>
+                    <span>{hasCategory ? `${selectedCategories.length} danh mục` : "Chưa chọn danh mục"}</span>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-8 pt-6">
+                <div className="space-y-3">
+                  <Label htmlFor="cover-upload">Ảnh bìa</Label>
+
+                  {coverImage ? (
+                    <div className="group relative overflow-hidden rounded-2xl border bg-slate-950">
+                      <img
+                        src={coverImage}
+                        alt="Cover"
+                        className="h-72 w-full object-cover opacity-95"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/75 via-black/30 to-transparent p-4 text-white">
+                        <div>
+                          <p className="text-sm font-medium">Ảnh bìa đã sẵn sàng</p>
+                          <p className="text-xs text-white/70">Bạn có thể thay đổi để khớp chủ đề bài viết.</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setCoverImage("")}
+                          className="bg-white/12 text-white hover:bg-white/20"
+                        >
+                          <X className="size-4" />
+                          Gỡ ảnh
+                        </Button>
                       </div>
-                    ) : (
-                      <>
-                        <ImageIcon className="w-12 h-12 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-600">
-                          Click để tải ảnh bìa lên
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          PNG, JPG, GIF (Tối đa 1MB)
-                        </span>
-                      </>
-                    )}
-                    <input
-                      id="cover-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                      disabled={isUploading}
-                    />
-                  </label>
+                    </div>
+                  ) : (
+                    <label
+                      htmlFor="cover-upload"
+                      className="flex min-h-72 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 px-6 text-center transition-colors hover:border-primary/60 hover:bg-primary/5"
+                    >
+                      {isUploading ? (
+                        <div className="space-y-3">
+                          <Loader2 className="mx-auto size-10 animate-spin text-primary" />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">Đang tải ảnh lên</p>
+                            <p className="text-sm text-muted-foreground">Giữ cửa sổ mở cho đến khi hoàn tất.</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                            <ImagePlus className="size-7" />
+                          </span>
+                          <div className="space-y-1">
+                            <p className="text-base font-medium text-foreground">Tải ảnh bìa cho bài viết</p>
+                            <p className="text-sm text-muted-foreground">
+                              PNG, JPG hoặc GIF. Kích thước tối đa 1MB để đảm bảo tải nhanh.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <input
+                        id="cover-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                        disabled={isUploading}
+                      />
+                    </label>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Title */}
-            <div>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Tiêu đề bài viết của bạn..."
-                className="w-full text-4xl font-bold placeholder-gray-300 focus:outline-none border-none bg-transparent"
-                maxLength={255}
-              />
-              <p className="text-sm text-gray-400 mt-2">{title.length}/255 ký tự</p>
-            </div>
+                <div className="space-y-3">
+                  <Label htmlFor="post-title">Tiêu đề</Label>
+                  <Input
+                    id="post-title"
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Ví dụ: Cách xây dựng AI agent cho hệ thống IoT học tập"
+                    className="h-auto border-none bg-transparent px-0 py-0 text-4xl font-semibold tracking-tight shadow-none placeholder:text-slate-300 focus-visible:ring-0 md:text-5xl"
+                    maxLength={255}
+                  />
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+                    <span>Hãy viết ngắn gọn, cụ thể, đủ để người đọc hiểu giá trị bài viết.</span>
+                    <span>{title.length}/255 ký tự</span>
+                  </div>
+                </div>
 
-            {/* Content Editor */}
-            {showPreview ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="bg-white rounded-lg shadow-sm p-8"
-              >
-                <h2 className="text-3xl font-bold mb-6">{title || "Tiêu đề bài viết"}</h2>
-                <div
-                  className="prose prose-lg max-w-none"
-                  dangerouslySetInnerHTML={{ __html: content || "<p>Nội dung bài viết...</p>" }}
-                />
-              </motion.div>
-            ) : (
-              <TipTapEditor
-                content={content}
-                onChange={setContent}
-                placeholder="Bắt đầu viết nội dung bài viết của bạn..."
-              />
-            )}
-          </div>
+                <div className="space-y-3">
+                  <Tabs
+                    value={editorMode}
+                    onValueChange={(value) => setShowPreview(value === "preview")}
+                    className="space-y-4"
+                  >
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <Label>Nội dung bài viết</Label>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Sử dụng heading, đoạn ngắn và code block để bài viết dễ đọc hơn.
+                        </p>
+                      </div>
+                      <TabsList variant="line" className="w-full justify-start md:w-auto">
+                        <TabsTrigger value="editor">Soạn thảo</TabsTrigger>
+                        <TabsTrigger value="preview">Xem trước</TabsTrigger>
+                      </TabsList>
+                    </div>
 
-          {/* Sidebar - Right (1/3) */}
-          <div className="space-y-6">
-            {/* Categories */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <Folder className="w-5 h-5 text-gray-600" />
-                <h3 className="font-semibold text-gray-900">Danh mục</h3>
-              </div>
-              <div className="space-y-2">
+                    <TabsContent value="editor" className="mt-0">
+                      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+                        <TipTapEditor
+                          content={content}
+                          onChange={setContent}
+                          placeholder="Bắt đầu viết nội dung bài viết của bạn..."
+                        />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="preview" className="mt-0">
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
+                        <Card className="border-slate-200 bg-white shadow-none">
+                          <CardContent className="space-y-6 pt-8">
+                            <div className="space-y-4 border-b border-slate-100 pb-6">
+                              <Badge variant="outline" className="rounded-full px-3 py-1">
+                                Preview bài viết
+                              </Badge>
+                              <h2 className="text-3xl font-semibold tracking-tight text-foreground">
+                                {title || "Tiêu đề bài viết"}
+                              </h2>
+                              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-3">
+                                  <Avatar>
+                                    <AvatarImage src={user?.avatar_url || undefined} alt={authorName} />
+                                    <AvatarFallback>{getInitials(authorName)}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="leading-tight">
+                                    <p className="font-medium text-foreground">{authorName}</p>
+                                    <p className="text-xs text-muted-foreground">{authorHandle}</p>
+                                  </div>
+                                </div>
+                                <Separator orientation="vertical" className="hidden h-8 md:block" />
+                                <span>{wordCount} từ</span>
+                                <span>•</span>
+                                <span>{readingMinutes} phút đọc</span>
+                              </div>
+                            </div>
+                            <div
+                              className="article-markdown prose prose-lg max-w-none"
+                              dangerouslySetInnerHTML={{ __html: content || "<p>Nội dung bài viết...</p>" }}
+                            />
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          <aside className="space-y-6 xl:sticky xl:top-[154px] xl:self-start">
+            <Card className="border-white/70 bg-white/85 shadow-[0_18px_60px_-36px_rgba(15,23,42,0.35)] backdrop-blur">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileText className="size-4 text-primary" />
+                  Publishing checklist
+                </CardTitle>
+                <CardDescription>
+                  Theo dõi mức sẵn sàng trước khi xuất bản để tránh thiếu metadata quan trọng.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-foreground">Mức hoàn thiện</span>
+                    <span className="text-muted-foreground">{completionValue}%</span>
+                  </div>
+                  <Progress value={completionValue} />
+                </div>
+
+                <Separator />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border bg-slate-50/80 p-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Từ</p>
+                    <p className="mt-1 text-2xl font-semibold text-foreground">{wordCount}</p>
+                  </div>
+                  <div className="rounded-xl border bg-slate-50/80 p-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Đọc</p>
+                    <p className="mt-1 text-2xl font-semibold text-foreground">{readingMinutes || 0}p</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {completionChecklist.map((item) => (
+                    <div key={item.label} className="flex items-center justify-between rounded-xl border px-3 py-2">
+                      <span className="text-sm text-foreground">{item.label}</span>
+                      <Badge variant={item.done ? "secondary" : "outline"} className="rounded-full px-2.5 py-1">
+                        {item.done ? "OK" : "Thiếu"}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+
+                <Separator />
+
+                <div className="rounded-2xl border bg-slate-50/90 p-4 text-sm text-muted-foreground">
+                  {completionValue >= 100
+                    ? "Bài viết đã có đủ thành phần cơ bản để xuất bản. Hãy chuyển sang preview lần cuối."
+                    : "Hoàn thiện thêm các mục còn thiếu để bài viết đạt cấu trúc tốt hơn khi lên trang."}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-white/70 bg-white/85 backdrop-blur">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Folder className="size-4 text-primary" />
+                  Danh mục
+                </CardTitle>
+                <CardDescription>
+                  Chọn ít nhất một danh mục để người đọc tìm thấy bài viết đúng ngữ cảnh.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
                 {categories.map((category) => (
-                  <label
+                  <div
                     key={category.id}
-                    className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                    className="flex items-start gap-3 rounded-xl border px-3 py-3 transition-colors hover:bg-slate-50"
                   >
-                    <input
-                      type="checkbox"
+                    <Checkbox
+                      id={`category-${category.id}`}
                       checked={selectedCategories.includes(category.id)}
-                      onChange={() => toggleCategory(category.id)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      onCheckedChange={() => toggleCategory(category.id)}
+                      className="mt-0.5"
                     />
-                    <span className="text-sm text-gray-700">{category.name}</span>
-                  </label>
+                    <div className="space-y-1">
+                      <Label htmlFor={`category-${category.id}`} className="cursor-pointer font-medium text-foreground">
+                        {category.name}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">/{category.slug}</p>
+                    </div>
+                  </div>
                 ))}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            {/* Tags */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <Tag className="w-5 h-5 text-gray-600" />
-                <h3 className="font-semibold text-gray-900">Tags</h3>
-                <span className="text-xs text-gray-500">({tags.length}/5)</span>
-              </div>
+            <Card className="border-white/70 bg-white/85 backdrop-blur">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Tag className="size-4 text-primary" />
+                  Tags chủ đề
+                </CardTitle>
+                <CardDescription>
+                  Dùng tối đa 5 tag ngắn để tăng khả năng khám phá nội dung liên quan.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {tags.length > 0 ? (
+                    tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="rounded-full px-3 py-1 text-sm">
+                        #{tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="ml-1 rounded-full text-muted-foreground transition hover:text-foreground"
+                          aria-label={`Xóa tag ${tag}`}
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Chưa có tag nào được thêm.</p>
+                  )}
+                </div>
 
-              <div className="flex flex-wrap gap-2 mb-3">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center space-x-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault()
+                        handleAddTag()
+                      }
+                    }}
+                    placeholder="Ví dụ: ai-agent"
+                    disabled={tags.length >= 5}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddTag}
+                    disabled={tags.length >= 5 || !tagInput.trim()}
                   >
-                    <span>#{tag}</span>
-                    <button onClick={() => handleRemoveTag(tag)} className="hover:text-blue-900">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
+                    Thêm
+                  </Button>
+                </div>
 
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
-                  placeholder="Thêm tag..."
-                  disabled={tags.length >= 5}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                />
-                <button
-                  onClick={handleAddTag}
-                  disabled={tags.length >= 5 || !tagInput.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Thêm
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">Nhấn Enter hoặc click Thêm để thêm tag</p>
-            </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Nhấn Enter để thêm nhanh.</span>
+                  <span>{tags.length}/5</span>
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Tips */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <h3 className="font-semibold text-blue-900 mb-3">💡 Mẹo viết blog hay</h3>
-              <ul className="space-y-2 text-sm text-blue-800">
-                <li className="flex items-start space-x-2">
-                  <span className="text-blue-500 mt-0.5">•</span>
-                  <span>Tiêu đề nên ngắn gọn, hấp dẫn (50-60 ký tự)</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="text-blue-500 mt-0.5">•</span>
-                  <span>Sử dụng heading để chia nhỏ nội dung</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="text-blue-500 mt-0.5">•</span>
-                  <span>Thêm hình ảnh minh họa cho sinh động</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="text-blue-500 mt-0.5">•</span>
-                  <span>Chọn đúng danh mục để tiếp cận độc giả</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="text-blue-500 mt-0.5">•</span>
-                  <span>Sử dụng code block cho ví dụ lập trình</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+            <Card className="border-primary/15 bg-primary/5 shadow-none">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base text-primary">
+                  <BookOpen className="size-4" />
+                  Gợi ý cho bài viết tốt
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-slate-700">
+                <div className="flex gap-3 rounded-xl bg-white/70 p-3">
+                  <Clock className="mt-0.5 size-4 text-primary" />
+                  <span>Phần mở đầu nên nói rõ vấn đề và lợi ích độc giả nhận được trong 2 đến 3 câu đầu.</span>
+                </div>
+                <div className="flex gap-3 rounded-xl bg-white/70 p-3">
+                  <FileText className="mt-0.5 size-4 text-primary" />
+                  <span>Chia nội dung thành các heading nhỏ để người đọc quét nhanh và quay lại đúng mục cần xem.</span>
+                </div>
+                <div className="flex gap-3 rounded-xl bg-white/70 p-3">
+                  <ImageIcon className="mt-0.5 size-4 text-primary" />
+                  <span>Dùng ảnh bìa và code block khi cần để bài viết mang tính hướng dẫn rõ ràng hơn.</span>
+                </div>
+              </CardContent>
+            </Card>
+          </aside>
         </div>
       </main>
     </div>
