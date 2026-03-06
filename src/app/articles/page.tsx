@@ -315,48 +315,272 @@ export default function ArticlesPage() {
         }
     };
 
+    const selectedCategoryName =
+        categories.find((category) => category.id === selectedCategory)?.name ||
+        "Tất cả";
+    const featuredArticle = articles[0];
+    const secondaryArticles = articles.slice(1, 3);
+    const remainingArticles = articles.slice(3);
+    const showFeaturedLayout = viewMode === "grid" && articles.length > 0;
+
+    const renderBookmarkButton = (article: Article) => (
+        <button
+            onClick={(e) => handleBookmark(e, article)}
+            disabled={bookmarkingPosts.has(article.id)}
+            className={`absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/90 text-slate-600 shadow-sm backdrop-blur-sm transition-all ${
+                bookmarkedPosts.has(article.id)
+                    ? "border-indigo-500/30 bg-indigo-600 text-white"
+                    : "hover:border-indigo-200 hover:text-indigo-600"
+            } ${bookmarkingPosts.has(article.id) ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+            title={bookmarkedPosts.has(article.id) ? "Bỏ lưu" : "Lưu bài viết"}
+            aria-label={bookmarkedPosts.has(article.id) ? "Bỏ lưu bài viết" : "Lưu bài viết"}
+        >
+            <Bookmark
+                className={`h-4 w-4 ${bookmarkedPosts.has(article.id) ? "fill-current" : ""}`}
+            />
+        </button>
+    );
+
+    const renderAuthor = (article: Article, size: "sm" | "md" = "sm") => {
+        const avatarSize = size === "sm" ? 32 : 40;
+        const initialsClass =
+            size === "sm"
+                ? "h-8 w-8 text-xs"
+                : "h-10 w-10 text-sm";
+
+        return (
+            <div className="flex items-center gap-3">
+                {article.avatar_url ? (
+                    <Image
+                        src={article.avatar_url}
+                        alt={article.full_name}
+                        width={avatarSize}
+                        height={avatarSize}
+                        className="rounded-full object-cover"
+                    />
+                ) : (
+                    <div
+                        className={`flex items-center justify-center rounded-full bg-indigo-600 font-semibold text-white ${initialsClass}`}
+                    >
+                        {article.full_name.charAt(0)}
+                    </div>
+                )}
+
+                <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                        {article.full_name}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                        {formatDate(article.published_at)}
+                    </p>
+                </div>
+            </div>
+        );
+    };
+
+    const renderStats = (article: Article, detailed = false) => (
+        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+            <div className="flex items-center gap-1.5">
+                <Eye className="h-4 w-4" />
+                <span>
+                    {article.view_count}
+                    {detailed ? " lượt xem" : ""}
+                </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+                <Heart className="h-4 w-4" />
+                <span>
+                    {article.like_count}
+                    {detailed ? " thích" : ""}
+                </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+                <MessageCircle className="h-4 w-4" />
+                <span>
+                    {article.comment_count}
+                    {detailed ? " bình luận" : ""}
+                </span>
+            </div>
+        </div>
+    );
+
+    const renderTags = (article: Article) => {
+        if (!article.tag_names) return null;
+
+        return (
+            <div className="mt-4 flex flex-wrap gap-2">
+                {getTags(article.tag_names).map((tag, idx) => (
+                    <span
+                        key={idx}
+                        className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500"
+                    >
+                        #{tag}
+                    </span>
+                ))}
+            </div>
+        );
+    };
+
+    const renderGridCard = (article: Article) => (
+        <article className="group relative h-full overflow-hidden rounded-[28px] border border-slate-200 bg-white p-3 transition-all duration-200 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-lg hover:shadow-slate-200/70">
+            {renderBookmarkButton(article)}
+            <Link href={`/articles/${article.slug}`} className="flex h-full flex-col">
+                <div className="relative aspect-[16/10] overflow-hidden rounded-[20px] bg-[linear-gradient(135deg,#818cf8,#8b5cf6)]">
+                    {article.cover_image ? (
+                        <Image
+                            src={article.cover_image}
+                            alt={article.title}
+                            fill
+                            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                        />
+                    ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                            <BookOpen className="h-14 w-14 text-white/60" />
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex flex-1 flex-col px-2 pb-2 pt-5">
+                    {article.category_names && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                            {getCategories(article.category_names).map((cat, idx) => (
+                                <Badge key={idx} variant="secondary" size="sm">
+                                    {cat}
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
+
+                    <h3 className="text-xl font-bold leading-snug text-slate-950 line-clamp-2">
+                        {article.title}
+                    </h3>
+                    <p className="mt-3 flex-1 text-sm leading-6 text-slate-600 line-clamp-3">
+                        {article.excerpt}
+                    </p>
+
+                    <div className="mt-5 border-t border-slate-100 pt-4">
+                        <div className="flex items-center justify-between gap-4">
+                            {renderAuthor(article)}
+                        </div>
+                        <div className="mt-4">{renderStats(article)}</div>
+                        {renderTags(article)}
+                    </div>
+                </div>
+            </Link>
+        </article>
+    );
+
+    const renderListCard = (article: Article) => (
+        <article className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-3 transition-all duration-200 hover:border-indigo-200 hover:shadow-lg hover:shadow-slate-200/70">
+            {renderBookmarkButton(article)}
+            <Link href={`/articles/${article.slug}`} className="flex flex-col gap-5 sm:flex-row">
+                <div className="relative h-52 overflow-hidden rounded-[22px] bg-[linear-gradient(135deg,#818cf8,#8b5cf6)] sm:h-auto sm:w-72 sm:flex-shrink-0">
+                    {article.cover_image ? (
+                        <Image
+                            src={article.cover_image}
+                            alt={article.title}
+                            fill
+                            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                        />
+                    ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                            <BookOpen className="h-14 w-14 text-white/60" />
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex flex-1 flex-col px-2 pb-2 pt-1 sm:py-3">
+                    {article.category_names && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                            {getCategories(article.category_names).map((cat, idx) => (
+                                <Badge key={idx} variant="secondary" size="sm">
+                                    {cat}
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
+
+                    <h3 className="text-2xl font-bold leading-snug text-slate-950 line-clamp-2">
+                        {article.title}
+                    </h3>
+                    <p className="mt-3 flex-1 text-base leading-7 text-slate-600 line-clamp-3">
+                        {article.excerpt}
+                    </p>
+
+                    <div className="mt-5 flex flex-col gap-4 border-t border-slate-100 pt-4 lg:flex-row lg:items-end lg:justify-between">
+                        {renderAuthor(article, "md")}
+                        <div className="lg:text-right">
+                            {renderStats(article, true)}
+                        </div>
+                    </div>
+
+                    {renderTags(article)}
+                </div>
+            </Link>
+        </article>
+    );
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-            <PageContainer size="lg" className="py-12">
-                <motion.div
+        <div className="min-h-screen bg-[#f7f8fc] text-slate-900">
+            <PageContainer size="lg" className="py-10 lg:py-12">
+                <motion.section
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="text-center mb-12"
+                    className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70 sm:p-8 lg:p-10"
                 >
-                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                        Bài viết{" "}
-                        <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                            NỔI BẬT
-                        </span>
-                    </h1>
-                    <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-                        Khám phá những bài viết được chia sẻ nhiều nhất từ cộng
-                        đồng học viên và tác giả
-                    </p>
+                    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end">
+                        <div>
+                            <div className="inline-flex items-center rounded-full bg-indigo-50 px-4 py-1.5 text-sm font-semibold text-indigo-700">
+                                Blog học tập
+                            </div>
+                            <h1 className="mt-5 max-w-3xl text-4xl font-black tracking-tight text-slate-950 md:text-5xl">
+                                Bài viết dành cho người đang học và xây dựng sản phẩm thực tế
+                            </h1>
+                            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+                                Tổng hợp các bài chia sẻ về lập trình, sản phẩm và kinh nghiệm học tập để bạn đọc nhanh, chọn đúng chủ đề và tiếp tục đào sâu khi cần.
+                            </p>
+                        </div>
 
-                    <div className="flex flex-col lg:flex-row gap-4 max-w-4xl mx-auto">
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-2xl bg-slate-50 p-4">
+                                <p className="text-sm text-slate-500">Bài viết</p>
+                                <p className="mt-2 text-2xl font-bold text-slate-950">
+                                    {pagination.total || articles.length}
+                                </p>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 p-4">
+                                <p className="text-sm text-slate-500">Chuyên mục</p>
+                                <p className="mt-2 text-2xl font-bold text-slate-950">
+                                    {categories.length}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-8 rounded-[24px] border border-slate-200 bg-slate-50 p-3 sm:p-4">
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                             <input
                                 type="text"
-                                placeholder="Tìm kiếm bài viết..."
+                                placeholder="Tìm theo tiêu đề, chủ đề hoặc từ khóa bài viết..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                                className="h-12 w-full rounded-2xl border border-white bg-white pl-12 pr-4 text-sm text-slate-900 outline-none ring-1 ring-inset ring-slate-200 transition placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500"
                             />
                         </div>
                     </div>
-                </motion.div>
+                </motion.section>
 
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
-                    <div className="flex gap-2 flex-wrap justify-center">
+                <section className="mt-8 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70 sm:p-5">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex flex-wrap gap-2">
                         <button
                             onClick={() => setSelectedCategory(null)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                                 selectedCategory === null
-                                    ? "bg-indigo-500 text-white shadow-md"
-                                    : "bg-white text-gray-600 border border-gray-200 hover:border-indigo-300"
+                                    ? "bg-slate-900 text-white"
+                                    : "border border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-700"
                             }`}
                         >
                             Tất cả
@@ -365,10 +589,10 @@ export default function ArticlesPage() {
                             <button
                                 key={cat.id}
                                 onClick={() => setSelectedCategory(cat.id)}
-                                className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                                     selectedCategory === cat.id
-                                        ? "bg-indigo-500 text-white shadow-md"
-                                        : "bg-white text-gray-600 border border-gray-200 hover:border-indigo-300"
+                                        ? "bg-slate-900 text-white"
+                                        : "border border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-700"
                                 }`}
                             >
                                 {cat.name}
@@ -376,55 +600,62 @@ export default function ArticlesPage() {
                         ))}
                     </div>
 
-                    <div className="flex gap-2 bg-white rounded-full p-1 border border-gray-200 shadow-sm">
-                        <button
-                            onClick={() => setViewMode("grid")}
-                            className={`p-2 rounded-full transition ${
-                                viewMode === "grid"
-                                    ? "bg-indigo-500 text-white"
-                                    : "text-gray-600 hover:bg-gray-100"
-                            }`}
-                            aria-label="Grid view"
-                        >
-                            <Grid3x3 className="w-5 h-5" />
-                        </button>
-                        <button
-                            onClick={() => setViewMode("list")}
-                            className={`p-2 rounded-full transition ${
-                                viewMode === "list"
-                                    ? "bg-indigo-500 text-white"
-                                    : "text-gray-600 hover:bg-gray-100"
-                            }`}
-                            aria-label="List view"
-                        >
-                            <List className="w-5 h-5" />
-                        </button>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <p className="text-sm text-slate-500">
+                                Đang xem <span className="font-semibold text-slate-900">{selectedCategoryName}</span>
+                            </p>
+
+                            <div className="flex gap-1 rounded-full border border-slate-200 bg-slate-50 p-1">
+                                <button
+                                    onClick={() => setViewMode("grid")}
+                                    className={`rounded-full p-2 transition ${
+                                        viewMode === "grid"
+                                            ? "bg-white text-slate-900 shadow-sm"
+                                            : "text-slate-500 hover:text-slate-700"
+                                    }`}
+                                    aria-label="Grid view"
+                                >
+                                    <Grid3x3 className="h-5 w-5" />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode("list")}
+                                    className={`rounded-full p-2 transition ${
+                                        viewMode === "list"
+                                            ? "bg-white text-slate-900 shadow-sm"
+                                            : "text-slate-500 hover:text-slate-700"
+                                    }`}
+                                    aria-label="List view"
+                                >
+                                    <List className="h-5 w-5" />
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </section>
 
                 {isLoading && (
                     <div
                         className={
                             viewMode === "grid"
-                                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                                : "space-y-6"
+                                ? "mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+                                : "mt-8 space-y-6"
                         }
                     >
                         {[1, 2, 3, 4, 5, 6].map((i) => (
                             <div
                                 key={i}
-                                className="bg-white rounded-xl shadow-lg overflow-hidden animate-pulse"
+                                className="overflow-hidden rounded-[28px] border border-slate-200 bg-white animate-pulse"
                             >
                                 <div
                                     className={
-                                        viewMode === "grid" ? "h-48" : "h-32"
+                                        viewMode === "grid" ? "h-56" : "h-40"
                                     }
                                 >
-                                    <div className="w-full h-full bg-gray-200"></div>
+                                    <div className="h-full w-full bg-slate-200"></div>
                                 </div>
-                                <div className="p-6 space-y-3">
-                                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                                    <div className="h-4 bg-gray-200 rounded"></div>
+                                <div className="space-y-3 p-6">
+                                    <div className="h-4 w-3/4 rounded bg-slate-200"></div>
+                                    <div className="h-4 rounded bg-slate-200"></div>
                                 </div>
                             </div>
                         ))}
@@ -439,380 +670,177 @@ export default function ArticlesPage() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.3 }}
-                            className={
-                                viewMode === "grid"
-                                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
-                                    : "space-y-6 mb-12"
-                            }
+                            className="mb-12 mt-8"
                         >
-                            {articles.map((article, index) => (
-                                <motion.article
-                                    key={article.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{
-                                        duration: 0.4,
-                                        delay: index * 0.05,
-                                    }}
-                                    layout
-                                >
-                                    <Link href={`/articles/${article.slug}`}>
-                                        {viewMode === "grid" ? (
-                                            <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden h-full flex flex-col cursor-pointer group">
-                                                <div className="h-48 bg-gradient-to-r from-indigo-500 to-purple-600 relative overflow-hidden">
-                                                    {article.cover_image ? (
+                            {showFeaturedLayout && featuredArticle && (
+                                <section className="mb-10">
+                                    <div className="mb-5 flex items-end justify-between gap-4">
+                                        <div>
+                                            <p className="text-sm font-semibold text-indigo-700">Nổi bật hôm nay</p>
+                                            <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
+                                                Bài viết đáng đọc trước khi lướt toàn bộ danh sách
+                                            </h2>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_360px]">
+                                        <article className="group relative overflow-hidden rounded-[32px] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70 transition-all duration-200 hover:border-indigo-200 hover:shadow-lg hover:shadow-slate-200/80">
+                                            {renderBookmarkButton(featuredArticle)}
+                                            <Link
+                                                href={`/articles/${featuredArticle.slug}`}
+                                                className="grid h-full gap-6 lg:grid-cols-[1.05fr_minmax(0,0.95fr)]"
+                                            >
+                                                <div className="relative min-h-[280px] overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,#818cf8,#8b5cf6)]">
+                                                    {featuredArticle.cover_image ? (
                                                         <Image
-                                                            src={
-                                                                article.cover_image
-                                                            }
-                                                            alt={article.title}
+                                                            src={featuredArticle.cover_image}
+                                                            alt={featuredArticle.title}
                                                             fill
-                                                            className="object-cover"
+                                                            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                                                         />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center">
-                                                            <BookOpen className="w-16 h-16 text-white opacity-50" />
+                                                        <div className="flex h-full w-full items-center justify-center">
+                                                            <BookOpen className="h-16 w-16 text-white/60" />
                                                         </div>
                                                     )}
-                                                    {/* Bookmark button */}
-                                                    <button
-                                                        onClick={(e) =>
-                                                            handleBookmark(
-                                                                e,
-                                                                article,
-                                                            )
-                                                        }
-                                                        disabled={bookmarkingPosts.has(
-                                                            article.id,
-                                                        )}
-                                                        className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all ${
-                                                            bookmarkedPosts.has(
-                                                                article.id,
-                                                            )
-                                                                ? "bg-indigo-600/90 text-white"
-                                                                : "bg-white/90 text-gray-600 hover:bg-white"
-                                                        } ${bookmarkingPosts.has(article.id) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                                                        title={
-                                                            bookmarkedPosts.has(
-                                                                article.id,
-                                                            )
-                                                                ? "Bỏ lưu"
-                                                                : "Lưu bài viết"
-                                                        }
-                                                    >
-                                                        <Bookmark
-                                                            className={`w-4 h-4 ${bookmarkedPosts.has(article.id) ? "fill-current" : ""}`}
-                                                        />
-                                                    </button>
                                                 </div>
 
-                                                <div className="p-6 flex-1 flex flex-col">
-                                                    {article.category_names && (
-                                                        <div className="flex flex-wrap gap-2 mb-3">
-                                                            {getCategories(
-                                                                article.category_names,
-                                                            ).map(
-                                                                (cat, idx) => (
-                                                                    <Badge
-                                                                        key={
-                                                                            idx
-                                                                        }
-                                                                        variant="secondary"
-                                                                        size="sm"
-                                                                    >
-                                                                        {cat}
-                                                                    </Badge>
-                                                                ),
-                                                            )}
+                                                <div className="flex flex-col justify-center py-2">
+                                                    {featuredArticle.category_names && (
+                                                        <div className="mb-4 flex flex-wrap gap-2">
+                                                            {getCategories(featuredArticle.category_names).map((cat, idx) => (
+                                                                <Badge key={idx} variant="secondary" size="sm">
+                                                                    {cat}
+                                                                </Badge>
+                                                            ))}
                                                         </div>
                                                     )}
-
-                                                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
-                                                        {article.title}
+                                                    <h3 className="text-3xl font-black leading-tight text-slate-950 line-clamp-3">
+                                                        {featuredArticle.title}
                                                     </h3>
-
-                                                    <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-1">
-                                                        {article.excerpt}
+                                                    <p className="mt-4 text-base leading-7 text-slate-600 line-clamp-4">
+                                                        {featuredArticle.excerpt}
                                                     </p>
+                                                    <div className="mt-6 flex flex-col gap-4 border-t border-slate-100 pt-5">
+                                                        {renderAuthor(featuredArticle, "md")}
+                                                        {renderStats(featuredArticle, true)}
+                                                        {renderTags(featuredArticle)}
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        </article>
 
-                                                    <div className="flex items-center justify-between text-sm text-gray-500 mb-3 pb-3 border-b border-gray-200">
-                                                        <div className="flex items-center gap-2">
-                                                            {article.avatar_url ? (
+                                        <div className="space-y-4">
+                                            {secondaryArticles.map((article, index) => (
+                                                <motion.article
+                                                    key={article.id}
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.4, delay: index * 0.06 }}
+                                                    layout
+                                                    className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/60 transition-all duration-200 hover:border-indigo-200 hover:shadow-lg"
+                                                >
+                                                    {renderBookmarkButton(article)}
+                                                    <Link href={`/articles/${article.slug}`} className="flex gap-4">
+                                                        <div className="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-[18px] bg-[linear-gradient(135deg,#818cf8,#8b5cf6)] sm:h-32 sm:w-32">
+                                                            {article.cover_image ? (
                                                                 <Image
-                                                                    src={
-                                                                        article.avatar_url
-                                                                    }
-                                                                    alt={
-                                                                        article.full_name
-                                                                    }
-                                                                    width={24}
-                                                                    height={24}
-                                                                    className="rounded-full"
+                                                                    src={article.cover_image}
+                                                                    alt={article.title}
+                                                                    fill
+                                                                    className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                                                                 />
                                                             ) : (
-                                                                <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs">
-                                                                    {article.full_name.charAt(
-                                                                        0,
-                                                                    )}
+                                                                <div className="flex h-full w-full items-center justify-center">
+                                                                    <BookOpen className="h-10 w-10 text-white/60" />
                                                                 </div>
                                                             )}
-                                                            <span className="font-medium">
-                                                                {
-                                                                    article.full_name
-                                                                }
-                                                            </span>
                                                         </div>
-                                                        <span>
-                                                            {formatDate(
-                                                                article.published_at,
+
+                                                        <div className="min-w-0 flex-1 py-1 pr-10">
+                                                            {article.category_names && (
+                                                                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-indigo-700">
+                                                                    {getCategories(article.category_names).join(" · ")}
+                                                                </p>
                                                             )}
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                                                        <div className="flex items-center gap-1">
-                                                            <Eye className="w-4 h-4" />
-                                                            <span>
-                                                                {
-                                                                    article.view_count
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <Heart className="w-4 h-4" />
-                                                            <span>
-                                                                {
-                                                                    article.like_count
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <MessageCircle className="w-4 h-4" />
-                                                            <span>
-                                                                {
-                                                                    article.comment_count
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    {article.tag_names && (
-                                                        <div className="flex flex-wrap gap-2 mt-3">
-                                                            {getTags(
-                                                                article.tag_names,
-                                                            ).map(
-                                                                (tag, idx) => (
-                                                                    <span
-                                                                        key={
-                                                                            idx
-                                                                        }
-                                                                        className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
-                                                                    >
-                                                                        #{tag}
-                                                                    </span>
-                                                                ),
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col sm:flex-row cursor-pointer group">
-                                                <div className="sm:w-64 h-48 sm:h-auto bg-gradient-to-r from-indigo-500 to-purple-600 relative overflow-hidden flex-shrink-0">
-                                                    {article.cover_image ? (
-                                                        <Image
-                                                            src={
-                                                                article.cover_image
-                                                            }
-                                                            alt={article.title}
-                                                            fill
-                                                            className="object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center">
-                                                            <BookOpen className="w-16 h-16 text-white opacity-50" />
-                                                        </div>
-                                                    )}
-                                                    {/* Bookmark button */}
-                                                    <button
-                                                        onClick={(e) =>
-                                                            handleBookmark(
-                                                                e,
-                                                                article,
-                                                            )
-                                                        }
-                                                        disabled={bookmarkingPosts.has(
-                                                            article.id,
-                                                        )}
-                                                        className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all ${
-                                                            bookmarkedPosts.has(
-                                                                article.id,
-                                                            )
-                                                                ? "bg-indigo-600/90 text-white"
-                                                                : "bg-white/90 text-gray-600 hover:bg-white"
-                                                        } ${bookmarkingPosts.has(article.id) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                                                        title={
-                                                            bookmarkedPosts.has(
-                                                                article.id,
-                                                            )
-                                                                ? "Bỏ lưu"
-                                                                : "Lưu bài viết"
-                                                        }
-                                                    >
-                                                        <Bookmark
-                                                            className={`w-4 h-4 ${bookmarkedPosts.has(article.id) ? "fill-current" : ""}`}
-                                                        />
-                                                    </button>
-                                                </div>
-
-                                                <div className="p-6 flex-1 flex flex-col">
-                                                    <div className="flex flex-wrap items-start gap-3 mb-3">
-                                                        {article.category_names && (
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {getCategories(
-                                                                    article.category_names,
-                                                                ).map(
-                                                                    (
-                                                                        cat,
-                                                                        idx,
-                                                                    ) => (
-                                                                        <Badge
-                                                                            key={
-                                                                                idx
-                                                                            }
-                                                                            variant="secondary"
-                                                                            size="sm"
-                                                                        >
-                                                                            {
-                                                                                cat
-                                                                            }
-                                                                        </Badge>
-                                                                    ),
-                                                                )}
+                                                            <h3 className="text-lg font-bold leading-snug text-slate-950 line-clamp-2">
+                                                                {article.title}
+                                                            </h3>
+                                                            <p className="mt-2 text-sm leading-6 text-slate-600 line-clamp-2">
+                                                                {article.excerpt}
+                                                            </p>
+                                                            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
+                                                                <span>{article.full_name}</span>
+                                                                <span>{formatDate(article.published_at)}</span>
                                                             </div>
-                                                        )}
-                                                    </div>
-
-                                                    <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">
-                                                        {article.title}
-                                                    </h3>
-
-                                                    <p className="text-gray-600 text-base mb-4 line-clamp-2 flex-1">
-                                                        {article.excerpt}
-                                                    </p>
-
-                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm text-gray-500 mb-3 pb-3 border-b border-gray-200">
-                                                        <div className="flex items-center gap-2">
-                                                            {article.avatar_url ? (
-                                                                <Image
-                                                                    src={
-                                                                        article.avatar_url
-                                                                    }
-                                                                    alt={
-                                                                        article.full_name
-                                                                    }
-                                                                    width={28}
-                                                                    height={28}
-                                                                    className="rounded-full"
-                                                                />
-                                                            ) : (
-                                                                <div className="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs">
-                                                                    {article.full_name.charAt(
-                                                                        0,
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                            <span className="font-medium">
-                                                                {
-                                                                    article.full_name
-                                                                }
-                                                            </span>
                                                         </div>
-                                                        <span>
-                                                            {formatDate(
-                                                                article.published_at,
-                                                            )}
-                                                        </span>
-                                                    </div>
+                                                    </Link>
+                                                </motion.article>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
 
-                                                    <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Eye className="w-4 h-4" />
-                                                            <span>
-                                                                {
-                                                                    article.view_count
-                                                                }{" "}
-                                                                lượt xem
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Heart className="w-4 h-4" />
-                                                            <span>
-                                                                {
-                                                                    article.like_count
-                                                                }{" "}
-                                                                thích
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <MessageCircle className="w-4 h-4" />
-                                                            <span>
-                                                                {
-                                                                    article.comment_count
-                                                                }{" "}
-                                                                bình luận
-                                                            </span>
-                                                        </div>
+                            {((viewMode === "grid" && remainingArticles.length > 0) ||
+                                viewMode === "list") && (
+                                <section>
+                                    <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                                        <div>
+                                            <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+                                                {viewMode === "grid" ? "Tất cả bài viết" : "Danh sách bài viết"}
+                                            </h2>
+                                            <p className="mt-1 text-sm text-slate-500">
+                                                {viewMode === "grid"
+                                                    ? "Tiếp tục khám phá các bài viết mới nhất theo từng chủ đề."
+                                                    : "Chế độ danh sách giúp bạn đọc nhanh tiêu đề, tóm tắt và thông tin chính của từng bài viết."}
+                                            </p>
+                                        </div>
+                                    </div>
 
-                                                        {article.tag_names && (
-                                                            <div className="flex flex-wrap gap-2 ml-auto">
-                                                                {getTags(
-                                                                    article.tag_names,
-                                                                ).map(
-                                                                    (
-                                                                        tag,
-                                                                        idx,
-                                                                    ) => (
-                                                                        <span
-                                                                            key={
-                                                                                idx
-                                                                            }
-                                                                            className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
-                                                                        >
-                                                                            #
-                                                                            {
-                                                                                tag
-                                                                            }
-                                                                        </span>
-                                                                    ),
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    <div
+                                        className={
+                                            viewMode === "grid"
+                                                ? "grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
+                                                : "space-y-6"
+                                        }
+                                    >
+                                        {(viewMode === "grid" ? remainingArticles : articles).map(
+                                            (article, index) => (
+                                                <motion.div
+                                                    key={article.id}
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.4, delay: index * 0.05 }}
+                                                    layout
+                                                >
+                                                    {viewMode === "grid"
+                                                        ? renderGridCard(article)
+                                                        : renderListCard(article)}
+                                                </motion.div>
+                                            ),
                                         )}
-                                    </Link>
-                                </motion.article>
-                            ))}
+                                    </div>
+                                </section>
+                            )}
                         </motion.div>
                     </AnimatePresence>
                 )}
 
                 {!isLoading && articles.length === 0 && (
-                    <div className="text-center py-12">
-                        <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    <div className="rounded-[28px] border border-slate-200 bg-white py-14 text-center shadow-sm shadow-slate-200/70">
+                        <BookOpen className="mx-auto mb-4 h-16 w-16 text-slate-300" />
+                        <h3 className="mb-2 text-xl font-semibold text-slate-950">
                             Chưa có bài viết
                         </h3>
-                        <p className="text-gray-600 mb-6">
+                        <p className="mb-6 text-slate-600">
                             {searchQuery || selectedCategory
                                 ? "Không tìm thấy bài viết phù hợp."
                                 : "Hãy là người đầu tiên chia sẻ kiến thức!"}
                         </p>
                         <Link
                             href="/write"
-                            className="inline-block px-6 py-3 bg-indigo-500 text-white font-semibold rounded-full hover:bg-indigo-600 transition"
+                            className="inline-block rounded-full bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-slate-800"
                         >
                             Viết bài viết đầu tiên
                         </Link>
@@ -820,10 +848,10 @@ export default function ArticlesPage() {
                 )}
 
                 {!isLoading && articles.length > 0 && pagination.hasMore && (
-                    <div className="text-center mt-8">
+                    <div className="mt-8 text-center">
                         <button
                             onClick={handleLoadMore}
-                            className="px-8 py-3 border-2 border-indigo-500 text-indigo-600 font-semibold rounded-full hover:bg-indigo-50 transition"
+                            className="rounded-full border border-indigo-200 bg-white px-8 py-3 font-semibold text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-50"
                         >
                             Xem thêm bài viết
                         </button>
