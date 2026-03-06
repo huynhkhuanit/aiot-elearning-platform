@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/contexts/ToastContext"
+import AvatarWithProBadge from "@/components/AvatarWithProBadge"
 import TipTapEditor from "@/components/TipTapEditor"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -43,17 +43,6 @@ interface Category {
   id: number
   name: string
   slug: string
-}
-
-function getInitials(name?: string | null) {
-  if (!name) return "AI"
-
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("")
 }
 
 export default function WriteBlogPage() {
@@ -104,6 +93,7 @@ export default function WriteBlogPage() {
   const editorMode = showPreview ? "preview" : "editor"
   const authorName = user?.full_name || user?.username || "Bạn"
   const authorHandle = user?.username ? `@${user.username}` : "Tác giả"
+  const isAuthorPro = user?.membership_type === "PRO"
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -414,24 +404,35 @@ export default function WriteBlogPage() {
                     Bắt đầu từ tiêu đề, ảnh bìa và dàn nội dung. Khu vực bên phải giữ mọi cài đặt xuất bản ở một chỗ.
                   </CardDescription>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-3 rounded-full border bg-slate-50/80 px-3 py-2">
-                    <Avatar size="sm">
-                      <AvatarImage src={user?.avatar_url || undefined} alt={authorName} />
-                      <AvatarFallback>{getInitials(authorName)}</AvatarFallback>
-                    </Avatar>
-                    <div className="leading-tight">
-                      <p className="font-medium text-foreground">{authorName}</p>
-                      <p className="text-xs text-muted-foreground">{authorHandle}</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 shadow-sm">
+                    <AvatarWithProBadge
+                      avatarUrl={user?.avatar_url}
+                      fullName={authorName}
+                      isPro={isAuthorPro}
+                      size="xs"
+                    />
+                    <div className="min-w-0 leading-tight">
+                      <p className="truncate text-sm font-medium text-foreground">{authorName}</p>
+                      <p className="truncate text-xs text-muted-foreground">{authorHandle}</p>
                     </div>
+                    {isAuthorPro ? (
+                      <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-emerald-700">
+                        PRO
+                      </Badge>
+                    ) : null}
                   </div>
-                  <Separator orientation="vertical" className="hidden h-8 md:block" />
-                  <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                    <span>Blog editor</span>
-                    <span>•</span>
-                    <span>{hasTitle ? "Có tiêu đề" : "Chưa có tiêu đề"}</span>
-                    <span>•</span>
-                    <span>{hasCategory ? `${selectedCategories.length} danh mục` : "Chưa chọn danh mục"}</span>
+
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <Badge variant="outline" className="rounded-full px-2.5 py-1 uppercase tracking-[0.12em] text-muted-foreground">
+                      Blog editor
+                    </Badge>
+                    <Badge variant={hasTitle ? "secondary" : "outline"} className="rounded-full px-2.5 py-1">
+                      {hasTitle ? "Có tiêu đề" : "Chưa có tiêu đề"}
+                    </Badge>
+                    <Badge variant={hasCategory ? "secondary" : "outline"} className="rounded-full px-2.5 py-1">
+                      {hasCategory ? `${selectedCategories.length} danh mục` : "Chưa chọn danh mục"}
+                    </Badge>
                   </div>
                 </div>
               </CardHeader>
@@ -563,17 +564,18 @@ export default function WriteBlogPage() {
                                 {title || "Tiêu đề bài viết"}
                               </h2>
                               <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-3">
-                                  <Avatar>
-                                    <AvatarImage src={user?.avatar_url || undefined} alt={authorName} />
-                                    <AvatarFallback>{getInitials(authorName)}</AvatarFallback>
-                                  </Avatar>
+                                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-2">
+                                  <AvatarWithProBadge
+                                    avatarUrl={user?.avatar_url}
+                                    fullName={authorName}
+                                    isPro={isAuthorPro}
+                                    size="xs"
+                                  />
                                   <div className="leading-tight">
                                     <p className="font-medium text-foreground">{authorName}</p>
                                     <p className="text-xs text-muted-foreground">{authorHandle}</p>
                                   </div>
                                 </div>
-                                <Separator orientation="vertical" className="hidden h-8 md:block" />
                                 <span>{wordCount} từ</span>
                                 <span>•</span>
                                 <span>{readingMinutes} phút đọc</span>
