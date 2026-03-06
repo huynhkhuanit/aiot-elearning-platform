@@ -327,611 +327,555 @@ export default function ArticlePage() {
         },
     ];
 
+    const likeCount = post.like_count + (isLiked ? 1 : 0);
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30">
+        <div className="min-h-screen bg-[#f8f9fd] [background-image:radial-gradient(circle_at_20%_0%,rgba(99,102,241,0.14),transparent_45%),radial-gradient(circle_at_80%_8%,rgba(59,130,246,0.12),transparent_35%),linear-gradient(to_bottom,#f8f9fd,#ffffff_35%)]">
             <motion.div
-                className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 z-50 origin-left shadow-lg"
+                className="fixed top-0 left-0 right-0 h-[2px] bg-indigo-600 z-50 origin-left"
                 style={{ scaleX: readingProgress / 100 }}
                 initial={{ scaleX: 0 }}
             />
 
-            <PageContainer size="lg" className="py-8">
-                <Link
-                    href="/articles"
-                    className="inline-flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-all mb-8 group px-4 py-2 rounded-xl hover:bg-white hover:shadow-sm"
-                >
-                    <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                    <span className="font-medium">
-                        Quay lại danh sách bài viết
-                    </span>
-                </Link>
+            <header className="md:hidden sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur">
+                <div className="h-14 px-4 flex items-center justify-between">
+                    <Link
+                        href="/articles"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-slate-700"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                        Quay lại
+                    </Link>
+                    <button
+                        onClick={() => setShowShareMenu((prev) => !prev)}
+                        className="p-2 rounded-lg text-slate-700 hover:bg-slate-100"
+                    >
+                        <Share2 className="w-4 h-4" />
+                    </button>
+                </div>
+            </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    <aside className="hidden lg:block lg:col-span-1">
+            <PageContainer size="lg" className="pt-6 pb-20 md:pb-14">
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.45 }}
+                    className="grid grid-cols-1 xl:grid-cols-[72px_minmax(0,1fr)_300px] gap-6 lg:gap-8"
+                >
+                    <aside className="hidden xl:block">
                         <div className="sticky top-24 flex flex-col gap-3">
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => setIsLiked(!isLiked)}
-                                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all shadow-sm ${
+                            <button
+                                onClick={() => setIsLiked((prev) => !prev)}
+                                className={`rounded-xl border px-3 py-3 flex flex-col items-center gap-1.5 transition ${
                                     isLiked
-                                        ? "bg-gradient-to-br from-red-50 to-pink-50 text-red-600 shadow-md"
-                                        : "bg-white text-gray-600 hover:bg-gray-50"
+                                        ? "border-rose-200 bg-rose-50 text-rose-600"
+                                        : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
                                 }`}
                             >
                                 <Heart
-                                    className={`w-6 h-6 ${isLiked ? "fill-current" : ""}`}
+                                    className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`}
                                 />
-                                <span className="text-xs font-bold">
-                                    {post.like_count + (isLiked ? 1 : 0)}
+                                <span className="text-[11px] font-semibold">
+                                    {likeCount}
                                 </span>
-                            </motion.button>
+                            </button>
 
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                            <button
                                 onClick={handleBookmark}
                                 disabled={isBookmarking}
-                                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all shadow-sm ${
+                                className={`rounded-xl border px-3 py-3 flex flex-col items-center gap-1.5 transition ${
                                     isBookmarked
-                                        ? "bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600 shadow-md"
-                                        : "bg-white text-gray-600 hover:bg-gray-50"
-                                } ${isBookmarking ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                                        ? "border-indigo-200 bg-indigo-50 text-indigo-600"
+                                        : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
+                                } ${isBookmarking ? "opacity-60 cursor-not-allowed" : ""}`}
                             >
                                 <Bookmark
-                                    className={`w-6 h-6 ${isBookmarked ? "fill-current" : ""}`}
+                                    className={`w-5 h-5 ${isBookmarked ? "fill-current" : ""}`}
                                 />
-                                <span className="text-xs font-bold">
-                                    {isBookmarking ? "Đang xử lý..." : "Lưu"}
+                                <span className="text-[11px] font-semibold">
+                                    {isBookmarking ? "..." : "Lưu"}
                                 </span>
-                            </motion.button>
+                            </button>
 
-                            <div className="relative">
-                                <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() =>
-                                        setShowShareMenu(!showShareMenu)
-                                    }
-                                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 shadow-sm transition-all w-full"
-                                >
-                                    <Share2 className="w-6 h-6" />
-                                    <span className="text-xs font-bold">
-                                        Chia sẻ
-                                    </span>
-                                </motion.button>
+                            <button
+                                onClick={() => setShowShareMenu((prev) => !prev)}
+                                className="rounded-xl border border-slate-200 bg-white px-3 py-3 flex flex-col items-center gap-1.5 text-slate-600 hover:border-indigo-200 hover:text-indigo-600 transition"
+                            >
+                                <Share2 className="w-5 h-5" />
+                                <span className="text-[11px] font-semibold">
+                                    Share
+                                </span>
+                            </button>
 
-                                <AnimatePresence>
-                                    {showShareMenu && (
-                                        <>
-                                            <motion.div
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                className="fixed inset-0 z-10"
-                                                onClick={() =>
-                                                    setShowShareMenu(false)
-                                                }
-                                            />
-                                            <motion.div
-                                                initial={{
-                                                    opacity: 0,
-                                                    x: -10,
-                                                    scale: 0.95,
-                                                }}
-                                                animate={{
-                                                    opacity: 1,
-                                                    x: 0,
-                                                    scale: 1,
-                                                }}
-                                                exit={{
-                                                    opacity: 0,
-                                                    x: -10,
-                                                    scale: 0.95,
-                                                }}
-                                                transition={{
-                                                    type: "spring",
-                                                    duration: 0.3,
-                                                }}
-                                                className="absolute left-full ml-3 top-0 bg-white rounded-xl shadow-2xl p-2 flex flex-col gap-1 min-w-[180px] z-20 border border-gray-100"
-                                            >
-                                                <button
-                                                    onClick={() =>
-                                                        handleShare("twitter")
-                                                    }
-                                                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 rounded-lg transition text-sm font-medium text-gray-700 hover:text-blue-600"
-                                                >
-                                                    <Twitter className="w-4 h-4 text-blue-400" />
-                                                    <span>Twitter</span>
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        handleShare("facebook")
-                                                    }
-                                                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 rounded-lg transition text-sm font-medium text-gray-700 hover:text-blue-600"
-                                                >
-                                                    <Facebook className="w-4 h-4 text-blue-600" />
-                                                    <span>Facebook</span>
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        handleShare("linkedin")
-                                                    }
-                                                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 rounded-lg transition text-sm font-medium text-gray-700 hover:text-blue-700"
-                                                >
-                                                    <Linkedin className="w-4 h-4 text-blue-700" />
-                                                    <span>LinkedIn</span>
-                                                </button>
-                                                <div className="h-px bg-gray-200 my-1"></div>
-                                                <button
-                                                    onClick={() =>
-                                                        handleShare("copy")
-                                                    }
-                                                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 rounded-lg transition text-sm font-medium text-gray-700"
-                                                >
-                                                    {copied ? (
-                                                        <>
-                                                            <Check className="w-4 h-4 text-green-600" />
-                                                            <span className="text-green-600">
-                                                                Đã sao chép!
-                                                            </span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Link2 className="w-4 h-4 text-gray-600" />
-                                                            <span>
-                                                                Sao chép link
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </motion.div>
-                                        </>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white text-gray-600 shadow-sm">
-                                <MessageCircle className="w-6 h-6" />
-                                <span className="text-xs font-bold">
+                            <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 flex flex-col items-center gap-1.5 text-slate-600">
+                                <MessageCircle className="w-5 h-5" />
+                                <span className="text-[11px] font-semibold">
                                     {post.comment_count}
                                 </span>
                             </div>
                         </div>
                     </aside>
 
-                    <article className="lg:col-span-8">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6 }}
-                        >
-                            {/* Categories */}
-                            {post.categories && post.categories.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mb-6">
-                                    {post.categories.map((category) => (
-                                        <Link
-                                            key={category.id}
-                                            href={`/articles?category=${category.id}`}
-                                            className="px-4 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-sm font-medium hover:shadow-lg transition-all"
-                                        >
-                                            {category.name}
-                                        </Link>
-                                    ))}
-                                </div>
-                            )}
+                    <article className="min-w-0">
+                        <div className="mb-7 hidden md:block">
+                            <Link
+                                href="/articles"
+                                className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-indigo-600"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                                Quay lại danh sách bài viết
+                            </Link>
+                        </div>
 
-                            {/* Title */}
-                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-[1.1] tracking-tight">
-                                {post.title}
-                            </h1>
+                        {post.categories && post.categories.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-5">
+                                {post.categories.map((category) => (
+                                    <Link
+                                        key={category.id}
+                                        href={`/articles?category=${category.id}`}
+                                        className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold tracking-wide text-indigo-700"
+                                    >
+                                        {category.name}
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
 
-                            {/* Excerpt */}
-                            <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed font-light">
+                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 leading-tight mb-5">
+                            {post.title}
+                        </h1>
+
+                        {post.excerpt && (
+                            <p className="text-base sm:text-lg leading-8 text-slate-600 mb-7">
                                 {post.excerpt}
                             </p>
+                        )}
 
-                            {/* Author & Meta Info */}
-                            <div className="flex flex-wrap items-center justify-between gap-4 pb-8 mb-8 border-b border-gray-200">
-                                <div className="flex items-center gap-4">
+                        <section className="rounded-2xl border border-slate-200/90 bg-white/95 p-4 sm:p-5 mb-8 shadow-sm">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-3">
                                     <Link
                                         href={`/${post.author.username}`}
-                                        className="flex-shrink-0"
+                                        className="shrink-0"
                                     >
                                         {post.author.avatar_url ? (
                                             <Image
                                                 src={post.author.avatar_url}
                                                 alt={post.author.full_name}
-                                                width={56}
-                                                height={56}
-                                                className="rounded-full ring-2 ring-indigo-100 hover:ring-4 hover:ring-indigo-200 transition-all"
+                                                width={48}
+                                                height={48}
+                                                className="rounded-full"
                                             />
                                         ) : (
-                                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl ring-2 ring-indigo-100 hover:ring-4 hover:ring-indigo-200 transition-all">
+                                            <div className="h-12 w-12 rounded-full bg-indigo-600 text-white text-lg font-bold flex items-center justify-center">
                                                 {post.author.full_name
                                                     .charAt(0)
                                                     .toUpperCase()}
                                             </div>
                                         )}
                                     </Link>
-                                    <div>
+                                    <div className="min-w-0">
                                         <Link
                                             href={`/${post.author.username}`}
-                                            className="font-bold text-gray-900 hover:text-indigo-600 transition block text-lg"
+                                            className="text-sm sm:text-base font-semibold text-slate-900 hover:text-indigo-600"
                                         >
                                             {post.author.full_name}
                                         </Link>
-                                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mt-1">
-                                            <span className="font-medium">
-                                                {formatDate(post.published_at)}
+                                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-500">
+                                            <span>{formatDate(post.published_at)}</span>
+                                            <span>•</span>
+                                            <span className="inline-flex items-center gap-1">
+                                                <Clock className="w-3.5 h-3.5" />
+                                                {formatReadingTime(post.content)}
                                             </span>
                                             <span>•</span>
-                                            <div className="flex items-center gap-1.5">
-                                                <Clock className="w-4 h-4" />
-                                                <span>
-                                                    {formatReadingTime(
-                                                        post.content,
-                                                    )}
-                                                </span>
-                                            </div>
-                                            <span>•</span>
-                                            <div className="flex items-center gap-1.5">
-                                                <Eye className="w-4 h-4" />
-                                                <span>
-                                                    {post.view_count.toLocaleString()}{" "}
-                                                    lượt xem
-                                                </span>
-                                            </div>
+                                            <span className="inline-flex items-center gap-1">
+                                                <Eye className="w-3.5 h-3.5" />
+                                                {post.view_count.toLocaleString()} lượt xem
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
+
+                                <div className="hidden md:flex items-center gap-2">
+                                    <button
+                                        onClick={() => setIsLiked((prev) => !prev)}
+                                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                                            isLiked
+                                                ? "border-rose-200 bg-rose-50 text-rose-600"
+                                                : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
+                                        }`}
+                                    >
+                                        <Heart
+                                            className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`}
+                                        />
+                                        {likeCount}
+                                    </button>
+                                    <button
+                                        onClick={handleBookmark}
+                                        disabled={isBookmarking}
+                                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                                            isBookmarked
+                                                ? "border-indigo-200 bg-indigo-50 text-indigo-600"
+                                                : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
+                                        }`}
+                                    >
+                                        <Bookmark
+                                            className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`}
+                                        />
+                                        {isBookmarking ? "Đang lưu..." : "Lưu"}
+                                    </button>
+                                    <button
+                                        onClick={() =>
+                                            setShowShareMenu((prev) => !prev)
+                                        }
+                                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
+                                    >
+                                        <Share2 className="w-4 h-4" />
+                                        Chia sẻ
+                                    </button>
+                                </div>
                             </div>
+                        </section>
 
-                            {/* Cover Image - Hero Position */}
-                            {post.cover_image && (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.98 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ duration: 0.7, delay: 0.1 }}
-                                    className="mb-16 rounded-2xl overflow-hidden shadow-2xl"
-                                >
-                                    <Image
-                                        src={post.cover_image}
-                                        alt={post.title}
-                                        width={1200}
-                                        height={675}
-                                        className="w-full h-auto object-cover"
-                                        priority
-                                    />
-                                </motion.div>
-                            )}
+                        {post.cover_image && (
+                            <div className="mb-8 sm:mb-10 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+                                <Image
+                                    src={post.cover_image}
+                                    alt={post.title}
+                                    width={1200}
+                                    height={675}
+                                    className="w-full h-auto object-cover"
+                                    priority
+                                />
+                            </div>
+                        )}
 
-                            {/* Mobile Action Bar */}
-                            <div className="flex lg:hidden items-center gap-3 mb-12 pb-6 border-b border-gray-200">
+                        <div className="md:hidden sticky top-14 z-30 mb-6">
+                            <div className="grid grid-cols-4 gap-2 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur">
                                 <button
-                                    onClick={() => setIsLiked(!isLiked)}
-                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-medium ${
+                                    onClick={() => setIsLiked((prev) => !prev)}
+                                    className={`h-9 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1 ${
                                         isLiked
-                                            ? "bg-red-50 text-red-600"
-                                            : "bg-white text-gray-600 hover:bg-gray-50 shadow-sm"
+                                            ? "bg-rose-50 text-rose-600"
+                                            : "bg-slate-50 text-slate-700"
                                     }`}
                                 >
                                     <Heart
-                                        className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`}
+                                        className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`}
                                     />
-                                    <span>
-                                        {post.like_count + (isLiked ? 1 : 0)}
-                                    </span>
+                                    {likeCount}
                                 </button>
-
                                 <button
-                                    onClick={() =>
-                                        setIsBookmarked(!isBookmarked)
-                                    }
-                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-medium ${
+                                    onClick={handleBookmark}
+                                    className={`h-9 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1 ${
                                         isBookmarked
-                                            ? "bg-yellow-50 text-yellow-600"
-                                            : "bg-white text-gray-600 hover:bg-gray-50 shadow-sm"
+                                            ? "bg-indigo-50 text-indigo-600"
+                                            : "bg-slate-50 text-slate-700"
                                     }`}
                                 >
                                     <Bookmark
-                                        className={`w-5 h-5 ${isBookmarked ? "fill-current" : ""}`}
+                                        className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`}
                                     />
-                                    <span>Lưu</span>
+                                    Lưu
                                 </button>
-
                                 <button
                                     onClick={() =>
-                                        setShowShareMenu(!showShareMenu)
+                                        setShowShareMenu((prev) => !prev)
                                     }
-                                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-gray-600 hover:bg-gray-50 shadow-sm transition-all font-medium"
+                                    className="h-9 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1 bg-slate-50 text-slate-700"
                                 >
-                                    <Share2 className="w-5 h-5" />
-                                    <span>Chia sẻ</span>
+                                    <Share2 className="w-4 h-4" />
+                                    Share
                                 </button>
-
-                                <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 text-gray-600 rounded-xl ml-auto">
-                                    <MessageCircle className="w-5 h-5" />
-                                    <span className="font-medium">
-                                        {post.comment_count}
-                                    </span>
-                                </div>
+                                <button
+                                    onClick={() => setShowTOC((prev) => !prev)}
+                                    className="h-9 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1 bg-slate-50 text-slate-700"
+                                >
+                                    <Menu className="w-4 h-4" />
+                                    Mục lục
+                                </button>
                             </div>
+                        </div>
 
-                            {/* Article Content */}
-                            <div
-                                ref={contentRef}
-                                className="prose prose-xl prose-indigo max-w-none mb-16
-                  prose-headings:font-bold prose-headings:text-gray-900 prose-headings:tracking-tight prose-headings:scroll-mt-24
-                  prose-h1:text-4xl prose-h1:mt-16 prose-h1:mb-8
-                  prose-h2:text-3xl prose-h2:mt-14 prose-h2:mb-6 prose-h2:pb-3 prose-h2:border-b prose-h2:border-gray-200
-                  prose-h3:text-2xl prose-h3:mt-10 prose-h3:mb-5
-                  prose-p:text-gray-700 prose-p:leading-[1.8] prose-p:mb-6 prose-p:text-lg
-                  prose-a:text-indigo-600 prose-a:no-underline prose-a:font-medium prose-a:transition-all hover:prose-a:text-indigo-700 hover:prose-a:underline hover:prose-a:underline-offset-4
-                  prose-strong:text-gray-900 prose-strong:font-bold
-                  prose-em:text-gray-800 prose-em:italic
-                  prose-code:text-indigo-600 prose-code:bg-indigo-50 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:font-mono prose-code:text-sm prose-code:font-medium prose-code:before:content-[''] prose-code:after:content-['']
-                  prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-xl prose-pre:shadow-lg prose-pre:my-8 prose-pre:border prose-pre:border-gray-800
-                  prose-img:rounded-2xl prose-img:shadow-2xl prose-img:my-10
-                  prose-blockquote:border-l-4 prose-blockquote:border-indigo-500 prose-blockquote:bg-gradient-to-r prose-blockquote:from-indigo-50 prose-blockquote:to-transparent prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:rounded-r-xl prose-blockquote:italic prose-blockquote:text-gray-700 prose-blockquote:my-8 prose-blockquote:not-italic
-                  prose-ul:my-6 prose-ul:list-disc prose-ul:pl-6
-                  prose-ol:my-6 prose-ol:list-decimal prose-ol:pl-6
-                  prose-li:text-gray-700 prose-li:leading-relaxed prose-li:my-2 prose-li:text-lg
-                  prose-hr:my-12 prose-hr:border-gray-200
-                  prose-table:my-8 prose-table:border-collapse prose-table:w-full
-                  prose-th:bg-gray-100 prose-th:font-bold prose-th:text-left prose-th:p-3 prose-th:border prose-th:border-gray-200
-                  prose-td:p-3 prose-td:border prose-td:border-gray-200"
-                                dangerouslySetInnerHTML={{
-                                    __html: post.content,
-                                }}
-                            />
+                        <div
+                            ref={contentRef}
+                            className="prose prose-slate max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-headings:scroll-mt-24 prose-h2:text-3xl prose-h2:mt-14 prose-h2:mb-5 prose-h3:text-2xl prose-h3:mt-9 prose-h3:mb-4 prose-p:text-[1.06rem] prose-p:leading-8 prose-p:text-slate-700 prose-strong:text-slate-900 prose-a:text-indigo-700 hover:prose-a:text-indigo-800 prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-a:underline-offset-4 prose-code:text-indigo-700 prose-code:bg-indigo-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-[''] prose-code:after:content-[''] prose-pre:overflow-x-auto prose-pre:bg-slate-900 prose-pre:border prose-pre:border-slate-800 prose-pre:rounded-2xl prose-pre:px-5 prose-pre:py-4 prose-pre:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-indigo-500 prose-blockquote:bg-indigo-50/70 prose-blockquote:rounded-r-xl prose-blockquote:px-5 prose-blockquote:py-3 prose-img:rounded-2xl prose-img:border prose-img:border-slate-200 prose-img:shadow-sm"
+                            dangerouslySetInnerHTML={{ __html: post.content }}
+                        />
 
-                            {/* Tags Section */}
-                            {post.tags && post.tags.length > 0 && (
-                                <div className="mb-16 pb-10 border-b border-gray-200">
-                                    <h3 className="text-base font-bold text-gray-900 mb-5">
-                                        Thẻ liên quan
-                                    </h3>
-                                    <div className="flex flex-wrap gap-3">
-                                        {post.tags.map((tag) => (
-                                            <Link
-                                                key={tag.id}
-                                                href={`/articles?tag=${tag.slug}`}
-                                                className="px-5 py-2.5 bg-white border-2 border-gray-200 text-gray-700 rounded-full text-sm font-semibold hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 hover:shadow-md transition-all"
-                                            >
-                                                #{tag.name}
-                                            </Link>
-                                        ))}
-                                    </div>
+                        {post.tags && post.tags.length > 0 && (
+                            <section className="mt-14 pt-7 border-t border-slate-200">
+                                <h2 className="text-sm font-semibold tracking-wide text-slate-900 mb-4 uppercase">
+                                    Thẻ bài viết
+                                </h2>
+                                <div className="flex flex-wrap gap-2">
+                                    {post.tags.map((tag) => (
+                                        <Link
+                                            key={tag.id}
+                                            href={`/articles?tag=${tag.slug}`}
+                                            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-indigo-200 hover:text-indigo-700"
+                                        >
+                                            #{tag.name}
+                                        </Link>
+                                    ))}
                                 </div>
-                            )}
+                            </section>
+                        )}
 
-                            {/* Author Card */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.6, delay: 0.3 }}
-                                className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-3xl p-8 md:p-10 mb-16 border border-indigo-100 shadow-lg"
-                            >
-                                <div className="flex flex-col sm:flex-row items-start gap-6">
+                        <section className="mt-12 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
+                            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-5">
+                                Bài viết liên quan
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+                                {relatedArticles.map((article) => (
+                                    <Link
+                                        key={article.id}
+                                        href={`/articles/${article.slug}`}
+                                        className="group rounded-xl overflow-hidden border border-slate-200 bg-white hover:shadow-md transition"
+                                    >
+                                        <div className="relative aspect-[16/9] overflow-hidden">
+                                            <Image
+                                                src={article.cover_image}
+                                                alt={article.title}
+                                                fill
+                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                        </div>
+                                        <div className="p-4">
+                                            <h3 className="text-sm font-semibold leading-6 text-slate-900 group-hover:text-indigo-700 line-clamp-2">
+                                                {article.title}
+                                            </h3>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </section>
+
+                        <section className="mt-8 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 sm:p-8">
+                            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">
+                                Tham gia thảo luận
+                            </h2>
+                            <p className="text-slate-600 mb-5">
+                                Chia sẻ câu hỏi hoặc ý kiến của bạn về bài viết.
+                                Đội ngũ và cộng đồng sẽ phản hồi sớm.
+                            </p>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <button className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+                                    <MessageCircle className="w-4 h-4" />
+                                    Mở thảo luận
+                                </button>
+                                <span className="text-sm text-slate-500">
+                                    Hiện có {post.comment_count} phản hồi
+                                </span>
+                            </div>
+                        </section>
+
+                        <section className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 sm:p-7">
+                            <div className="flex flex-col sm:flex-row gap-4 sm:items-start">
+                                <Link
+                                    href={`/${post.author.username}`}
+                                    className="shrink-0"
+                                >
+                                    {post.author.avatar_url ? (
+                                        <Image
+                                            src={post.author.avatar_url}
+                                            alt={post.author.full_name}
+                                            width={72}
+                                            height={72}
+                                            className="rounded-2xl"
+                                        />
+                                    ) : (
+                                        <div className="w-[72px] h-[72px] rounded-2xl bg-indigo-600 text-white text-2xl font-bold flex items-center justify-center">
+                                            {post.author.full_name
+                                                .charAt(0)
+                                                .toUpperCase()}
+                                        </div>
+                                    )}
+                                </Link>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900">
+                                        {post.author.full_name}
+                                    </h3>
+                                    <p className="text-sm text-indigo-700 mb-3">
+                                        @{post.author.username}
+                                    </p>
+                                    {post.author.bio && (
+                                        <p className="text-sm leading-7 text-slate-600 mb-4">
+                                            {post.author.bio}
+                                        </p>
+                                    )}
                                     <Link
                                         href={`/${post.author.username}`}
-                                        className="flex-shrink-0"
+                                        className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-700 hover:text-indigo-800"
                                     >
-                                        {post.author.avatar_url ? (
-                                            <Image
-                                                src={post.author.avatar_url}
-                                                alt={post.author.full_name}
-                                                width={96}
-                                                height={96}
-                                                className="rounded-2xl ring-4 ring-white shadow-xl hover:scale-105 transition-transform"
-                                            />
-                                        ) : (
-                                            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-3xl ring-4 ring-white shadow-xl hover:scale-105 transition-transform">
-                                                {post.author.full_name
-                                                    .charAt(0)
-                                                    .toUpperCase()}
-                                            </div>
-                                        )}
+                                        Xem trang cá nhân
+                                        <ChevronLeft className="w-4 h-4 rotate-180" />
                                     </Link>
-                                    <div className="flex-1">
-                                        <div className="mb-4">
-                                            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                                {post.author.full_name}
-                                            </h3>
-                                            <p className="text-indigo-600 text-base font-semibold">
-                                                @{post.author.username}
-                                            </p>
-                                        </div>
-                                        {post.author.bio && (
-                                            <p className="text-gray-700 leading-relaxed mb-5 text-base">
-                                                {post.author.bio}
-                                            </p>
-                                        )}
-                                        <Link
-                                            href={`/${post.author.username}`}
-                                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-indigo-600 hover:bg-indigo-600 hover:text-white font-bold text-sm rounded-xl shadow-md hover:shadow-xl transition-all group"
-                                        >
-                                            <span>Xem trang cá nhân</span>
-                                            <ChevronLeft className="w-4 h-4 rotate-180 group-hover:translate-x-1 transition-transform" />
-                                        </Link>
-                                    </div>
-                                </div>
-                            </motion.div>
-
-                            {/* Comments Section */}
-                            <div className="mb-16">
-                                <h2 className="text-3xl font-bold text-gray-900 mb-8">
-                                    Bình luận
-                                    <span className="text-gray-400 ml-3">
-                                        ({post.comment_count})
-                                    </span>
-                                </h2>
-                                <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-16 text-center border-2 border-dashed border-gray-200">
-                                    <div className="max-w-md mx-auto">
-                                        <MessageCircle className="w-20 h-20 text-gray-300 mx-auto mb-6" />
-                                        <p className="text-gray-600 text-xl font-medium mb-2">
-                                            Tính năng bình luận đang được phát
-                                            triển
-                                        </p>
-                                        <p className="text-gray-500 text-base">
-                                            Sẽ sớm ra mắt trong thời gian tới để
-                                            bạn có thể trao đổi và thảo luận
-                                        </p>
-                                    </div>
                                 </div>
                             </div>
-                        </motion.div>
+                        </section>
                     </article>
 
-                    <aside className="hidden xl:block xl:col-span-3">
-                        <div className="sticky top-24 space-y-6">
-                            {/* Table of Contents */}
+                    <aside className="hidden xl:block">
+                        <div className="sticky top-24 space-y-4">
                             {tableOfContents.length > 0 && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
-                                >
-                                    <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                        <Menu className="w-5 h-5 text-indigo-600" />
-                                        Mục lục
-                                    </h3>
-                                    <nav className="space-y-2">
+                                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="text-sm font-bold tracking-wide uppercase text-slate-900">
+                                            Mục lục
+                                        </h3>
+                                        <span className="text-xs text-slate-500">
+                                            {Math.round(readingProgress)}%
+                                        </span>
+                                    </div>
+                                    <nav className="space-y-1 max-h-[55vh] overflow-auto pr-1">
                                         {tableOfContents.map((item) => (
                                             <button
                                                 key={item.id}
                                                 onClick={() =>
                                                     scrollToHeading(item.id)
                                                 }
-                                                className={`block w-full text-left text-sm transition-all py-2 px-3 rounded-lg ${
+                                                className={`w-full text-left rounded-lg py-2 px-3 text-sm transition ${
                                                     item.level === 3
                                                         ? "pl-6"
                                                         : ""
                                                 } ${
                                                     activeHeading === item.id
-                                                        ? "text-indigo-600 bg-indigo-50 font-semibold"
-                                                        : "text-gray-600 hover:text-indigo-600 hover:bg-gray-50"
+                                                        ? "bg-indigo-50 text-indigo-700 font-semibold"
+                                                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                                                 }`}
                                             >
                                                 {item.text}
                                             </button>
                                         ))}
                                     </nav>
-                                </motion.div>
+                                </div>
                             )}
 
-                            {/* Related Articles */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
-                            >
-                                <h3 className="font-bold text-gray-900 mb-4">
-                                    Bài viết liên quan
+                            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <h3 className="text-base font-bold text-slate-900 mb-2">
+                                    Theo dõi bài viết
                                 </h3>
-                                <div className="space-y-4">
-                                    {relatedArticles.map((article) => (
-                                        <Link
-                                            key={article.id}
-                                            href={`/articles/${article.slug}`}
-                                            className="block group"
-                                        >
-                                            <div className="relative h-32 rounded-xl overflow-hidden mb-2">
-                                                <Image
-                                                    src={article.cover_image}
-                                                    alt={article.title}
-                                                    fill
-                                                    className="object-cover group-hover:scale-110 transition-transform duration-300"
-                                                />
-                                            </div>
-                                            <h4 className="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition line-clamp-2">
-                                                {article.title}
-                                            </h4>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </motion.div>
-
-                            {/* CTA Card */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
-                                className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-100"
-                            >
-                                <h3 className="font-bold text-gray-900 mb-2">
-                                    Thích bài viết này?
-                                </h3>
-                                <p className="text-sm text-gray-600 mb-4">
-                                    Đừng quên like và lưu lại để đọc sau nhé!
+                                <p className="text-sm text-slate-600 mb-4">
+                                    Lưu lại để đọc tiếp và chia sẻ cho đồng đội.
                                 </p>
                                 <button
-                                    onClick={() => setIsLiked(true)}
-                                    className="w-full px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                                    onClick={handleBookmark}
+                                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
                                 >
-                                    <Heart className="w-5 h-5" />
-                                    Thích bài viết
+                                    <Bookmark className="w-4 h-4" />
+                                    {isBookmarked ? "Đã lưu" : "Lưu bài viết"}
                                 </button>
-                            </motion.div>
+                            </div>
                         </div>
                     </aside>
-                </div>
+                </motion.div>
             </PageContainer>
+
+            <AnimatePresence>
+                {showShareMenu && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-40"
+                            onClick={() => setShowShareMenu(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                            className="fixed z-50 right-4 top-16 md:top-20 w-[190px] rounded-xl border border-slate-200 bg-white p-2 shadow-2xl"
+                        >
+                            <button
+                                onClick={() => handleShare("twitter")}
+                                className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                            >
+                                <Twitter className="w-4 h-4 text-sky-500" />
+                                Twitter
+                            </button>
+                            <button
+                                onClick={() => handleShare("facebook")}
+                                className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                            >
+                                <Facebook className="w-4 h-4 text-blue-600" />
+                                Facebook
+                            </button>
+                            <button
+                                onClick={() => handleShare("linkedin")}
+                                className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                            >
+                                <Linkedin className="w-4 h-4 text-blue-700" />
+                                LinkedIn
+                            </button>
+                            <div className="my-1 h-px bg-slate-200" />
+                            <button
+                                onClick={() => handleShare("copy")}
+                                className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                            >
+                                {copied ? (
+                                    <>
+                                        <Check className="w-4 h-4 text-emerald-600" />
+                                        Đã sao chép
+                                    </>
+                                ) : (
+                                    <>
+                                        <Link2 className="w-4 h-4" />
+                                        Sao chép link
+                                    </>
+                                )}
+                            </button>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
 
             <AnimatePresence>
                 {showBackToTop && (
                     <motion.button
-                        initial={{ opacity: 0, scale: 0.8 }}
+                        initial={{ opacity: 0, scale: 0.88 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
+                        exit={{ opacity: 0, scale: 0.88 }}
                         onClick={scrollToTop}
-                        className="fixed bottom-8 right-8 p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all z-40 hover:scale-110"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
+                        className="fixed z-40 bottom-6 right-6 p-3 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700"
                     >
-                        <ArrowUp className="w-6 h-6" />
+                        <ArrowUp className="w-5 h-5" />
                     </motion.button>
                 )}
             </AnimatePresence>
 
-            <div className="xl:hidden fixed bottom-8 left-8 z-40">
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowTOC(!showTOC)}
-                    className="p-4 bg-white text-gray-900 rounded-full shadow-2xl hover:shadow-3xl transition-all border border-gray-200"
+            <div className="xl:hidden fixed bottom-6 left-6 z-40">
+                <button
+                    onClick={() => setShowTOC((prev) => !prev)}
+                    className="p-3 rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg"
                 >
-                    {showTOC ? (
-                        <X className="w-6 h-6" />
-                    ) : (
-                        <Menu className="w-6 h-6" />
-                    )}
-                </motion.button>
+                    {showTOC ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </button>
 
                 <AnimatePresence>
                     {showTOC && tableOfContents.length > 0 && (
                         <motion.div
-                            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                            initial={{ opacity: 0, y: 12, scale: 0.96 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                            className="absolute bottom-20 left-0 bg-white rounded-2xl p-6 shadow-2xl border border-gray-200 min-w-[280px] max-h-[400px] overflow-y-auto"
+                            exit={{ opacity: 0, y: 12, scale: 0.96 }}
+                            className="absolute bottom-16 left-0 w-[min(90vw,320px)] max-h-[56vh] overflow-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl"
                         >
-                            <h3 className="font-bold text-gray-900 mb-4">
+                            <h3 className="text-sm font-bold tracking-wide uppercase text-slate-900 mb-3">
                                 Mục lục
                             </h3>
-                            <nav className="space-y-2">
+                            <nav className="space-y-1">
                                 {tableOfContents.map((item) => (
                                     <button
                                         key={item.id}
                                         onClick={() => scrollToHeading(item.id)}
-                                        className={`block w-full text-left text-sm transition-all py-2 px-3 rounded-lg ${
+                                        className={`w-full text-left rounded-lg px-3 py-2 text-sm transition ${
                                             item.level === 3 ? "pl-6" : ""
                                         } ${
                                             activeHeading === item.id
-                                                ? "text-indigo-600 bg-indigo-50 font-semibold"
-                                                : "text-gray-600 hover:text-indigo-600 hover:bg-gray-50"
+                                                ? "bg-indigo-50 text-indigo-700 font-semibold"
+                                                : "text-slate-600 hover:bg-slate-50"
                                         }`}
                                     >
                                         {item.text}

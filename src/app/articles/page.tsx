@@ -3,24 +3,22 @@
 export const dynamic = "force-dynamic";
 
 import {
-    Eye,
-    MessageCircle,
     BookOpen,
     Search,
-    Heart,
-    Grid3x3,
-    List,
     Bookmark,
+    MoreHorizontal,
+    ChevronLeft,
+    ChevronRight,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import Badge from "@/components/Badge";
+import { motion } from "framer-motion";
 import PageContainer from "@/components/PageContainer";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useToast } from "@/contexts/ToastContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 
 interface Article {
     id: number;
@@ -31,6 +29,7 @@ interface Article {
     username: string;
     full_name: string;
     avatar_url: string | null;
+    membership_type: string | null;
     published_at: string;
     view_count: number;
     like_count: number;
@@ -46,42 +45,66 @@ interface Category {
     slug: string;
 }
 
-type ViewMode = "grid" | "list";
+/** Estimate reading time from excerpt length */
+function estimateReadingTime(excerpt: string): number {
+    // Average Vietnamese reading speed ~200 words/min, estimate from excerpt
+    const wordCount = excerpt.split(/\s+/).length;
+    // Excerpt is usually ~20% of full article, so multiply
+    const estimatedTotal = wordCount * 5;
+    return Math.max(2, Math.round(estimatedTotal / 200));
+}
+
+/** Format date as relative time in Vietnamese */
+function formatRelativeTime(dateString: string): string {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffSeconds = Math.floor(diffMs / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    const diffWeeks = Math.floor(diffDays / 7);
+    const diffMonths = Math.floor(diffDays / 30);
+    const diffYears = Math.floor(diffDays / 365);
+
+    if (diffSeconds < 60) return "vừa xong";
+    if (diffMinutes < 60) return `${diffMinutes} phút trước`;
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    if (diffDays < 7) return `${diffDays} ngày trước`;
+    if (diffWeeks < 5) return `${diffWeeks} tuần trước`;
+    if (diffMonths < 12) return `${diffMonths} tháng trước`;
+    return `${diffYears} năm trước`;
+}
 
 export default function ArticlesPage() {
     const toast = useToast();
     const { isAuthenticated } = useAuth();
     const router = useRouter();
+    const ITEMS_PER_PAGE = 10;
     const [articles, setArticles] = useState<Article[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
-    const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<number | null>(
         null,
     );
     const [isLoading, setIsLoading] = useState(true);
-    const [viewMode, setViewMode] = useState<ViewMode>("grid");
     const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<number>>(
         new Set(),
     );
     const [bookmarkingPosts, setBookmarkingPosts] = useState<Set<number>>(
         new Set(),
     );
-    const [pagination, setPagination] = useState({
-        total: 0,
-        limit: 12,
-        offset: 0,
-        hasMore: false,
-    });
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
 
     useEffect(() => {
         fetchCategories();
     }, []);
 
     useEffect(() => {
-        fetchArticles();
-    }, [selectedCategory, searchQuery]);
+        fetchArticles(currentPage);
+    }, [selectedCategory, currentPage]);
 
-    // Check bookmark status for all articles when they are loaded
     useEffect(() => {
         if (articles.length > 0 && isAuthenticated) {
             checkBookmarkStatuses();
@@ -92,9 +115,7 @@ export default function ArticlesPage() {
 
     const checkBookmarkStatuses = async () => {
         if (!isAuthenticated || articles.length === 0) return;
-
         try {
-            // Check bookmark status for all articles
             const bookmarkPromises = articles.map(async (article) => {
                 try {
                     const res = await fetch(
@@ -104,9 +125,8 @@ export default function ArticlesPage() {
                         },
                     );
                     const result = await res.json();
-                    if (result.success && result.data.bookmarked) {
+                    if (result.success && result.data.bookmarked)
                         return article.id;
-                    }
                 } catch (error) {
                     console.error(
                         `Error checking bookmark for article ${article.id}:`,
@@ -115,11 +135,9 @@ export default function ArticlesPage() {
                 }
                 return null;
             });
-
             const bookmarkedIds = (await Promise.all(bookmarkPromises)).filter(
                 (id): id is number => id !== null,
             );
-
             setBookmarkedPosts(new Set(bookmarkedIds));
         } catch (error) {
             console.error("Error checking bookmark statuses:", error);
@@ -130,47 +148,31 @@ export default function ArticlesPage() {
         try {
             const res = await fetch("/api/blog/categories");
             const data = await res.json();
-            if (Array.isArray(data)) {
-                setCategories(data);
-            }
+            if (Array.isArray(data)) setCategories(data);
         } catch (error) {
             console.error("Fetch categories error:", error);
         }
     };
 
-    const fetchArticles = async () => {
+    const fetchArticles = async (page: number) => {
         try {
             setIsLoading(true);
+            const offset = (page - 1) * ITEMS_PER_PAGE;
             const params = new URLSearchParams({
-                limit: pagination.limit.toString(),
-                offset: "0",
+                limit: ITEMS_PER_PAGE.toString(),
+                offset: offset.toString(),
             });
-
-            if (selectedCategory) {
+            if (selectedCategory)
                 params.append("categoryId", selectedCategory.toString());
-            }
-
-            if (searchQuery) {
-                params.append("search", searchQuery);
-            }
 
             const res = await fetch(`/api/blog/posts?${params}`);
             const result = await res.json();
-
             if (result.success) {
-                // API returns { success: true, data: { posts: [], pagination: {} } }
                 const posts = result.data?.posts || result.data || [];
                 setArticles(Array.isArray(posts) ? posts : []);
-                if (result.data?.pagination) {
-                    setPagination(result.data.pagination);
-                } else if (result.pagination) {
-                    setPagination(result.pagination);
-                }
+                const pag = result.data?.pagination || result.pagination;
+                if (pag) setTotalItems(pag.total || 0);
             } else {
-                console.error(
-                    "Failed to fetch articles:",
-                    result.error || result.message,
-                );
                 toast.error(
                     result.error ||
                         result.message ||
@@ -185,64 +187,25 @@ export default function ArticlesPage() {
         }
     };
 
-    const handleLoadMore = async () => {
-        try {
-            const params = new URLSearchParams({
-                limit: pagination.limit.toString(),
-                offset: (pagination.offset + pagination.limit).toString(),
-            });
+    const goToPage = (page: number) => {
+        if (page < 1 || page > totalPages || page === currentPage) return;
+        setCurrentPage(page);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
-            if (selectedCategory) {
-                params.append("categoryId", selectedCategory.toString());
-            }
-
-            if (searchQuery) {
-                params.append("search", searchQuery);
-            }
-
-            const res = await fetch(`/api/blog/posts?${params}`);
-            const result = await res.json();
-
-            if (result.success) {
-                // API returns { success: true, data: { posts: [], pagination: {} } }
-                const posts = result.data?.posts || result.data || [];
-                if (Array.isArray(posts)) {
-                    setArticles((prev) => [...prev, ...posts]);
-                }
-                if (result.data?.pagination) {
-                    setPagination(result.data.pagination);
-                } else if (result.pagination) {
-                    setPagination(result.pagination);
-                }
-            }
-        } catch (error) {
-            console.error("Load more error:", error);
+    /** Generate page numbers with truncation */
+    const getPageNumbers = (): (number | "...")[] => {
+        if (totalPages <= 7) {
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
         }
-    };
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString("vi-VN", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-        });
-    };
-
-    const getCategories = (categoryNames: string | null) => {
-        if (!categoryNames) return [];
-        return categoryNames
-            .split(", ")
-            .filter((c) => c)
-            .slice(0, 2);
-    };
-
-    const getTags = (tagNames: string | null) => {
-        if (!tagNames) return [];
-        return tagNames
-            .split(", ")
-            .filter((t) => t)
-            .slice(0, 3);
+        const pages: (number | "...")[] = [1];
+        if (currentPage > 3) pages.push("...");
+        const start = Math.max(2, currentPage - 1);
+        const end = Math.min(totalPages - 1, currentPage + 1);
+        for (let i = start; i <= end; i++) pages.push(i);
+        if (currentPage < totalPages - 2) pages.push("...");
+        pages.push(totalPages);
+        return pages;
     };
 
     const handleBookmark = async (e: React.MouseEvent, article: Article) => {
@@ -267,20 +230,14 @@ export default function ArticlesPage() {
                 },
             );
             const result = await res.json();
-
             if (result.success) {
                 const isBookmarked = result.data.bookmarked;
                 setBookmarkedPosts((prev) => {
                     const newSet = new Set(prev);
-                    if (isBookmarked) {
-                        newSet.add(article.id);
-                    } else {
-                        newSet.delete(article.id);
-                    }
+                    if (isBookmarked) newSet.add(article.id);
+                    else newSet.delete(article.id);
                     return newSet;
                 });
-
-                // Update bookmark count in article
                 setArticles((prev) =>
                     prev.map((a) =>
                         a.id === article.id
@@ -293,7 +250,6 @@ export default function ArticlesPage() {
                             : a,
                     ),
                 );
-
                 toast.success(
                     result.message ||
                         (isBookmarked
@@ -315,548 +271,331 @@ export default function ArticlesPage() {
         }
     };
 
-    const selectedCategoryName =
-        categories.find((category) => category.id === selectedCategory)?.name ||
-        "Tất cả";
-    const featuredArticle = articles[0];
-    const secondaryArticles = articles.slice(1, 3);
-    const remainingArticles = articles.slice(3);
-    const showFeaturedLayout = viewMode === "grid" && articles.length > 0;
+    const getTags = (tagNames: string | null) => {
+        if (!tagNames) return [];
+        return tagNames
+            .split(", ")
+            .filter((t) => t)
+            .slice(0, 2);
+    };
 
-    const renderBookmarkButton = (article: Article) => (
-        <button
-            onClick={(e) => handleBookmark(e, article)}
-            disabled={bookmarkingPosts.has(article.id)}
-            className={`absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/90 text-slate-600 shadow-sm backdrop-blur-sm transition-all ${
-                bookmarkedPosts.has(article.id)
-                    ? "border-indigo-500/30 bg-indigo-600 text-white"
-                    : "hover:border-indigo-200 hover:text-indigo-600"
-            } ${bookmarkingPosts.has(article.id) ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
-            title={bookmarkedPosts.has(article.id) ? "Bỏ lưu" : "Lưu bài viết"}
-            aria-label={bookmarkedPosts.has(article.id) ? "Bỏ lưu bài viết" : "Lưu bài viết"}
-        >
-            <Bookmark
-                className={`h-4 w-4 ${bookmarkedPosts.has(article.id) ? "fill-current" : ""}`}
-            />
-        </button>
-    );
-
-    const renderAuthor = (article: Article, size: "sm" | "md" = "sm") => {
-        const avatarSize = size === "sm" ? 32 : 40;
-        const initialsClass =
-            size === "sm"
-                ? "h-8 w-8 text-xs"
-                : "h-10 w-10 text-sm";
+    // ─── F8-style Blog Card ────────────────────────────────────
+    const renderBlogCard = (article: Article, index: number) => {
+        const tags = getTags(article.tag_names);
+        const readingTime = estimateReadingTime(article.excerpt || "");
+        const relativeTime = formatRelativeTime(article.published_at);
 
         return (
-            <div className="flex items-center gap-3">
-                {article.avatar_url ? (
-                    <Image
-                        src={article.avatar_url}
-                        alt={article.full_name}
-                        width={avatarSize}
-                        height={avatarSize}
-                        className="rounded-full object-cover"
-                    />
-                ) : (
-                    <div
-                        className={`flex items-center justify-center rounded-full bg-indigo-600 font-semibold text-white ${initialsClass}`}
+            <motion.article
+                key={article.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: index * 0.04 }}
+                className="group rounded-2xl border-2 border-[#e8e8e8] bg-white px-5 py-4 transition-colors hover:border-[#dbdbdb]"
+            >
+                {/* ── Card Header: Author + Actions ── */}
+                <div className="mb-2.5 flex items-center justify-between">
+                    <Link
+                        href={`/profile/${article.username}`}
+                        className="flex items-center gap-2.5"
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        {article.full_name.charAt(0)}
-                    </div>
-                )}
+                        <AvatarWithProBadge
+                            avatarUrl={article.avatar_url}
+                            fullName={article.full_name}
+                            isPro={
+                                article.membership_type?.toUpperCase() === "PRO"
+                            }
+                            size="xs"
+                        />
+                        <span className="text-sm font-semibold text-[#292929]">
+                            {article.full_name}
+                        </span>
+                    </Link>
 
-                <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                        {article.full_name}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                        {formatDate(article.published_at)}
-                    </p>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={(e) => handleBookmark(e, article)}
+                            disabled={bookmarkingPosts.has(article.id)}
+                            className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
+                                bookmarkedPosts.has(article.id)
+                                    ? "text-indigo-600"
+                                    : "text-[#757575] hover:bg-[#f2f2f2] hover:text-[#292929]"
+                            } ${bookmarkingPosts.has(article.id) ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+                            title={
+                                bookmarkedPosts.has(article.id)
+                                    ? "Bỏ lưu"
+                                    : "Lưu bài viết"
+                            }
+                        >
+                            <Bookmark
+                                className={`h-5 w-5 ${bookmarkedPosts.has(article.id) ? "fill-current" : ""}`}
+                            />
+                        </button>
+                        <button className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#757575] transition-colors hover:bg-[#f2f2f2] hover:text-[#292929]">
+                            <MoreHorizontal className="h-5 w-5" />
+                        </button>
+                    </div>
                 </div>
-            </div>
+
+                {/* ── Card Body: Title + Description + Thumbnail ── */}
+                <Link href={`/articles/${article.slug}`} className="flex gap-5">
+                    <div className="min-w-0 flex-1">
+                        <h2
+                            className="text-lg leading-7 text-[#292929] line-clamp-2"
+                            style={{ fontWeight: 700 }}
+                        >
+                            {article.title}
+                        </h2>
+                        {article.excerpt && (
+                            <p className="mt-1.5 text-sm leading-[1.6] text-[#505050] line-clamp-2">
+                                {article.excerpt}
+                            </p>
+                        )}
+                    </div>
+
+                    {article.cover_image && (
+                        <div className="relative h-[105px] w-[168px] flex-shrink-0 overflow-hidden rounded-xl">
+                            <Image
+                                src={article.cover_image}
+                                alt={article.title}
+                                fill
+                                className="object-cover"
+                            />
+                        </div>
+                    )}
+                </Link>
+
+                {/* ── Card Footer: Tags + Time + Reading Time ── */}
+                <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                    {tags.map((tag, idx) => (
+                        <span
+                            key={idx}
+                            className="rounded-full bg-[#f2f2f2] px-3 py-1 text-[13px] font-medium text-[#505050]"
+                        >
+                            {tag}
+                        </span>
+                    ))}
+                    <span className="text-[13px] text-[#757575]">
+                        {relativeTime}
+                    </span>
+                    <span className="text-[13px] text-[#757575]">·</span>
+                    <span className="text-[13px] text-[#757575]">
+                        {readingTime} phút đọc
+                    </span>
+                </div>
+            </motion.article>
         );
     };
 
-    const renderStats = (article: Article, detailed = false) => (
-        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-            <div className="flex items-center gap-1.5">
-                <Eye className="h-4 w-4" />
-                <span>
-                    {article.view_count}
-                    {detailed ? " lượt xem" : ""}
-                </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-                <Heart className="h-4 w-4" />
-                <span>
-                    {article.like_count}
-                    {detailed ? " thích" : ""}
-                </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-                <MessageCircle className="h-4 w-4" />
-                <span>
-                    {article.comment_count}
-                    {detailed ? " bình luận" : ""}
-                </span>
-            </div>
+    // ─── Skeleton Loader ───────────────────────────────────────
+    const renderSkeleton = () => (
+        <div className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+                <div
+                    key={i}
+                    className="animate-pulse rounded-2xl border-2 border-[#e8e8e8] bg-white p-5"
+                >
+                    <div className="mb-4 flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-full bg-[#e8e8e8]" />
+                        <div className="h-4 w-24 rounded bg-[#e8e8e8]" />
+                    </div>
+                    <div className="flex gap-5">
+                        <div className="flex-1 space-y-2.5">
+                            <div className="h-5 w-3/4 rounded bg-[#e8e8e8]" />
+                            <div className="h-4 w-full rounded bg-[#e8e8e8]" />
+                            <div className="h-4 w-2/3 rounded bg-[#e8e8e8]" />
+                        </div>
+                        <div className="h-[120px] w-[200px] flex-shrink-0 rounded-xl bg-[#e8e8e8]" />
+                    </div>
+                    <div className="mt-4 flex gap-2.5">
+                        <div className="h-7 w-20 rounded-full bg-[#e8e8e8]" />
+                        <div className="h-4 w-16 rounded bg-[#e8e8e8]" />
+                    </div>
+                </div>
+            ))}
         </div>
     );
 
-    const renderTags = (article: Article) => {
-        if (!article.tag_names) return null;
-
-        return (
-            <div className="mt-4 flex flex-wrap gap-2">
-                {getTags(article.tag_names).map((tag, idx) => (
-                    <span
-                        key={idx}
-                        className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500"
-                    >
-                        #{tag}
-                    </span>
-                ))}
-            </div>
-        );
-    };
-
-    const renderGridCard = (article: Article) => (
-        <article className="group relative h-full overflow-hidden rounded-[28px] border border-slate-200 bg-white p-3 transition-all duration-200 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-lg hover:shadow-slate-200/70">
-            {renderBookmarkButton(article)}
-            <Link href={`/articles/${article.slug}`} className="flex h-full flex-col">
-                <div className="relative aspect-[16/10] overflow-hidden rounded-[20px] bg-[linear-gradient(135deg,#818cf8,#8b5cf6)]">
-                    {article.cover_image ? (
-                        <Image
-                            src={article.cover_image}
-                            alt={article.title}
-                            fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                        />
-                    ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                            <BookOpen className="h-14 w-14 text-white/60" />
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex flex-1 flex-col px-2 pb-2 pt-5">
-                    {article.category_names && (
-                        <div className="mb-3 flex flex-wrap gap-2">
-                            {getCategories(article.category_names).map((cat, idx) => (
-                                <Badge key={idx} variant="secondary" size="sm">
-                                    {cat}
-                                </Badge>
-                            ))}
-                        </div>
-                    )}
-
-                    <h3 className="text-xl font-bold leading-snug text-slate-950 line-clamp-2">
-                        {article.title}
+    // ─── Right Sidebar ─────────────────────────────────────────
+    const renderSidebar = () => (
+        <aside className="hidden lg:block">
+            <div className="sticky top-24 space-y-6">
+                {/* Topic Filter */}
+                <div>
+                    <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-[#757575]">
+                        Xem các bài viết theo chủ đề
                     </h3>
-                    <p className="mt-3 flex-1 text-sm leading-6 text-slate-600 line-clamp-3">
-                        {article.excerpt}
-                    </p>
-
-                    <div className="mt-5 border-t border-slate-100 pt-4">
-                        <div className="flex items-center justify-between gap-4">
-                            {renderAuthor(article)}
-                        </div>
-                        <div className="mt-4">{renderStats(article)}</div>
-                        {renderTags(article)}
-                    </div>
-                </div>
-            </Link>
-        </article>
-    );
-
-    const renderListCard = (article: Article) => (
-        <article className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-3 transition-all duration-200 hover:border-indigo-200 hover:shadow-lg hover:shadow-slate-200/70">
-            {renderBookmarkButton(article)}
-            <Link href={`/articles/${article.slug}`} className="flex flex-col gap-5 sm:flex-row">
-                <div className="relative h-52 overflow-hidden rounded-[22px] bg-[linear-gradient(135deg,#818cf8,#8b5cf6)] sm:h-auto sm:w-72 sm:flex-shrink-0">
-                    {article.cover_image ? (
-                        <Image
-                            src={article.cover_image}
-                            alt={article.title}
-                            fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                        />
-                    ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                            <BookOpen className="h-14 w-14 text-white/60" />
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex flex-1 flex-col px-2 pb-2 pt-1 sm:py-3">
-                    {article.category_names && (
-                        <div className="mb-3 flex flex-wrap gap-2">
-                            {getCategories(article.category_names).map((cat, idx) => (
-                                <Badge key={idx} variant="secondary" size="sm">
-                                    {cat}
-                                </Badge>
-                            ))}
-                        </div>
-                    )}
-
-                    <h3 className="text-2xl font-bold leading-snug text-slate-950 line-clamp-2">
-                        {article.title}
-                    </h3>
-                    <p className="mt-3 flex-1 text-base leading-7 text-slate-600 line-clamp-3">
-                        {article.excerpt}
-                    </p>
-
-                    <div className="mt-5 flex flex-col gap-4 border-t border-slate-100 pt-4 lg:flex-row lg:items-end lg:justify-between">
-                        {renderAuthor(article, "md")}
-                        <div className="lg:text-right">
-                            {renderStats(article, true)}
-                        </div>
-                    </div>
-
-                    {renderTags(article)}
-                </div>
-            </Link>
-        </article>
-    );
-
-    return (
-        <div className="min-h-screen bg-[#f7f8fc] text-slate-900">
-            <PageContainer size="lg" className="py-10 lg:py-12">
-                <motion.section
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70 sm:p-8 lg:p-10"
-                >
-                    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end">
-                        <div>
-                            <div className="inline-flex items-center rounded-full bg-indigo-50 px-4 py-1.5 text-sm font-semibold text-indigo-700">
-                                Blog học tập
-                            </div>
-                            <h1 className="mt-5 max-w-3xl text-4xl font-black tracking-tight text-slate-950 md:text-5xl">
-                                Bài viết dành cho người đang học và xây dựng sản phẩm thực tế
-                            </h1>
-                            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                                Tổng hợp các bài chia sẻ về lập trình, sản phẩm và kinh nghiệm học tập để bạn đọc nhanh, chọn đúng chủ đề và tiếp tục đào sâu khi cần.
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="rounded-2xl bg-slate-50 p-4">
-                                <p className="text-sm text-slate-500">Bài viết</p>
-                                <p className="mt-2 text-2xl font-bold text-slate-950">
-                                    {pagination.total || articles.length}
-                                </p>
-                            </div>
-                            <div className="rounded-2xl bg-slate-50 p-4">
-                                <p className="text-sm text-slate-500">Chuyên mục</p>
-                                <p className="mt-2 text-2xl font-bold text-slate-950">
-                                    {categories.length}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mt-8 rounded-[24px] border border-slate-200 bg-slate-50 p-3 sm:p-4">
-                        <div className="relative">
-                            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                            <input
-                                type="text"
-                                placeholder="Tìm theo tiêu đề, chủ đề hoặc từ khóa bài viết..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="h-12 w-full rounded-2xl border border-white bg-white pl-12 pr-4 text-sm text-slate-900 outline-none ring-1 ring-inset ring-slate-200 transition placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500"
-                            />
-                        </div>
-                    </div>
-                </motion.section>
-
-                <section className="mt-8 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70 sm:p-5">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="flex flex-wrap gap-2">
-                        <button
-                            onClick={() => setSelectedCategory(null)}
-                            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                                selectedCategory === null
-                                    ? "bg-slate-900 text-white"
-                                    : "border border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-700"
-                            }`}
-                        >
-                            Tất cả
-                        </button>
+                    <div className="flex flex-wrap gap-2">
                         {categories.map((cat) => (
                             <button
                                 key={cat.id}
-                                onClick={() => setSelectedCategory(cat.id)}
-                                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                                onClick={() => {
+                                    setSelectedCategory(
+                                        selectedCategory === cat.id
+                                            ? null
+                                            : cat.id,
+                                    );
+                                    setCurrentPage(1);
+                                }}
+                                className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                                     selectedCategory === cat.id
-                                        ? "bg-slate-900 text-white"
-                                        : "border border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-700"
+                                        ? "border-[#292929] bg-[#292929] text-white"
+                                        : "border-[#e8e8e8] bg-white text-[#292929] hover:border-[#ccc] hover:bg-[#f9f9f9]"
                                 }`}
                             >
                                 {cat.name}
                             </button>
                         ))}
                     </div>
+                </div>
+            </div>
+        </aside>
+    );
 
-                        <div className="flex flex-wrap items-center gap-3">
-                            <p className="text-sm text-slate-500">
-                                Đang xem <span className="font-semibold text-slate-900">{selectedCategoryName}</span>
-                            </p>
-
-                            <div className="flex gap-1 rounded-full border border-slate-200 bg-slate-50 p-1">
-                                <button
-                                    onClick={() => setViewMode("grid")}
-                                    className={`rounded-full p-2 transition ${
-                                        viewMode === "grid"
-                                            ? "bg-white text-slate-900 shadow-sm"
-                                            : "text-slate-500 hover:text-slate-700"
-                                    }`}
-                                    aria-label="Grid view"
-                                >
-                                    <Grid3x3 className="h-5 w-5" />
-                                </button>
-                                <button
-                                    onClick={() => setViewMode("list")}
-                                    className={`rounded-full p-2 transition ${
-                                        viewMode === "list"
-                                            ? "bg-white text-slate-900 shadow-sm"
-                                            : "text-slate-500 hover:text-slate-700"
-                                    }`}
-                                    aria-label="List view"
-                                >
-                                    <List className="h-5 w-5" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+    return (
+        <div className="min-h-screen bg-[#f5f5f5]">
+            <PageContainer size="lg" className="py-8 lg:py-10">
+                {/* ── Page Header ── */}
+                <section className="mb-6">
+                    <h1 className="text-3xl font-extrabold text-[#292929] md:text-4xl">
+                        Bài viết nổi bật
+                    </h1>
+                    <p className="mt-2 text-base text-[#757575]">
+                        Tổng hợp các bài viết chia sẻ về kinh nghiệm tự học lập
+                        trình online và các kỹ thuật lập trình web.
+                    </p>
                 </section>
 
-                {isLoading && (
-                    <div
-                        className={
-                            viewMode === "grid"
-                                ? "mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
-                                : "mt-8 space-y-6"
-                        }
+                {/* ── Mobile Category Filter ── */}
+                <div className="mb-6 flex flex-wrap gap-2 lg:hidden">
+                    <button
+                        onClick={() => {
+                            setSelectedCategory(null);
+                            setCurrentPage(1);
+                        }}
+                        className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                            selectedCategory === null
+                                ? "border-[#292929] bg-[#292929] text-white"
+                                : "border-[#e8e8e8] bg-white text-[#292929]"
+                        }`}
                     >
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
-                            <div
-                                key={i}
-                                className="overflow-hidden rounded-[28px] border border-slate-200 bg-white animate-pulse"
-                            >
-                                <div
-                                    className={
-                                        viewMode === "grid" ? "h-56" : "h-40"
-                                    }
-                                >
-                                    <div className="h-full w-full bg-slate-200"></div>
-                                </div>
-                                <div className="space-y-3 p-6">
-                                    <div className="h-4 w-3/4 rounded bg-slate-200"></div>
-                                    <div className="h-4 rounded bg-slate-200"></div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {!isLoading && articles.length > 0 && (
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={viewMode}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="mb-12 mt-8"
-                        >
-                            {showFeaturedLayout && featuredArticle && (
-                                <section className="mb-10">
-                                    <div className="mb-5 flex items-end justify-between gap-4">
-                                        <div>
-                                            <p className="text-sm font-semibold text-indigo-700">Nổi bật hôm nay</p>
-                                            <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
-                                                Bài viết đáng đọc trước khi lướt toàn bộ danh sách
-                                            </h2>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_360px]">
-                                        <article className="group relative overflow-hidden rounded-[32px] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70 transition-all duration-200 hover:border-indigo-200 hover:shadow-lg hover:shadow-slate-200/80">
-                                            {renderBookmarkButton(featuredArticle)}
-                                            <Link
-                                                href={`/articles/${featuredArticle.slug}`}
-                                                className="grid h-full gap-6 lg:grid-cols-[1.05fr_minmax(0,0.95fr)]"
-                                            >
-                                                <div className="relative min-h-[280px] overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,#818cf8,#8b5cf6)]">
-                                                    {featuredArticle.cover_image ? (
-                                                        <Image
-                                                            src={featuredArticle.cover_image}
-                                                            alt={featuredArticle.title}
-                                                            fill
-                                                            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                                                        />
-                                                    ) : (
-                                                        <div className="flex h-full w-full items-center justify-center">
-                                                            <BookOpen className="h-16 w-16 text-white/60" />
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex flex-col justify-center py-2">
-                                                    {featuredArticle.category_names && (
-                                                        <div className="mb-4 flex flex-wrap gap-2">
-                                                            {getCategories(featuredArticle.category_names).map((cat, idx) => (
-                                                                <Badge key={idx} variant="secondary" size="sm">
-                                                                    {cat}
-                                                                </Badge>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    <h3 className="text-3xl font-black leading-tight text-slate-950 line-clamp-3">
-                                                        {featuredArticle.title}
-                                                    </h3>
-                                                    <p className="mt-4 text-base leading-7 text-slate-600 line-clamp-4">
-                                                        {featuredArticle.excerpt}
-                                                    </p>
-                                                    <div className="mt-6 flex flex-col gap-4 border-t border-slate-100 pt-5">
-                                                        {renderAuthor(featuredArticle, "md")}
-                                                        {renderStats(featuredArticle, true)}
-                                                        {renderTags(featuredArticle)}
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                        </article>
-
-                                        <div className="space-y-4">
-                                            {secondaryArticles.map((article, index) => (
-                                                <motion.article
-                                                    key={article.id}
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ duration: 0.4, delay: index * 0.06 }}
-                                                    layout
-                                                    className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/60 transition-all duration-200 hover:border-indigo-200 hover:shadow-lg"
-                                                >
-                                                    {renderBookmarkButton(article)}
-                                                    <Link href={`/articles/${article.slug}`} className="flex gap-4">
-                                                        <div className="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-[18px] bg-[linear-gradient(135deg,#818cf8,#8b5cf6)] sm:h-32 sm:w-32">
-                                                            {article.cover_image ? (
-                                                                <Image
-                                                                    src={article.cover_image}
-                                                                    alt={article.title}
-                                                                    fill
-                                                                    className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                                                                />
-                                                            ) : (
-                                                                <div className="flex h-full w-full items-center justify-center">
-                                                                    <BookOpen className="h-10 w-10 text-white/60" />
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="min-w-0 flex-1 py-1 pr-10">
-                                                            {article.category_names && (
-                                                                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-indigo-700">
-                                                                    {getCategories(article.category_names).join(" · ")}
-                                                                </p>
-                                                            )}
-                                                            <h3 className="text-lg font-bold leading-snug text-slate-950 line-clamp-2">
-                                                                {article.title}
-                                                            </h3>
-                                                            <p className="mt-2 text-sm leading-6 text-slate-600 line-clamp-2">
-                                                                {article.excerpt}
-                                                            </p>
-                                                            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
-                                                                <span>{article.full_name}</span>
-                                                                <span>{formatDate(article.published_at)}</span>
-                                                            </div>
-                                                        </div>
-                                                    </Link>
-                                                </motion.article>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </section>
-                            )}
-
-                            {((viewMode === "grid" && remainingArticles.length > 0) ||
-                                viewMode === "list") && (
-                                <section>
-                                    <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                                        <div>
-                                            <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-                                                {viewMode === "grid" ? "Tất cả bài viết" : "Danh sách bài viết"}
-                                            </h2>
-                                            <p className="mt-1 text-sm text-slate-500">
-                                                {viewMode === "grid"
-                                                    ? "Tiếp tục khám phá các bài viết mới nhất theo từng chủ đề."
-                                                    : "Chế độ danh sách giúp bạn đọc nhanh tiêu đề, tóm tắt và thông tin chính của từng bài viết."}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div
-                                        className={
-                                            viewMode === "grid"
-                                                ? "grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
-                                                : "space-y-6"
-                                        }
-                                    >
-                                        {(viewMode === "grid" ? remainingArticles : articles).map(
-                                            (article, index) => (
-                                                <motion.div
-                                                    key={article.id}
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ duration: 0.4, delay: index * 0.05 }}
-                                                    layout
-                                                >
-                                                    {viewMode === "grid"
-                                                        ? renderGridCard(article)
-                                                        : renderListCard(article)}
-                                                </motion.div>
-                                            ),
-                                        )}
-                                    </div>
-                                </section>
-                            )}
-                        </motion.div>
-                    </AnimatePresence>
-                )}
-
-                {!isLoading && articles.length === 0 && (
-                    <div className="rounded-[28px] border border-slate-200 bg-white py-14 text-center shadow-sm shadow-slate-200/70">
-                        <BookOpen className="mx-auto mb-4 h-16 w-16 text-slate-300" />
-                        <h3 className="mb-2 text-xl font-semibold text-slate-950">
-                            Chưa có bài viết
-                        </h3>
-                        <p className="mb-6 text-slate-600">
-                            {searchQuery || selectedCategory
-                                ? "Không tìm thấy bài viết phù hợp."
-                                : "Hãy là người đầu tiên chia sẻ kiến thức!"}
-                        </p>
-                        <Link
-                            href="/write"
-                            className="inline-block rounded-full bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-slate-800"
-                        >
-                            Viết bài viết đầu tiên
-                        </Link>
-                    </div>
-                )}
-
-                {!isLoading && articles.length > 0 && pagination.hasMore && (
-                    <div className="mt-8 text-center">
+                        Tất cả
+                    </button>
+                    {categories.map((cat) => (
                         <button
-                            onClick={handleLoadMore}
-                            className="rounded-full border border-indigo-200 bg-white px-8 py-3 font-semibold text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-50"
+                            key={cat.id}
+                            onClick={() => {
+                                setSelectedCategory(
+                                    selectedCategory === cat.id ? null : cat.id,
+                                );
+                                setCurrentPage(1);
+                            }}
+                            className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                                selectedCategory === cat.id
+                                    ? "border-[#292929] bg-[#292929] text-white"
+                                    : "border-[#e8e8e8] bg-white text-[#292929]"
+                            }`}
                         >
-                            Xem thêm bài viết
+                            {cat.name}
                         </button>
-                    </div>
-                )}
+                    ))}
+                </div>
+
+                {/* ── 2-Column Layout: Feed + Sidebar ── */}
+                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+                    {/* Main Feed */}
+                    <main>
+                        {isLoading ? (
+                            renderSkeleton()
+                        ) : articles.length > 0 ? (
+                            <div className="space-y-4">
+                                {articles.map((article, index) =>
+                                    renderBlogCard(article, index),
+                                )}
+                            </div>
+                        ) : (
+                            <div className="rounded-2xl border-2 border-[#e8e8e8] bg-white py-16 text-center">
+                                <BookOpen className="mx-auto mb-4 h-14 w-14 text-[#ccc]" />
+                                <h3 className="mb-2 text-lg font-semibold text-[#292929]">
+                                    Chưa có bài viết
+                                </h3>
+                                <p className="mb-6 text-[#757575]">
+                                    {selectedCategory
+                                        ? "Không tìm thấy bài viết phù hợp với chủ đề này."
+                                        : "Hãy là người đầu tiên chia sẻ kiến thức!"}
+                                </p>
+                                <Link
+                                    href="/write"
+                                    className="inline-block rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+                                >
+                                    Viết bài viết đầu tiên
+                                </Link>
+                            </div>
+                        )}
+
+                        {/* ── Pagination ── */}
+                        {!isLoading &&
+                            articles.length > 0 &&
+                            totalPages > 1 && (
+                                <nav
+                                    className="mt-8 flex items-center justify-center gap-1"
+                                    aria-label="Pagination"
+                                >
+                                    {/* « Previous */}
+                                    <button
+                                        onClick={() =>
+                                            goToPage(currentPage - 1)
+                                        }
+                                        disabled={currentPage === 1}
+                                        className="flex h-8 w-8 items-center justify-center rounded text-lg text-[#555] transition-colors hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-30"
+                                        aria-label="Previous page"
+                                    >
+                                        «
+                                    </button>
+
+                                    {/* Page numbers */}
+                                    {getPageNumbers().map((page, idx) =>
+                                        page === "..." ? (
+                                            <span
+                                                key={`dots-${idx}`}
+                                                className="flex h-8 w-8 items-center justify-center text-sm text-[#999]"
+                                            >
+                                                …
+                                            </span>
+                                        ) : (
+                                            <button
+                                                key={page}
+                                                onClick={() => goToPage(page)}
+                                                className={`flex h-8 w-8 items-center justify-center rounded text-sm transition-colors ${
+                                                    page === currentPage
+                                                        ? "bg-indigo-600 font-[500] text-white"
+                                                        : "text-[#333] font-[500] hover:bg-indigo-50 hover:text-indigo-600"
+                                                }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        ),
+                                    )}
+
+                                    {/* » Next */}
+                                    <button
+                                        onClick={() =>
+                                            goToPage(currentPage + 1)
+                                        }
+                                        disabled={currentPage === totalPages}
+                                        className="flex h-8 w-8 items-center justify-center rounded text-lg text-[#555] transition-colors hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-30"
+                                        aria-label="Next page"
+                                    >
+                                        »
+                                    </button>
+                                </nav>
+                            )}
+                    </main>
+
+                    {/* Right Sidebar */}
+                    {renderSidebar()}
+                </div>
             </PageContainer>
         </div>
     );
