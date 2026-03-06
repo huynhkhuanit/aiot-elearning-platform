@@ -47,6 +47,7 @@
     "dagre": "^0.8.5",
     "dotenv": "^17.2.3",
     "framer-motion": "^11.11.17",
+    "html-react-parser": "^5.2.17",
     "jose": "^6.1.0",
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",

@@ -2,40 +2,28 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Playfair_Display } from "next/font/google";
-import Prism from "prismjs";
-import "prismjs/components/prism-javascript";
-import "prismjs/components/prism-typescript";
-import "prismjs/components/prism-jsx";
-import "prismjs/components/prism-tsx";
-import "prismjs/components/prism-python";
-import "prismjs/components/prism-java";
-import "prismjs/components/prism-c";
-import "prismjs/components/prism-cpp";
-import "prismjs/components/prism-json";
-import "prismjs/components/prism-bash";
-import "prismjs/components/prism-sql";
-import "prismjs/components/prism-markup";
-import "prismjs/components/prism-css";
-import "prismjs/components/prism-go";
-import "prismjs/components/prism-rust";
-import "prismjs/components/prism-yaml";
-import "prismjs/components/prism-markdown";
+import parse, {
+    type DOMNode,
+    Element,
+    HTMLReactParserOptions,
+} from "html-react-parser";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import PageContainer from "@/components/PageContainer";
+import ArticleCodeBlock, {
+    normalizeArticleCodeLanguage,
+} from "@/components/articles/ArticleCodeBlock";
 import {
     Heart,
     Bookmark,
     MessageCircle,
     Share2,
-    Eye,
-    Clock,
     ChevronLeft,
     Twitter,
     Facebook,
@@ -56,66 +44,61 @@ interface TableOfContentsItem {
     level: number;
 }
 
-const CODE_LANG_MAP: Record<string, string> = {
-    js: "javascript",
-    ts: "typescript",
-    py: "python",
-    html: "markup",
-    xml: "markup",
-    shell: "bash",
-    sh: "bash",
-    "c++": "cpp",
-    yml: "yaml",
-    md: "markdown",
-    rs: "rust",
-};
-
-function normalizeCodeLanguage(raw?: string): string {
-    if (!raw) return "plaintext";
-    const normalized = raw.toLowerCase();
-    return CODE_LANG_MAP[normalized] || normalized;
+function isElementNode(node: DOMNode): node is Element {
+    return node instanceof Element;
 }
 
-function detectLanguageFromCode(code: string): string {
-    const source = code.trim();
-    if (!source) return "plaintext";
+function extractCodeText(node: DOMNode): string {
+    if (node.type === "text") {
+        return node.data;
+    }
 
-    if (/^\s*[{[]/.test(source) && /"\w+"\s*:/.test(source)) return "json";
-    if (/^\s*#include\s+<|\bstd::|\bcout\s*<</m.test(source)) return "cpp";
-    if (/^\s*fn\s+\w+\s*\(|\buse\s+std::|\blet\s+mut\b/m.test(source)) return "rust";
-    if (/^\s*func\s+\w+\s*\(|\bfmt\.Println\(|\bpackage\s+main\b/m.test(source)) return "go";
-    if (/^\s*def\s+\w+\s*\(|\bimport\s+\w+|\bfrom\s+\w+\s+import\b/m.test(source)) return "python";
-    if (/\binterface\s+\w+\s*\{|\btype\s+\w+\s*=|:\s*(string|number|boolean)\b/m.test(source)) return "typescript";
-    if (/\bconst\s+\w+\s*=|\blet\s+\w+\s*=|=>|console\.log\(/m.test(source)) return "javascript";
-    if (/^\s*select\s+|\binsert\s+into\s+|\bfrom\s+\w+/im.test(source)) return "sql";
-    if (/^\s*<\/?[a-z][\s\S]*>/i.test(source)) return "markup";
-    if (/^[\w-]+:\s+.+/m.test(source)) return "yaml";
+    if (!isElementNode(node)) {
+        return "";
+    }
 
-    return "plaintext";
+    if (node.name === "br") {
+        return "\n";
+    }
+
+    const children = node.children as unknown as DOMNode[];
+    return children.map((child) => extractCodeText(child)).join("");
 }
 
-function languageLabel(language: string): string {
-    const labels: Record<string, string> = {
-        javascript: "JavaScript",
-        typescript: "TypeScript",
-        jsx: "JSX",
-        tsx: "TSX",
-        python: "Python",
-        java: "Java",
-        c: "C",
-        cpp: "C++",
-        json: "JSON",
-        bash: "Bash",
-        sql: "SQL",
-        markup: "HTML",
-        css: "CSS",
-        go: "Go",
-        rust: "Rust",
-        yaml: "YAML",
-        markdown: "Markdown",
-        plaintext: "Text",
-    };
-    return labels[language] || language;
+function extractLanguageCandidate(className?: string): string | undefined {
+    if (!className) return undefined;
+
+    return className
+        .split(/\s+/)
+        .map((token) => token.trim())
+        .find(
+            (token) =>
+                token.startsWith("language-") || token.startsWith("lang-"),
+        )
+        ?.replace("language-", "")
+        .replace("lang-", "");
+}
+
+function resolveCodeBlockLanguage(preNode: Element, codeNode: Element): string {
+    const candidates = [
+        codeNode.attribs?.["data-language"],
+        codeNode.attribs?.["data-lang"],
+        extractLanguageCandidate(codeNode.attribs?.class),
+        preNode.attribs?.["data-language"],
+        preNode.attribs?.["data-lang"],
+        extractLanguageCandidate(preNode.attribs?.class),
+    ].filter(Boolean);
+
+    return normalizeArticleCodeLanguage(candidates[0]);
+}
+
+function resolveCodeBlockFileName(preNode: Element, codeNode: Element): string | undefined {
+    return (
+        codeNode.attribs?.["data-filename"] ||
+        codeNode.attribs?.["data-title"] ||
+        preNode.attribs?.["data-filename"] ||
+        preNode.attribs?.["data-title"]
+    );
 }
 
 const playfair = Playfair_Display({
@@ -145,6 +128,42 @@ export default function ArticlePage() {
     >([]);
     const [activeHeading, setActiveHeading] = useState<string>("");
     const [showTOC, setShowTOC] = useState(false);
+
+    const parsedArticleContent = useMemo(() => {
+        if (!post?.content) {
+            return null;
+        }
+
+        let parserOptions: HTMLReactParserOptions;
+
+        parserOptions = {
+            replace(domNode) {
+                if (!isElementNode(domNode) || domNode.name !== "pre") {
+                    return undefined;
+                }
+
+                const children = domNode.children as unknown as DOMNode[];
+                const codeNode = children.find(
+                    (child) => isElementNode(child) && child.name === "code",
+                );
+
+                if (!codeNode || !isElementNode(codeNode)) {
+                    return undefined;
+                }
+
+                return (
+                    <ArticleCodeBlock
+                        code={extractCodeText(codeNode)}
+                        language={resolveCodeBlockLanguage(domNode, codeNode)}
+                        fileName={resolveCodeBlockFileName(domNode, codeNode)}
+                        onCopy={() => toast.success("Đã sao chép code")}
+                    />
+                );
+            },
+        };
+
+        return parse(post.content, parserOptions);
+    }, [post?.content, toast]);
 
     useEffect(() => {
         // Validate slug before fetching
@@ -199,118 +218,6 @@ export default function ArticlePage() {
             setTableOfContents(toc);
         }
     }, [post]);
-
-    useEffect(() => {
-        if (!contentRef.current) return;
-
-        const codeBlocks = contentRef.current.querySelectorAll("pre code");
-        codeBlocks.forEach((code) => {
-            const element = code as HTMLElement;
-            const matchedClass = Array.from(code.classList).find(
-                (className) =>
-                    className.startsWith("language-") ||
-                    className.startsWith("lang-"),
-            );
-
-            const rawLang = matchedClass
-                ?.replace("language-", "")
-                .replace("lang-", "");
-            const inferredLang = detectLanguageFromCode(code.textContent || "");
-            const lang = normalizeCodeLanguage(rawLang || inferredLang);
-
-            const removableLanguageClasses = Array.from(code.classList).filter(
-                (className) =>
-                    className.startsWith("language-") ||
-                    className.startsWith("lang-"),
-            );
-
-            if (removableLanguageClasses.length > 0) {
-                code.classList.remove(...removableLanguageClasses);
-            }
-            code.classList.add(`language-${lang}`);
-
-            const pre = code.parentElement;
-            if (pre?.tagName === "PRE") {
-                const preElement = pre as HTMLElement;
-                const preLanguageClasses = Array.from(pre.classList).filter(
-                    (className) => className.startsWith("language-"),
-                );
-                if (preLanguageClasses.length > 0) {
-                    pre.classList.remove(...preLanguageClasses);
-                }
-                pre.classList.add(`language-${lang}`);
-
-                let shell = pre.parentElement as HTMLElement | null;
-                if (!shell || !shell.classList.contains("article-code-shell")) {
-                    shell = document.createElement("div");
-                    shell.className =
-                        "article-code-shell not-prose my-6 overflow-hidden rounded-md border border-zinc-800 bg-zinc-950";
-                    pre.parentNode?.insertBefore(shell, pre);
-                    shell.appendChild(pre);
-                }
-
-                shell.setAttribute("data-lang", lang);
-
-                let toolbar = shell.querySelector(
-                    ".article-code-toolbar",
-                ) as HTMLDivElement | null;
-                if (!toolbar) {
-                    toolbar = document.createElement("div");
-                    toolbar.className =
-                        "article-code-toolbar flex items-center justify-between px-3 py-2 border-b border-zinc-800 bg-zinc-900";
-                    shell.insertBefore(toolbar, pre);
-                }
-
-                let badge = toolbar.querySelector(
-                    ".article-code-language",
-                ) as HTMLSpanElement | null;
-                if (!badge) {
-                    badge = document.createElement("span");
-                    badge.className =
-                        "article-code-language text-xs font-medium text-zinc-300";
-                    toolbar.appendChild(badge);
-                }
-                badge.textContent = languageLabel(lang);
-
-                let copyButton = toolbar.querySelector(
-                    ".article-code-copy",
-                ) as HTMLButtonElement | null;
-                if (!copyButton) {
-                    copyButton = document.createElement("button");
-                    copyButton.type = "button";
-                    copyButton.className =
-                        "article-code-copy inline-flex h-7 items-center rounded border border-zinc-700 bg-zinc-900 px-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800";
-                    toolbar.appendChild(copyButton);
-                }
-
-                copyButton.textContent = "Copy";
-                copyButton.onclick = async () => {
-                    await navigator.clipboard.writeText(element.textContent || "");
-                    copyButton!.textContent = "Copied";
-                    toast.success("Đã sao chép code");
-                    window.setTimeout(() => {
-                        if (copyButton) {
-                            copyButton.textContent = "Copy";
-                        }
-                    }, 1400);
-                };
-            }
-
-            // Force-highlight every block to avoid missing tokenization in dynamic HTML content.
-            const source = element.textContent || "";
-            const grammar = Prism.languages[lang as keyof typeof Prism.languages];
-            if (grammar) {
-                element.innerHTML = Prism.highlight(source, grammar, lang);
-            } else {
-                element.textContent = source;
-                Prism.highlightElement(element);
-            }
-
-            if (grammar) {
-                Prism.highlightElement(element);
-            }
-        });
-    }, [post?.content, toast]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -651,8 +558,9 @@ export default function ArticlePage() {
                         <div
                             ref={contentRef}
                             className="article-markdown [&_h2]:text-3xl [&_h2]:font-semibold [&_h2]:text-slate-900 [&_h2]:mt-12 [&_h2]:mb-6 [&_h3]:text-2xl [&_h3]:font-semibold [&_h3]:text-slate-900 [&_h3]:mt-8 [&_h3]:mb-4 [&_p]:text-[1.125rem] [&_p]:leading-[1.8] [&_p]:text-slate-700 [&_a]:text-indigo-600 [&_a]:font-medium hover:[&_a]:text-indigo-500 [&_img]:rounded-xl [&_img]:w-full [&_img]:my-10"
-                            dangerouslySetInnerHTML={{ __html: post.content }}
-                        />
+                        >
+                            {parsedArticleContent}
+                        </div>
                     </article>
 
                     <aside className="hidden lg:block col-span-3">
