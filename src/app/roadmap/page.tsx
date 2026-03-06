@@ -2,7 +2,6 @@
 
 import {
   ArrowRight,
-  Brain,
   CheckCircle,
   Cloud,
   Clock,
@@ -22,6 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useState } from "react";
 import PageContainer from "@/components/PageContainer";
 
 const roadmaps = [
@@ -36,6 +36,7 @@ const roadmaps = [
     borderClass: "border-indigo-100",
     stats: { courses: 8, duration: "8-12 tháng", students: "45k+" },
     tags: ["React", "Next.js", "Tailwind"],
+    groups: ["role-based", "web"],
     fit: "Phù hợp nếu bạn muốn đi từ HTML/CSS đến SPA, SSR và UI system.",
     badge: "Phổ biến",
     badgeClass: "bg-indigo-100 text-indigo-700"
@@ -51,6 +52,7 @@ const roadmaps = [
     borderClass: "border-violet-100",
     stats: { courses: 10, duration: "10-15 tháng", students: "32k+" },
     tags: ["Node.js", "MySQL", "Microservices"],
+    groups: ["role-based", "web"],
     fit: "Phù hợp nếu bạn thích logic hệ thống, hiệu năng và làm việc với dữ liệu.",
     badge: "Nền tảng vững chắc",
     badgeClass: "bg-violet-100 text-violet-700"
@@ -66,6 +68,7 @@ const roadmaps = [
     borderClass: "border-indigo-100",
     stats: { courses: 15, duration: "12-18 tháng", students: "28k+" },
     tags: ["MERN Stack", "DevOps", "System Design"],
+    groups: ["role-based", "web"],
     fit: "Phù hợp nếu bạn muốn hiểu toàn bộ vòng đời xây dựng và phát hành sản phẩm.",
     badge: "Toàn diện",
     badgeClass: "bg-indigo-100 text-indigo-700"
@@ -81,6 +84,7 @@ const roadmaps = [
     borderClass: "border-purple-100",
     stats: { courses: 12, duration: "8-12 tháng", students: "22k+" },
     tags: ["React Native", "iOS", "Android"],
+    groups: ["role-based", "mobile"],
     fit: "Phù hợp nếu bạn muốn build app thực tế cho mobile và triển khai đa nền tảng.",
     badge: "Ứng dụng thực tế",
     badgeClass: "bg-purple-100 text-purple-700"
@@ -96,6 +100,7 @@ const roadmaps = [
     borderClass: "border-slate-200",
     stats: { courses: 14, duration: "10-15 tháng", students: "18k+" },
     tags: ["AWS", "Docker", "Kubernetes"],
+    groups: ["role-based", "devops"],
     fit: "Phù hợp nếu bạn muốn làm chủ CI/CD, cloud và độ ổn định của hệ thống.",
     badge: "Hạ tầng & tự động hóa",
     badgeClass: "bg-slate-200 text-slate-700"
@@ -185,14 +190,53 @@ const features = [
 ];
 
 const roadmapGroups = [
-  "Tất cả",
-  "Role-based",
-  "Web",
-  "Mobile",
-  "DevOps"
+  {
+    id: "all",
+    label: "Tất cả",
+    description: "Xem toàn bộ lộ trình đang có để so sánh nhanh các hướng đi phổ biến."
+  },
+  {
+    id: "role-based",
+    label: "Role-based",
+    description: "Các lộ trình theo vai trò nghề nghiệp, phù hợp khi bạn đã có mục tiêu công việc rõ ràng."
+  },
+  {
+    id: "web",
+    label: "Web",
+    description: "Tập trung vào các kỹ năng xây dựng sản phẩm web từ giao diện đến hệ thống phía sau."
+  },
+  {
+    id: "mobile",
+    label: "Mobile",
+    description: "Dành cho người muốn phát triển ứng dụng di động với trải nghiệm native hoặc đa nền tảng."
+  },
+  {
+    id: "devops",
+    label: "DevOps",
+    description: "Nhóm lộ trình về hạ tầng, tự động hóa triển khai và vận hành hệ thống ổn định."
+  }
 ];
 
 export default function RoadmapPage() {
+  const [activeGroup, setActiveGroup] = useState("all");
+
+  const filteredRoadmaps =
+    activeGroup === "all"
+      ? roadmaps
+      : roadmaps.filter((roadmap) => roadmap.groups.includes(activeGroup));
+
+  const groupCounts = roadmapGroups.reduce<Record<string, number>>((accumulator, group) => {
+    accumulator[group.id] =
+      group.id === "all"
+        ? roadmaps.length
+        : roadmaps.filter((roadmap) => roadmap.groups.includes(group.id)).length;
+
+    return accumulator;
+  }, {});
+
+  const activeGroupMeta =
+    roadmapGroups.find((group) => group.id === activeGroup) ?? roadmapGroups[0];
+
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f8faff_0%,#ffffff_22%,#ffffff_100%)] text-slate-900">
       <PageContainer size="lg" className="py-10 lg:py-14">
@@ -262,23 +306,62 @@ export default function RoadmapPage() {
                 </Link>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {roadmapGroups.map((group, index) => (
-                  <span
-                    key={group}
-                    className={`rounded-full px-4 py-2 text-sm font-medium ${
-                      index === 0
-                        ? "bg-slate-900 text-white"
-                        : "border border-slate-200 bg-white text-slate-600"
-                    }`}
-                  >
-                    {group}
-                  </span>
-                ))}
+              <div className="rounded-[24px] border border-indigo-100 bg-indigo-50/60 p-4 sm:p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Lọc theo danh mục</p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      {activeGroupMeta.description}
+                    </p>
+                  </div>
+
+                  <div className="inline-flex w-fit items-center rounded-full bg-white px-3 py-1 text-sm font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-100">
+                    {filteredRoadmaps.length} lộ trình
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Lọc roadmap theo danh mục">
+                  {roadmapGroups.map((group) => {
+                    const isActive = group.id === activeGroup;
+
+                    return (
+                      <motion.button
+                        key={group.id}
+                        type="button"
+                        onClick={() => setActiveGroup(group.id)}
+                        aria-pressed={isActive}
+                        role="tab"
+                        aria-selected={isActive}
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`inline-flex min-h-10 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                          isActive
+                            ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/20"
+                            : "border border-indigo-100 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                        }`}
+                      >
+                        <span>{group.label}</span>
+                        <span
+                          className={`inline-flex min-w-7 items-center justify-center rounded-full px-2 py-0.5 text-xs ${
+                            isActive
+                              ? "bg-white/15 text-white"
+                              : "bg-indigo-50 text-indigo-600"
+                          }`}
+                        >
+                          {groupCounts[group.id]}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                <p className="mt-3 text-sm text-slate-500">
+                  Đang chọn <span className="font-semibold text-indigo-700">{activeGroupMeta.label}</span>.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                {roadmaps.map((roadmap, index) => (
+                {filteredRoadmaps.map((roadmap, index) => (
                   <motion.div
                     key={roadmap.id}
                     initial={{ opacity: 0, y: 16 }}
