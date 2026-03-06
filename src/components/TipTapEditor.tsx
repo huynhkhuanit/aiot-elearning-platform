@@ -26,6 +26,7 @@ import {
   AlignLeft,
 } from "lucide-react"
 import { useEffect } from "react"
+import { cn } from "@/lib/utils"
 
 const lowlight = createLowlight(common)
 
@@ -33,9 +34,19 @@ interface TipTapEditorProps {
   content: string
   onChange: (content: string) => void
   placeholder?: string
+  className?: string
+  contentAreaClassName?: string
+  editorClassName?: string
 }
 
-export default function TipTapEditor({ content, onChange, placeholder = "Bắt đầu viết nội dung..." }: TipTapEditorProps) {
+export default function TipTapEditor({
+  content,
+  onChange,
+  placeholder = "Bắt đầu viết nội dung...",
+  className,
+  contentAreaClassName,
+  editorClassName,
+}: TipTapEditorProps) {
   const editor = useEditor({
     immediatelyRender: false, // Fix SSR hydration mismatch
     extensions: [
@@ -66,8 +77,10 @@ export default function TipTapEditor({ content, onChange, placeholder = "Bắt �
     content,
     editorProps: {
       attributes: {
-        class:
+        class: cn(
           "prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none focus:outline-none min-h-[400px] px-6 py-4",
+          editorClassName,
+        ),
       },
     },
     onUpdate: ({ editor }) => {
@@ -126,7 +139,7 @@ export default function TipTapEditor({ content, onChange, placeholder = "Bắt �
   )
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+    <div className={cn("border border-gray-200 rounded-lg overflow-hidden bg-white", className)}>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 p-2 border-b border-gray-200 bg-gray-50">
         {/* Text Formatting */}
@@ -255,7 +268,9 @@ export default function TipTapEditor({ content, onChange, placeholder = "Bắt �
       </div>
 
       {/* Editor Content */}
-      <EditorContent editor={editor} />
+      <div className={cn("bg-white", contentAreaClassName)}>
+        <EditorContent editor={editor} className="h-full" />
+      </div>
     </div>
   )
 }

@@ -545,6 +545,9 @@ export default function WriteBlogPage() {
                           content={content}
                           onChange={setContent}
                           placeholder="Bắt đầu viết nội dung bài viết của bạn..."
+                          className="flex h-[720px] flex-col border-0 rounded-none shadow-none"
+                          contentAreaClassName="min-h-0 flex-1 overflow-y-auto"
+                          editorClassName="min-h-full"
                         />
                       </div>
                     </TabsContent>
