@@ -5,6 +5,10 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import { ReactNode } from "react";
+import { Inter } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
     title: "Nền tảng học tập thông minh AIoT | Hệ thống E-Learning cho giáo dục Việt Nam",
@@ -30,7 +34,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="vi" suppressHydrationWarning>
+        <html lang="vi" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
             <head>
                 <link
                     rel="stylesheet"

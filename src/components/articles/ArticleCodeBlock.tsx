@@ -100,7 +100,8 @@ export default function ArticleCodeBlock({
     const codeRef = useRef<HTMLElement>(null);
     const normalizedLanguage = normalizeArticleCodeLanguage(language);
     const supportedLanguage = getSupportedLanguage(language);
-    const label = fileName || getArticleCodeLanguageLabel(normalizedLanguage);
+    const languageLabel = getArticleCodeLanguageLabel(normalizedLanguage);
+    const title = fileName || languageLabel;
 
     useEffect(() => {
         if (!codeRef.current) return;
@@ -128,27 +129,24 @@ export default function ArticleCodeBlock({
             )}
             data-language={supportedLanguage}
         >
-            <div className="article-code-header flex items-center justify-between gap-3 border-b border-white/10 bg-slate-900/95 px-4 py-3 backdrop-blur-sm">
-                <div className="flex min-w-0 items-center gap-2 text-slate-200">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-300">
-                        <FileCode2 className="size-4" />
+            <div className="article-code-header flex items-center justify-between gap-3 border-b border-white/10 bg-slate-900/95 px-4 py-2.5 backdrop-blur-sm">
+                <div className="flex min-w-0 items-center gap-2 text-sm text-slate-200">
+                    <span className="truncate font-medium text-slate-100">
+                        {title}
                     </span>
-                    <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-white">
-                            {label}
-                        </p>
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
-                            {getArticleCodeLanguageLabel(normalizedLanguage)}
-                        </p>
-                    </div>
+                    {fileName ? (
+                        <span className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                            {languageLabel}
+                        </span>
+                    ) : null}
                 </div>
 
                 <Button
                     type="button"
                     variant="ghost"
-                    size="icon-sm"
+                    size="icon-xs"
                     onClick={handleCopy}
-                    className="shrink-0 rounded-lg border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
+                    className="shrink-0 rounded-md text-slate-400 hover:bg-white/10 hover:text-white"
                     aria-label={copied ? "Copied code" : "Copy code"}
                     title={copied ? "Copied" : "Copy code"}
                 >
