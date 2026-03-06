@@ -1,389 +1,451 @@
 "use client";
 
-import { useState } from "react";
-import { 
-  Code, Database, Layout, Smartphone, Server, Cloud, 
-  ArrowRight, Star, Users, Clock, Zap, CheckCircle,
-  Trophy, Target, Shield, Globe, Brain, Sparkles,
-  Plus, X, Map, FolderOpen
+import {
+  ArrowRight,
+  Brain,
+  CheckCircle,
+  Cloud,
+  Clock,
+  Database,
+  FolderOpen,
+  Layout,
+  Map,
+  PlayCircle,
+  Server,
+  Shield,
+  Smartphone,
+  Sparkles,
+  Target,
+  Trophy,
+  Users,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import PageContainer from "@/components/PageContainer";
-import Badge from "@/components/Badge";
 
-// Roadmap Data Summary
 const roadmaps = [
   {
     id: "frontend",
     title: "Front-end Developer",
-    description: "Làm chủ giao diện web với HTML, CSS, JS và React.",
+    description: "Tập trung vào giao diện, trải nghiệm người dùng và các công nghệ web hiện đại.",
     icon: Layout,
-    color: "blue",
-    gradient: "from-blue-600 to-indigo-600",
-    bgGradient: "from-blue-50 to-indigo-50",
+    gradient: "from-indigo-500 to-violet-500",
+    surface: "from-indigo-50 to-violet-50",
+    iconClass: "text-indigo-700",
+    borderClass: "border-indigo-100",
     stats: { courses: 8, duration: "8-12 tháng", students: "45k+" },
-    tags: ["React", "Next.js", "Tailwind"]
+    tags: ["React", "Next.js", "Tailwind"],
+    fit: "Phù hợp nếu bạn muốn đi từ HTML/CSS đến SPA, SSR và UI system.",
+    badge: "Phổ biến",
+    badgeClass: "bg-indigo-100 text-indigo-700"
   },
   {
     id: "backend",
     title: "Back-end Developer",
-    description: "Xây dựng hệ thống vững chắc với Node.js và Database.",
+    description: "Đi sâu vào API, dữ liệu, xác thực và vận hành dịch vụ phía server.",
     icon: Server,
-    color: "purple",
-    gradient: "from-purple-600 to-violet-600",
-    bgGradient: "from-purple-50 to-violet-50",
+    gradient: "from-violet-500 to-fuchsia-500",
+    surface: "from-violet-50 to-fuchsia-50",
+    iconClass: "text-violet-700",
+    borderClass: "border-violet-100",
     stats: { courses: 10, duration: "10-15 tháng", students: "32k+" },
-    tags: ["Node.js", "MySQL", "Microservices"]
+    tags: ["Node.js", "MySQL", "Microservices"],
+    fit: "Phù hợp nếu bạn thích logic hệ thống, hiệu năng và làm việc với dữ liệu.",
+    badge: "Nền tảng vững chắc",
+    badgeClass: "bg-violet-100 text-violet-700"
   },
   {
     id: "fullstack",
     title: "Full-stack Developer",
-    description: "Trở thành lập trình viên toàn diện, cân mọi dự án.",
+    description: "Xây nền tảng toàn diện để tự triển khai sản phẩm từ giao diện đến hệ thống.",
     icon: Database,
-    color: "indigo",
-    gradient: "from-indigo-600 to-blue-600",
-    bgGradient: "from-indigo-50 to-blue-50",
+    gradient: "from-indigo-500 to-purple-500",
+    surface: "from-indigo-50 to-purple-50",
+    iconClass: "text-indigo-700",
+    borderClass: "border-indigo-100",
     stats: { courses: 15, duration: "12-18 tháng", students: "28k+" },
-    tags: ["MERN Stack", "DevOps", "System Design"]
+    tags: ["MERN Stack", "DevOps", "System Design"],
+    fit: "Phù hợp nếu bạn muốn hiểu toàn bộ vòng đời xây dựng và phát hành sản phẩm.",
+    badge: "Toàn diện",
+    badgeClass: "bg-indigo-100 text-indigo-700"
   },
   {
     id: "mobile",
     title: "Mobile Developer",
-    description: "Phát triển ứng dụng đa nền tảng với React Native.",
+    description: "Phát triển ứng dụng di động đa nền tảng với tư duy sản phẩm và tối ưu trải nghiệm.",
     icon: Smartphone,
-    color: "green",
-    gradient: "from-emerald-600 to-teal-600",
-    bgGradient: "from-emerald-50 to-teal-50",
+    gradient: "from-purple-500 to-indigo-500",
+    surface: "from-purple-50 to-indigo-50",
+    iconClass: "text-purple-700",
+    borderClass: "border-purple-100",
     stats: { courses: 12, duration: "8-12 tháng", students: "22k+" },
-    tags: ["React Native", "iOS", "Android"]
+    tags: ["React Native", "iOS", "Android"],
+    fit: "Phù hợp nếu bạn muốn build app thực tế cho mobile và triển khai đa nền tảng.",
+    badge: "Ứng dụng thực tế",
+    badgeClass: "bg-purple-100 text-purple-700"
   },
   {
     id: "devops",
     title: "DevOps Engineer",
-    description: "Vận hành, triển khai và tự động hóa hệ thống.",
+    description: "Kết nối phát triển phần mềm với triển khai, giám sát và tự động hóa hạ tầng.",
     icon: Cloud,
-    color: "red",
-    gradient: "from-red-600 to-orange-600",
-    bgGradient: "from-red-50 to-orange-50",
+    gradient: "from-slate-700 to-indigo-600",
+    surface: "from-slate-50 to-indigo-50",
+    iconClass: "text-slate-700",
+    borderClass: "border-slate-200",
     stats: { courses: 14, duration: "10-15 tháng", students: "18k+" },
-    tags: ["AWS", "Docker", "Kubernetes"]
+    tags: ["AWS", "Docker", "Kubernetes"],
+    fit: "Phù hợp nếu bạn muốn làm chủ CI/CD, cloud và độ ổn định của hệ thống.",
+    badge: "Hạ tầng & tự động hóa",
+    badgeClass: "bg-slate-200 text-slate-700"
+  }
+];
+
+const quickActions = [
+  {
+    title: "Tạo roadmap với AI",
+    description: "Tạo lộ trình theo mục tiêu nghề nghiệp, thời gian học và nền tảng hiện tại.",
+    href: "/roadmap/generate",
+    icon: Sparkles,
+    tone: "border-indigo-200 bg-gradient-to-br from-indigo-50 to-violet-50 text-slate-900 shadow-sm",
+    iconWrap: "bg-indigo-100 text-indigo-600",
+    bodyClass: "text-slate-600",
+    cta: "Bắt đầu ngay"
+  },
+  {
+    title: "Mở roadmap của tôi",
+    description: "Quay lại lộ trình đã lưu. Bạn có thể tiếp tục phần đang học và theo dõi tiến độ hiện tại.",
+    href: "/roadmap/my",
+    icon: PlayCircle,
+    tone: "bg-white text-slate-900 border-slate-200",
+    iconWrap: "bg-violet-100 text-violet-600",
+    bodyClass: "text-slate-500",
+    cta: "Xem tiến độ"
+  },
+  {
+    title: "Khám phá thư viện roadmap",
+    description: "Duyệt các lộ trình được biên soạn sẵn theo vai trò, kỹ năng và thời lượng học.",
+    href: "#roadmap-catalog",
+    icon: Map,
+    tone: "bg-white text-slate-900 border-slate-200",
+    iconWrap: "bg-indigo-100 text-indigo-700",
+    bodyClass: "text-slate-500",
+    cta: "Mở thư viện"
+  }
+];
+
+const flowSteps = [
+  {
+    title: "Chọn mục tiêu",
+    description: "Bắt đầu từ roadmap chuẩn hoặc chọn AI nếu bạn chưa rõ thứ tự kỹ năng cần học.",
+    icon: Target
+  },
+  {
+    title: "Tùy chỉnh lộ trình",
+    description: "Tinh chỉnh theo quỹ thời gian, nền tảng hiện tại và vai trò bạn đang hướng tới.",
+    icon: Zap
+  },
+  {
+    title: "Bắt đầu học tập",
+    description: "Theo dõi tiến độ theo từng chặng, quay lại phần đang học và điều chỉnh khi cần.",
+    icon: CheckCircle
   }
 ];
 
 const features = [
   {
-    title: "Lộ trình bài bản",
-    description: "Được thiết kế bởi các chuyên gia hàng đầu, đi từ cơ bản đến nâng cao.",
+    title: "Sự rõ ràng",
+    description: "Bạn nhìn thấy ngay điểm bắt đầu, kỹ năng cốt lõi và lộ trình phát triển cho từng vai trò.",
     icon: Target,
-    color: "text-blue-600",
-    bg: "bg-blue-100"
+    color: "text-indigo-700",
+    bg: "bg-indigo-100"
   },
   {
-    title: "Dự án thực tế",
-    description: "Học đi đôi với hành qua các dự án thực tế sau mỗi giai đoạn.",
+    title: "Theo dõi tiến độ",
+    description: "Lộ trình đã lưu giúp bạn quay lại nhanh, tiếp tục phần dang dở và giữ nhịp học ổn định.",
     icon: Trophy,
-    color: "text-yellow-600",
-    bg: "bg-yellow-100"
+    color: "text-violet-700",
+    bg: "bg-violet-100"
   },
   {
-    title: "Chứng chỉ uy tín",
-    description: "Nhận chứng chỉ hoàn thành được công nhận bởi các doanh nghiệp.",
+    title: "Linh hoạt",
+    description: "Bạn có thể chuyển giữa roadmap chuẩn và roadmap AI mà không phải rời khỏi cùng một luồng học.",
     icon: Shield,
-    color: "text-green-600",
-    bg: "bg-green-100"
+    color: "text-indigo-700",
+    bg: "bg-indigo-100"
   },
   {
-    title: "Cộng đồng hỗ trợ",
-    description: "Tham gia cộng đồng học tập sôi nổi, giải đáp thắc mắc 24/7.",
-    icon: Globe,
-    color: "text-purple-600",
-    bg: "bg-purple-100"
+    title: "Ít ma sát hơn",
+    description: "Các hành động chính được gom lại để bạn ra quyết định nhanh thay vì phải tìm đường trong giao diện.",
+    icon: Users,
+    color: "text-slate-700",
+    bg: "bg-slate-200"
   }
 ];
 
+const roadmapGroups = [
+  "Tất cả",
+  "Role-based",
+  "Web",
+  "Mobile",
+  "DevOps"
+];
+
 export default function RoadmapPage() {
-  const [isFabOpen, setIsFabOpen] = useState(false);
-
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800">
-        <PageContainer size="lg" className="py-16 lg:py-20">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-10">
-            {/* Left Content */}
-            <div className="lg:max-w-xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-6">
-                <Star className="w-4 h-4 text-indigo-400" />
-                <span className="text-sm font-medium text-indigo-300">
-                  Lộ trình chuẩn 2025
-                </span>
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f8faff_0%,#ffffff_22%,#ffffff_100%)] text-slate-900">
+      <PageContainer size="lg" className="py-10 lg:py-14">
+        <div className="mx-auto max-w-[960px]">
+          <main className="flex flex-col gap-8">
+            <section className="flex flex-col gap-6 px-4">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-1.5 text-sm font-medium text-indigo-700">
+                <Map className="h-4 w-4" />
+                Roadmap học tập
               </div>
-              
-              <h1 className="text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight">
-                Định hướng sự nghiệp <br className="hidden lg:block" />
-                <span className="text-indigo-400">công nghệ</span> của bạn
-              </h1>
-              
-              <p className="text-gray-400 text-base lg:text-lg mb-8 leading-relaxed">
-                Hệ thống lộ trình học tập được thiết kế bài bản, giúp bạn phát triển từ cơ bản đến chuyên gia.
-              </p>
-              
-              <div className="flex flex-wrap gap-3">
-                <Link href="/roadmap/generate">
-                  <button className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Tạo lộ trình AI
-                  </button>
-                </Link>
-                <Link href="/roadmap/my">
-                  <button className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-lg transition-colors border border-white/10 flex items-center gap-2">
-                    <Brain className="w-4 h-4" />
-                    Lộ trình của tôi
-                  </button>
-                </Link>
-              </div>
-            </div>
-            
-            {/* Right Stats */}
-            <div className="grid grid-cols-3 gap-6 lg:gap-8">
-              <div className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-white mb-1">5+</div>
-                <div className="text-sm text-gray-400">Lộ trình chuẩn</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-indigo-400 mb-1">AI</div>
-                <div className="text-sm text-gray-400">Cá nhân hóa</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-white mb-1">100k+</div>
-                <div className="text-sm text-gray-400">Học viên</div>
-              </div>
-            </div>
-          </div>
-        </PageContainer>
-      </div>
 
-      {/* Roadmaps Grid */}
-      <PageContainer size="lg" className="py-16 relative z-10">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Lộ trình học tập</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Các lộ trình được thiết kế bởi chuyên gia hoặc tạo lộ trình cá nhân hóa với AI
-          </p>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Standard Roadmap Cards */}
-
-          {roadmaps.map((roadmap, index) => (
-            <motion.div
-              key={roadmap.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Link href={`/roadmap/${roadmap.id}`} className="block h-full group">
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
-                  {/* Hover Gradient Border Effect */}
-                  <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${roadmap.gradient} transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300`}></div>
-                  
-                  <div className="flex items-start justify-between mb-6">
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${roadmap.bgGradient} flex items-center justify-center text-${roadmap.color}-600 group-hover:scale-110 transition-transform duration-300`}>
-                      <roadmap.icon className="w-7 h-7" />
-                    </div>
-                    <div className="bg-gray-50 px-3 py-1 rounded-full text-xs font-semibold text-gray-500 group-hover:bg-gray-100 transition-colors">
-                      {roadmap.stats.students} học viên
-                    </div>
-                  </div>
-
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
-                    {roadmap.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-6 line-clamp-2">
-                    {roadmap.description}
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div className="max-w-2xl">
+                  <h1 className="text-4xl font-black tracking-tight text-slate-900 lg:text-5xl">Khám phá lộ trình học tập kỹ thuật</h1>
+                  <p className="mt-3 text-lg leading-8 text-slate-500">
+                    Bắt đầu hành trình của bạn với một kế hoạch học tập được cá nhân hóa, hoặc khám phá các lộ trình chuyên môn được thiết kế sẵn.
                   </p>
-
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {roadmap.tags.map((tag, i) => (
-                      <span key={i} className="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-6 border-t border-gray-50 text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-1.5" />
-                      {roadmap.stats.duration}
-                    </div>
-                    <div className="flex items-center text-indigo-600 font-semibold group-hover:translate-x-1 transition-transform">
-                      Chi tiết <ArrowRight className="w-4 h-4 ml-1" />
-                    </div>
-                  </div>
                 </div>
-              </Link>
-            </motion.div>
-          ))}
+                <Link
+                  href="/roadmap/generate"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-[linear-gradient(135deg,#6366f1,#9333ea)] px-6 text-sm font-bold text-white shadow-md shadow-indigo-500/20 transition-opacity hover:opacity-95"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Tạo lộ trình AI
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {quickActions.map((action, index) => (
+                  <motion.div
+                    key={action.title}
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.08 }}
+                  >
+                    <Link
+                      href={action.href}
+                      className={`group flex h-full flex-col gap-3 rounded-2xl border p-5 transition-colors ${action.tone} ${index === 0 ? "" : "shadow-sm hover:border-indigo-200"}`}
+                    >
+                      <div className={`mb-2 flex h-12 w-12 items-center justify-center rounded-xl ${action.iconWrap} transition-transform group-hover:scale-110`}>
+                        <action.icon className="h-6 w-6" />
+                      </div>
+                      <h3 className="text-lg font-bold leading-tight">{action.title}</h3>
+                      <p className={`text-sm leading-6 ${action.bodyClass}`}>{action.description}</p>
+                      <span className="mt-auto inline-flex items-center gap-1 pt-1 text-sm font-semibold text-indigo-600">
+                        {action.cta}
+                        <ArrowRight className="h-4 w-4" />
+                      </span>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+
+            <section className="mt-4 flex flex-col gap-6 px-4" id="roadmap-catalog">
+              <div className="mb-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight text-slate-900">Danh mục lộ trình phổ biến</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Chọn nhanh một hướng đi phù hợp và vào thẳng roadmap bạn muốn học.
+                  </p>
+                </div>
+                <Link href="/roadmap" className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:underline">
+                  Xem tất cả
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {roadmapGroups.map((group, index) => (
+                  <span
+                    key={group}
+                    className={`rounded-full px-4 py-2 text-sm font-medium ${
+                      index === 0
+                        ? "bg-slate-900 text-white"
+                        : "border border-slate-200 bg-white text-slate-600"
+                    }`}
+                  >
+                    {group}
+                  </span>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {roadmaps.map((roadmap, index) => (
+                  <motion.div
+                    key={roadmap.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-40px" }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <Link href={`/roadmap/${roadmap.id}`} className="block h-full">
+                      <article className={`flex h-full flex-col rounded-[24px] border bg-white p-5 transition-all hover:-translate-y-1 hover:border-indigo-200 hover:shadow-md ${roadmap.borderClass}`}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${roadmap.gradient} text-white shadow-sm`}>
+                            <roadmap.icon className="h-6 w-6" />
+                          </div>
+                          <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${roadmap.badgeClass}`}>
+                            {roadmap.badge}
+                          </span>
+                        </div>
+
+                        <div className="mt-5 flex flex-1 flex-col">
+                          <h3 className="text-lg font-bold tracking-tight text-slate-900">{roadmap.title}</h3>
+                          <p className="mt-2 text-sm leading-6 text-slate-500">{roadmap.description}</p>
+                          <p className="mt-3 text-sm leading-6 text-slate-600">{roadmap.fit}</p>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                            <Clock className="h-3.5 w-3.5" />
+                            {roadmap.stats.duration}
+                            </span>
+                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                            <FolderOpen className="h-3.5 w-3.5" />
+                            {roadmap.stats.courses} khóa học
+                            </span>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {roadmap.tags.map((tag) => (
+                              <span key={tag} className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
+                              {tag}
+                              </span>
+                            ))}
+                          </div>
+
+                          <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600">
+                            Xem roadmap
+                            <ArrowRight className="h-4 w-4" />
+                          </div>
+                        </div>
+                      </article>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          </main>
         </div>
       </PageContainer>
 
-      {/* Features Section */}
-      <div className="bg-white py-20 border-t border-gray-100">
+      <section className="border-y border-slate-200 bg-white py-16 lg:py-20">
         <PageContainer size="lg">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Tại sao chọn CodeSense AIoT?</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Chúng tôi không chỉ cung cấp kiến thức, mà còn đồng hành cùng bạn trên con đường phát triển sự nghiệp.
+          <div className="mx-auto grid max-w-[960px] gap-6 lg:grid-cols-[0.9fr_minmax(0,1.1fr)] lg:items-start">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.16em] text-indigo-700">Cách thức hoạt động</p>
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 lg:text-3xl">
+                Cách roadmap giúp bạn đi từ định hướng đến hành động
+              </h2>
+              <p className="mt-4 max-w-xl text-sm leading-7 text-slate-600 lg:text-base">
+                Mọi thứ trên trang được gom lại theo một luồng đơn giản để bạn chọn hướng đi, cá nhân hóa khi cần và bắt đầu học ngay.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              {flowSteps.map((step, index) => (
+                <motion.div
+                  key={step.title}
+                  initial={{ opacity: 0, y: 18 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.08 }}
+                  className="rounded-[24px] border border-slate-200 bg-white p-5"
+                >
+                  <div className="flex items-center justify-between">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700">
+                      <step.icon className="h-5 w-5" />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-300">0{index + 1}</span>
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold text-slate-950">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{step.description}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </PageContainer>
+      </section>
+
+      <section className="py-16 lg:py-20">
+        <PageContainer size="lg">
+          <div className="mx-auto max-w-[960px]">
+          <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.16em] text-indigo-700">Lợi ích khi học bằng roadmap</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 lg:text-3xl">
+                Một giao diện giúp người học ra quyết định dễ hơn
+              </h2>
+            </div>
+            <p className="max-w-2xl text-sm leading-6 text-slate-600 lg:text-base">
+              Trang roadmap không nên khiến người dùng phải suy nghĩ quá nhiều. Nó nên giúp họ hiểu mình đang ở đâu, nên học gì tiếp theo và bắt đầu bằng cách nào.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {features.map((feature, index) => (
               <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
+                key={feature.title}
+                initial={{ opacity: 0, y: 18 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="text-center group"
+                transition={{ delay: index * 0.08 }}
+                className="group rounded-[26px] border border-slate-200 bg-white p-6 transition-transform duration-200 hover:-translate-y-1"
               >
-                <div className={`w-16 h-16 mx-auto rounded-2xl ${feature.bg} flex items-center justify-center ${feature.color} mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <feature.icon className="w-8 h-8" />
+                <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${feature.bg} ${feature.color}`}>
+                  <feature.icon className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {feature.description}
-                </p>
+                <h3 className="mt-5 text-lg font-semibold text-slate-950">{feature.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{feature.description}</p>
               </motion.div>
             ))}
           </div>
-        </PageContainer>
-      </div>
 
-      {/* CTA Section */}
-      <div className="py-20">
-        <PageContainer size="lg">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl p-10 lg:p-16 text-center text-white relative overflow-hidden shadow-2xl">
-            <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
-            
-            <div className="relative z-10 max-w-3xl mx-auto">
-              <h2 className="text-3xl lg:text-4xl font-bold mb-6">Sẵn sàng bắt đầu hành trình của bạn?</h2>
-              <p className="text-indigo-100 text-lg mb-10">
-                Tham gia cùng hàng nghìn học viên khác và bắt đầu xây dựng sự nghiệp mơ ước ngay hôm nay.
+          <div className="mt-8 rounded-[30px] border border-slate-200 bg-slate-950 p-8 text-white lg:flex lg:items-center lg:justify-between lg:gap-8 lg:p-10">
+            <div className="max-w-2xl">
+              <p className="text-sm font-medium uppercase tracking-[0.16em] text-indigo-300">Bạn cần hỗ trợ?</p>
+              <h3 className="mt-3 text-2xl font-semibold tracking-tight lg:text-3xl">
+                Nếu bạn chưa rõ nên chọn roadmap nào, hãy bắt đầu bằng AI rồi quay lại thư viện để đối chiếu.
+              </h3>
+              <p className="mt-3 text-sm leading-7 text-slate-300 lg:text-base">
+                Đây là cách ít ma sát nhất để bắt đầu, đặc biệt khi bạn đang đổi hướng hoặc chưa tự tin về trình độ hiện tại.
               </p>
-              <button className="px-10 py-4 bg-white text-indigo-600 font-bold rounded-xl hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                Đăng ký ngay - Miễn phí
-              </button>
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3 lg:mt-0 lg:shrink-0">
+              <Link
+                href="/roadmap/generate"
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition-colors hover:bg-slate-100"
+              >
+                Tạo roadmap AI
+                <Sparkles className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/roadmap/my"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                Mở roadmap của tôi
+                <FolderOpen className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 rounded-xl border border-indigo-300/20 bg-indigo-400/10 px-5 py-3 text-sm font-semibold text-indigo-100 transition-colors hover:bg-indigo-400/15"
+              >
+                Nhận hỗ trợ
+                <Users className="h-4 w-4" />
+              </Link>
             </div>
           </div>
+          </div>
         </PageContainer>
-      </div>
-
-      {/* FAB Speed Dial - AI Roadmap Creator */}
-      <div className="fixed bottom-6 right-6 z-50">
-        {/* Backdrop overlay when FAB is open */}
-        <AnimatePresence>
-          {isFabOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/20 backdrop-blur-[2px] -z-10"
-              onClick={() => setIsFabOpen(false)}
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Speed Dial Actions */}
-        <AnimatePresence>
-          {isFabOpen && (
-            <div className="absolute bottom-16 right-0 flex flex-col gap-3 items-end mb-3">
-              {/* Action 1: Lộ trình của tôi */}
-              <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.8 }}
-                transition={{ duration: 0.2, delay: 0.05 }}
-              >
-                <Link 
-                  href="/roadmap/my"
-                  className="flex items-center gap-3 group"
-                  onClick={() => setIsFabOpen(false)}
-                >
-                  <motion.span 
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.15 }}
-                    className="px-3 py-1.5 bg-white text-gray-700 text-sm font-medium rounded-lg shadow-lg whitespace-nowrap border border-gray-100 group-hover:bg-gray-50"
-                  >
-                    Lộ trình của tôi
-                  </motion.span>
-                  <div className="w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center text-indigo-600 hover:bg-indigo-50 transition-colors border border-gray-100 group-hover:scale-105">
-                    <FolderOpen className="w-5 h-5" />
-                  </div>
-                </Link>
-              </motion.div>
-
-              {/* Action 2: Tạo lộ trình AI */}
-              <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.8 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Link 
-                  href="/roadmap/generate"
-                  className="flex items-center gap-3 group"
-                  onClick={() => setIsFabOpen(false)}
-                >
-                  <motion.span 
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium rounded-lg shadow-lg whitespace-nowrap group-hover:shadow-xl"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      Tạo lộ trình AI
-                    </span>
-                  </motion.span>
-                  <div className="w-11 h-11 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full shadow-lg flex items-center justify-center text-white group-hover:shadow-xl transition-shadow group-hover:scale-105">
-                    <Brain className="w-5 h-5" />
-                  </div>
-                </Link>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
-        {/* Main FAB Button */}
-        <motion.button
-          onClick={() => setIsFabOpen(!isFabOpen)}
-          className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 ${
-            isFabOpen 
-              ? 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200' 
-              : 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white hover:shadow-2xl hover:scale-105'
-          }`}
-          whileTap={{ scale: 0.95 }}
-          aria-label="Menu lộ trình AI"
-        >
-          <motion.div
-            animate={{ rotate: isFabOpen ? 45 : 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-          >
-            {isFabOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Plus className="w-6 h-6" />
-            )}
-          </motion.div>
-        </motion.button>
-      </div>
+      </section>
     </div>
   );
 }
