@@ -59,7 +59,7 @@ export default function AIGlobalPanel() {
                     !isOpen &&
                         "bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500",
                 )}
-                title={isOpen ? "Close AI Agent (Ctrl+Shift+A)" : "Open AI Agent (Ctrl+Shift+A)"}
+                title={isOpen ? "Đóng trợ lý AI (Ctrl+Shift+A)" : "Mở trợ lý AI (Ctrl+Shift+A)"}
                 aria-label="AI Agent"
             >
                 {isOpen ? (
@@ -95,10 +95,10 @@ export default function AIGlobalPanel() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-white">
-                                        Global AI Assistant
+                                        Trợ lý AI toàn cục
                                     </p>
                                     <p className="mt-1 text-xs text-zinc-400">
-                                        Resume your last conversation
+                                        Tiếp tục cuộc trò chuyện gần nhất
                                     </p>
                                 </div>
                             </div>
@@ -114,7 +114,7 @@ export default function AIGlobalPanel() {
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <p className="text-sm font-medium">
-                                                Global AI Assistant
+                                                Trợ lý AI toàn cục
                                             </p>
                                             <Badge className="rounded-full border-0 bg-white/10 px-2 py-0.5 text-[10px] text-zinc-200">
                                                 <Sparkles className="size-3" />
@@ -122,7 +122,7 @@ export default function AIGlobalPanel() {
                                             </Badge>
                                         </div>
                                         <p className="mt-1 text-xs text-zinc-400">
-                                            Ctrl+Shift+A to toggle from anywhere
+                                            Dùng Ctrl+Shift+A để bật hoặc tắt ở mọi nơi
                                         </p>
                                     </div>
                                 </div>
@@ -134,7 +134,7 @@ export default function AIGlobalPanel() {
                                         size="icon-sm"
                                         onClick={() => setIsExpanded((value) => !value)}
                                         className="rounded-full text-zinc-300 hover:bg-white/10 hover:text-white"
-                                        title={isExpanded ? "Collapse" : "Expand"}
+                                        title={isExpanded ? "Thu gọn" : "Mở rộng"}
                                     >
                                         {isExpanded ? (
                                             <Minimize2 className="size-4" />
@@ -148,7 +148,7 @@ export default function AIGlobalPanel() {
                                         size="icon-sm"
                                         onClick={() => setIsMinimized(true)}
                                         className="rounded-full text-zinc-300 hover:bg-white/10 hover:text-white"
-                                        title="Minimize"
+                                        title="Thu nhỏ"
                                     >
                                         <Minimize2 className="size-4" />
                                     </Button>
@@ -158,7 +158,7 @@ export default function AIGlobalPanel() {
                                         size="icon-sm"
                                         onClick={() => setIsOpen(false)}
                                         className="rounded-full text-zinc-300 hover:bg-white/10 hover:text-white"
-                                        title="Close"
+                                        title="Đóng"
                                     >
                                         <X className="size-4" />
                                     </Button>

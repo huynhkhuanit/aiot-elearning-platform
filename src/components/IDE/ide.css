@@ -58,7 +58,7 @@
 }
 
 .ide-grid.agent-open {
-    grid-template-columns: 48px 1fr 400px;
+    grid-template-columns: 48px 1fr clamp(400px, 32vw, 460px);
 }
 
 .ide-grid .ide-titlebar {

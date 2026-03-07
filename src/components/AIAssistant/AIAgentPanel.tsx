@@ -267,8 +267,8 @@ export default function AIAgentPanel({
                                                       (step) =>
                                                           step.status === "active",
                                                   )?.label ??
-                                                  "AI dang tao phan hoi..."
-                                                : "AI dang tao phan hoi..."
+                                                  "AI đang tạo phản hồi..."
+                                                : "AI đang tạo phản hồi..."
                                         }
                                     />
                                 )}
@@ -289,9 +289,9 @@ export default function AIAgentPanel({
                         >
                             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                             <p className="text-xs leading-6">
-                                DeepSeek 1.3B co the khong ho tro tools. Nen chon{" "}
-                                <strong>Qwen 2.5 Coder 7B</strong> de AI doc va
-                                sua code on dinh hon.
+                                DeepSeek 1.3B có thể không hỗ trợ tools. Nên chọn{" "}
+                                <strong>Qwen 2.5 Coder 7B</strong> để AI đọc và
+                                sửa code ổn định hơn.
                             </p>
                         </div>
                     )}
@@ -309,8 +309,8 @@ export default function AIAgentPanel({
                             <div className="flex-1">
                                 <p className="text-xs font-medium">{error}</p>
                                 <p className={cn("mt-1 text-[11px]", themed.textMuted)}>
-                                    Kiem tra ket noi AI server hoac thu lai trong it
-                                    phut.
+                                    Kiểm tra kết nối AI server hoặc thử lại trong ít
+                                    phút.
                                 </p>
                             </div>
                         </div>

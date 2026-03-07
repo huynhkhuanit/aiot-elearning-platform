@@ -223,11 +223,11 @@ function FormattedText({
 function timeAgo(timestamp: number): string {
     const diff = Date.now() - timestamp;
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "vua xong";
-    if (mins < 60) return `${mins} phut truoc`;
+    if (mins < 1) return "vừa xong";
+    if (mins < 60) return `${mins} phút trước`;
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} gio truoc`;
-    return `${Math.floor(hours / 24)} ngay truoc`;
+    if (hours < 24) return `${hours} giờ trước`;
+    return `${Math.floor(hours / 24)} ngày trước`;
 }
 
 function splitIntoWords(text: string): string[] {
@@ -307,7 +307,7 @@ export default function AIAgentMessage({
                                     : "border-zinc-200 bg-zinc-100 text-zinc-600",
                             )}
                         >
-                            You
+                            Bạn
                         </Badge>
                     </div>
 
@@ -349,7 +349,7 @@ export default function AIAgentMessage({
                 >
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                         <p className={cn("text-sm font-medium", themed.textStrong)}>
-                            {accent === "amber" ? "AI Agent" : "AI Assistant"}
+                            {accent === "amber" ? "AI tác vụ" : "Trợ lý AI"}
                         </p>
                         <Badge
                             variant="outline"
@@ -358,7 +358,9 @@ export default function AIAgentMessage({
                                 tone.soft,
                             )}
                         >
-                            {accent === "amber" ? "Tool mode" : "Chat mode"}
+                            {accent === "amber"
+                                ? "Chế độ tác vụ"
+                                : "Chế độ trò chuyện"}
                         </Badge>
                         <span className={cn("text-[11px]", themed.textMuted)}>
                             {timeAgo(message.timestamp)}
@@ -376,7 +378,7 @@ export default function AIAgentMessage({
                                 size="icon-xs"
                                 onClick={handleCopy}
                                 className="rounded-full"
-                                title="Copy message"
+                                title="Sao chép tin nhắn"
                             >
                                 {copied ? (
                                     <Check className="size-3.5 text-emerald-400" />

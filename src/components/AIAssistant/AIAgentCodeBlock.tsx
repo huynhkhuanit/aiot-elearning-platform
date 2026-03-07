@@ -134,8 +134,8 @@ export default function AIAgentCodeBlock({
                             : "text-slate-600 hover:bg-slate-200 hover:text-slate-900",
                         copied && "bg-emerald-500/20 text-emerald-400",
                     )}
-                    title={copied ? "Copied" : "Copy code"}
-                    aria-label={copied ? "Copied" : "Copy code"}
+                    title={copied ? "Đã sao chép" : "Sao chép mã"}
+                    aria-label={copied ? "Đã sao chép" : "Sao chép mã"}
                 >
                     {copied ? (
                         <Check className="size-4" />

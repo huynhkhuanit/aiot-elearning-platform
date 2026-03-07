@@ -68,7 +68,7 @@ export default function AIAgentThinkingStep({
                     <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                             <p className={cn("text-sm font-medium", themed.textStrong)}>
-                                {activeStep?.label ?? "Dang xu ly"}
+                                {activeStep?.label ?? "Đang xử lý"}
                             </p>
                             <Badge
                                 variant="outline"
@@ -78,11 +78,11 @@ export default function AIAgentThinkingStep({
                                 )}
                             >
                                 <Sparkles className="size-3" />
-                                Reasoning
+                                Suy luận
                             </Badge>
                         </div>
                         <p className={cn("mt-1 text-xs", themed.textMuted)}>
-                            {completedCount}/{steps.length} buoc da hoan thanh
+                            {completedCount}/{steps.length} bước đã hoàn thành
                         </p>
                     </div>
 

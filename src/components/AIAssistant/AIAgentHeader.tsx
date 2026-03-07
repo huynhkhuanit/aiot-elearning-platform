@@ -65,91 +65,52 @@ export default function AIAgentHeader({
 
     return (
         <div className={cn("border-b", themed.chrome, themed.headerSurface)}>
-            <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 pb-3">
-                <div className="min-w-0 flex-1 space-y-3">
-                    <div className="flex items-center gap-3">
-                        <div
-                            className={cn(
-                                "flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg ring-1",
-                                accent.avatar,
-                                accent.ring,
-                            )}
-                        >
-                            <Bot className="size-5" />
-                        </div>
-                        <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <p
-                                    className={cn(
-                                        "text-sm font-semibold tracking-tight",
-                                        themed.textStrong,
-                                    )}
-                                >
-                                    AI Assistant
-                                </p>
-                                <Badge
-                                    variant="outline"
-                                    className={cn(
-                                        "gap-1 rounded-full border px-2 py-0.5 text-[10px]",
-                                        statusTone.badge,
-                                    )}
-                                >
-                                    <span
-                                        className={cn(
-                                            "size-1.5 rounded-full",
-                                            statusTone.dot,
-                                            aiStatus === "checking" &&
-                                                "animate-pulse",
-                                        )}
-                                    />
-                                    {statusTone.label}
-                                </Badge>
-                            </div>
-                            <p className={cn("mt-1 text-xs", themed.textMuted)}>
-                                {AI_MODE_CONFIG[mode].description}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                        {(Object.keys(AI_MODE_CONFIG) as AIAgentMode[]).map(
-                            (item) => {
-                                const Icon = MODE_ICONS[item];
-                                const itemAccent = getAIAccent(
-                                    AI_MODE_CONFIG[item].accent,
-                                    theme,
-                                );
-                                const active = mode === item;
-
-                                return (
-                                    <Button
-                                        key={item}
-                                        type="button"
-                                        variant={active ? "secondary" : "ghost"}
-                                        size="sm"
-                                        onClick={() => onModeChange(item)}
-                                        className={cn(
-                                            "h-9 rounded-full border px-3 text-xs shadow-none",
-                                            active
-                                                ? itemAccent.softStrong
-                                                : cn(
-                                                      "border",
-                                                      themed.borderSoft,
-                                                      themed.textMuted,
-                                                  ),
-                                        )}
-                                        title={AI_MODE_CONFIG[item].description}
-                                    >
-                                        <Icon className="size-3.5" />
-                                        {AI_MODE_CONFIG[item].label}
-                                    </Button>
-                                );
-                            },
+            <div className="space-y-4 px-4 pt-4 pb-3">
+                <div className="flex items-start gap-3">
+                    <div
+                        className={cn(
+                            "flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg ring-1",
+                            accent.avatar,
+                            accent.ring,
                         )}
+                    >
+                        <Bot className="size-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <p
+                                className={cn(
+                                    "text-sm font-semibold tracking-tight",
+                                    themed.textStrong,
+                                )}
+                            >
+                                Trợ lý AI
+                            </p>
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    "gap-1 rounded-full border px-2 py-0.5 text-[10px]",
+                                    statusTone.badge,
+                                )}
+                            >
+                                <span
+                                    className={cn(
+                                        "size-1.5 rounded-full",
+                                        statusTone.dot,
+                                        aiStatus === "checking" &&
+                                            "animate-pulse",
+                                    )}
+                                />
+                                {statusTone.label}
+                            </Badge>
+                        </div>
+                        <p className={cn("mt-1 text-xs leading-5", themed.textMuted)}>
+                            {AI_MODE_CONFIG[mode].description}
+                        </p>
                     </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex items-center gap-2">
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button
@@ -157,7 +118,7 @@ export default function AIAgentHeader({
                                 variant="outline"
                                 size="sm"
                                 className={cn(
-                                    "h-10 min-w-[11rem] justify-between rounded-2xl border px-3 shadow-none",
+                                    "h-10 min-w-0 flex-1 justify-between rounded-2xl border px-3 shadow-none",
                                     themed.composer,
                                     themed.textBody,
                                 )}
@@ -193,12 +154,12 @@ export default function AIAgentHeader({
                                 )}
                             >
                                 <PopoverTitle className={themed.textStrong}>
-                                    AI Models
+                                    Mô hình AI
                                 </PopoverTitle>
                                 <PopoverDescription
                                     className={cn("text-xs", themed.textMuted)}
                                 >
-                                    Chon model phu hop cho chat hoac agent tools.
+                                    Chọn mô hình phù hợp cho trò chuyện hoặc tác vụ.
                                 </PopoverDescription>
                             </PopoverHeader>
 
@@ -250,7 +211,7 @@ export default function AIAgentHeader({
                                                         accent.soft,
                                                     )}
                                                 >
-                                                    Active
+                                                    Đang dùng
                                                 </Badge>
                                             )}
                                         </button>
@@ -283,12 +244,12 @@ export default function AIAgentHeader({
                         size="icon-sm"
                         onClick={onToggleHistory}
                         className={cn(
-                            "rounded-2xl border shadow-none",
+                            "shrink-0 rounded-2xl border shadow-none",
                             showHistory
                                 ? accent.softStrong
                                 : cn(themed.composer, themed.textMuted),
                         )}
-                        title="Chat history"
+                        title="Lịch sử trò chuyện"
                     >
                         <History className="size-4" />
                     </Button>
@@ -298,20 +259,57 @@ export default function AIAgentHeader({
                         size="icon-sm"
                         onClick={onNewChat}
                         className={cn(
-                            "rounded-2xl border shadow-none",
+                            "shrink-0 rounded-2xl border shadow-none",
                             themed.composer,
                             themed.textMuted,
                         )}
-                        title="New chat"
+                        title="Cuộc trò chuyện mới"
                     >
                         <Plus className="size-4" />
                     </Button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    {(Object.keys(AI_MODE_CONFIG) as AIAgentMode[]).map(
+                        (item) => {
+                            const Icon = MODE_ICONS[item];
+                            const itemAccent = getAIAccent(
+                                AI_MODE_CONFIG[item].accent,
+                                theme,
+                            );
+                            const active = mode === item;
+
+                            return (
+                                <Button
+                                    key={item}
+                                    type="button"
+                                    variant={active ? "secondary" : "ghost"}
+                                    size="sm"
+                                    onClick={() => onModeChange(item)}
+                                    className={cn(
+                                        "h-9 rounded-full border px-3 text-xs shadow-none",
+                                        active
+                                            ? itemAccent.softStrong
+                                            : cn(
+                                                  "border",
+                                                  themed.borderSoft,
+                                                  themed.textMuted,
+                                              ),
+                                    )}
+                                    title={AI_MODE_CONFIG[item].description}
+                                >
+                                    <Icon className="size-3.5" />
+                                    {AI_MODE_CONFIG[item].label}
+                                </Button>
+                            );
+                        },
+                    )}
                 </div>
             </div>
 
             <div
                 className={cn(
-                    "flex items-center gap-2 border-t px-4 py-3",
+                    "flex flex-col items-start gap-2 border-t px-4 py-3",
                     themed.chrome,
                 )}
             >
@@ -323,12 +321,14 @@ export default function AIAgentHeader({
                     )}
                 >
                     <Sparkles className="size-3" />
-                    {mode === "agent" ? "Tool-aware flow" : "Conversational flow"}
+                    {mode === "agent"
+                        ? "Luồng tác vụ theo ngữ cảnh"
+                        : "Luồng trò chuyện"}
                 </Badge>
                 <p className={cn("text-xs", themed.textMuted)}>
                     {mode === "agent"
-                        ? "Agent mode uu tien phan tich va sua code theo ngu canh."
-                        : "Chat mode tap trung giai thich, review va hoi dap."}
+                        ? "Ưu tiên phân tích và chỉnh sửa code theo ngữ cảnh hiện tại."
+                        : "Tập trung vào giải thích, review và hỏi đáp về code."}
                 </p>
             </div>
         </div>

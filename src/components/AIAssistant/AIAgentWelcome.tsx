@@ -25,27 +25,27 @@ interface AIAgentWelcomeProps {
 const QUICK_ACTIONS: QuickAction[] = [
     {
         icon: Bug,
-        label: "Explain Code",
-        description: "Phan tich code dang lam gi va cach no van hanh.",
-        prompt: "Giai thich doan code nay dang lam gi?",
+        label: "Giải thích code",
+        description: "Phân tích đoạn code đang làm gì và cách nó hoạt động.",
+        prompt: "Giải thích đoạn code này đang làm gì?",
     },
     {
         icon: Sparkles,
-        label: "Improve Code",
-        description: "De xuat toi uu, refactor va nang cao chat luong.",
-        prompt: "Hay goi y cach cai thien doan code nay.",
+        label: "Cải thiện code",
+        description: "Đề xuất tối ưu, refactor và nâng cao chất lượng.",
+        prompt: "Hãy gợi ý cách cải thiện đoạn code này.",
     },
     {
         icon: Code2,
-        label: "Find Bugs",
-        description: "Tim loi logic, edge cases va diem de vo.",
-        prompt: "Kiem tra va tim loi trong doan code nay.",
+        label: "Tìm lỗi",
+        description: "Tìm lỗi logic, edge cases và điểm dễ vỡ.",
+        prompt: "Kiểm tra và tìm lỗi trong đoạn code này.",
     },
     {
         icon: Lightbulb,
-        label: "Add Comments",
-        description: "Them giai thich ngan gon vao cac doan kho doc.",
-        prompt: "Them comment giai thich cho doan code nay.",
+        label: "Thêm chú thích",
+        description: "Thêm giải thích ngắn gọn vào các đoạn khó đọc.",
+        prompt: "Thêm comment giải thích cho đoạn code này.",
     },
 ];
 
@@ -59,7 +59,7 @@ export default function AIAgentWelcome({
     const tone = getAIAccent("blue", theme);
 
     return (
-        <div className="flex h-full items-center justify-center px-4 py-6">
+        <div className="flex h-full items-center justify-center px-3 py-4">
             <Card
                 className={cn(
                     "w-full max-w-3xl overflow-hidden rounded-[32px] border shadow-[0_28px_70px_-45px_rgba(15,23,42,0.7)]",
@@ -67,7 +67,7 @@ export default function AIAgentWelcome({
                     themed.chrome,
                 )}
             >
-                <CardContent className="relative px-6 py-8 sm:px-8">
+                <CardContent className="relative px-5 py-6">
                     <div
                         className={cn(
                             "pointer-events-none absolute inset-x-10 top-0 h-40 rounded-full bg-gradient-to-b blur-3xl",
@@ -76,7 +76,7 @@ export default function AIAgentWelcome({
                     />
 
                     <div className="relative">
-                        <div className="mb-5 flex items-center gap-3">
+                        <div className="mb-5 flex items-start gap-3">
                             <div
                                 className={cn(
                                     "flex size-12 items-center justify-center rounded-3xl bg-gradient-to-br shadow-lg ring-1",
@@ -86,7 +86,7 @@ export default function AIAgentWelcome({
                             >
                                 <Bot className="size-6" />
                             </div>
-                            <div>
+                            <div className="min-w-0 flex-1">
                                 <Badge
                                     variant="outline"
                                     className={cn(
@@ -94,20 +94,20 @@ export default function AIAgentWelcome({
                                         tone.soft,
                                     )}
                                 >
-                                    Conversational AI
+                                    Trợ lý AI hội thoại
                                 </Badge>
                                 <h3
                                     className={cn(
-                                        "text-2xl font-semibold tracking-tight",
+                                        "text-xl leading-tight font-semibold tracking-tight",
                                         themed.textStrong,
                                     )}
                                 >
-                                    AI Assistant cho code va hoc tap
+                                    Trợ lý AI cho code và học tập
                                 </h3>
                                 <p className={cn("mt-2 text-sm", themed.textMuted)}>
                                     {codeContext
-                                        ? "AI da san sang voi ngu canh code hien tai. Ban co the hoi, review hoac yeu cau sua truc tiep."
-                                        : "Bat dau bang mot cau hoi, mot bug can debug, hoac mot y tuong ban muon AI ho tro."}
+                                        ? "AI đã sẵn sàng với ngữ cảnh code hiện tại. Bạn có thể hỏi, review hoặc yêu cầu sửa trực tiếp."
+                                        : "Bắt đầu bằng một câu hỏi, một lỗi cần debug hoặc một ý tưởng bạn muốn AI hỗ trợ."}
                                 </p>
                             </div>
                         </div>
@@ -121,9 +121,9 @@ export default function AIAgentWelcome({
                                         themed.borderSoft,
                                         themed.textMuted,
                                     )}
-                                >
-                                    <FileCode2 className="size-3" />
-                                    {language}
+                            >
+                                <FileCode2 className="size-3" />
+                                {language}
                                 </Badge>
                             )}
                             <Badge
@@ -134,7 +134,7 @@ export default function AIAgentWelcome({
                                     themed.textMuted,
                                 )}
                             >
-                                Enter de gui
+                                Enter để gửi
                             </Badge>
                             <Badge
                                 variant="outline"
@@ -144,12 +144,12 @@ export default function AIAgentWelcome({
                                     themed.textMuted,
                                 )}
                             >
-                                Shift + Enter xuong dong
+                                Shift + Enter xuống dòng
                             </Badge>
                         </div>
 
                         {codeContext ? (
-                            <div className="grid gap-3 md:grid-cols-2">
+                            <div className="grid grid-cols-1 gap-3">
                                 {QUICK_ACTIONS.map((action) => (
                                     <button
                                         key={action.label}
@@ -207,11 +207,11 @@ export default function AIAgentWelcome({
                                 )}
                             >
                                 <p className={cn("text-sm font-medium", themed.textStrong)}>
-                                    Thu dat mot cau hoi cu the
+                                    Thử đặt một câu hỏi cụ thể
                                 </p>
                                 <p className={cn("mt-2 text-sm", themed.textMuted)}>
-                                    Vi du: "Giai thich error nay", "Toi uu ham nay",
-                                    hoac "Viet unit test cho component nay".
+                                    Ví dụ: "Giải thích error này", "Tối ưu hàm này",
+                                    hoặc "Viết unit test cho component này".
                                 </p>
                             </div>
                         )}

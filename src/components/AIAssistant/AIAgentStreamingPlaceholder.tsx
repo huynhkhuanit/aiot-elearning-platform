@@ -23,7 +23,7 @@ function splitIntoWords(text: string): string[] {
 export default function AIAgentStreamingPlaceholder({
     theme = "dark",
     accent = "amber",
-    statusLabel = "AI dang tao phan hoi...",
+    statusLabel = "AI đang tạo phản hồi...",
 }: AIAgentStreamingPlaceholderProps) {
     const themed = getAITheme(theme);
     const tone = getAIAccent(accent, theme);
@@ -62,7 +62,7 @@ export default function AIAgentStreamingPlaceholder({
                 >
                     <div className="mb-3 flex items-center gap-2">
                         <p className={cn("text-sm font-medium", themed.textStrong)}>
-                            AI Assistant
+                            Trợ lý AI
                         </p>
                         <Badge
                             variant="outline"
@@ -72,7 +72,7 @@ export default function AIAgentStreamingPlaceholder({
                             )}
                         >
                             <Loader2 className="size-3 animate-spin" />
-                            Streaming
+                            Đang phản hồi
                         </Badge>
                     </div>
 

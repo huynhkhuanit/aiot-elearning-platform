@@ -26,13 +26,13 @@ export const AI_MODE_CONFIG: Record<
     { label: string; description: string; accent: "amber" | "blue" }
 > = {
     agent: {
-        label: "Agent",
-        description: "Tự động phân tích, sửa code, và thực thi",
+        label: "Tác vụ",
+        description: "Tự động phân tích và sửa code theo ngữ cảnh.",
         accent: "amber",
     },
     ask: {
-        label: "Chat",
-        description: "Hỏi đáp về code, khái niệm",
+        label: "Trò chuyện",
+        description: "Hỏi đáp về code và các khái niệm kỹ thuật.",
         accent: "blue",
     },
 };

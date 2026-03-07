@@ -20,12 +20,12 @@ interface AIAgentConversationListProps {
 function timeAgo(timestamp: number): string {
     const diff = Date.now() - timestamp;
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Vua xong";
-    if (mins < 60) return `${mins}p truoc`;
+    if (mins < 1) return "Vừa xong";
+    if (mins < 60) return `${mins}p trước`;
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h truoc`;
+    if (hours < 24) return `${hours}h trước`;
     const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d truoc`;
+    if (days < 7) return `${days}d trước`;
     return new Date(timestamp).toLocaleDateString("vi-VN", {
         day: "2-digit",
         month: "2-digit",
@@ -76,10 +76,10 @@ export default function AIAgentConversationList({
                         <History className={cn("size-4", themed.textMuted)} />
                     </div>
                     <p className={cn("text-sm font-medium", themed.textStrong)}>
-                        Chua co lich su chat
+                        Chưa có lịch sử trò chuyện
                     </p>
                     <p className={cn("mt-1 text-xs", themed.textMuted)}>
-                        Bat dau mot cuoc tro chuyen moi de tao thread dau tien.
+                        Bắt đầu một cuộc trò chuyện mới để tạo thread đầu tiên.
                     </p>
                 </div>
             </div>
@@ -105,7 +105,7 @@ export default function AIAgentConversationList({
                         )}
                     >
                         <History className="size-3" />
-                        Conversations
+                        Cuộc trò chuyện
                     </Badge>
                     <span className={cn("text-xs", themed.textMuted)}>
                         {conversations.length}
@@ -124,7 +124,7 @@ export default function AIAgentConversationList({
                     <Input
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Tim conversation..."
+                        placeholder="Tìm cuộc trò chuyện..."
                         className={cn(
                             "h-10 rounded-2xl border pl-9 text-sm shadow-none",
                             themed.composer,
@@ -178,7 +178,7 @@ export default function AIAgentConversationList({
                                     )}
                                 >
                                     <span>{timeAgo(conversation.updatedAt)}</span>
-                                    <span>{conversation.messageCount} messages</span>
+                                    <span>{conversation.messageCount} tin nhắn</span>
                                 </div>
                             </div>
 
@@ -191,7 +191,7 @@ export default function AIAgentConversationList({
                                     onDelete(conversation.id);
                                 }}
                                 className="mt-0.5 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
-                                title="Delete"
+                                title="Xóa"
                             >
                                 <Trash2 className="size-3.5" />
                             </Button>
@@ -207,7 +207,7 @@ export default function AIAgentConversationList({
                             themed.textMuted,
                         )}
                     >
-                        Khong tim thay conversation phu hop.
+                        Không tìm thấy cuộc trò chuyện phù hợp.
                     </div>
                 )}
             </div>

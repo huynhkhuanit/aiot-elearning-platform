@@ -63,8 +63,8 @@ export default function AIAgentInput({
     );
 
     const placeholderMap: Record<AIAgentMode, string> = {
-        agent: "Mo ta thay doi ban muon AI thuc hien tren code hien tai...",
-        ask: "Hoi AI ve code, loi, khai niem, hoac huong xu ly...",
+        agent: "Mô tả thay đổi bạn muốn AI thực hiện trên code hiện tại...",
+        ask: "Hỏi AI về code, lỗi, khái niệm hoặc hướng xử lý...",
     };
 
     const hasInput = input.trim().length > 0;
@@ -93,7 +93,7 @@ export default function AIAgentInput({
                         )}
                     >
                         <Wand2 className="size-3" />
-                        {mode === "agent" ? "Agent mode" : "Chat mode"}
+                        {mode === "agent" ? "Chế độ tác vụ" : "Chế độ trò chuyện"}
                     </Badge>
                     {modelName && (
                         <Badge
@@ -154,12 +154,12 @@ export default function AIAgentInput({
                     >
                         <span className="inline-flex items-center gap-1">
                             <CornerDownLeft className="size-3" />
-                            Enter de gui
+                            Enter để gửi
                         </span>
-                        <span>Shift + Enter xuong dong</span>
+                        <span>Shift + Enter xuống dòng</span>
                         {input.length > 0 && (
                             <span className={cn("tabular-nums", themed.textFaint)}>
-                                {input.length} ky tu
+                                {input.length} ký tự
                             </span>
                         )}
                     </div>
@@ -170,7 +170,7 @@ export default function AIAgentInput({
                             size="icon"
                             onClick={onStop}
                             className="size-10 rounded-full bg-rose-500/90 text-white hover:bg-rose-500"
-                            title="Stop"
+                            title="Dừng"
                         >
                             <Square className="size-4" />
                         </Button>
@@ -186,7 +186,7 @@ export default function AIAgentInput({
                                     ? accent.primaryButton
                                     : "bg-zinc-300 text-zinc-500 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-400",
                             )}
-                            title="Send"
+                            title="Gửi"
                         >
                             <ArrowUp className="size-4" />
                         </Button>
@@ -195,7 +195,7 @@ export default function AIAgentInput({
             </div>
 
             <p className={cn("mt-2 text-center text-[11px]", themed.textFaint)}>
-                AI co the sai. Hay kiem tra lai code va thay doi truoc khi ap dung.
+                AI có thể sai. Hãy kiểm tra lại code và thay đổi trước khi áp dụng.
             </p>
         </div>
     );

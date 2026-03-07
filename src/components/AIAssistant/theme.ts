@@ -108,7 +108,7 @@ export function getAIStatusTone(
                 ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
                 : "border-emerald-200 bg-emerald-50 text-emerald-700",
             dot: "bg-emerald-400",
-            label: "Connected",
+            label: "Đã kết nối",
         };
     }
 
@@ -118,7 +118,7 @@ export function getAIStatusTone(
                 ? "border-amber-400/20 bg-amber-400/10 text-amber-200"
                 : "border-amber-200 bg-amber-50 text-amber-700",
             dot: "bg-amber-400",
-            label: "Checking",
+            label: "Đang kiểm tra",
         };
     }
 
@@ -127,6 +127,6 @@ export function getAIStatusTone(
             ? "border-rose-400/20 bg-rose-400/10 text-rose-200"
             : "border-rose-200 bg-rose-50 text-rose-700",
         dot: "bg-rose-400",
-        label: "Offline",
+        label: "Ngoại tuyến",
     };
 }
