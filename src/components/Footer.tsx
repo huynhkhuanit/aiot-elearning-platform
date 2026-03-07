@@ -2,6 +2,7 @@
 
 import { Mail, Phone, MapPin, Facebook, Twitter, Youtube, Github, Volume2 } from "lucide-react";
 import Link from "next/link";
+import { toolLinks } from "@/lib/tool-catalog";
 
 const footerLinks = {
   tools: [
@@ -19,6 +20,8 @@ const footerLinks = {
     { name: "Youtube", href: "#" },
   ]
 };
+
+const toolFooterLinks = toolLinks.map(({ name, href }) => ({ name, href }));
 
 const socialLinks = [
   { icon: Facebook, href: "#", label: "Facebook" },
@@ -118,7 +121,7 @@ export default function Footer() {
             <div className="text-center md:text-left">
               <h4 className="font-semibold text-base mb-4 text-white">Công cụ</h4>
               <ul className="space-y-2">
-                {footerLinks.tools.map((link, index) => (
+                {toolFooterLinks.map((link, index) => (
                   <li key={index}>
                     <Link 
                       href={link.href} 
@@ -248,7 +251,7 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold text-base mb-4 text-white">Công cụ</h4>
             <ul className="space-y-2">
-              {footerLinks.tools.map((link, index) => (
+              {toolFooterLinks.map((link, index) => (
                 <li key={index}>
                   <Link 
                     href={link.href} 
