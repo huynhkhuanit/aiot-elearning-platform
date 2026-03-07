@@ -9,7 +9,6 @@ import { useAIAgent } from "./useAIAgent";
 import AIAgentHeader from "./AIAgentHeader";
 import AIAgentInput from "./AIAgentInput";
 import AIAgentMessage from "./AIAgentMessage";
-import AIAgentThinkingStep from "./AIAgentThinkingStep";
 import AIAgentStreamingPlaceholder from "./AIAgentStreamingPlaceholder";
 import AIAgentWelcome from "./AIAgentWelcome";
 import AIAgentConversationList from "./AIAgentConversationList";
@@ -230,14 +229,6 @@ export default function AIAgentPanel({
                         onSelect={switchConversation}
                         onDelete={deleteConversation}
                         theme={theme}
-                    />
-                )}
-
-                {isThinking && (
-                    <AIAgentThinkingStep
-                        steps={thinkingSteps}
-                        theme={theme}
-                        accent={useAgentMode ? "amber" : "blue"}
                     />
                 )}
 

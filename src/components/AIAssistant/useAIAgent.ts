@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { AIConversation, ThinkingStep } from "./types";
 
 const CONVERSATIONS_KEY = "ai_agent_conversations";
@@ -32,6 +32,12 @@ export function useAIAgent() {
     const [showHistory, setShowHistory] = useState(false);
     const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
     const [isThinking, setIsThinking] = useState(false);
+    const thinkingTimerRef = useRef<number[]>([]);
+
+    const clearThinkingTimers = useCallback(() => {
+        thinkingTimerRef.current.forEach((timer) => window.clearTimeout(timer));
+        thinkingTimerRef.current = [];
+    }, []);
 
     // Persist conversations
     const saveConversations = useCallback((convs: AIConversation[]) => {
@@ -109,6 +115,7 @@ export function useAIAgent() {
 
     // Simulate thinking steps (called by chat hook)
     const startThinking = useCallback(() => {
+        clearThinkingTimers();
         setIsThinking(true);
         const steps: ThinkingStep[] = [
             { id: "1", label: "Đang phân tích code...", status: "active" },
@@ -118,7 +125,7 @@ export function useAIAgent() {
         setThinkingSteps(steps);
 
         // Animate steps
-        setTimeout(() => {
+        const stepOneTimer = window.setTimeout(() => {
             setThinkingSteps((prev) =>
                 prev.map((s) =>
                     s.id === "1"
@@ -130,7 +137,7 @@ export function useAIAgent() {
             );
         }, 600);
 
-        setTimeout(() => {
+        const stepTwoTimer = window.setTimeout(() => {
             setThinkingSteps((prev) =>
                 prev.map((s) =>
                     s.id === "2"
@@ -141,17 +148,28 @@ export function useAIAgent() {
                 ),
             );
         }, 1200);
-    }, []);
+        thinkingTimerRef.current = [stepOneTimer, stepTwoTimer];
+    }, [clearThinkingTimers]);
 
     const stopThinking = useCallback(() => {
+        clearThinkingTimers();
         setThinkingSteps((prev) =>
             prev.map((s) => ({ ...s, status: "complete" as const })),
         );
-        setTimeout(() => {
+        const stopTimer = window.setTimeout(() => {
             setIsThinking(false);
+        }, 0);
+        const clearTimer = window.setTimeout(() => {
             setThinkingSteps([]);
-        }, 300);
-    }, []);
+        }, 120);
+        thinkingTimerRef.current = [stopTimer, clearTimer];
+    }, [clearThinkingTimers]);
+
+    useEffect(() => {
+        return () => {
+            clearThinkingTimers();
+        };
+    }, [clearThinkingTimers]);
 
     // Toggle history sidebar
     const toggleHistory = useCallback(() => {
