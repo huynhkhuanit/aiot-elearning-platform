@@ -611,7 +611,7 @@ export default function ArticlePage() {
                     )}
 
                     <div className="border border-slate-200 rounded-2xl p-10 text-center mb-20 bg-white/50">
-                        <h3 className={`${playfair.className} text-3xl text-slate-900 mb-4`}>
+                        <h3 className="text-3xl text-slate-900 mb-4 [font-family:system-ui]">
                             Tham gia thảo luận
                         </h3>
                         <p className="text-slate-600 mb-8 max-w-md mx-auto">
@@ -624,7 +624,7 @@ export default function ArticlePage() {
                     </div>
 
                     <div>
-                        <h3 className={`${playfair.className} text-2xl text-slate-900 mb-8`}>
+                        <h3 className="text-2xl text-slate-900 mb-8 [font-family:system-ui]">
                             Bài viết liên quan
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -639,7 +639,7 @@ export default function ArticlePage() {
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                         />
                                     </div>
-                                    <h4 className={`${playfair.className} text-lg font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors mb-2`}>
+                                    <h4 className="text-lg font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors mb-2 [font-family:system-ui]">
                                         {article.title}
                                     </h4>
                                     <p className="text-sm text-slate-500">{formatDate(post.published_at)}</p>
