@@ -55,27 +55,27 @@ export default function AIAgentConversationList({
         return (
             <div
                 className={cn(
-                    "border-b px-4 py-5",
+                    "border-b px-3 py-4",
                     themed.chrome,
                     themed.panelMutedSurface,
                 )}
             >
                 <div
                     className={cn(
-                        "rounded-3xl border border-dashed px-4 py-6 text-center",
+                        "rounded-2xl border border-dashed px-4 py-5 text-center",
                         themed.borderSoft,
                     )}
                 >
                     <div
                         className={cn(
-                            "mx-auto mb-3 flex size-10 items-center justify-center rounded-2xl border",
+                            "mx-auto mb-2.5 flex size-9 items-center justify-center rounded-xl border",
                             themed.borderSoft,
                             themed.panelSurface,
                         )}
                     >
                         <History className={cn("size-4", themed.textMuted)} />
                     </div>
-                    <p className={cn("text-sm font-medium", themed.textStrong)}>
+                    <p className={cn("text-[13px] font-medium", themed.textStrong)}>
                         Chưa có lịch sử trò chuyện
                     </p>
                     <p className={cn("mt-1 text-xs", themed.textMuted)}>
@@ -89,17 +89,17 @@ export default function AIAgentConversationList({
     return (
         <div
             className={cn(
-                "border-b px-4 py-4",
+                "border-b px-3 py-3",
                 themed.chrome,
                 themed.panelMutedSurface,
             )}
         >
-            <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <Badge
                         variant="outline"
                         className={cn(
-                            "rounded-full border px-2.5 py-0.5 text-[10px]",
+                            "rounded-full border px-2 py-0 text-[10px]",
                             themed.borderSoft,
                             themed.textMuted,
                         )}
@@ -126,7 +126,7 @@ export default function AIAgentConversationList({
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Tìm cuộc trò chuyện..."
                         className={cn(
-                            "h-10 rounded-2xl border pl-9 text-sm shadow-none",
+                            "h-9 rounded-xl border pl-9 text-[13px] shadow-none",
                             themed.composer,
                             theme === "dark"
                                 ? "placeholder:text-zinc-500"
@@ -136,7 +136,7 @@ export default function AIAgentConversationList({
                 </div>
             )}
 
-            <div className="max-h-[18rem] space-y-2 overflow-y-auto pr-1">
+            <div className="max-h-[15rem] space-y-1.5 overflow-y-auto pr-1">
                 {filtered.map((conversation) => {
                     const active = conversation.id === activeId;
 
@@ -153,7 +153,7 @@ export default function AIAgentConversationList({
                                 }
                             }}
                             className={cn(
-                                "group flex w-full items-start justify-between gap-3 rounded-3xl border px-3 py-3 text-left transition-colors",
+                                "group flex w-full items-start justify-between gap-3 rounded-2xl border px-3 py-2.5 text-left transition-colors",
                                 active
                                     ? cn(
                                           themed.itemActive,
@@ -168,12 +168,12 @@ export default function AIAgentConversationList({
                             )}
                         >
                             <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium">
+                                <p className="truncate text-[13px] font-medium">
                                     {conversation.title}
                                 </p>
                                 <div
                                     className={cn(
-                                        "mt-1 flex flex-wrap items-center gap-2 text-[11px]",
+                                        "mt-1 flex flex-wrap items-center gap-2 text-[10px]",
                                         themed.textMuted,
                                     )}
                                 >
@@ -202,7 +202,7 @@ export default function AIAgentConversationList({
                 {filtered.length === 0 && (
                     <div
                         className={cn(
-                            "rounded-3xl border border-dashed px-4 py-5 text-center text-sm",
+                            "rounded-2xl border border-dashed px-4 py-4 text-center text-[13px]",
                             themed.borderSoft,
                             themed.textMuted,
                         )}

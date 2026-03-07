@@ -38,7 +38,7 @@ export default function AIAgentInput({
         (e: React.ChangeEvent<HTMLTextAreaElement>) => {
             setInput(e.target.value);
             e.target.style.height = "auto";
-            e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
+            e.target.style.height = Math.min(e.target.scrollHeight, 128) + "px";
         },
         [],
     );
@@ -72,23 +72,23 @@ export default function AIAgentInput({
     return (
         <div
             className={cn(
-                "border-t px-4 pt-4 pb-4 backdrop-blur-sm",
+                "border-t px-3 py-2 backdrop-blur-sm",
                 themed.chrome,
                 themed.headerSurface,
             )}
         >
             <div
                 className={cn(
-                    "rounded-[28px] border p-3 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.55)] transition-shadow",
+                    "rounded-[24px] border p-2.5 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.55)] transition-shadow",
                     themed.composer,
                     hasInput && accent.border,
                 )}
             >
-                <div className="mb-3 flex flex-wrap items-center gap-2">
+                <div className="mb-2 flex flex-wrap items-center gap-1.5">
                     <Badge
                         variant="outline"
                         className={cn(
-                            "rounded-full border px-2.5 py-0.5 text-[10px]",
+                            "rounded-full border px-2 py-0 text-[10px]",
                             accent.soft,
                         )}
                     >
@@ -99,7 +99,7 @@ export default function AIAgentInput({
                         <Badge
                             variant="outline"
                             className={cn(
-                                "rounded-full border px-2.5 py-0.5 text-[10px]",
+                                "rounded-full border px-2 py-0 text-[10px]",
                                 themed.borderSoft,
                                 themed.textMuted,
                             )}
@@ -111,7 +111,7 @@ export default function AIAgentInput({
                         <Badge
                             variant="outline"
                             className={cn(
-                                "rounded-full border px-2.5 py-0.5 text-[10px]",
+                                "rounded-full border px-2 py-0 text-[10px]",
                                 themed.borderSoft,
                                 themed.textMuted,
                             )}
@@ -129,32 +129,32 @@ export default function AIAgentInput({
                     onKeyDown={handleKeyDown}
                     placeholder={placeholderMap[mode]}
                     className={cn(
-                        "min-h-[44px] w-full resize-none bg-transparent px-1 py-1 text-sm leading-6 outline-none",
+                        "min-h-[40px] w-full resize-none bg-transparent px-0.5 py-0.5 text-[13px] leading-6 outline-none",
                         themed.textBody,
                         theme === "dark"
                             ? "placeholder:text-zinc-500"
                             : "placeholder:text-zinc-400",
                     )}
                     rows={1}
-                    style={{ maxHeight: 160 }}
+                    style={{ maxHeight: 128 }}
                     disabled={isLoading}
                 />
 
                 <div
                     className={cn(
-                        "mt-3 flex flex-wrap items-center justify-between gap-3 border-t pt-3",
+                        "mt-2 flex flex-wrap items-end justify-between gap-2 border-t pt-2",
                         themed.chrome,
                     )}
                 >
                     <div
                         className={cn(
-                            "flex flex-wrap items-center gap-2 text-[11px]",
+                            "flex flex-wrap items-center gap-2 text-[10px]",
                             themed.textMuted,
                         )}
                     >
                         <span className="inline-flex items-center gap-1">
                             <CornerDownLeft className="size-3" />
-                            Enter để gửi
+                            Enter gửi
                         </span>
                         <span>Shift + Enter xuống dòng</span>
                         {input.length > 0 && (
@@ -169,7 +169,7 @@ export default function AIAgentInput({
                             type="button"
                             size="icon"
                             onClick={onStop}
-                            className="size-10 rounded-full bg-rose-500/90 text-white hover:bg-rose-500"
+                            className="size-9 rounded-full bg-rose-500/90 text-white hover:bg-rose-500"
                             title="Dừng"
                         >
                             <Square className="size-4" />
@@ -181,7 +181,7 @@ export default function AIAgentInput({
                             onClick={handleSend}
                             disabled={!hasInput}
                             className={cn(
-                                "size-10 rounded-full shadow-lg shadow-black/10",
+                                "size-9 rounded-full shadow-lg shadow-black/10",
                                 hasInput
                                     ? accent.primaryButton
                                     : "bg-zinc-300 text-zinc-500 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-400",
@@ -194,9 +194,6 @@ export default function AIAgentInput({
                 </div>
             </div>
 
-            <p className={cn("mt-2 text-center text-[11px]", themed.textFaint)}>
-                AI có thể sai. Hãy kiểm tra lại code và thay đổi trước khi áp dụng.
-            </p>
         </div>
     );
 }

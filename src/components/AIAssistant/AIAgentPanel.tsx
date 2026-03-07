@@ -26,6 +26,32 @@ interface ExtendedAIAgentPanelProps extends AIAgentPanelProps {
     aiServerStatus?: AIServerStatus;
 }
 
+function localizeAIError(error: string): string {
+    const normalized = error.toLowerCase();
+
+    if (
+        normalized.includes("not reachable") ||
+        normalized.includes("failed to fetch") ||
+        normalized.includes("fetch failed")
+    ) {
+        return "Không thể kết nối tới AI server";
+    }
+
+    if (normalized.includes("no response stream")) {
+        return "AI server không trả về luồng phản hồi hợp lệ";
+    }
+
+    if (normalized.includes("server error")) {
+        return "AI server đang tạm thời không phản hồi";
+    }
+
+    if (normalized.includes("unknown error")) {
+        return "Đã xảy ra lỗi không xác định";
+    }
+
+    return error;
+}
+
 export default function AIAgentPanel({
     codeContext,
     language,
@@ -166,11 +192,12 @@ export default function AIAgentPanel({
         useAgentMode ? "amber" : "blue",
         theme,
     );
+    const localizedError = error ? localizeAIError(error) : null;
 
     return (
         <div
             className={cn(
-                "relative flex h-full flex-col overflow-hidden rounded-[32px] border shadow-[0_30px_80px_-48px_rgba(15,23,42,0.9)]",
+                "relative flex h-full flex-col overflow-hidden rounded-[28px] border shadow-[0_24px_56px_-40px_rgba(15,23,42,0.85)]",
                 themed.shell,
                 themed.chrome,
                 className,
@@ -178,12 +205,12 @@ export default function AIAgentPanel({
         >
             <div
                 className={cn(
-                    "pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b blur-3xl",
+                    "pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b blur-3xl",
                     themed.heroGlow,
                 )}
             />
 
-            <div className="relative flex h-full flex-col">
+            <div className="relative flex h-full min-h-0 flex-col">
                 <AIAgentHeader
                     onNewChat={handleNewChat}
                     onToggleHistory={toggleHistory}
@@ -215,7 +242,7 @@ export default function AIAgentPanel({
                 )}
 
                 <div
-                    className="relative flex-1 overflow-y-auto"
+                    className="relative min-h-0 flex-1 overflow-y-auto"
                     style={{
                         scrollbarWidth: "thin",
                         scrollbarColor:
@@ -232,7 +259,7 @@ export default function AIAgentPanel({
                             theme={theme}
                         />
                     ) : (
-                        <div className="pt-4">
+                        <div className="pt-2">
                             {messages
                                 .filter(
                                     (message) =>
@@ -283,12 +310,12 @@ export default function AIAgentPanel({
                     !error && (
                         <div
                             className={cn(
-                                "mx-4 mb-3 flex items-start gap-3 rounded-[24px] border px-4 py-3",
+                                "mx-3 mb-2 flex items-start gap-2 rounded-[18px] border px-3 py-2",
                                 activeAccent.softStrong,
                             )}
                         >
-                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                            <p className="text-xs leading-6">
+                            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                            <p className="text-[12px] leading-5">
                                 DeepSeek 1.3B có thể không hỗ trợ tools. Nên chọn{" "}
                                 <strong>Qwen 2.5 Coder 7B</strong> để AI đọc và
                                 sửa code ổn định hơn.
@@ -299,17 +326,19 @@ export default function AIAgentPanel({
                 {error && (
                     <div
                         className={cn(
-                            "mx-4 mb-3 rounded-[24px] border border-rose-300/30 bg-rose-500/10 px-4 py-3",
+                            "mx-3 mb-2 rounded-[18px] border border-rose-300/30 bg-rose-500/10 px-3 py-2.5",
                             theme === "light" &&
                                 "border-rose-200 bg-rose-50 text-rose-700",
                         )}
                     >
-                        <div className="flex items-start gap-3">
-                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
+                        <div className="flex items-start gap-2.5">
+                            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-400" />
                             <div className="flex-1">
-                                <p className="text-xs font-medium">{error}</p>
-                                <p className={cn("mt-1 text-[11px]", themed.textMuted)}>
-                                    Kiểm tra kết nối AI server hoặc thử lại trong ít
+                                <p className="text-[12px] font-medium">
+                                    {localizedError}
+                                </p>
+                                <p className={cn("mt-0.5 text-[11px]", themed.textMuted)}>
+                                    Kiểm tra kết nối AI server hoặc thử lại sau ít
                                     phút.
                                 </p>
                             </div>

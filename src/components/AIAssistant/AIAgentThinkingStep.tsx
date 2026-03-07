@@ -33,15 +33,15 @@ export default function AIAgentThinkingStep({
     const progress = (completedCount / steps.length) * 100;
 
     return (
-        <div className="px-4 pt-3">
+        <div className="px-3 pt-2">
             <div
                 className={cn(
-                    "overflow-hidden rounded-[28px] border shadow-[0_18px_40px_-28px_rgba(15,23,42,0.55)]",
+                    "overflow-hidden rounded-[20px] border shadow-[0_14px_28px_-24px_rgba(15,23,42,0.55)]",
                     themed.panelSurface,
                     themed.borderSoft,
                 )}
             >
-                <div className="h-1 w-full bg-black/5 dark:bg-white/5">
+                <div className="h-0.5 w-full bg-black/5 dark:bg-white/5">
                     <div
                         className={cn(
                             "h-full rounded-full transition-all duration-500",
@@ -54,26 +54,31 @@ export default function AIAgentThinkingStep({
                 <button
                     type="button"
                     onClick={() => setCollapsed((value) => !value)}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left"
                 >
                     <div
                         className={cn(
-                            "flex size-9 shrink-0 items-center justify-center rounded-2xl border",
+                            "flex size-8 shrink-0 items-center justify-center rounded-xl border",
                             tone.soft,
                         )}
                     >
-                        <Loader2 className="size-4 animate-spin" />
+                        <Loader2 className="size-3.5 animate-spin" />
                     </div>
 
                     <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                            <p className={cn("text-sm font-medium", themed.textStrong)}>
+                            <p
+                                className={cn(
+                                    "text-[13px] font-medium",
+                                    themed.textStrong,
+                                )}
+                            >
                                 {activeStep?.label ?? "Đang xử lý"}
                             </p>
                             <Badge
                                 variant="outline"
                                 className={cn(
-                                    "rounded-full border px-2 py-0.5 text-[10px]",
+                                    "rounded-full border px-2 py-0 text-[10px]",
                                     tone.soft,
                                 )}
                             >
@@ -81,7 +86,7 @@ export default function AIAgentThinkingStep({
                                 Suy luận
                             </Badge>
                         </div>
-                        <p className={cn("mt-1 text-xs", themed.textMuted)}>
+                        <p className={cn("mt-0.5 text-[11px]", themed.textMuted)}>
                             {completedCount}/{steps.length} bước đã hoàn thành
                         </p>
                     </div>
@@ -96,18 +101,18 @@ export default function AIAgentThinkingStep({
                 {!collapsed && (
                     <div
                         className={cn(
-                            "space-y-2 border-t px-4 pb-4 pt-3",
+                            "space-y-1.5 border-t px-3 pb-3 pt-2",
                             themed.chrome,
                         )}
                     >
                         {steps.map((step) => (
                             <div
                                 key={step.id}
-                                className="flex items-start gap-3 rounded-2xl border border-transparent px-2 py-2"
+                                className="flex items-start gap-2.5 rounded-xl border border-transparent px-1.5 py-1.5"
                             >
                                 <div className="mt-0.5 flex size-5 items-center justify-center">
                                     {step.status === "complete" ? (
-                                        <Check className="size-4 text-emerald-400" />
+                                        <Check className="size-3.5 text-emerald-400" />
                                     ) : step.status === "active" ? (
                                         <span
                                             className={cn(
@@ -127,7 +132,7 @@ export default function AIAgentThinkingStep({
                                 <div className="min-w-0">
                                     <p
                                         className={cn(
-                                            "text-sm",
+                                            "text-[13px]",
                                             step.status === "active"
                                                 ? themed.textStrong
                                                 : step.status === "complete"
@@ -140,7 +145,7 @@ export default function AIAgentThinkingStep({
                                     {step.detail && (
                                         <p
                                             className={cn(
-                                                "mt-1 text-xs",
+                                                "mt-0.5 text-[11px]",
                                                 themed.textMuted,
                                             )}
                                         >

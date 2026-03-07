@@ -42,32 +42,32 @@ export default function AIAgentStreamingPlaceholder({
     const displayedText = words.slice(0, displayedWords).join("");
 
     return (
-        <div className="px-4 pb-4">
-            <div className="flex items-start gap-3">
+        <div className="px-3 pb-3">
+            <div className="flex items-start gap-2.5">
                 <div
                     className={cn(
-                        "mt-1 flex size-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg ring-1",
+                        "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-md ring-1",
                         tone.avatar,
                         tone.ring,
                     )}
                 >
-                    <Bot className="size-4" />
+                    <Bot className="size-3.5" />
                 </div>
 
                 <div
                     className={cn(
-                        "min-w-0 flex-1 rounded-[28px] border px-4 py-4 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.55)]",
+                        "min-w-0 flex-1 rounded-[22px] border px-3.5 py-3 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.55)]",
                         themed.assistantBubble,
                     )}
                 >
-                    <div className="mb-3 flex items-center gap-2">
-                        <p className={cn("text-sm font-medium", themed.textStrong)}>
+                    <div className="mb-2 flex items-center gap-1.5">
+                        <p className={cn("text-[13px] font-medium", themed.textStrong)}>
                             Trợ lý AI
                         </p>
                         <Badge
                             variant="outline"
                             className={cn(
-                                "rounded-full border px-2 py-0.5 text-[10px]",
+                                "rounded-full border px-2 py-0 text-[10px]",
                                 tone.soft,
                             )}
                         >
@@ -77,7 +77,7 @@ export default function AIAgentStreamingPlaceholder({
                     </div>
 
                     <div className="min-h-6">
-                        <span className={cn("text-sm leading-7", themed.textBody)}>
+                        <span className={cn("text-[13px] leading-6", themed.textBody)}>
                             {displayedText}
                         </span>
                         <span

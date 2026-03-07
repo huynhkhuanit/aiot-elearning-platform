@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
-import { Bot, Check, Copy, User2 } from "lucide-react";
+import { Bot, Check, Copy } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,7 @@ function renderInline(
                 <code
                     key={index}
                     className={cn(
-                        "rounded-md px-1.5 py-0.5 text-[12px] font-medium",
+                        "rounded-md px-1.5 py-0.5 text-[11px] font-medium",
                         inlineCodeClass,
                     )}
                 >
@@ -142,17 +142,17 @@ function FormattedText({
               : "text-sky-700";
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
             {lines.map((line, lineIndex) => {
                 if (!line.trim()) {
-                    return <div key={lineIndex} className="h-2" />;
+                    return <div key={lineIndex} className="h-1.5" />;
                 }
 
                 if (line.startsWith("### ")) {
                     return (
                         <h4
                             key={lineIndex}
-                            className={cn("pt-2 text-sm font-semibold", tone.text)}
+                            className={cn("pt-1.5 text-[13px] font-semibold", tone.text)}
                         >
                             {line.slice(4)}
                         </h4>
@@ -163,7 +163,7 @@ function FormattedText({
                     return (
                         <h3
                             key={lineIndex}
-                            className={cn("pt-2 text-base font-semibold", themed.textStrong)}
+                            className={cn("pt-1.5 text-sm font-semibold", themed.textStrong)}
                         >
                             {line.slice(3)}
                         </h3>
@@ -172,14 +172,14 @@ function FormattedText({
 
                 if (line.match(/^[-*•]\s/)) {
                     return (
-                        <div key={lineIndex} className="flex items-start gap-3">
+                        <div key={lineIndex} className="flex items-start gap-2.5">
                             <span
                                 className={cn(
                                     "mt-2 size-1.5 shrink-0 rounded-full",
                                     bulletClass,
                                 )}
                             />
-                            <span className="text-sm leading-7">
+                            <span className="text-[13px] leading-6">
                                 {renderInline(line.slice(2), theme === "dark", accent)}
                             </span>
                         </div>
@@ -190,16 +190,16 @@ function FormattedText({
                     const number = line.match(/^(\d+)\./)?.[1];
 
                     return (
-                        <div key={lineIndex} className="flex items-start gap-3">
+                        <div key={lineIndex} className="flex items-start gap-2.5">
                             <span
                                 className={cn(
-                                    "mt-0.5 shrink-0 text-xs font-semibold",
+                                    "mt-0.5 shrink-0 text-[11px] font-semibold",
                                     orderedClass,
                                 )}
                             >
                                 {number}.
                             </span>
-                            <span className="text-sm leading-7">
+                            <span className="text-[13px] leading-6">
                                 {renderInline(
                                     line.replace(/^\d+\.\s/, ""),
                                     theme === "dark",
@@ -211,7 +211,7 @@ function FormattedText({
                 }
 
                 return (
-                    <p key={lineIndex} className="text-sm leading-7">
+                    <p key={lineIndex} className="text-[13px] leading-6">
                         {renderInline(line, theme === "dark", accent)}
                     </p>
                 );
@@ -288,20 +288,20 @@ export default function AIAgentMessage({
 
     if (isUser) {
         return (
-            <div className="flex justify-end px-4 pb-4">
+            <div className="flex justify-end px-3 pb-3">
                 <div
                     className="max-w-[85%]"
                     onMouseEnter={() => setHovered(true)}
                     onMouseLeave={() => setHovered(false)}
                 >
-                    <div className="mb-2 flex items-center justify-end gap-2">
-                        <span className={cn("text-[11px]", themed.textMuted)}>
+                    <div className="mb-1.5 flex items-center justify-end gap-2">
+                        <span className={cn("text-[10px]", themed.textMuted)}>
                             {timeAgo(message.timestamp)}
                         </span>
                         <Badge
                             variant="outline"
                             className={cn(
-                                "rounded-full border px-2 py-0.5 text-[10px]",
+                                "rounded-full border px-2 py-0 text-[10px]",
                                 theme === "dark"
                                     ? "border-white/10 bg-white/5 text-zinc-300"
                                     : "border-zinc-200 bg-zinc-100 text-zinc-600",
@@ -311,8 +311,8 @@ export default function AIAgentMessage({
                         </Badge>
                     </div>
 
-                    <div className={cn("rounded-[28px] px-4 py-3", themed.userBubble)}>
-                        <p className="whitespace-pre-wrap text-sm leading-7">
+                    <div className={cn("rounded-[22px] px-3.5 py-2.5", themed.userBubble)}>
+                        <p className="whitespace-pre-wrap text-[13px] leading-6">
                             {message.content}
                         </p>
                     </div>
@@ -323,38 +323,38 @@ export default function AIAgentMessage({
 
     return (
         <div
-            className="px-4 pb-4"
+            className="px-3 pb-3"
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2.5">
                 <Avatar
-                    size="lg"
+                    size="default"
                     className={cn(
-                        "mt-1 shrink-0 rounded-2xl bg-gradient-to-br shadow-lg ring-1",
+                        "mt-0.5 shrink-0 rounded-xl bg-gradient-to-br shadow-md ring-1",
                         tone.avatar,
                         tone.ring,
                     )}
                 >
-                    <AvatarFallback className="rounded-2xl bg-transparent text-current">
-                        <Bot className="size-4" />
+                    <AvatarFallback className="rounded-xl bg-transparent text-current">
+                        <Bot className="size-3.5" />
                     </AvatarFallback>
                 </Avatar>
 
                 <div
                     className={cn(
-                        "min-w-0 flex-1 rounded-[28px] border px-4 py-4 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.55)]",
+                        "min-w-0 flex-1 rounded-[22px] border px-3.5 py-3 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.55)]",
                         themed.assistantBubble,
                     )}
                 >
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                        <p className={cn("text-sm font-medium", themed.textStrong)}>
+                    <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                        <p className={cn("text-[13px] font-medium", themed.textStrong)}>
                             {accent === "amber" ? "AI tác vụ" : "Trợ lý AI"}
                         </p>
                         <Badge
                             variant="outline"
                             className={cn(
-                                "rounded-full border px-2 py-0.5 text-[10px]",
+                                "rounded-full border px-2 py-0 text-[10px]",
                                 tone.soft,
                             )}
                         >
@@ -362,7 +362,7 @@ export default function AIAgentMessage({
                                 ? "Chế độ tác vụ"
                                 : "Chế độ trò chuyện"}
                         </Badge>
-                        <span className={cn("text-[11px]", themed.textMuted)}>
+                        <span className={cn("text-[10px]", themed.textMuted)}>
                             {timeAgo(message.timestamp)}
                         </span>
 
@@ -389,7 +389,7 @@ export default function AIAgentMessage({
                         </div>
                     </div>
 
-                    <div className={cn("space-y-3", themed.textBody)}>
+                    <div className={cn("space-y-2.5", themed.textBody)}>
                         {parts.map((part, index) =>
                             part.type === "code" ? (
                                 <AIAgentCodeBlock
