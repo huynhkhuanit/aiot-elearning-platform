@@ -1,8 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Trash2, MessageSquare, Search, X } from "lucide-react";
+import { History, Search, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import type { AIConversation } from "./types";
+import { getAITheme } from "./theme";
 
 interface AIAgentConversationListProps {
     conversations: AIConversation[];
@@ -15,12 +20,12 @@ interface AIAgentConversationListProps {
 function timeAgo(timestamp: number): string {
     const diff = Date.now() - timestamp;
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Vừa xong";
-    if (mins < 60) return `${mins}p trước`;
+    if (mins < 1) return "Vua xong";
+    if (mins < 60) return `${mins}p truoc`;
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h trước`;
+    if (hours < 24) return `${hours}h truoc`;
     const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d trước`;
+    if (days < 7) return `${days}d truoc`;
     return new Date(timestamp).toLocaleDateString("vi-VN", {
         day: "2-digit",
         month: "2-digit",
@@ -34,203 +39,178 @@ export default function AIAgentConversationList({
     onDelete,
     theme = "dark",
 }: AIAgentConversationListProps) {
-    const isDark = theme === "dark";
+    const themed = getAITheme(theme);
     const [searchQuery, setSearchQuery] = useState("");
     const showSearch = conversations.length > 5;
 
     const filtered = useMemo(() => {
         if (!searchQuery.trim()) return conversations;
         const q = searchQuery.toLowerCase();
-        return conversations.filter((c) => c.title.toLowerCase().includes(q));
+        return conversations.filter((item) =>
+            item.title.toLowerCase().includes(q),
+        );
     }, [conversations, searchQuery]);
 
     if (conversations.length === 0) {
         return (
             <div
-                className={`px-4 py-6 text-center ${
-                    isDark ? "text-gray-500" : "text-gray-400"
-                }`}
-                style={{
-                    animation: "fadeIn 0.2s ease forwards",
-                }}
+                className={cn(
+                    "border-b px-4 py-5",
+                    themed.chrome,
+                    themed.panelMutedSurface,
+                )}
             >
-                <MessageSquare className="w-6 h-6 mx-auto mb-2 opacity-30" />
-                <p className="text-xs">Chưa có cuộc trò chuyện nào</p>
-                <p className="text-[10px] mt-0.5">Bắt đầu chat mới</p>
+                <div
+                    className={cn(
+                        "rounded-3xl border border-dashed px-4 py-6 text-center",
+                        themed.borderSoft,
+                    )}
+                >
+                    <div
+                        className={cn(
+                            "mx-auto mb-3 flex size-10 items-center justify-center rounded-2xl border",
+                            themed.borderSoft,
+                            themed.panelSurface,
+                        )}
+                    >
+                        <History className={cn("size-4", themed.textMuted)} />
+                    </div>
+                    <p className={cn("text-sm font-medium", themed.textStrong)}>
+                        Chua co lich su chat
+                    </p>
+                    <p className={cn("mt-1 text-xs", themed.textMuted)}>
+                        Bat dau mot cuoc tro chuyen moi de tao thread dau tien.
+                    </p>
+                </div>
             </div>
         );
     }
 
     return (
         <div
-            className={`border-b overflow-hidden ${
-                isDark ? "border-[#2d2d44]" : "border-gray-200"
-            }`}
-            style={{ animation: "slideDown 0.2s ease forwards" }}
+            className={cn(
+                "border-b px-4 py-4",
+                themed.chrome,
+                themed.panelMutedSurface,
+            )}
         >
-            {/* Section header */}
-            <div
-                className={`flex items-center justify-between px-3 py-1.5 ${
-                    isDark ? "bg-[#16162a]" : "bg-gray-50"
-                }`}
-            >
-                <span
-                    className={`text-[10px] uppercase tracking-wider font-medium ${
-                        isDark ? "text-gray-500" : "text-gray-400"
-                    }`}
-                >
-                    Lịch sử ({conversations.length})
-                </span>
+            <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                    <Badge
+                        variant="outline"
+                        className={cn(
+                            "rounded-full border px-2.5 py-0.5 text-[10px]",
+                            themed.borderSoft,
+                            themed.textMuted,
+                        )}
+                    >
+                        <History className="size-3" />
+                        Conversations
+                    </Badge>
+                    <span className={cn("text-xs", themed.textMuted)}>
+                        {conversations.length}
+                    </span>
+                </div>
             </div>
 
-            {/* Search (if many conversations) */}
             {showSearch && (
-                <div className="px-3 pb-1.5">
-                    <div
-                        className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${
-                            isDark
-                                ? "bg-white/[0.03] border border-[#2d2d44]"
-                                : "bg-gray-100 border border-gray-200"
-                        }`}
-                    >
-                        <Search
-                            className={`w-3 h-3 flex-shrink-0 ${
-                                isDark ? "text-gray-500" : "text-gray-400"
-                            }`}
-                        />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Tìm kiếm..."
-                            className={`flex-1 text-xs bg-transparent outline-none ${
-                                isDark
-                                    ? "text-gray-200 placeholder:text-gray-600"
-                                    : "text-gray-700 placeholder:text-gray-400"
-                            }`}
-                        />
-                        {searchQuery && (
-                            <button
-                                onClick={() => setSearchQuery("")}
-                                className={`p-0.5 rounded ${
-                                    isDark
-                                        ? "hover:bg-white/10 text-gray-500"
-                                        : "hover:bg-gray-200 text-gray-400"
-                                } cursor-pointer`}
-                            >
-                                <X className="w-2.5 h-2.5" />
-                            </button>
+                <div className="relative mb-3">
+                    <Search
+                        className={cn(
+                            "pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2",
+                            themed.textFaint,
                         )}
-                    </div>
+                    />
+                    <Input
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Tim conversation..."
+                        className={cn(
+                            "h-10 rounded-2xl border pl-9 text-sm shadow-none",
+                            themed.composer,
+                            theme === "dark"
+                                ? "placeholder:text-zinc-500"
+                                : "placeholder:text-zinc-400",
+                        )}
+                    />
                 </div>
             )}
 
-            {/* Conversation list */}
-            <div
-                className="max-h-[180px] overflow-y-auto"
-                style={{ scrollbarWidth: "thin" }}
-            >
-                {filtered.map((conv, idx) => (
-                    <div
-                        key={conv.id}
-                        onClick={() => onSelect(conv.id)}
-                        className={`flex items-center justify-between px-3 py-2 cursor-pointer group transition-all ${
-                            conv.id === activeId
-                                ? isDark
-                                    ? "bg-cyan-500/8 border-l-2 border-cyan-500"
-                                    : "bg-blue-50 border-l-2 border-blue-500"
-                                : isDark
-                                  ? "hover:bg-white/[0.03] border-l-2 border-transparent"
-                                  : "hover:bg-gray-50 border-l-2 border-transparent"
-                        }`}
-                        style={{
-                            animation: `fadeIn 0.15s ease ${idx * 30}ms forwards`,
-                            opacity: 0,
-                        }}
-                    >
-                        <div className="flex-1 min-w-0">
-                            <p
-                                className={`text-xs font-medium truncate ${
-                                    conv.id === activeId
-                                        ? isDark
-                                            ? "text-cyan-300"
-                                            : "text-blue-700"
-                                        : isDark
-                                          ? "text-gray-300"
-                                          : "text-gray-700"
-                                }`}
-                            >
-                                {conv.title}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span
-                                    className={`text-[10px] ${
-                                        isDark
-                                            ? "text-gray-500"
-                                            : "text-gray-400"
-                                    }`}
-                                >
-                                    {timeAgo(conv.updatedAt)}
-                                </span>
-                                <span
-                                    className={`text-[10px] ${
-                                        isDark
-                                            ? "text-gray-600"
-                                            : "text-gray-400"
-                                    }`}
-                                >
-                                    {conv.messageCount} tin nhắn
-                                </span>
-                            </div>
-                        </div>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onDelete(conv.id);
-                            }}
-                            className={`p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer ${
-                                isDark
-                                    ? "hover:bg-red-500/15 text-gray-500 hover:text-red-400"
-                                    : "hover:bg-red-50 text-gray-400 hover:text-red-500"
-                            }`}
-                            title="Xóa"
-                        >
-                            <Trash2 className="w-3 h-3" />
-                        </button>
-                    </div>
-                ))}
+            <div className="max-h-[18rem] space-y-2 overflow-y-auto pr-1">
+                {filtered.map((conversation) => {
+                    const active = conversation.id === activeId;
 
-                {filtered.length === 0 && searchQuery && (
+                    return (
+                        <div
+                            key={conversation.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => onSelect(conversation.id)}
+                            onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                    event.preventDefault();
+                                    onSelect(conversation.id);
+                                }
+                            }}
+                            className={cn(
+                                "group flex w-full items-start justify-between gap-3 rounded-3xl border px-3 py-3 text-left transition-colors",
+                                active
+                                    ? cn(
+                                          themed.itemActive,
+                                          themed.textStrong,
+                                          themed.chrome,
+                                      )
+                                    : cn(
+                                          themed.panelSurface,
+                                          themed.borderSoft,
+                                          themed.itemHover,
+                                      ),
+                            )}
+                        >
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium">
+                                    {conversation.title}
+                                </p>
+                                <div
+                                    className={cn(
+                                        "mt-1 flex flex-wrap items-center gap-2 text-[11px]",
+                                        themed.textMuted,
+                                    )}
+                                >
+                                    <span>{timeAgo(conversation.updatedAt)}</span>
+                                    <span>{conversation.messageCount} messages</span>
+                                </div>
+                            </div>
+
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-xs"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    onDelete(conversation.id);
+                                }}
+                                className="mt-0.5 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                                title="Delete"
+                            >
+                                <Trash2 className="size-3.5" />
+                            </Button>
+                        </div>
+                    );
+                })}
+
+                {filtered.length === 0 && (
                     <div
-                        className={`px-3 py-4 text-center text-xs ${
-                            isDark ? "text-gray-500" : "text-gray-400"
-                        }`}
+                        className={cn(
+                            "rounded-3xl border border-dashed px-4 py-5 text-center text-sm",
+                            themed.borderSoft,
+                            themed.textMuted,
+                        )}
                     >
-                        Không tìm thấy kết quả
+                        Khong tim thay conversation phu hop.
                     </div>
                 )}
             </div>
-
-            <style jsx>{`
-                @keyframes slideDown {
-                    from {
-                        opacity: 0;
-                        max-height: 0;
-                    }
-                    to {
-                        opacity: 1;
-                        max-height: 400px;
-                    }
-                }
-                @keyframes fadeIn {
-                    from {
-                        opacity: 0;
-                    }
-                    to {
-                        opacity: 1;
-                    }
-                }
-            `}</style>
         </div>
     );
 }

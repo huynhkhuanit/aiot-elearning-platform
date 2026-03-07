@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Loader2, ChevronDown, ChevronRight } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Loader2, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import type { ThinkingStep } from "./types";
+import { getAIAccent, getAITheme } from "./theme";
 
 interface AIAgentThinkingStepProps {
     steps: ThinkingStep[];
@@ -15,168 +18,141 @@ export default function AIAgentThinkingStep({
     theme = "dark",
     accent = "blue",
 }: AIAgentThinkingStepProps) {
-    const isDark = theme === "dark";
     const [collapsed, setCollapsed] = useState(false);
+    const themed = getAITheme(theme);
+    const tone = getAIAccent(accent, theme);
+    const pendingDotClass =
+        theme === "dark" ? "bg-zinc-600" : "bg-zinc-300";
 
     if (steps.length === 0) return null;
 
-    const activeStep = steps.find((s) => s.status === "active");
-    const completedCount = steps.filter((s) => s.status === "complete").length;
+    const activeStep = steps.find((step) => step.status === "active");
+    const completedCount = steps.filter(
+        (step) => step.status === "complete",
+    ).length;
     const progress = (completedCount / steps.length) * 100;
 
     return (
-        <div
-            className={`mx-3 my-2 rounded-xl overflow-hidden border transition-all duration-200 ${
-                accent === "amber"
-                    ? isDark
-                        ? "bg-[#16162a]/80 border-amber-500/20"
-                        : "bg-amber-50/50 border-amber-200"
-                    : isDark
-                      ? "bg-[#16162a]/80 border-[#2d2d44]"
-                      : "bg-blue-50/50 border-blue-100"
-            }`}
-        >
-            {/* Progress bar */}
-            <div className={`h-0.5 ${isDark ? "bg-[#2d2d44]" : accent === "amber" ? "bg-amber-100" : "bg-blue-100"}`}>
-                <div
-                    className={`h-full transition-all duration-500 ease-out rounded-full ${
-                        accent === "amber"
-                            ? isDark ? "bg-amber-500" : "bg-amber-500"
-                            : isDark ? "bg-blue-500" : "bg-blue-500"
-                    }`}
-                    style={{ width: `${progress}%` }}
-                />
-            </div>
-
-            {/* Header — clickable to toggle */}
-            <button
-                onClick={() => setCollapsed(!collapsed)}
-                className={`w-full flex items-center gap-2 px-3 py-2 transition-colors duration-200 cursor-pointer ${
-                    accent === "amber"
-                        ? isDark ? "hover:bg-white/[0.02]" : "hover:bg-amber-50"
-                        : isDark ? "hover:bg-white/[0.02]" : "hover:bg-blue-50"
-                }`}
-                aria-label={collapsed ? "Expand thinking steps" : "Collapse thinking steps"}
-            >
-                <div className="relative flex items-center justify-center w-4 h-4">
-                    <Loader2
-                        className={`w-3.5 h-3.5 animate-spin ${
-                            accent === "amber"
-                                ? isDark ? "text-amber-400" : "text-amber-600"
-                                : isDark ? "text-blue-400" : "text-blue-500"
-                        }`}
-                    />
-                </div>
-                <span
-                    className={`text-xs font-medium flex-1 text-left ${
-                        accent === "amber"
-                            ? isDark ? "text-amber-400" : "text-amber-700"
-                            : isDark ? "text-blue-400" : "text-blue-600"
-                    }`}
-                >
-                    {activeStep ? activeStep.label : "Đang xử lý..."}
-                </span>
-                <span
-                    className={`text-[10px] ${
-                        isDark ? "text-gray-500" : "text-gray-400"
-                    }`}
-                >
-                    {completedCount}/{steps.length}
-                </span>
-                {collapsed ? (
-                    <ChevronRight
-                        className={`w-3 h-3 ${
-                            isDark ? "text-gray-500" : "text-gray-400"
-                        }`}
-                    />
-                ) : (
-                    <ChevronDown
-                        className={`w-3 h-3 ${
-                            isDark ? "text-gray-500" : "text-gray-400"
-                        }`}
-                    />
+        <div className="px-4 pt-3">
+            <div
+                className={cn(
+                    "overflow-hidden rounded-[28px] border shadow-[0_18px_40px_-28px_rgba(15,23,42,0.55)]",
+                    themed.panelSurface,
+                    themed.borderSoft,
                 )}
-            </button>
-
-            {/* Steps list — collapsible */}
-            {!collapsed && (
-                <div className="px-3 pb-2.5 space-y-1">
-                    {steps.map((step, idx) => (
-                        <div
-                            key={step.id}
-                            className="flex items-center gap-2 ml-1"
-                            style={{
-                                animation: `fadeIn 0.2s ease ${idx * 100}ms forwards`,
-                                opacity: 0,
-                            }}
-                        >
-                            {step.status === "complete" ? (
-                                <Check
-                                    className={`w-3 h-3 flex-shrink-0 ${
-                                        isDark
-                                            ? "text-emerald-400"
-                                            : "text-green-500"
-                                    }`}
-                                />
-                            ) : step.status === "active" ? (
-                                <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center">
-                                    <div
-                                        className={`w-1.5 h-1.5 rounded-full ${
-                                            accent === "amber"
-                                                ? isDark ? "bg-amber-400" : "bg-amber-500"
-                                                : isDark ? "bg-blue-400" : "bg-blue-500"
-                                        }`}
-                                        style={{
-                                            animation:
-                                                "pulse 1.5s ease-in-out infinite",
-                                        }}
-                                    />
-                                </div>
-                            ) : (
-                                <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center">
-                                    <div
-                                        className={`w-1.5 h-1.5 rounded-full ${
-                                            isDark
-                                                ? "bg-gray-600"
-                                                : "bg-gray-300"
-                                        }`}
-                                    />
-                                </div>
-                            )}
-                            <span
-                                className={`text-xs ${
-                                    step.status === "complete"
-                                        ? isDark
-                                            ? "text-gray-500"
-                                            : "text-gray-400"
-                                        : step.status === "active"
-                                          ? isDark
-                                              ? "text-gray-200"
-                                              : "text-gray-700"
-                                          : isDark
-                                            ? "text-gray-600"
-                                            : "text-gray-400"
-                                }`}
-                            >
-                                {step.label}
-                            </span>
-                        </div>
-                    ))}
+            >
+                <div className="h-1 w-full bg-black/5 dark:bg-white/5">
+                    <div
+                        className={cn(
+                            "h-full rounded-full transition-all duration-500",
+                            tone.dot,
+                        )}
+                        style={{ width: `${progress}%` }}
+                    />
                 </div>
-            )}
 
-            <style jsx>{`
-                @keyframes fadeIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(4px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-            `}</style>
+                <button
+                    type="button"
+                    onClick={() => setCollapsed((value) => !value)}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                >
+                    <div
+                        className={cn(
+                            "flex size-9 shrink-0 items-center justify-center rounded-2xl border",
+                            tone.soft,
+                        )}
+                    >
+                        <Loader2 className="size-4 animate-spin" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <p className={cn("text-sm font-medium", themed.textStrong)}>
+                                {activeStep?.label ?? "Dang xu ly"}
+                            </p>
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    "rounded-full border px-2 py-0.5 text-[10px]",
+                                    tone.soft,
+                                )}
+                            >
+                                <Sparkles className="size-3" />
+                                Reasoning
+                            </Badge>
+                        </div>
+                        <p className={cn("mt-1 text-xs", themed.textMuted)}>
+                            {completedCount}/{steps.length} buoc da hoan thanh
+                        </p>
+                    </div>
+
+                    {collapsed ? (
+                        <ChevronRight className={cn("size-4", themed.textMuted)} />
+                    ) : (
+                        <ChevronDown className={cn("size-4", themed.textMuted)} />
+                    )}
+                </button>
+
+                {!collapsed && (
+                    <div
+                        className={cn(
+                            "space-y-2 border-t px-4 pb-4 pt-3",
+                            themed.chrome,
+                        )}
+                    >
+                        {steps.map((step) => (
+                            <div
+                                key={step.id}
+                                className="flex items-start gap-3 rounded-2xl border border-transparent px-2 py-2"
+                            >
+                                <div className="mt-0.5 flex size-5 items-center justify-center">
+                                    {step.status === "complete" ? (
+                                        <Check className="size-4 text-emerald-400" />
+                                    ) : step.status === "active" ? (
+                                        <span
+                                            className={cn(
+                                                "size-2 rounded-full animate-pulse",
+                                                tone.dot,
+                                            )}
+                                        />
+                                    ) : (
+                                        <span
+                                            className={cn(
+                                                "size-2 rounded-full",
+                                                pendingDotClass,
+                                            )}
+                                        />
+                                    )}
+                                </div>
+                                <div className="min-w-0">
+                                    <p
+                                        className={cn(
+                                            "text-sm",
+                                            step.status === "active"
+                                                ? themed.textStrong
+                                                : step.status === "complete"
+                                                  ? themed.textBody
+                                                  : themed.textMuted,
+                                        )}
+                                    >
+                                        {step.label}
+                                    </p>
+                                    {step.detail && (
+                                        <p
+                                            className={cn(
+                                                "mt-1 text-xs",
+                                                themed.textMuted,
+                                            )}
+                                        >
+                                            {step.detail}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

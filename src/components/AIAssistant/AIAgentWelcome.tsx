@@ -1,15 +1,19 @@
 "use client";
 
 import {
-    Code2,
-    Sparkles,
-    Bug,
-    MessageSquare,
-    Lightbulb,
     ArrowRight,
+    Bot,
+    Bug,
+    Code2,
     FileCode2,
+    Lightbulb,
+    Sparkles,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { QuickAction } from "./types";
+import { getAIAccent, getAITheme } from "./theme";
 
 interface AIAgentWelcomeProps {
     codeContext?: string;
@@ -22,26 +26,26 @@ const QUICK_ACTIONS: QuickAction[] = [
     {
         icon: Bug,
         label: "Explain Code",
-        description: "Giải thích code đang làm gì",
-        prompt: "Giải thích đoạn code này đang làm gì?",
+        description: "Phan tich code dang lam gi va cach no van hanh.",
+        prompt: "Giai thich doan code nay dang lam gi?",
     },
     {
         icon: Sparkles,
         label: "Improve Code",
-        description: "Gợi ý cải thiện hiệu suất và chất lượng",
-        prompt: "Hãy gợi ý cách cải thiện đoạn code này.",
+        description: "De xuat toi uu, refactor va nang cao chat luong.",
+        prompt: "Hay goi y cach cai thien doan code nay.",
     },
     {
         icon: Code2,
         label: "Find Bugs",
-        description: "Tìm lỗi và vấn đề tiềm ẩn",
-        prompt: "Kiểm tra và tìm lỗi trong đoạn code này.",
+        description: "Tim loi logic, edge cases va diem de vo.",
+        prompt: "Kiem tra va tim loi trong doan code nay.",
     },
     {
         icon: Lightbulb,
         label: "Add Comments",
-        description: "Thêm chú thích giải thích chi tiết",
-        prompt: "Thêm comment giải thích cho đoạn code này.",
+        description: "Them giai thich ngan gon vao cac doan kho doc.",
+        prompt: "Them comment giai thich cho doan code nay.",
     },
 ];
 
@@ -51,210 +55,169 @@ export default function AIAgentWelcome({
     onQuickAction,
     theme = "dark",
 }: AIAgentWelcomeProps) {
-    const isDark = theme === "dark";
+    const themed = getAITheme(theme);
+    const tone = getAIAccent("blue", theme);
 
     return (
-        <div className="flex flex-col items-center justify-center h-full px-5 py-8">
-            {/* Animated Logo */}
-            <div className="relative mb-6">
-                <div
-                    className={`w-16 h-16 rounded-2xl flex items-center justify-center relative overflow-hidden ${
-                        isDark
-                            ? "bg-gradient-to-br from-cyan-500/20 to-blue-600/20"
-                            : "bg-gradient-to-br from-blue-50 to-indigo-100"
-                    }`}
-                    style={{
-                        boxShadow: isDark
-                            ? "0 0 40px rgba(6, 182, 212, 0.1), inset 0 1px 0 rgba(255,255,255,0.05)"
-                            : "0 4px 20px rgba(59, 130, 246, 0.1)",
-                    }}
-                >
-                    <svg
-                        width="28"
-                        height="28"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke={isDark ? "#22d3ee" : "#3b82f6"}
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    >
-                        <path d="M12 8V4H8" />
-                        <rect width="16" height="12" x="4" y="8" rx="2" />
-                        <path d="m2 14 6-6" />
-                        <path d="m14 16 6-6" />
-                    </svg>
-                    {/* Shimmer effect */}
+        <div className="flex h-full items-center justify-center px-4 py-6">
+            <Card
+                className={cn(
+                    "w-full max-w-3xl overflow-hidden rounded-[32px] border shadow-[0_28px_70px_-45px_rgba(15,23,42,0.7)]",
+                    themed.panelElevatedSurface,
+                    themed.chrome,
+                )}
+            >
+                <CardContent className="relative px-6 py-8 sm:px-8">
                     <div
-                        className="absolute inset-0 opacity-30"
-                        style={{
-                            background: isDark
-                                ? "linear-gradient(135deg, transparent 30%, rgba(6,182,212,0.15) 50%, transparent 70%)"
-                                : "linear-gradient(135deg, transparent 30%, rgba(59,130,246,0.1) 50%, transparent 70%)",
-                            animation: "shimmer 3s ease-in-out infinite",
-                        }}
+                        className={cn(
+                            "pointer-events-none absolute inset-x-10 top-0 h-40 rounded-full bg-gradient-to-b blur-3xl",
+                            themed.heroGlow,
+                        )}
                     />
-                </div>
-                {/* Glow ring */}
-                <div
-                    className={`absolute -inset-1 rounded-2xl opacity-20 blur-sm ${
-                        isDark ? "bg-cyan-500" : "bg-blue-400"
-                    }`}
-                    style={{ animation: "pulse 4s ease-in-out infinite" }}
-                />
-            </div>
 
-            {/* Title */}
-            <h3
-                className={`text-sm font-semibold mb-1 ${
-                    isDark ? "text-gray-100" : "text-gray-900"
-                }`}
-            >
-                AI Code Agent
-            </h3>
-
-            {/* Contextual subtitle */}
-            <p
-                className={`text-xs text-center mb-1 leading-relaxed ${
-                    isDark ? "text-gray-400" : "text-gray-500"
-                }`}
-            >
-                {codeContext
-                    ? "Sẵn sàng hỗ trợ bạn với code hiện tại"
-                    : "Hỏi bất cứ điều gì về code của bạn"}
-            </p>
-
-            {/* Active file indicator */}
-            {language && (
-                <div
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium mb-5 ${
-                        isDark
-                            ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-                            : "bg-blue-50 text-blue-600 border border-blue-200"
-                    }`}
-                >
-                    <FileCode2 className="w-3 h-3" />
-                    <span>Đang xem: {language}</span>
-                </div>
-            )}
-
-            {!language && <div className="mb-5" />}
-
-            {/* Quick actions */}
-            {codeContext && (
-                <div className="w-full space-y-1.5">
-                    <p
-                        className={`text-[10px] uppercase tracking-wider font-medium px-1 mb-2 ${
-                            isDark ? "text-gray-500" : "text-gray-400"
-                        }`}
-                    >
-                        Quick Actions
-                    </p>
-                    {QUICK_ACTIONS.map((action, i) => (
-                        <button
-                            key={i}
-                            onClick={() => onQuickAction(action.prompt)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all group cursor-pointer ${
-                                isDark
-                                    ? "hover:bg-white/[0.05] text-gray-300 hover:text-gray-100"
-                                    : "hover:bg-gray-50 text-gray-700 hover:text-gray-900"
-                            }`}
-                            style={{
-                                animationDelay: `${i * 80}ms`,
-                                animation: "fadeInUp 0.3s ease forwards",
-                                opacity: 0,
-                            }}
-                        >
+                    <div className="relative">
+                        <div className="mb-5 flex items-center gap-3">
                             <div
-                                className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
-                                    isDark
-                                        ? "bg-white/[0.05] group-hover:bg-cyan-500/15"
-                                        : "bg-gray-100 group-hover:bg-blue-50"
-                                }`}
+                                className={cn(
+                                    "flex size-12 items-center justify-center rounded-3xl bg-gradient-to-br shadow-lg ring-1",
+                                    tone.avatar,
+                                    tone.ring,
+                                )}
                             >
-                                <action.icon
-                                    className={`w-4 h-4 transition-colors ${
-                                        isDark
-                                            ? "text-gray-400 group-hover:text-cyan-400"
-                                            : "text-gray-500 group-hover:text-blue-500"
-                                    }`}
-                                />
+                                <Bot className="size-6" />
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium">
-                                    {action.label}
-                                </p>
-                                <p
-                                    className={`text-[10px] mt-0.5 ${
-                                        isDark
-                                            ? "text-gray-500"
-                                            : "text-gray-400"
-                                    }`}
+                            <div>
+                                <Badge
+                                    variant="outline"
+                                    className={cn(
+                                        "mb-2 rounded-full border px-2.5 py-0.5 text-[10px]",
+                                        tone.soft,
+                                    )}
                                 >
-                                    {action.description}
+                                    Conversational AI
+                                </Badge>
+                                <h3
+                                    className={cn(
+                                        "text-2xl font-semibold tracking-tight",
+                                        themed.textStrong,
+                                    )}
+                                >
+                                    AI Assistant cho code va hoc tap
+                                </h3>
+                                <p className={cn("mt-2 text-sm", themed.textMuted)}>
+                                    {codeContext
+                                        ? "AI da san sang voi ngu canh code hien tai. Ban co the hoi, review hoac yeu cau sua truc tiep."
+                                        : "Bat dau bang mot cau hoi, mot bug can debug, hoac mot y tuong ban muon AI ho tro."}
                                 </p>
                             </div>
-                            <ArrowRight
-                                className={`w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all -translate-x-1 group-hover:translate-x-0 ${
-                                    isDark ? "text-gray-500" : "text-gray-400"
-                                }`}
-                            />
-                        </button>
-                    ))}
-                </div>
-            )}
+                        </div>
 
-            {/* Keyboard hints */}
-            <div
-                className={`mt-6 flex items-center gap-1.5 ${
-                    isDark ? "text-gray-600" : "text-gray-400"
-                }`}
-            >
-                <kbd
-                    className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${
-                        isDark
-                            ? "border-gray-700 bg-white/[0.03]"
-                            : "border-gray-300 bg-gray-100"
-                    }`}
-                >
-                    Enter
-                </kbd>
-                <span className="text-[10px]">gửi</span>
-                <span className="text-[10px] mx-0.5">•</span>
-                <kbd
-                    className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${
-                        isDark
-                            ? "border-gray-700 bg-white/[0.03]"
-                            : "border-gray-300 bg-gray-100"
-                    }`}
-                >
-                    Shift+Enter
-                </kbd>
-                <span className="text-[10px]">xuống dòng</span>
-            </div>
+                        <div className="mb-6 flex flex-wrap items-center gap-2">
+                            {language && (
+                                <Badge
+                                    variant="outline"
+                                    className={cn(
+                                        "rounded-full border px-2.5 py-1 text-[11px]",
+                                        themed.borderSoft,
+                                        themed.textMuted,
+                                    )}
+                                >
+                                    <FileCode2 className="size-3" />
+                                    {language}
+                                </Badge>
+                            )}
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    "rounded-full border px-2.5 py-1 text-[11px]",
+                                    themed.borderSoft,
+                                    themed.textMuted,
+                                )}
+                            >
+                                Enter de gui
+                            </Badge>
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    "rounded-full border px-2.5 py-1 text-[11px]",
+                                    themed.borderSoft,
+                                    themed.textMuted,
+                                )}
+                            >
+                                Shift + Enter xuong dong
+                            </Badge>
+                        </div>
 
-            {/* CSS animations */}
-            <style jsx>{`
-                @keyframes shimmer {
-                    0%,
-                    100% {
-                        transform: translateX(-100%);
-                    }
-                    50% {
-                        transform: translateX(100%);
-                    }
-                }
-                @keyframes fadeInUp {
-                    from {
-                        opacity: 0;
-                        transform: translateY(8px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-            `}</style>
+                        {codeContext ? (
+                            <div className="grid gap-3 md:grid-cols-2">
+                                {QUICK_ACTIONS.map((action) => (
+                                    <button
+                                        key={action.label}
+                                        type="button"
+                                        onClick={() => onQuickAction(action.prompt)}
+                                        className={cn(
+                                            "group rounded-[28px] border p-4 text-left transition-transform duration-200 hover:-translate-y-0.5",
+                                            themed.panelSurface,
+                                            themed.borderSoft,
+                                            themed.itemHover,
+                                        )}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div
+                                                className={cn(
+                                                    "mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-2xl border",
+                                                    tone.soft,
+                                                )}
+                                            >
+                                                <action.icon className="size-4" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p
+                                                    className={cn(
+                                                        "text-sm font-medium",
+                                                        themed.textStrong,
+                                                    )}
+                                                >
+                                                    {action.label}
+                                                </p>
+                                                <p
+                                                    className={cn(
+                                                        "mt-1 text-sm",
+                                                        themed.textMuted,
+                                                    )}
+                                                >
+                                                    {action.description}
+                                                </p>
+                                            </div>
+                                            <ArrowRight
+                                                className={cn(
+                                                    "mt-1 size-4 shrink-0 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100",
+                                                    themed.textMuted,
+                                                )}
+                                            />
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div
+                                className={cn(
+                                    "rounded-[28px] border border-dashed px-5 py-10 text-center",
+                                    themed.borderSoft,
+                                )}
+                            >
+                                <p className={cn("text-sm font-medium", themed.textStrong)}>
+                                    Thu dat mot cau hoi cu the
+                                </p>
+                                <p className={cn("mt-2 text-sm", themed.textMuted)}>
+                                    Vi du: "Giai thich error nay", "Toi uu ham nay",
+                                    hoac "Viet unit test cho component nay".
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }

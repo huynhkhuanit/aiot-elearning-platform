@@ -1,18 +1,32 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { type ComponentType } from "react";
 import {
-    Plus,
-    History,
+    Bot,
     ChevronDown,
-    Zap,
+    History,
+    Loader2,
     MessageCircle,
+    Plus,
+    Sparkles,
     Wifi,
     WifiOff,
-    Loader2,
+    Zap,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+    Popover,
+    PopoverContent,
+    PopoverHeader,
+    PopoverTitle,
+    PopoverDescription,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import type { AIServerStatus, AIAgentMode, AIModel } from "./types";
 import { AI_MODELS, AI_MODE_CONFIG } from "./types";
+import { getAIAccent, getAIStatusTone, getAITheme } from "./theme";
 
 interface AIAgentHeaderProps {
     onNewChat: () => void;
@@ -28,7 +42,7 @@ interface AIAgentHeaderProps {
 
 const MODE_ICONS: Record<
     AIAgentMode,
-    React.ComponentType<{ className?: string }>
+    ComponentType<{ className?: string }>
 > = {
     agent: Zap,
     ask: MessageCircle,
@@ -45,209 +59,277 @@ export default function AIAgentHeader({
     selectedModel,
     onModelChange,
 }: AIAgentHeaderProps) {
-    const isDark = theme === "dark";
-    const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    // Close dropdown on outside click
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(e.target as Node)
-            ) {
-                setModelDropdownOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+    const themed = getAITheme(theme);
+    const accent = getAIAccent(AI_MODE_CONFIG[mode].accent, theme);
+    const statusTone = getAIStatusTone(aiStatus, theme);
 
     return (
-        <div
-            className={`border-b ${
-                isDark ? "border-[#2d2d44]" : "border-gray-200"
-            }`}
-        >
-            {/* Row 1: Model selector + Actions */}
-            <div
-                className={`flex items-center justify-between px-3 py-2 ${
-                    isDark ? "bg-[#16162a]" : "bg-gray-50"
-                }`}
-            >
-                {/* Model Selector */}
-                <div className="relative" ref={dropdownRef}>
-                    <button
-                        onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-                        className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                            isDark
-                                ? "hover:bg-white/[0.06] text-gray-200"
-                                : "hover:bg-gray-100 text-gray-700"
-                        }`}
-                    >
-                        {/* Status dot */}
-                        <span
-                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                                aiStatus === "connected"
-                                    ? "bg-emerald-400"
-                                    : aiStatus === "checking"
-                                      ? "bg-amber-400 animate-pulse"
-                                      : "bg-red-400"
-                            }`}
-                        />
-                        <span>{selectedModel.name}</span>
-                        <ChevronDown
-                            className={`w-3 h-3 transition-transform ${
-                                modelDropdownOpen ? "rotate-180" : ""
-                            } ${isDark ? "text-gray-500" : "text-gray-400"}`}
-                        />
-                    </button>
-
-                    {/* Dropdown */}
-                    {modelDropdownOpen && (
+        <div className={cn("border-b", themed.chrome, themed.headerSurface)}>
+            <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 pb-3">
+                <div className="min-w-0 flex-1 space-y-3">
+                    <div className="flex items-center gap-3">
                         <div
-                            className={`absolute top-full left-0 mt-1 w-56 rounded-xl border shadow-xl z-50 overflow-hidden ${
-                                isDark
-                                    ? "bg-[#1e1e34] border-[#3d3d55]"
-                                    : "bg-white border-gray-200"
-                            }`}
+                            className={cn(
+                                "flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg ring-1",
+                                accent.avatar,
+                                accent.ring,
+                            )}
                         >
-                            <div
-                                className={`px-3 py-2 text-[10px] uppercase tracking-wider font-medium ${
-                                    isDark ? "text-gray-500" : "text-gray-400"
-                                }`}
-                            >
-                                Select Model
-                            </div>
-                            {AI_MODELS.map((model) => (
-                                <button
-                                    key={model.id}
-                                    onClick={() => {
-                                        onModelChange(model);
-                                        setModelDropdownOpen(false);
-                                    }}
-                                    className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors cursor-pointer ${
-                                        model.id === selectedModel.id
-                                            ? isDark
-                                                ? "bg-cyan-500/10 text-cyan-300"
-                                                : "bg-blue-50 text-blue-700"
-                                            : isDark
-                                              ? "text-gray-300 hover:bg-white/[0.06]"
-                                              : "text-gray-700 hover:bg-gray-50"
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-medium">
-                                            {model.name}
-                                        </span>
-                                    </div>
-                                    <span
-                                        className={`text-[10px] ${
-                                            isDark
-                                                ? "text-gray-500"
-                                                : "text-gray-400"
-                                        }`}
-                                    >
-                                        {model.provider}
-                                    </span>
-                                </button>
-                            ))}
-
-                            {/* Connection status */}
-                            <div
-                                className={`flex items-center gap-1.5 px-3 py-2 border-t text-[10px] ${
-                                    isDark
-                                        ? "border-[#3d3d55] text-gray-500"
-                                        : "border-gray-100 text-gray-400"
-                                }`}
-                            >
-                                {aiStatus === "connected" ? (
-                                    <Wifi className="w-3 h-3 text-emerald-400" />
-                                ) : aiStatus === "checking" ? (
-                                    <Loader2 className="w-3 h-3 text-amber-400 animate-spin" />
-                                ) : (
-                                    <WifiOff className="w-3 h-3 text-red-400" />
-                                )}
-                                <span>
-                                    {aiStatus === "connected"
-                                        ? "Connected"
-                                        : aiStatus === "checking"
-                                          ? "Connecting..."
-                                          : "Disconnected"}
-                                </span>
-                            </div>
+                            <Bot className="size-5" />
                         </div>
-                    )}
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p
+                                    className={cn(
+                                        "text-sm font-semibold tracking-tight",
+                                        themed.textStrong,
+                                    )}
+                                >
+                                    AI Assistant
+                                </p>
+                                <Badge
+                                    variant="outline"
+                                    className={cn(
+                                        "gap-1 rounded-full border px-2 py-0.5 text-[10px]",
+                                        statusTone.badge,
+                                    )}
+                                >
+                                    <span
+                                        className={cn(
+                                            "size-1.5 rounded-full",
+                                            statusTone.dot,
+                                            aiStatus === "checking" &&
+                                                "animate-pulse",
+                                        )}
+                                    />
+                                    {statusTone.label}
+                                </Badge>
+                            </div>
+                            <p className={cn("mt-1 text-xs", themed.textMuted)}>
+                                {AI_MODE_CONFIG[mode].description}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        {(Object.keys(AI_MODE_CONFIG) as AIAgentMode[]).map(
+                            (item) => {
+                                const Icon = MODE_ICONS[item];
+                                const itemAccent = getAIAccent(
+                                    AI_MODE_CONFIG[item].accent,
+                                    theme,
+                                );
+                                const active = mode === item;
+
+                                return (
+                                    <Button
+                                        key={item}
+                                        type="button"
+                                        variant={active ? "secondary" : "ghost"}
+                                        size="sm"
+                                        onClick={() => onModeChange(item)}
+                                        className={cn(
+                                            "h-9 rounded-full border px-3 text-xs shadow-none",
+                                            active
+                                                ? itemAccent.softStrong
+                                                : cn(
+                                                      "border",
+                                                      themed.borderSoft,
+                                                      themed.textMuted,
+                                                  ),
+                                        )}
+                                        title={AI_MODE_CONFIG[item].description}
+                                    >
+                                        <Icon className="size-3.5" />
+                                        {AI_MODE_CONFIG[item].label}
+                                    </Button>
+                                );
+                            },
+                        )}
+                    </div>
                 </div>
 
-                {/* Right Actions */}
-                <div className="flex items-center gap-0.5">
-                    <button
+                <div className="flex shrink-0 items-center gap-2">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className={cn(
+                                    "h-10 min-w-[11rem] justify-between rounded-2xl border px-3 shadow-none",
+                                    themed.composer,
+                                    themed.textBody,
+                                )}
+                            >
+                                <span className="min-w-0 text-left">
+                                    <span className="block truncate text-xs font-medium">
+                                        {selectedModel.name}
+                                    </span>
+                                    <span
+                                        className={cn(
+                                            "block truncate text-[10px]",
+                                            themed.textFaint,
+                                        )}
+                                    >
+                                        {selectedModel.provider}
+                                    </span>
+                                </span>
+                                <ChevronDown className="size-4 opacity-70" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                            align="end"
+                            className={cn(
+                                "w-80 rounded-3xl border p-0 shadow-2xl",
+                                themed.panelElevatedSurface,
+                                themed.chrome,
+                            )}
+                        >
+                            <PopoverHeader
+                                className={cn(
+                                    "gap-1 border-b px-4 py-4",
+                                    themed.chrome,
+                                )}
+                            >
+                                <PopoverTitle className={themed.textStrong}>
+                                    AI Models
+                                </PopoverTitle>
+                                <PopoverDescription
+                                    className={cn("text-xs", themed.textMuted)}
+                                >
+                                    Chon model phu hop cho chat hoac agent tools.
+                                </PopoverDescription>
+                            </PopoverHeader>
+
+                            <div className="space-y-1 p-2">
+                                {AI_MODELS.map((model) => {
+                                    const active = model.id === selectedModel.id;
+
+                                    return (
+                                        <button
+                                            key={model.id}
+                                            type="button"
+                                            onClick={() => onModelChange(model)}
+                                            className={cn(
+                                                "flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left transition-colors",
+                                                active
+                                                    ? accent.softStrong
+                                                    : cn(
+                                                          "bg-transparent",
+                                                          themed.borderSoft,
+                                                          themed.itemHover,
+                                                      ),
+                                            )}
+                                        >
+                                            <div className="min-w-0">
+                                                <p
+                                                    className={cn(
+                                                        "truncate text-sm font-medium",
+                                                        active
+                                                            ? accent.text
+                                                            : themed.textStrong,
+                                                    )}
+                                                >
+                                                    {model.name}
+                                                </p>
+                                                <p
+                                                    className={cn(
+                                                        "mt-1 truncate text-xs",
+                                                        themed.textMuted,
+                                                    )}
+                                                >
+                                                    {model.provider}
+                                                </p>
+                                            </div>
+                                            {active && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                        "rounded-full border px-2 py-0.5 text-[10px]",
+                                                        accent.soft,
+                                                    )}
+                                                >
+                                                    Active
+                                                </Badge>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div
+                                className={cn(
+                                    "flex items-center gap-2 border-t px-4 py-3 text-xs",
+                                    themed.chrome,
+                                    themed.textMuted,
+                                )}
+                            >
+                                {aiStatus === "connected" ? (
+                                    <Wifi className="size-3.5 text-emerald-400" />
+                                ) : aiStatus === "checking" ? (
+                                    <Loader2 className="size-3.5 animate-spin text-amber-400" />
+                                ) : (
+                                    <WifiOff className="size-3.5 text-rose-400" />
+                                )}
+                                <span>{statusTone.label}</span>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    <Button
+                        type="button"
+                        variant={showHistory ? "secondary" : "outline"}
+                        size="icon-sm"
                         onClick={onToggleHistory}
-                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                        className={cn(
+                            "rounded-2xl border shadow-none",
                             showHistory
-                                ? isDark
-                                    ? "bg-cyan-500/15 text-cyan-400"
-                                    : "bg-blue-100 text-blue-600"
-                                : isDark
-                                  ? "hover:bg-white/[0.06] text-gray-400"
-                                  : "hover:bg-gray-200 text-gray-500"
-                        }`}
-                        title="Chat History"
+                                ? accent.softStrong
+                                : cn(themed.composer, themed.textMuted),
+                        )}
+                        title="Chat history"
                     >
-                        <History className="w-3.5 h-3.5" />
-                    </button>
-                    <button
+                        <History className="size-4" />
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
                         onClick={onNewChat}
-                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                            isDark
-                                ? "hover:bg-white/[0.06] text-gray-400 hover:text-gray-200"
-                                : "hover:bg-gray-200 text-gray-500 hover:text-gray-700"
-                        }`}
-                        title="New Chat"
+                        className={cn(
+                            "rounded-2xl border shadow-none",
+                            themed.composer,
+                            themed.textMuted,
+                        )}
+                        title="New chat"
                     >
-                        <Plus className="w-3.5 h-3.5" />
-                    </button>
+                        <Plus className="size-4" />
+                    </Button>
                 </div>
             </div>
 
-            {/* Row 2: Mode Tabs */}
             <div
-                className={`flex items-center px-2 py-1 gap-0.5 ${
-                    isDark ? "bg-[#1a1a2e]" : "bg-white"
-                }`}
+                className={cn(
+                    "flex items-center gap-2 border-t px-4 py-3",
+                    themed.chrome,
+                )}
             >
-                {(Object.keys(AI_MODE_CONFIG) as AIAgentMode[]).map((m) => {
-                    const Icon = MODE_ICONS[m];
-                    const config = AI_MODE_CONFIG[m];
-                    const isActive = mode === m;
-                    const accent = config.accent; // amber | blue
-
-                    return (
-                        <button
-                            key={m}
-                            onClick={() => onModeChange(m)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
-                                isActive
-                                    ? accent === "amber"
-                                        ? isDark
-                                            ? "bg-amber-500/15 text-amber-400 shadow-sm border border-amber-500/20"
-                                            : "bg-amber-50 text-amber-700 shadow-sm border border-amber-200"
-                                        : isDark
-                                          ? "bg-blue-500/15 text-blue-400 shadow-sm border border-blue-500/20"
-                                          : "bg-blue-50 text-blue-700 shadow-sm border border-blue-200"
-                                    : isDark
-                                      ? "text-gray-500 hover:text-gray-300 hover:bg-white/[0.04]"
-                                      : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
-                            }`}
-                            title={config.description}
-                        >
-                            <Icon className="w-3 h-3" />
-                            <span>{config.label}</span>
-                        </button>
-                    );
-                })}
+                <Badge
+                    variant="outline"
+                    className={cn(
+                        "rounded-full border px-2.5 py-0.5 text-[10px]",
+                        accent.soft,
+                    )}
+                >
+                    <Sparkles className="size-3" />
+                    {mode === "agent" ? "Tool-aware flow" : "Conversational flow"}
+                </Badge>
+                <p className={cn("text-xs", themed.textMuted)}>
+                    {mode === "agent"
+                        ? "Agent mode uu tien phan tich va sua code theo ngu canh."
+                        : "Chat mode tap trung giai thich, review va hoi dap."}
+                </p>
             </div>
         </div>
     );

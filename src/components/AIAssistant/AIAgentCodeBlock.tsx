@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Copy, Check, Code2 } from "lucide-react";
+import { Check, Code2, Copy } from "lucide-react";
 import Prism from "prismjs";
 import "prismjs/components/prism-javascript";
 import "prismjs/components/prism-css";
@@ -46,6 +46,7 @@ function normalizeLanguage(lang?: string): string {
 
 function getLanguageLabel(lang?: string): string {
     if (!lang) return "code";
+
     const labels: Record<string, string> = {
         javascript: "JavaScript",
         typescript: "TypeScript",
@@ -61,16 +62,10 @@ function getLanguageLabel(lang?: string): string {
         jsx: "JSX",
         tsx: "TSX",
     };
+
     return labels[normalizeLanguage(lang)] || lang;
 }
 
-
-/**
- * ChatGPT-style Code Block:
- * - Header: "</> {Language}" left, Copy icon right
- * - Syntax highlighting (Prism + prism-tomorrow)
- * - Icon-only copy button with checkmark feedback
- */
 export default function AIAgentCodeBlock({
     code,
     language,
@@ -81,13 +76,14 @@ export default function AIAgentCodeBlock({
     const codeRef = useRef<HTMLElement>(null);
     const normalizedLang = normalizeLanguage(language);
     const langLabel = fileName || getLanguageLabel(language);
+    const isDark = theme === "dark";
 
     useEffect(() => {
         if (codeRef.current) {
             try {
                 Prism.highlightElement(codeRef.current);
             } catch {
-                // Language not supported
+                // Language not supported.
             }
         }
     }, [code, language]);
@@ -98,52 +94,65 @@ export default function AIAgentCodeBlock({
         setTimeout(() => setCopied(false), 2000);
     };
 
-    // ChatGPT-style: full black background for code area
-    const codeBg = "#000000";
-    const headerBg = "#0a0a0a";
-    const borderColor = "#1a1a1a";
-
     return (
         <div
-            className="my-3 overflow-hidden rounded-lg border transition-all duration-200"
+            className="my-4 overflow-hidden rounded-[24px] border transition-all duration-200"
             style={{
-                borderColor,
-                boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                borderColor: isDark ? "#1f2937" : "#cbd5e1",
+                boxShadow: isDark
+                    ? "0 18px 40px -32px rgba(15,23,42,0.85)"
+                    : "0 18px 40px -32px rgba(15,23,42,0.22)",
             }}
         >
-            {/* Header — ChatGPT style: </> Language left, Copy icon right */}
             <div
-                className="flex items-center justify-between gap-2 px-3 py-2"
-                style={{ backgroundColor: headerBg }}
+                className="flex items-center justify-between gap-2 px-3 py-2.5"
+                style={{ backgroundColor: isDark ? "#0f172a" : "#f1f5f9" }}
             >
                 <div className="flex min-w-0 items-center gap-2">
-                    <Code2 className="size-3.5 flex-shrink-0 text-[#8b949e]" aria-hidden />
-                    <span className="truncate font-mono text-xs text-[#8b949e]">
+                    <Code2
+                        className="size-3.5 shrink-0"
+                        aria-hidden
+                        style={{ color: isDark ? "#cbd5e1" : "#334155" }}
+                    />
+                    <span
+                        className="truncate font-mono text-xs"
+                        style={{ color: isDark ? "#cbd5e1" : "#334155" }}
+                    >
                         {langLabel}
                     </span>
                 </div>
+
                 <Button
+                    type="button"
                     variant="ghost"
-                    size="icon"
+                    size="icon-sm"
                     onClick={handleCopy}
                     className={cn(
-                        "h-8 w-8 shrink-0 rounded-md text-[#c9d1d9] transition-colors duration-150 hover:bg-white/10 hover:text-white",
-                        copied && "bg-emerald-500/20 text-emerald-400"
+                        "rounded-full transition-colors duration-150",
+                        isDark
+                            ? "text-zinc-200 hover:bg-white/10 hover:text-white"
+                            : "text-slate-600 hover:bg-slate-200 hover:text-slate-900",
+                        copied && "bg-emerald-500/20 text-emerald-400",
                     )}
                     title={copied ? "Copied" : "Copy code"}
                     aria-label={copied ? "Copied" : "Copy code"}
                 >
-                    {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                    {copied ? (
+                        <Check className="size-4" />
+                    ) : (
+                        <Copy className="size-4" />
+                    )}
                 </Button>
             </div>
 
-            {/* Code area — ChatGPT dark theme */}
             <div
                 className="overflow-x-auto"
                 style={{
-                    backgroundColor: codeBg,
+                    backgroundColor: isDark ? "#050816" : "#f8fafc",
                     scrollbarWidth: "thin",
-                    scrollbarColor: "#30363d transparent",
+                    scrollbarColor: isDark
+                        ? "#30363d transparent"
+                        : "#cbd5e1 transparent",
                 }}
             >
                 <pre
@@ -154,9 +163,10 @@ export default function AIAgentCodeBlock({
                         ref={codeRef}
                         className={cn(
                             `language-${normalizedLang}`,
-                            "!text-[13px] !leading-[22px] !bg-transparent"
+                            "!bg-transparent !text-[13px] !leading-[22px]",
                         )}
                         style={{
+                            color: isDark ? "#e2e8f0" : "#0f172a",
                             fontFamily:
                                 "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
                         }}

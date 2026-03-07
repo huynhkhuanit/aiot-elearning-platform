@@ -1,161 +1,172 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Bot, X, Minimize2, Maximize2 } from "lucide-react";
+import { Bot, Maximize2, Minimize2, Sparkles, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import AIAgentPanel from "./AIAgentPanel";
 
-/**
- * Global floating AI Agent Panel accessible from any page.
- * Only visible to authenticated users.
- */
 export default function AIGlobalPanel() {
     const { isAuthenticated, isLoading: authLoading } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
 
-    // Close on Escape key
     useEffect(() => {
-        const handleEsc = (e: KeyboardEvent) => {
-            if (e.key === "Escape" && isOpen) {
+        const handleEsc = (event: KeyboardEvent) => {
+            if (event.key === "Escape" && isOpen) {
                 setIsOpen(false);
             }
         };
+
         window.addEventListener("keydown", handleEsc);
         return () => window.removeEventListener("keydown", handleEsc);
     }, [isOpen]);
 
-    // Toggle panel
     const togglePanel = useCallback(() => {
         if (isOpen && isMinimized) {
             setIsMinimized(false);
-        } else {
-            setIsOpen(!isOpen);
-            setIsMinimized(false);
+            return;
         }
+
+        setIsOpen((value) => !value);
+        setIsMinimized(false);
     }, [isOpen, isMinimized]);
 
-    // Keyboard shortcut: Ctrl+Shift+A
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.ctrlKey && e.shiftKey && e.key === "A") {
-                e.preventDefault();
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.ctrlKey && event.shiftKey && event.key === "A") {
+                event.preventDefault();
                 togglePanel();
             }
         };
+
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [togglePanel]);
 
-    // Don't render for unauthenticated users
     if (authLoading || !isAuthenticated) return null;
 
     return (
         <>
-            {/* Floating Action Button */}
             <button
+                type="button"
                 onClick={togglePanel}
-                className={`fixed bottom-6 right-6 z-[9998] w-13 h-13 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-300 group ${
-                    isOpen
-                        ? "bg-gray-700 hover:bg-gray-600 scale-90"
-                        : "bg-gradient-to-br from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 scale-100 hover:scale-105"
-                }`}
-                title={
-                    isOpen
-                        ? "Close AI Agent (Ctrl+Shift+A)"
-                        : "Open AI Agent (Ctrl+Shift+A)"
-                }
+                className={cn(
+                    "group fixed bottom-6 right-6 z-[9998] flex h-14 w-14 items-center justify-center rounded-3xl border border-white/15 bg-zinc-950 text-white shadow-[0_20px_40px_-20px_rgba(14,165,233,0.65)] transition-transform duration-200 hover:-translate-y-0.5",
+                    !isOpen &&
+                        "bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500",
+                )}
+                title={isOpen ? "Close AI Agent (Ctrl+Shift+A)" : "Open AI Agent (Ctrl+Shift+A)"}
                 aria-label="AI Agent"
-                style={{ width: 52, height: 52 }}
             >
                 {isOpen ? (
-                    <X className="w-5 h-5 text-white" />
+                    <X className="size-5" />
                 ) : (
                     <>
-                        <svg
-                            width="22"
-                            height="22"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="white"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        >
-                            <path d="M12 8V4H8" />
-                            <rect width="16" height="12" x="4" y="8" rx="2" />
-                            <path d="m2 14 6-6" />
-                            <path d="m14 16 6-6" />
-                        </svg>
-                        {/* Pulse animation */}
-                        <span className="absolute inset-0 rounded-2xl bg-cyan-400 animate-ping opacity-15 group-hover:opacity-0" />
+                        <Bot className="size-5" />
+                        <span className="absolute inset-0 rounded-3xl bg-white/20 opacity-0 blur-xl transition-opacity group-hover:opacity-100" />
                     </>
                 )}
             </button>
 
-            {/* Agent Panel */}
             {isOpen && (
                 <div
-                    className={`fixed right-6 z-[9997] bg-[#1e1e2e] rounded-xl shadow-2xl border border-[#3d3d55] overflow-hidden transition-all duration-300 ${
+                    className={cn(
+                        "fixed right-6 z-[9997] overflow-hidden rounded-[36px] border border-white/10 bg-black/70 shadow-[0_35px_90px_-45px_rgba(15,23,42,0.95)] backdrop-blur-2xl transition-all duration-300",
                         isMinimized
-                            ? "bottom-24 w-80 h-12"
+                            ? "bottom-24 h-20 w-[22rem]"
                             : isExpanded
-                              ? "bottom-24 w-[440px] h-[calc(100vh-120px)]"
-                              : "bottom-24 w-[400px] h-[560px]"
-                    }`}
+                              ? "bottom-24 h-[calc(100vh-7rem)] w-[30rem]"
+                              : "bottom-24 h-[42rem] w-[27rem]",
+                    )}
                 >
                     {isMinimized ? (
-                        /* Minimized bar */
                         <button
+                            type="button"
                             onClick={() => setIsMinimized(false)}
-                            className="w-full h-full flex items-center justify-between px-4 hover:bg-white/5 transition-colors"
+                            className="flex h-full w-full items-center justify-between px-5 text-left"
                         >
-                            <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                                    <Bot className="w-3 h-3 text-white" />
+                            <div className="flex items-center gap-3">
+                                <div className="flex size-11 items-center justify-center rounded-3xl bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500 text-white shadow-lg">
+                                    <Bot className="size-5" />
                                 </div>
-                                <span className="text-sm font-medium text-gray-200">
-                                    AI Agent
-                                </span>
+                                <div>
+                                    <p className="text-sm font-medium text-white">
+                                        Global AI Assistant
+                                    </p>
+                                    <p className="mt-1 text-xs text-zinc-400">
+                                        Resume your last conversation
+                                    </p>
+                                </div>
                             </div>
-                            <Maximize2 className="w-4 h-4 text-gray-400" />
+                            <Maximize2 className="size-4 text-zinc-400" />
                         </button>
                     ) : (
-                        /* Full panel */
-                        <div className="flex flex-col h-full">
-                            {/* Panel controls */}
-                            <div className="flex items-center justify-end px-2 py-1 border-b border-[#3d3d55] bg-[#1a1a2e]">
-                                <button
-                                    onClick={() => setIsExpanded(!isExpanded)}
-                                    className="p-1 rounded hover:bg-white/10 text-gray-400 transition-colors"
-                                    title={isExpanded ? "Collapse" : "Expand"}
-                                >
-                                    {isExpanded ? (
-                                        <Minimize2 className="w-3.5 h-3.5" />
-                                    ) : (
-                                        <Maximize2 className="w-3.5 h-3.5" />
-                                    )}
-                                </button>
-                                <button
-                                    onClick={() => setIsMinimized(true)}
-                                    className="p-1 rounded hover:bg-white/10 text-gray-400 transition-colors"
-                                    title="Minimize"
-                                >
-                                    <Minimize2 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                    onClick={() => setIsOpen(false)}
-                                    className="p-1 rounded hover:bg-white/10 text-gray-400 transition-colors"
-                                    title="Close"
-                                >
-                                    <X className="w-3.5 h-3.5" />
-                                </button>
+                        <div className="flex h-full flex-col">
+                            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 text-white">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex size-10 items-center justify-center rounded-3xl bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500 shadow-lg">
+                                        <Bot className="size-5" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm font-medium">
+                                                Global AI Assistant
+                                            </p>
+                                            <Badge className="rounded-full border-0 bg-white/10 px-2 py-0.5 text-[10px] text-zinc-200">
+                                                <Sparkles className="size-3" />
+                                                AI
+                                            </Badge>
+                                        </div>
+                                        <p className="mt-1 text-xs text-zinc-400">
+                                            Ctrl+Shift+A to toggle from anywhere
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        onClick={() => setIsExpanded((value) => !value)}
+                                        className="rounded-full text-zinc-300 hover:bg-white/10 hover:text-white"
+                                        title={isExpanded ? "Collapse" : "Expand"}
+                                    >
+                                        {isExpanded ? (
+                                            <Minimize2 className="size-4" />
+                                        ) : (
+                                            <Maximize2 className="size-4" />
+                                        )}
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        onClick={() => setIsMinimized(true)}
+                                        className="rounded-full text-zinc-300 hover:bg-white/10 hover:text-white"
+                                        title="Minimize"
+                                    >
+                                        <Minimize2 className="size-4" />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        onClick={() => setIsOpen(false)}
+                                        className="rounded-full text-zinc-300 hover:bg-white/10 hover:text-white"
+                                        title="Close"
+                                    >
+                                        <X className="size-4" />
+                                    </Button>
+                                </div>
                             </div>
 
-                            {/* Agent content */}
-                            <div className="flex-1 min-h-0">
-                                <AIAgentPanel theme="dark" />
+                            <div className="min-h-0 flex-1 p-4">
+                                <AIAgentPanel className="h-full rounded-[28px]" theme="dark" />
                             </div>
                         </div>
                     )}
