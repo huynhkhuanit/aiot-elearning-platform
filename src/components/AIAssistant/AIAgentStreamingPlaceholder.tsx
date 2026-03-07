@@ -15,6 +15,10 @@ interface AIAgentStreamingPlaceholderProps {
 }
 
 const WORD_DELAY_MS = 45;
+const STREAM_TEXT_STYLE = {
+    fontSize: "13px",
+    lineHeight: "22px",
+} as const;
 
 function splitIntoWords(text: string): string[] {
     return text.match(/\S+\s*|\s+/g) || [];
@@ -56,12 +60,12 @@ export default function AIAgentStreamingPlaceholder({
 
                 <div
                     className={cn(
-                        "min-w-0 flex-1 rounded-[22px] border px-3.5 py-3 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.55)]",
+                        "min-w-0 flex-1 rounded-[20px] border px-3 py-2.5 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.55)]",
                         themed.assistantBubble,
                     )}
                 >
                     <div className="mb-2 flex items-center gap-1.5">
-                        <p className={cn("text-[13px] font-medium", themed.textStrong)}>
+                        <p className={cn("text-[12px] font-medium", themed.textStrong)}>
                             Trợ lý AI
                         </p>
                         <Badge
@@ -77,7 +81,13 @@ export default function AIAgentStreamingPlaceholder({
                     </div>
 
                     <div className="min-h-6">
-                        <span className={cn("text-[13px] leading-6", themed.textBody)}>
+                        <span
+                            className={cn(
+                                "text-[13px] leading-[22px]",
+                                themed.textBody,
+                            )}
+                            style={STREAM_TEXT_STYLE}
+                        >
                             {displayedText}
                         </span>
                         <span

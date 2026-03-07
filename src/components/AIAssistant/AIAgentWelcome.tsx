@@ -59,38 +59,38 @@ export default function AIAgentWelcome({
     const tone = getAIAccent("blue", theme);
 
     return (
-        <div className="flex h-full items-center justify-center px-3 py-4">
+        <div className="flex min-h-full items-start justify-center px-3 py-3">
             <Card
                 className={cn(
-                    "w-full max-w-3xl overflow-hidden rounded-[32px] border shadow-[0_28px_70px_-45px_rgba(15,23,42,0.7)]",
+                    "w-full max-w-3xl overflow-hidden rounded-[28px] border shadow-[0_22px_48px_-38px_rgba(15,23,42,0.72)]",
                     themed.panelElevatedSurface,
                     themed.chrome,
                 )}
             >
-                <CardContent className="relative px-5 py-6">
+                <CardContent className="relative px-4 py-4">
                     <div
                         className={cn(
-                            "pointer-events-none absolute inset-x-10 top-0 h-40 rounded-full bg-gradient-to-b blur-3xl",
+                            "pointer-events-none absolute inset-x-10 top-0 h-28 rounded-full bg-gradient-to-b blur-3xl",
                             themed.heroGlow,
                         )}
                     />
 
                     <div className="relative">
-                        <div className="mb-5 flex items-start gap-3">
+                        <div className="mb-4 flex items-start gap-3">
                             <div
                                 className={cn(
-                                    "flex size-12 items-center justify-center rounded-3xl bg-gradient-to-br shadow-lg ring-1",
+                                    "flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br shadow-md ring-1",
                                     tone.avatar,
                                     tone.ring,
                                 )}
                             >
-                                <Bot className="size-6" />
+                                <Bot className="size-5" />
                             </div>
                             <div className="min-w-0 flex-1">
                                 <Badge
                                     variant="outline"
                                     className={cn(
-                                        "mb-2 rounded-full border px-2.5 py-0.5 text-[10px]",
+                                        "mb-2 rounded-full border px-2 py-0 text-[10px]",
                                         tone.soft,
                                     )}
                                 >
@@ -98,13 +98,18 @@ export default function AIAgentWelcome({
                                 </Badge>
                                 <h3
                                     className={cn(
-                                        "text-xl leading-tight font-semibold tracking-tight",
+                                        "text-base leading-6 font-semibold tracking-tight",
                                         themed.textStrong,
                                     )}
                                 >
                                     Trợ lý AI cho code và học tập
                                 </h3>
-                                <p className={cn("mt-2 text-sm", themed.textMuted)}>
+                                <p
+                                    className={cn(
+                                        "mt-1.5 text-[13px] leading-[22px]",
+                                        themed.textMuted,
+                                    )}
+                                >
                                     {codeContext
                                         ? "AI đã sẵn sàng với ngữ cảnh code hiện tại. Bạn có thể hỏi, review hoặc yêu cầu sửa trực tiếp."
                                         : "Bắt đầu bằng một câu hỏi, một lỗi cần debug hoặc một ý tưởng bạn muốn AI hỗ trợ."}
@@ -112,24 +117,24 @@ export default function AIAgentWelcome({
                             </div>
                         </div>
 
-                        <div className="mb-6 flex flex-wrap items-center gap-2">
+                        <div className="mb-4 flex flex-wrap items-center gap-1.5">
                             {language && (
                                 <Badge
                                     variant="outline"
                                     className={cn(
-                                        "rounded-full border px-2.5 py-1 text-[11px]",
+                                        "rounded-full border px-2 py-0.5 text-[10px]",
                                         themed.borderSoft,
                                         themed.textMuted,
                                     )}
-                            >
-                                <FileCode2 className="size-3" />
-                                {language}
+                                >
+                                    <FileCode2 className="size-3" />
+                                    {language}
                                 </Badge>
                             )}
                             <Badge
                                 variant="outline"
                                 className={cn(
-                                    "rounded-full border px-2.5 py-1 text-[11px]",
+                                    "rounded-full border px-2 py-0.5 text-[10px]",
                                     themed.borderSoft,
                                     themed.textMuted,
                                 )}
@@ -139,7 +144,7 @@ export default function AIAgentWelcome({
                             <Badge
                                 variant="outline"
                                 className={cn(
-                                    "rounded-full border px-2.5 py-1 text-[11px]",
+                                    "rounded-full border px-2 py-0.5 text-[10px]",
                                     themed.borderSoft,
                                     themed.textMuted,
                                 )}
@@ -156,7 +161,7 @@ export default function AIAgentWelcome({
                                         type="button"
                                         onClick={() => onQuickAction(action.prompt)}
                                         className={cn(
-                                            "group rounded-[28px] border p-4 text-left transition-transform duration-200 hover:-translate-y-0.5",
+                                            "group rounded-[24px] border p-3.5 text-left transition-transform duration-200 hover:-translate-y-0.5",
                                             themed.panelSurface,
                                             themed.borderSoft,
                                             themed.itemHover,
@@ -165,16 +170,16 @@ export default function AIAgentWelcome({
                                         <div className="flex items-start gap-3">
                                             <div
                                                 className={cn(
-                                                    "mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-2xl border",
+                                                    "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl border",
                                                     tone.soft,
                                                 )}
                                             >
-                                                <action.icon className="size-4" />
+                                                <action.icon className="size-3.5" />
                                             </div>
                                             <div className="min-w-0 flex-1">
                                                 <p
                                                     className={cn(
-                                                        "text-sm font-medium",
+                                                        "text-[13px] font-medium",
                                                         themed.textStrong,
                                                     )}
                                                 >
@@ -182,7 +187,7 @@ export default function AIAgentWelcome({
                                                 </p>
                                                 <p
                                                     className={cn(
-                                                        "mt-1 text-sm",
+                                                        "mt-1 text-[13px] leading-[22px]",
                                                         themed.textMuted,
                                                     )}
                                                 >
@@ -202,14 +207,19 @@ export default function AIAgentWelcome({
                         ) : (
                             <div
                                 className={cn(
-                                    "rounded-[28px] border border-dashed px-5 py-10 text-center",
+                                    "rounded-[24px] border border-dashed px-4 py-8 text-center",
                                     themed.borderSoft,
                                 )}
                             >
-                                <p className={cn("text-sm font-medium", themed.textStrong)}>
+                                <p className={cn("text-[13px] font-medium", themed.textStrong)}>
                                     Thử đặt một câu hỏi cụ thể
                                 </p>
-                                <p className={cn("mt-2 text-sm", themed.textMuted)}>
+                                <p
+                                    className={cn(
+                                        "mt-2 text-[13px] leading-[22px]",
+                                        themed.textMuted,
+                                    )}
+                                >
                                     Ví dụ: "Giải thích error này", "Tối ưu hàm này",
                                     hoặc "Viết unit test cho component này".
                                 </p>

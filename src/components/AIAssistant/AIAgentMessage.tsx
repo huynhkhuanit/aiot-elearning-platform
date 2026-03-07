@@ -21,6 +21,10 @@ interface AIAgentMessageProps {
 }
 
 const WORD_REVEAL_DELAY_MS = 35;
+const MESSAGE_TEXT_STYLE = {
+    fontSize: "13px",
+    lineHeight: "22px",
+} as const;
 
 function parseContent(
     content: string,
@@ -142,7 +146,7 @@ function FormattedText({
               : "text-sky-700";
 
     return (
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" style={MESSAGE_TEXT_STYLE}>
             {lines.map((line, lineIndex) => {
                 if (!line.trim()) {
                     return <div key={lineIndex} className="h-1.5" />;
@@ -152,7 +156,10 @@ function FormattedText({
                     return (
                         <h4
                             key={lineIndex}
-                            className={cn("pt-1.5 text-[13px] font-semibold", tone.text)}
+                            className={cn(
+                                "pt-1 text-[13px] leading-[22px] font-semibold",
+                                tone.text,
+                            )}
                         >
                             {line.slice(4)}
                         </h4>
@@ -163,7 +170,10 @@ function FormattedText({
                     return (
                         <h3
                             key={lineIndex}
-                            className={cn("pt-1.5 text-sm font-semibold", themed.textStrong)}
+                            className={cn(
+                                "pt-1 text-[13px] leading-[22px] font-semibold",
+                                themed.textStrong,
+                            )}
                         >
                             {line.slice(3)}
                         </h3>
@@ -179,7 +189,7 @@ function FormattedText({
                                     bulletClass,
                                 )}
                             />
-                            <span className="text-[13px] leading-6">
+                            <span className="text-[13px] leading-[22px]">
                                 {renderInline(line.slice(2), theme === "dark", accent)}
                             </span>
                         </div>
@@ -199,7 +209,7 @@ function FormattedText({
                             >
                                 {number}.
                             </span>
-                            <span className="text-[13px] leading-6">
+                            <span className="text-[13px] leading-[22px]">
                                 {renderInline(
                                     line.replace(/^\d+\.\s/, ""),
                                     theme === "dark",
@@ -211,7 +221,7 @@ function FormattedText({
                 }
 
                 return (
-                    <p key={lineIndex} className="text-[13px] leading-6">
+                    <p key={lineIndex} className="text-[13px] leading-[22px]">
                         {renderInline(line, theme === "dark", accent)}
                     </p>
                 );
@@ -290,7 +300,7 @@ export default function AIAgentMessage({
         return (
             <div className="flex justify-end px-3 pb-3">
                 <div
-                    className="max-w-[85%]"
+                    className="max-w-[82%]"
                     onMouseEnter={() => setHovered(true)}
                     onMouseLeave={() => setHovered(false)}
                 >
@@ -311,8 +321,17 @@ export default function AIAgentMessage({
                         </Badge>
                     </div>
 
-                    <div className={cn("rounded-[22px] px-3.5 py-2.5", themed.userBubble)}>
-                        <p className="whitespace-pre-wrap text-[13px] leading-6">
+                    <div
+                        className={cn(
+                            "rounded-[20px] px-3 py-2.5",
+                            themed.userBubble,
+                        )}
+                        style={MESSAGE_TEXT_STYLE}
+                    >
+                        <p
+                            className="whitespace-pre-wrap text-[13px] leading-[22px]"
+                            style={MESSAGE_TEXT_STYLE}
+                        >
                             {message.content}
                         </p>
                     </div>
@@ -343,12 +362,12 @@ export default function AIAgentMessage({
 
                 <div
                     className={cn(
-                        "min-w-0 flex-1 rounded-[22px] border px-3.5 py-3 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.55)]",
+                        "min-w-0 flex-1 rounded-[20px] border px-3 py-2.5 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.55)]",
                         themed.assistantBubble,
                     )}
                 >
                     <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                        <p className={cn("text-[13px] font-medium", themed.textStrong)}>
+                        <p className={cn("text-[12px] font-medium", themed.textStrong)}>
                             {accent === "amber" ? "AI tác vụ" : "Trợ lý AI"}
                         </p>
                         <Badge
@@ -389,7 +408,10 @@ export default function AIAgentMessage({
                         </div>
                     </div>
 
-                    <div className={cn("space-y-2.5", themed.textBody)}>
+                    <div
+                        className={cn("space-y-2", themed.textBody)}
+                        style={MESSAGE_TEXT_STYLE}
+                    >
                         {parts.map((part, index) =>
                             part.type === "code" ? (
                                 <AIAgentCodeBlock
