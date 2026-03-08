@@ -2,15 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
     ArrowRight,
+    Bolt,
     Braces,
     CheckCircle2,
     Code2,
     Cpu,
+    ExternalLink,
     FileText,
+    Filter,
     Grid3X3,
-    Info,
+    Lightbulb,
     Link2,
     Scissors,
+    Search,
     ShieldAlert,
     Sparkles,
     type LucideIcon,
@@ -25,12 +29,6 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { toolCatalog, type ToolCatalogItem } from "@/lib/tool-catalog";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +38,7 @@ export const metadata: Metadata = {
         "Khám phá bộ công cụ hỗ trợ tạo CV, rút gọn liên kết, sinh snippet, dựng CSS Grid, clip-path và demo AIoT.",
 };
 
+/* ── Icon map ─────────────────────────────────────────────── */
 const iconMap: Record<ToolCatalogItem["icon"], LucideIcon> = {
     resume: FileText,
     "short-link": Link2,
@@ -49,161 +48,161 @@ const iconMap: Record<ToolCatalogItem["icon"], LucideIcon> = {
     "face-alert": ShieldAlert,
 };
 
+/* ── Accent token map ─────────────────────────────────────── */
 const accentStyles: Record<
     ToolCatalogItem["accent"],
     {
         bar: string;
-        card: string;
-        iconWrap: string;
+        iconBg: string;
         icon: string;
         check: string;
-        category: string;
-        subtle: string;
+        hoverTitle: string;
+        hoverBtn: string;
     }
 > = {
     sky: {
-        bar: "from-sky-400 via-sky-500 to-indigo-500",
-        card: "bg-gradient-to-br from-sky-50 via-white to-slate-50",
-        iconWrap: "border-sky-100 bg-sky-100/80",
-        icon: "text-sky-700",
-        check: "text-sky-600",
-        category: "bg-sky-100 text-sky-700 hover:bg-sky-100",
-        subtle: "bg-sky-950/[0.03]",
+        bar: "bg-sky-500",
+        iconBg: "bg-sky-50",
+        icon: "text-sky-600",
+        check: "text-sky-500",
+        hoverTitle: "group-hover:text-sky-600",
+        hoverBtn: "hover:bg-sky-50 hover:text-sky-600",
     },
     violet: {
-        bar: "from-violet-400 via-violet-500 to-fuchsia-500",
-        card: "bg-gradient-to-br from-violet-50 via-white to-fuchsia-50/70",
-        iconWrap: "border-violet-100 bg-violet-100/80",
-        icon: "text-violet-700",
-        check: "text-violet-600",
-        category: "bg-violet-100 text-violet-700 hover:bg-violet-100",
-        subtle: "bg-violet-950/[0.03]",
+        bar: "bg-violet-500",
+        iconBg: "bg-violet-50",
+        icon: "text-violet-600",
+        check: "text-violet-500",
+        hoverTitle: "group-hover:text-violet-600",
+        hoverBtn: "hover:bg-violet-50 hover:text-violet-600",
     },
     amber: {
-        bar: "from-amber-400 via-orange-400 to-rose-400",
-        card: "bg-gradient-to-br from-amber-50 via-white to-orange-50/60",
-        iconWrap: "border-amber-100 bg-amber-100/80",
-        icon: "text-amber-700",
-        check: "text-amber-600",
-        category: "bg-amber-100 text-amber-700 hover:bg-amber-100",
-        subtle: "bg-amber-950/[0.03]",
+        bar: "bg-amber-500",
+        iconBg: "bg-amber-50",
+        icon: "text-amber-600",
+        check: "text-amber-500",
+        hoverTitle: "group-hover:text-amber-600",
+        hoverBtn: "hover:bg-amber-50 hover:text-amber-600",
     },
     emerald: {
-        bar: "from-emerald-400 via-emerald-500 to-teal-500",
-        card: "bg-gradient-to-br from-emerald-50 via-white to-teal-50/70",
-        iconWrap: "border-emerald-100 bg-emerald-100/80",
-        icon: "text-emerald-700",
-        check: "text-emerald-600",
-        category: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
-        subtle: "bg-emerald-950/[0.03]",
+        bar: "bg-emerald-500",
+        iconBg: "bg-emerald-50",
+        icon: "text-emerald-600",
+        check: "text-emerald-500",
+        hoverTitle: "group-hover:text-emerald-600",
+        hoverBtn: "hover:bg-emerald-50 hover:text-emerald-600",
     },
     rose: {
-        bar: "from-rose-400 via-pink-500 to-amber-400",
-        card: "bg-gradient-to-br from-rose-50 via-white to-orange-50/60",
-        iconWrap: "border-rose-100 bg-rose-100/80",
-        icon: "text-rose-700",
-        check: "text-rose-600",
-        category: "bg-rose-100 text-rose-700 hover:bg-rose-100",
-        subtle: "bg-rose-950/[0.03]",
+        bar: "bg-rose-500",
+        iconBg: "bg-rose-50",
+        icon: "text-rose-600",
+        check: "text-rose-500",
+        hoverTitle: "group-hover:text-rose-600",
+        hoverBtn: "hover:bg-rose-50 hover:text-rose-600",
     },
     cyan: {
-        bar: "from-cyan-400 via-sky-500 to-indigo-500",
-        card: "bg-gradient-to-br from-cyan-50 via-white to-sky-50/70",
-        iconWrap: "border-cyan-100 bg-cyan-100/80",
-        icon: "text-cyan-700",
-        check: "text-cyan-600",
-        category: "bg-cyan-100 text-cyan-700 hover:bg-cyan-100",
-        subtle: "bg-cyan-950/[0.03]",
+        bar: "bg-cyan-500",
+        iconBg: "bg-cyan-50",
+        icon: "text-cyan-600",
+        check: "text-cyan-500",
+        hoverTitle: "group-hover:text-cyan-600",
+        hoverBtn: "hover:bg-cyan-50 hover:text-cyan-600",
     },
 };
 
-const toolGroups = [
+/* ── Quick access items (from hero card) ──────────────────── */
+const quickAccessItems = [
     {
-        icon: Sparkles,
-        title: "Khởi đầu từ nhu cầu thực tế",
+        tool: toolCatalog[0],
+        iconBg: "bg-sky-500/20",
+        iconColor: "text-sky-400",
+        hoverColor: "group-hover:text-cyan-300",
+    },
+    {
+        tool: toolCatalog[1],
+        iconBg: "bg-violet-500/20",
+        iconColor: "text-violet-400",
+        hoverColor: "group-hover:text-violet-300",
+    },
+    {
+        tool: toolCatalog[2],
+        iconBg: "bg-emerald-500/20",
+        iconColor: "text-emerald-400",
+        hoverColor: "group-hover:text-emerald-300",
+    },
+];
+
+/* ── Development methodology pillars ──────────────────────── */
+const methodologyPillars = [
+    {
+        icon: Lightbulb,
+        title: "Giải quyết vấn đề thực tế",
         description:
-            "Ưu tiên các công cụ giúp sinh viên chuẩn bị hồ sơ, chia sẻ tài liệu và làm đồ án nhanh hơn.",
-        items: ["Tạo CV xin việc", "Rút gọn liên kết"],
+            "Mỗi công cụ được sinh ra từ chính những khó khăn mà học viên và lập trình viên gặp phải trong quá trình làm việc.",
     },
     {
         icon: Code2,
-        title: "Tăng tốc công việc frontend",
+        title: "Tối ưu hóa Code",
         description:
-            "Nhóm công cụ phục vụ dựng giao diện, sinh mã lặp lại và thử ý tưởng UI trực quan hơn.",
-        items: [
-            "Clip-path maker",
-            "Snippet generator",
-            "CSS Grid generator",
-        ],
+            "Đảm bảo hiệu suất cao, load nhanh và không tiêu tốn tài nguyên hệ thống vô ích.",
     },
     {
         icon: Cpu,
-        title: "Mở rộng sang demo AIoT",
+        title: "Ứng dụng AI",
         description:
-            "Không dừng ở utility frontend, page này còn mở đường cho các bài toán nhận diện hành vi và computer vision.",
-        items: ["Cảnh báo sờ tay lên mặt"],
+            "Tích hợp trí tuệ nhân tạo một cách tinh tế để tự động hóa các thao tác thủ công nhàm chán.",
     },
 ];
 
-const metrics = [
-    {
-        value: `${toolCatalog.length}`,
-        label: "công cụ trên một page",
-        description:
-            "Từ nhu cầu xin việc, chia sẻ tài liệu cho tới frontend utility và AIoT demo.",
-    },
-    {
-        value: "4",
-        label: "nhóm nhu cầu chính",
-        description:
-            "Sự nghiệp, tiện ích, frontend/developer và computer vision được gom rõ theo mục tiêu sử dụng.",
-    },
-    {
-        value: "UI",
-        label: "thân thiện, dễ quét",
-        description:
-            "Bố cục dạng catalog với card, anchor rõ ràng và tooltip giải thích ngữ cảnh dùng ngay trên từng tool.",
-    },
-];
-
+/* ══════════════════════════════════════════════════════════════
+   PAGE COMPONENT
+   ══════════════════════════════════════════════════════════════ */
 export default function ToolsPage() {
-    const categories = Array.from(
-        new Set(toolCatalog.map((tool) => tool.category))
-    );
-
     return (
         <div className="min-h-screen bg-slate-50">
-            <section className="relative overflow-hidden bg-gradient-to-br from-[#6366f1] via-[#7c3aed] to-[#9333ea] pt-32 pb-28 text-white">
-                <div className="absolute inset-0 bg-[url('/assets/img/grid-pattern.svg')] opacity-10" />
-                <div className="absolute -left-20 top-24 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl" />
-                <div className="absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-fuchsia-400/20 blur-3xl" />
+            {/* ── HERO ──────────────────────────────────── */}
+            <section className="relative overflow-hidden pt-24 pb-32">
+                {/* Background Gradient & Blobs */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#6366f1] to-[#9333ea] z-0" />
+                <div className="absolute top-0 left-0 w-96 h-96 rounded-full bg-cyan-400/30 mix-blend-multiply blur-[80px] opacity-70 z-0" />
+                <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-fuchsia-400/30 mix-blend-multiply blur-[80px] opacity-70 z-0" />
+                <div className="absolute -bottom-8 left-20 w-96 h-96 rounded-full bg-indigo-400/30 mix-blend-multiply blur-[80px] opacity-70 z-0" />
 
-                <div className="relative z-10 mx-auto max-w-7xl px-6">
-                    <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-                        <div className="max-w-3xl">
-                            <Badge className="rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium text-white shadow-none hover:bg-white/10">
-                                Kho công cụ dành cho người học, developer và AIoT
-                            </Badge>
+                <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        {/* Left content */}
+                        <div className="flex flex-col gap-6 text-white">
+                            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 backdrop-blur">
+                                <Sparkles className="size-3.5 text-cyan-300" />
+                                <span className="text-xs font-medium tracking-wide text-cyan-50">
+                                    Kho công cụ cao cấp
+                                </span>
+                            </div>
 
-                            <h1 className="mt-6 text-4xl font-[900] leading-tight tracking-tight text-white md:text-6xl">
-                                Một điểm đến cho các công cụ học tập và làm sản phẩm
+                            <h1 className="text-5xl lg:text-6xl font-black leading-tight tracking-tight">
+                                Một điểm đến cho
+                                <br />
+                                <span className="bg-gradient-to-r from-cyan-300 to-white bg-clip-text text-transparent">
+                                    mọi công cụ
+                                </span>
                             </h1>
 
-                            <p className="mt-6 max-w-2xl text-lg leading-8 text-blue-100 md:text-xl">
-                                Page này tập hợp toàn bộ nhóm công cụ đang được định
-                                hình cho hệ thống, với giao diện dễ quét, nội dung rõ
-                                ngữ cảnh và sẵn sàng mở rộng thành utility thực tế.
+                            <p className="max-w-xl text-lg leading-relaxed text-indigo-100">
+                                Khám phá bộ công cụ thiết yếu dành cho học viên
+                                CodeSense AIoT. Tối ưu hóa quy trình làm việc,
+                                nâng cao hiệu suất lập trình và thiết kế với
+                                giao diện hiện đại, dễ sử dụng.
                             </p>
 
-                            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                            <div className="mt-4 flex flex-wrap items-center gap-4">
                                 <Button
                                     asChild
                                     size="lg"
-                                    className="h-12 rounded-full bg-white px-6 text-[#5b61f6] shadow-lg hover:bg-slate-100"
+                                    className="h-12 rounded-xl bg-white px-6 font-bold text-[#6366f1] shadow-lg hover:bg-slate-50 hover:shadow-xl"
                                 >
                                     <Link href="#tool-catalog">
-                                        Khám phá công cụ
-                                        <ArrowRight className="size-4" />
+                                        <Sparkles className="mr-2 size-4" />
+                                        Khám phá ngay
                                     </Link>
                                 </Button>
 
@@ -211,380 +210,336 @@ export default function ToolsPage() {
                                     asChild
                                     size="lg"
                                     variant="outline"
-                                    className="h-12 rounded-full border-white/25 bg-white/10 px-6 text-white backdrop-blur-sm hover:bg-white/15 hover:text-white"
+                                    className="h-12 rounded-xl border-2 border-white/30 bg-transparent px-6 font-bold text-white hover:bg-white/10 hover:text-white"
                                 >
-                                    <Link href="/contact">Góp ý tính năng ưu tiên</Link>
+                                    <Link href="/contact">Tìm hiểu thêm</Link>
                                 </Button>
                             </div>
                         </div>
 
-                        <Card className="overflow-hidden rounded-[32px] border border-white/20 bg-white/10 py-0 text-white shadow-2xl backdrop-blur-xl">
-                            <CardHeader className="px-6 pt-6 pb-4">
-                                <CardTitle className="text-2xl font-bold">
-                                    Đi nhanh tới đúng công cụ
-                                </CardTitle>
-                                <CardDescription className="text-sm leading-6 text-blue-100">
-                                    Ba nhóm use case nổi bật được đặt ngay trong hero
-                                    để người dùng mới định hướng nhanh.
-                                </CardDescription>
-                            </CardHeader>
+                        {/* Right — Glassmorphism Quick Access Card */}
+                        <div className="hidden lg:block relative">
+                            {/* Tilted background glass */}
+                            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/20 to-white/5 rotate-3 scale-105 border border-white/10 shadow-2xl backdrop-blur-sm" />
 
-                            <CardContent className="space-y-3 px-6 pb-6">
-                                {toolCatalog.slice(0, 3).map((tool) => {
-                                    const Icon = iconMap[tool.icon];
+                            {/* Main card */}
+                            <div className="relative rounded-3xl border border-white/10 bg-slate-900/40 p-8 shadow-2xl backdrop-blur-md">
+                                <h3 className="flex items-center gap-2 text-xl font-bold text-white">
+                                    <Bolt className="size-5 text-cyan-400" />
+                                    Truy cập nhanh
+                                </h3>
 
-                                    return (
-                                        <Link
-                                            key={tool.id}
-                                            href={tool.href}
-                                            className="group flex items-start gap-4 rounded-3xl border border-white/15 bg-black/10 p-4 transition-all duration-200 hover:border-white/25 hover:bg-black/15"
-                                        >
-                                            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-white/10">
-                                                <Icon className="size-5" />
-                                            </div>
+                                <div className="mt-6 space-y-4">
+                                    {quickAccessItems.map(
+                                        ({
+                                            tool,
+                                            iconBg,
+                                            iconColor,
+                                            hoverColor,
+                                        }) => {
+                                            const Icon = iconMap[tool.icon];
 
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="truncate font-semibold text-white">
-                                                        {tool.name}
-                                                    </p>
-                                                    <Badge className="rounded-full border-0 bg-white/10 text-[11px] text-blue-100 hover:bg-white/10">
-                                                        {tool.focus}
-                                                    </Badge>
-                                                </div>
-                                                <p className="mt-2 text-sm leading-6 text-blue-100">
-                                                    {tool.summary}
-                                                </p>
-                                            </div>
+                                            return (
+                                                <Link
+                                                    key={tool.id}
+                                                    href={tool.href}
+                                                    className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-colors hover:bg-white/10"
+                                                >
+                                                    <div
+                                                        className={cn(
+                                                            "flex size-12 shrink-0 items-center justify-center rounded-lg",
+                                                            iconBg,
+                                                        )}
+                                                    >
+                                                        <Icon
+                                                            className={cn(
+                                                                "size-5",
+                                                                iconColor,
+                                                            )}
+                                                        />
+                                                    </div>
 
-                                            <ArrowRight className="mt-1 size-4 shrink-0 text-blue-100 transition-transform duration-200 group-hover:translate-x-0.5" />
-                                        </Link>
-                                    );
-                                })}
-                            </CardContent>
-                        </Card>
+                                                    <div className="min-w-0 flex-1">
+                                                        <h4
+                                                            className={cn(
+                                                                "font-semibold text-white transition-colors",
+                                                                hoverColor,
+                                                            )}
+                                                        >
+                                                            {tool.name}
+                                                        </h4>
+                                                        <p className="mt-0.5 text-sm text-slate-300">
+                                                            {tool.summary.slice(
+                                                                0,
+                                                                40,
+                                                            )}
+                                                            …
+                                                        </p>
+                                                    </div>
+
+                                                    <ArrowRight className="size-4 shrink-0 text-white/30 transition-colors group-hover:text-white" />
+                                                </Link>
+                                            );
+                                        },
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <div className="relative z-20 mx-auto -mt-10 max-w-7xl px-6">
-                <div className="grid gap-4 rounded-[28px] border border-slate-200 bg-white p-5 shadow-xl md:grid-cols-3 md:p-6">
-                    {metrics.map((metric) => (
-                        <div
-                            key={metric.label}
-                            className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-100"
-                        >
-                            <p className="text-3xl font-[900] text-slate-900">
-                                {metric.value}
+            {/* ── METRICS BAR (overlapping hero) ─────────── */}
+            <div className="relative z-20 mx-auto -mt-16 max-w-5xl px-4 sm:px-6 lg:px-8">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
+                    <div className="grid grid-cols-1 gap-8 divide-y md:grid-cols-3 md:divide-x md:divide-y-0 divide-slate-200">
+                        {/* Metric 1 */}
+                        <div className="flex flex-col items-center pt-4 text-center md:pt-0">
+                            <Sparkles className="mb-2 size-7 text-[#6366f1]" />
+                            <p className="mb-1 text-sm font-medium uppercase tracking-wider text-slate-500">
+                                Số lượng
                             </p>
-                            <p className="mt-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                {metric.label}
-                            </p>
-                            <p className="mt-3 text-sm leading-6 text-slate-600">
-                                {metric.description}
+                            <p className="text-3xl font-black text-slate-900">
+                                {toolCatalog.length}{" "}
+                                <span className="text-lg font-semibold text-slate-500">
+                                    công cụ
+                                </span>
                             </p>
                         </div>
-                    ))}
+                        {/* Metric 2 */}
+                        <div className="flex flex-col items-center pt-4 text-center md:pt-0">
+                            <Grid3X3 className="mb-2 size-7 text-violet-500" />
+                            <p className="mb-1 text-sm font-medium uppercase tracking-wider text-slate-500">
+                                Phân loại
+                            </p>
+                            <p className="text-3xl font-black text-slate-900">
+                                4{" "}
+                                <span className="text-lg font-semibold text-slate-500">
+                                    nhóm nhu cầu
+                                </span>
+                            </p>
+                        </div>
+                        {/* Metric 3 */}
+                        <div className="flex flex-col items-center pt-4 text-center md:pt-0">
+                            <CheckCircle2 className="mb-2 size-7 text-emerald-500" />
+                            <p className="mb-1 text-sm font-medium uppercase tracking-wider text-slate-500">
+                                Trải nghiệm
+                            </p>
+                            <p className="text-3xl font-black text-slate-900">
+                                UI{" "}
+                                <span className="text-lg font-semibold text-slate-500">
+                                    thân thiện
+                                </span>
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
+            {/* ── TOOL CATALOG ──────────────────────────── */}
             <section
                 id="tool-catalog"
-                className="scroll-mt-28 mx-auto max-w-7xl px-6 py-16 md:py-20"
+                className="scroll-mt-28 mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8"
             >
-                <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-                    <div className="max-w-3xl">
-                        <Badge
-                            variant="outline"
-                            className="rounded-full border-[#6366f1]/20 bg-[#6366f1]/5 px-4 py-1.5 text-sm font-medium text-[#6366f1]"
-                        >
+                {/* Section header */}
+                <div className="mb-12 flex items-end justify-between">
+                    <div>
+                        <h2 className="text-3xl font-black tracking-tight text-slate-900">
                             Danh mục công cụ
-                        </Badge>
-                        <h2 className="mt-4 text-3xl font-[900] text-slate-900 md:text-4xl">
-                            Catalog được sắp theo mục tiêu sử dụng thay vì chỉ liệt kê
-                            tên
                         </h2>
-                        <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-                            Mỗi card đều có mô tả ngắn, ngữ cảnh áp dụng, highlight
-                            chính và tooltip giải thích nhanh để người dùng biết khi
-                            nào nên dùng công cụ đó.
+                        <p className="mt-2 text-slate-600">
+                            Các công cụ được thiết kế chuyên biệt để hỗ trợ quá
+                            trình học tập và làm việc.
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                        {categories.map((category) => (
-                            <Badge
-                                key={category}
-                                variant="secondary"
-                                className="rounded-full bg-slate-900 px-4 py-1.5 text-sm text-white hover:bg-slate-900"
-                            >
-                                {category}
-                            </Badge>
-                        ))}
+                    <div className="hidden gap-2 sm:flex">
+                        <button
+                            type="button"
+                            className="rounded-lg border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50"
+                        >
+                            <Filter className="size-5" />
+                        </button>
+                        <button
+                            type="button"
+                            className="rounded-lg border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50"
+                        >
+                            <Search className="size-5" />
+                        </button>
                     </div>
                 </div>
 
-                <TooltipProvider>
-                    <div className="mt-10 grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-                        {toolCatalog.map((tool) => {
-                            const Icon = iconMap[tool.icon];
-                            const accent = accentStyles[tool.accent];
+                {/* Catalog grid */}
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {toolCatalog.map((tool) => {
+                        const Icon = iconMap[tool.icon];
+                        const accent = accentStyles[tool.accent];
 
-                            return (
-                                <Card
-                                    key={tool.id}
-                                    id={tool.id}
-                                    className={cn(
-                                        "scroll-mt-28 overflow-hidden rounded-[32px] border-0 py-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl",
-                                        accent.card
-                                    )}
-                                >
-                                    <div
-                                        className={cn(
-                                            "h-1 w-full bg-gradient-to-r",
-                                            accent.bar
-                                        )}
-                                    />
+                        return (
+                            <Card
+                                key={tool.id}
+                                id={tool.id}
+                                className="group scroll-mt-28 overflow-hidden rounded-[32px] border border-slate-200 bg-white py-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl flex flex-col"
+                            >
+                                {/* Solid accent bar */}
+                                <div className={cn("h-2 w-full", accent.bar)} />
 
-                                    <CardHeader className="space-y-4 px-6 pt-6 pb-4">
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div
-                                                className={cn(
-                                                    "flex size-12 items-center justify-center rounded-2xl border",
-                                                    accent.iconWrap
-                                                )}
-                                            >
-                                                <Icon
-                                                    className={cn(
-                                                        "size-6",
-                                                        accent.icon
-                                                    )}
-                                                />
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <Badge
-                                                    className={cn(
-                                                        "rounded-full border-0 px-3 py-1 text-xs font-semibold",
-                                                        accent.category
-                                                    )}
-                                                >
-                                                    {tool.category}
-                                                </Badge>
-
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <button
-                                                            type="button"
-                                                            aria-label={`Gợi ý dùng ${tool.name}`}
-                                                            className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200/80 bg-white/80 text-slate-500 transition-colors hover:text-slate-900"
-                                                        >
-                                                            <Info className="size-4" />
-                                                        </button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="max-w-72 rounded-2xl px-4 py-3 text-sm leading-6 shadow-2xl">
-                                                        <p className="font-semibold">
-                                                            {tool.name}
-                                                        </p>
-                                                        <p className="mt-1 text-background/80">
-                                                            {tool.tooltip}
-                                                        </p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-wrap gap-2">
-                                            <Badge
-                                                variant="outline"
-                                                className="rounded-full border-slate-200 bg-white/80 px-3 py-1 text-xs text-slate-600"
-                                            >
-                                                {tool.focus}
-                                            </Badge>
-                                            <Badge
-                                                variant="outline"
-                                                className="rounded-full border-slate-200 bg-white/80 px-3 py-1 text-xs text-slate-600"
-                                            >
-                                                {tool.audience}
-                                            </Badge>
-                                        </div>
-
-                                        <div>
-                                            <CardTitle className="text-xl font-bold text-slate-900">
-                                                {tool.name}
-                                            </CardTitle>
-                                            <CardDescription className="mt-2 text-sm leading-6 text-slate-600">
-                                                {tool.summary}
-                                            </CardDescription>
-                                        </div>
-                                    </CardHeader>
-
-                                    <CardContent className="space-y-6 px-6 pb-6">
-                                        <p className="text-sm leading-6 text-slate-700">
-                                            {tool.description}
-                                        </p>
-
-                                        <div className="space-y-3">
-                                            {tool.highlights.map((highlight) => (
-                                                <div
-                                                    key={highlight}
-                                                    className="flex items-start gap-3 rounded-2xl bg-white/80 p-3 ring-1 ring-slate-100"
-                                                >
-                                                    <CheckCircle2
-                                                        className={cn(
-                                                            "mt-0.5 size-4 shrink-0",
-                                                            accent.check
-                                                        )}
-                                                    />
-                                                    <span className="text-sm leading-6 text-slate-700">
-                                                        {highlight}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-
+                                <div className="flex-1 flex flex-col p-8">
+                                    {/* Top row: icon + category */}
+                                    <div className="mb-6 flex items-start justify-between">
                                         <div
                                             className={cn(
-                                                "rounded-2xl p-4 ring-1 ring-white/60",
-                                                accent.subtle
+                                                "flex size-14 items-center justify-center rounded-2xl shadow-sm",
+                                                accent.iconBg,
                                             )}
                                         >
-                                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                                Kết quả kỳ vọng
-                                            </p>
-                                            <p className="mt-2 text-sm leading-6 text-slate-700">
-                                                {tool.outcome}
-                                            </p>
+                                            <Icon
+                                                className={cn(
+                                                    "size-7",
+                                                    accent.icon,
+                                                )}
+                                            />
                                         </div>
 
-                                        <div className="flex items-center justify-between border-t border-slate-200/80 pt-4">
-                                            <span className="text-sm font-medium text-slate-500">
-                                                Neo trực tiếp tới mục này
-                                            </span>
-                                            <Button
-                                                asChild
-                                                variant="ghost"
-                                                className="h-10 rounded-full px-4 text-[#6366f1] hover:bg-[#6366f1]/10 hover:text-[#5558e6]"
+                                        <Badge
+                                            variant="secondary"
+                                            className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                                        >
+                                            {tool.category}
+                                        </Badge>
+                                    </div>
+
+                                    {/* Title */}
+                                    <CardTitle
+                                        className={cn(
+                                            "mb-2 text-xl font-bold text-slate-900 transition-colors",
+                                            accent.hoverTitle,
+                                        )}
+                                    >
+                                        {tool.name}
+                                    </CardTitle>
+
+                                    {/* Summary */}
+                                    <CardDescription className="mb-6 flex-1 text-sm text-slate-600">
+                                        {tool.description}
+                                    </CardDescription>
+
+                                    {/* Highlights */}
+                                    <ul className="mb-8 space-y-3">
+                                        {tool.highlights.map((highlight) => (
+                                            <li
+                                                key={highlight}
+                                                className="flex items-start gap-2 text-sm text-slate-700"
                                             >
-                                                <Link href={tool.href}>
-                                                    Liên kết mục
-                                                    <ArrowRight className="size-4" />
-                                                </Link>
-                                            </Button>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
-                    </div>
-                </TooltipProvider>
+                                                <CheckCircle2
+                                                    className={cn(
+                                                        "mt-0.5 size-4 shrink-0",
+                                                        accent.check,
+                                                    )}
+                                                />
+                                                {highlight}
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    {/* Outcome */}
+                                    <div className="mt-auto rounded-xl border border-slate-100 bg-slate-50 p-4">
+                                        <p className="mb-1 text-xs font-semibold uppercase text-slate-500">
+                                            Kết quả kỳ vọng
+                                        </p>
+                                        <p className="text-sm font-medium text-slate-900">
+                                            {tool.outcome}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Full-width CTA button */}
+                                <div className="px-8 pb-8">
+                                    <Button
+                                        asChild
+                                        variant="secondary"
+                                        className={cn(
+                                            "w-full rounded-xl bg-slate-100 py-3 font-semibold text-slate-900 transition-colors",
+                                            accent.hoverBtn,
+                                        )}
+                                    >
+                                        <Link href={tool.href}>
+                                            Mở công cụ
+                                            <ExternalLink className="ml-2 size-3.5" />
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </Card>
+                        );
+                    })}
+                </div>
             </section>
 
-            <section className="mx-auto max-w-7xl px-6 pb-16 md:pb-24">
-                <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-                    <Card className="rounded-[32px] border border-slate-200 bg-white shadow-sm">
-                        <CardHeader className="px-6 pt-6 pb-4">
-                            <CardTitle className="text-2xl font-bold text-slate-900">
-                                Cách page này tổ chức các công cụ
-                            </CardTitle>
-                            <CardDescription className="text-sm leading-6 text-slate-600">
-                                Không chỉ gom link, page còn được chia thành các cụm
-                                use case để người dùng mới chọn nhanh đúng nhóm công
-                                cụ mình cần.
-                            </CardDescription>
-                        </CardHeader>
+            {/* ── BOTTOM SECTION ────────────────────────── */}
+            <section className="border-t border-slate-200 bg-slate-50 py-16">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                        {/* Left — Methodology card */}
+                        <div className="rounded-3xl border border-slate-200 bg-white p-8 lg:p-12">
+                            <h3 className="mb-6 text-2xl font-bold text-slate-900">
+                                Cách chúng tôi phát triển công cụ
+                            </h3>
 
-                        <CardContent className="space-y-4 px-6 pb-6">
-                            {toolGroups.map((group) => (
-                                <div
-                                    key={group.title}
-                                    className="rounded-3xl border border-slate-200 bg-slate-50 p-5"
-                                >
-                                    <div className="flex items-start gap-4">
-                                        <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[#6366f1] shadow-sm ring-1 ring-slate-100">
-                                            <group.icon className="size-5" />
+                            <div className="space-y-6">
+                                {methodologyPillars.map((pillar) => (
+                                    <div
+                                        key={pillar.title}
+                                        className="flex gap-4"
+                                    >
+                                        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#6366f1]/10 text-[#6366f1]">
+                                            <pillar.icon className="size-5" />
                                         </div>
 
                                         <div className="min-w-0">
-                                            <h3 className="text-lg font-bold text-slate-900">
-                                                {group.title}
-                                            </h3>
-                                            <p className="mt-2 text-sm leading-6 text-slate-600">
-                                                {group.description}
+                                            <h4 className="text-lg font-semibold text-slate-900">
+                                                {pillar.title}
+                                            </h4>
+                                            <p className="mt-1 text-sm text-slate-600">
+                                                {pillar.description}
                                             </p>
-
-                                            <div className="mt-4 flex flex-wrap gap-2">
-                                                {group.items.map((item) => (
-                                                    <Badge
-                                                        key={item}
-                                                        variant="outline"
-                                                        className="rounded-full border-slate-200 bg-white px-3 py-1 text-xs text-slate-600"
-                                                    >
-                                                        {item}
-                                                    </Badge>
-                                                ))}
-                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-
-                    <Card className="overflow-hidden rounded-[32px] border-0 bg-slate-950 py-0 text-white shadow-2xl">
-                        <CardHeader className="px-6 pt-6 pb-4">
-                            <Badge className="w-fit rounded-full border border-white/10 bg-white/10 px-4 py-1.5 text-sm font-medium text-white hover:bg-white/10">
-                                Thiết kế bám phong cách hệ thống hiện tại
-                            </Badge>
-                            <CardTitle className="mt-4 text-2xl font-bold text-white">
-                                Hướng giao diện cho các tool tiếp theo
-                            </CardTitle>
-                            <CardDescription className="text-sm leading-6 text-slate-300">
-                                Tone màu gradient tím-xanh, card trắng bo lớn,
-                                tooltip gọn và CTA rõ ràng được giữ đồng nhất với
-                                các page như About và Contact.
-                            </CardDescription>
-                        </CardHeader>
-
-                        <CardContent className="space-y-6 px-6 pb-6">
-                            <div className="space-y-3">
-                                {[
-                                    "Hero có gradient, grid pattern và khối preview để tạo điểm nhấn ngay khi vào page.",
-                                    "Card công cụ ưu tiên độ đọc nhanh: icon, category badge, focus badge, mô tả ngắn và kết quả kỳ vọng.",
-                                    "Tooltip được dùng như lớp giải thích phụ để page vẫn gọn nhưng không thiếu ngữ cảnh.",
-                                ].map((item) => (
-                                    <div
-                                        key={item}
-                                        className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4"
-                                    >
-                                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-cyan-300" />
-                                        <p className="text-sm leading-6 text-slate-200">
-                                            {item}
-                                        </p>
                                     </div>
                                 ))}
                             </div>
+                        </div>
 
-                            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
-                                    Gợi ý triển khai tiếp
-                                </p>
-                                <p className="mt-3 text-sm leading-6 text-slate-200">
-                                    Nếu muốn đi xa hơn, từng card ở trên có thể được
-                                    nâng cấp thành route riêng hoặc tab tool tương tác
-                                    trực tiếp ngay trong page này.
+                        {/* Right — Community CTA card */}
+                        <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 p-8 text-white lg:p-12 flex flex-col justify-between">
+                            {/* Decorative blob */}
+                            <div className="absolute -right-16 -top-16 size-64 rounded-full bg-[#6366f1]/20 mix-blend-screen blur-[80px] opacity-50" />
+
+                            <div className="relative z-10">
+                                <Badge className="mb-6 inline-block rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-slate-300 hover:bg-white/10">
+                                    Dành cho nhà phát triển
+                                </Badge>
+
+                                <h3 className="mb-4 text-2xl font-bold">
+                                    Bạn có ý tưởng công cụ mới?
+                                </h3>
+
+                                <p className="mb-8 leading-relaxed text-slate-400">
+                                    CodeSense AIoT luôn hoan nghênh những đóng
+                                    góp từ cộng đồng. Hãy chia sẻ ý tưởng của
+                                    bạn hoặc tham gia phát triển công cụ cùng
+                                    chúng tôi để xây dựng hệ sinh thái ngày càng
+                                    mạnh mẽ.
                                 </p>
                             </div>
 
-                            <div className="flex flex-col gap-3 sm:flex-row">
+                            <div className="relative z-10 mt-auto flex flex-col gap-4 sm:flex-row">
                                 <Button
                                     asChild
                                     size="lg"
-                                    className="h-12 rounded-full bg-white px-6 text-slate-950 hover:bg-slate-100"
+                                    className="h-12 rounded-xl bg-[#6366f1] px-6 font-semibold text-white hover:bg-[#818cf8]"
                                 >
-                                    <Link href="#tool-catalog">
-                                        Xem toàn bộ công cụ
-                                        <ArrowRight className="size-4" />
+                                    <Link href="/contact">
+                                        Đóng góp ý tưởng
+                                        <ArrowRight className="ml-1 size-4" />
                                     </Link>
                                 </Button>
 
@@ -592,13 +547,43 @@ export default function ToolsPage() {
                                     asChild
                                     size="lg"
                                     variant="outline"
-                                    className="h-12 rounded-full border-white/15 bg-transparent px-6 text-white hover:bg-white/10 hover:text-white"
+                                    className="h-12 rounded-xl border-white/10 bg-white/5 px-6 font-semibold text-white hover:bg-white/10 hover:text-white"
                                 >
-                                    <Link href="/contact">Đề xuất công cụ mới</Link>
+                                    <Link href="#tool-catalog">
+                                        Xem Design Guidelines
+                                    </Link>
                                 </Button>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
+
+                    {/* Footer copyright */}
+                    <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-8 md:flex-row">
+                        <p className="text-sm text-slate-500">
+                            © {new Date().getFullYear()} CodeSense AIoT. All
+                            rights reserved.
+                        </p>
+                        <div className="flex gap-6">
+                            <Link
+                                href="/terms"
+                                className="text-slate-400 transition-colors hover:text-slate-900"
+                            >
+                                Điều khoản
+                            </Link>
+                            <Link
+                                href="/privacy"
+                                className="text-slate-400 transition-colors hover:text-slate-900"
+                            >
+                                Bảo mật
+                            </Link>
+                            <Link
+                                href="/contact"
+                                className="text-slate-400 transition-colors hover:text-slate-900"
+                            >
+                                Liên hệ
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             </section>
         </div>
