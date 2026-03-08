@@ -9,7 +9,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { rpc } from "@/lib/db-helpers";
-import { db as supabaseAdmin } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
     try {
@@ -57,68 +56,46 @@ export async function GET(request: NextRequest) {
             p_search: search || null,
         });
 
-        // Get instructor avatars for all courses
-        const instructorIds = [
-            ...new Set(
-                (courses || [])
-                    .map((c: any) => c.instructor_id)
-                    .filter(Boolean),
-            ),
-        ];
-        const instructorData: Record<
-            string,
-            { avatar_url: string | null; is_pro: boolean }
-        > = {};
+        // Format response — instructor data now comes directly from the RPC function
+        // which already JOINs the users table
+        const formattedCourses = (courses || []).map((course: any) => {
+            // Determine registration & Pro status from RPC data
+            const hasInstructorId = Boolean(course.instructor_id);
+            const instructorIsPro = course.instructor_membership_type === "PRO";
+            const instructorIsRegistered =
+                hasInstructorId && Boolean(course.instructor_name);
 
-        if (instructorIds.length > 0 && supabaseAdmin) {
-            const { data: instructors } = await supabaseAdmin
-                .from("users")
-                .select("id, avatar_url, is_pro")
-                .in("id", instructorIds);
-
-            if (instructors) {
-                instructors.forEach((instructor: any) => {
-                    instructorData[instructor.id] = {
-                        avatar_url: instructor.avatar_url,
-                        is_pro: Boolean(instructor.is_pro),
-                    };
-                });
-            }
-        }
-
-        // Format response
-        const formattedCourses = (courses || []).map((course: any) => ({
-            id: course.id,
-            title: course.title,
-            slug: course.slug,
-            subtitle: course.short_description,
-            thumbnailUrl: course.thumbnail_url,
-            level: course.level,
-            price: course.is_free
-                ? "Miễn phí"
-                : `${parseFloat(course.price || 0).toLocaleString("vi-VN")}đ`,
-            priceAmount: parseFloat(course.price || 0),
-            isFree: Boolean(course.is_free),
-            isPro: !Boolean(course.is_free),
-            duration: formatDuration(course.estimated_duration || 0),
-            rating: parseFloat(course.rating || 0),
-            students: course.total_students || 0,
-            totalLessons: course.total_lessons || 0,
-            category: {
-                name: course.category_name,
-                slug: course.category_slug,
-            },
-            instructor: {
-                name: course.instructor_name,
-                username: course.instructor_username,
-                avatar:
-                    course.instructor_avatar_url ||
-                    instructorData[course.instructor_id]?.avatar_url ||
-                    null,
-                isPro: instructorData[course.instructor_id]?.is_pro ?? false,
-            },
-            createdAt: course.created_at,
-        }));
+            return {
+                id: course.id,
+                title: course.title,
+                slug: course.slug,
+                subtitle: course.short_description,
+                thumbnailUrl: course.thumbnail_url,
+                level: course.level,
+                price: course.is_free
+                    ? "Miễn phí"
+                    : `${parseFloat(course.price || 0).toLocaleString("vi-VN")}đ`,
+                priceAmount: parseFloat(course.price || 0),
+                isFree: Boolean(course.is_free),
+                isPro: !Boolean(course.is_free),
+                duration: formatDuration(course.estimated_duration || 0),
+                rating: parseFloat(course.rating || 0),
+                students: course.total_students || 0,
+                totalLessons: course.total_lessons || 0,
+                category: {
+                    name: course.category_name,
+                    slug: course.category_slug,
+                },
+                instructor: {
+                    name: course.instructor_name,
+                    username: course.instructor_username,
+                    avatar: course.instructor_avatar_url || null,
+                    isPro: instructorIsPro,
+                    isRegistered: instructorIsRegistered,
+                },
+                createdAt: course.created_at,
+            };
+        });
 
         return NextResponse.json(
             {

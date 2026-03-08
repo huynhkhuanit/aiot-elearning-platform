@@ -32,6 +32,7 @@ interface Course {
         username?: string;
         avatar?: string | null;
         isPro?: boolean;
+        isRegistered?: boolean;
     };
 }
 
@@ -481,130 +482,129 @@ function CourseCard({
         course.instructor?.name || course.instructor?.username || "Giảng viên";
     const instructorAvatar = course.instructor?.avatar;
     const instructorIsPro = course.instructor?.isPro ?? false;
+    const instructorIsRegistered = course.instructor?.isRegistered ?? false;
 
     const cardBg = "#f7f7f7";
     return (
-        <div
-            className="group cursor-pointer pb-1"
-            onClick={handleCardClick}
-        >
+        <div className="group cursor-pointer pb-1" onClick={handleCardClick}>
             <div
                 data-course-card
                 className="rounded-2xl overflow-hidden h-full flex flex-col transform transition-[transform,box-shadow] duration-200 ease-out group-hover:-translate-y-1 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
                 style={{ backgroundColor: cardBg }}
             >
-            {/* Banner */}
-            <div
-                className={`relative aspect-video flex-shrink-0 overflow-hidden rounded-t-2xl ${isEnrolling ? "opacity-50" : ""}`}
-            >
-                {course.thumbnailUrl ? (
-                    <img
-                        src={course.thumbnailUrl}
-                        alt={course.title}
-                        className="absolute inset-0 w-full h-full object-cover"
-                        onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = "none";
-                            const parent = target.parentElement;
-                            if (parent) {
-                                parent.className = `relative aspect-video bg-gradient-to-br ${course.gradient} flex items-center justify-center flex-shrink-0 overflow-hidden rounded-t-2xl ${isEnrolling ? "opacity-50" : ""}`;
-                            }
-                        }}
-                    />
-                ) : (
-                    <div
-                        className={`absolute inset-0 bg-gradient-to-br ${course.gradient}`}
-                    ></div>
-                )}
+                {/* Banner */}
+                <div
+                    className={`relative aspect-video flex-shrink-0 overflow-hidden rounded-t-2xl ${isEnrolling ? "opacity-50" : ""}`}
+                >
+                    {course.thumbnailUrl ? (
+                        <img
+                            src={course.thumbnailUrl}
+                            alt={course.title}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = "none";
+                                const parent = target.parentElement;
+                                if (parent) {
+                                    parent.className = `relative aspect-video bg-gradient-to-br ${course.gradient} flex items-center justify-center flex-shrink-0 overflow-hidden rounded-t-2xl ${isEnrolling ? "opacity-50" : ""}`;
+                                }
+                            }}
+                        />
+                    ) : (
+                        <div
+                            className={`absolute inset-0 bg-gradient-to-br ${course.gradient}`}
+                        ></div>
+                    )}
 
-                {/* Crown icon for Pro courses */}
-                {course.isPro && !isEnrolling && (
-                    <div className="absolute top-3 left-3 z-20">
-                        <span className="text-xl drop-shadow-lg">👑</span>
-                    </div>
-                )}
+                    {/* Crown icon for Pro courses */}
+                    {course.isPro && !isEnrolling && (
+                        <div className="absolute top-3 left-3 z-20">
+                            <span className="text-xl drop-shadow-lg">👑</span>
+                        </div>
+                    )}
 
-                {/* Loading overlay */}
-                {isEnrolling && (
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
-                        <div className="text-white text-center">
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
-                            <div className="text-xs font-semibold opacity-90">
-                                {course.isFree
-                                    ? "Đang đăng ký..."
-                                    : "Đang kiểm tra..."}
+                    {/* Loading overlay */}
+                    {isEnrolling && (
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
+                            <div className="text-white text-center">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
+                                <div className="text-xs font-semibold opacity-90">
+                                    {course.isFree
+                                        ? "Đang đăng ký..."
+                                        : "Đang kiểm tra..."}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Content */}
-            <div
-                data-course-card-content
-                className="flex-1 flex flex-col rounded-b-2xl"
-                style={{ padding: "16px 20px", backgroundColor: cardBg }}
-            >
-                {/* Title */}
-                <h3 className="course-card-title text-gray-900 mb-2 line-clamp-2">
-                    {course.title}
-                </h3>
-
-                {/* Price row */}
-                <div className="mb-3">
-                    {course.isPro ? (
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-sm text-gray-400 line-through">
-                                {new Intl.NumberFormat("vi-VN").format(
-                                    calculatePricing(course.priceAmount)
-                                        .originalPrice,
-                                )}
-                                đ
-                            </span>
-                            <span className="text-base font-bold text-[#f05123]">
-                                {new Intl.NumberFormat("vi-VN").format(
-                                    course.priceAmount,
-                                )}
-                                đ
-                            </span>
-                        </div>
-                    ) : (
-                        <span className="text-base font-bold text-[#f05123]">
-                            {course.price === "Miễn phí"
-                                ? "Miễn phí"
-                                : course.price}
-                        </span>
                     )}
                 </div>
 
-                {/* Author + Stats row */}
-                <div className="flex items-center justify-between text-[13px] text-gray-500 mt-auto">
-                    {/* Author */}
-                    <div className="flex items-center gap-1.5 min-w-0">
-                        <AvatarWithProBadge
-                            avatarUrl={instructorAvatar}
-                            fullName={instructorName}
-                            isPro={instructorIsPro}
-                            size="2xs"
-                        />
-                        <span className="truncate text-gray-600">
-                            {instructorName}
-                        </span>
+                {/* Content */}
+                <div
+                    data-course-card-content
+                    className="flex-1 flex flex-col rounded-b-2xl"
+                    style={{ padding: "16px 20px", backgroundColor: cardBg }}
+                >
+                    {/* Title */}
+                    <h3 className="course-card-title text-gray-900 mb-2 line-clamp-2">
+                        {course.title}
+                    </h3>
+
+                    {/* Price row */}
+                    <div className="mb-3">
+                        {course.isPro ? (
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-sm text-gray-400 line-through">
+                                    {new Intl.NumberFormat("vi-VN").format(
+                                        calculatePricing(course.priceAmount)
+                                            .originalPrice,
+                                    )}
+                                    đ
+                                </span>
+                                <span className="text-base font-bold text-[#f05123]">
+                                    {new Intl.NumberFormat("vi-VN").format(
+                                        course.priceAmount,
+                                    )}
+                                    đ
+                                </span>
+                            </div>
+                        ) : (
+                            <span className="text-base font-bold text-[#f05123]">
+                                {course.price === "Miễn phí"
+                                    ? "Miễn phí"
+                                    : course.price}
+                            </span>
+                        )}
                     </div>
 
-                    {/* Student count */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                        <Eye className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{course.students.toLocaleString()}</span>
-                    </div>
+                    {/* Author + Stats row */}
+                    <div className="flex items-center justify-between text-[13px] text-gray-500 mt-auto">
+                        {/* Author */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <AvatarWithProBadge
+                                avatarUrl={instructorAvatar}
+                                fullName={instructorName}
+                                isPro={instructorIsPro}
+                                isRegistered={instructorIsRegistered}
+                                size="2xs"
+                            />
+                            <span className="truncate text-gray-600">
+                                {instructorName}
+                            </span>
+                        </div>
 
-                    {/* Duration */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                        <Clock className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{course.duration}</span>
+                        {/* Student count */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                            <Eye className="w-3.5 h-3.5 text-gray-400" />
+                            <span>{course.students.toLocaleString()}</span>
+                        </div>
+
+                        {/* Duration */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                            <Clock className="w-3.5 h-3.5 text-gray-400" />
+                            <span>{course.duration}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
             </div>
         </div>
     );

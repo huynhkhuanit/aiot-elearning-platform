@@ -4,12 +4,14 @@ interface AvatarWithProBadgeProps {
     avatarUrl?: string | null;
     fullName?: string | null;
     isPro: boolean;
+    /** Whether this user has a registered account on the platform */
+    isRegistered?: boolean;
     size?: "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
     className?: string;
 }
 
 const sizeMap = {
-    "2xs": { outer: 20, ring: 2, gap: 1, text: "text-[7px]" },
+    "2xs": { outer: 22, ring: 2, gap: 1, text: "text-[8px]" },
     xs: { outer: 32, ring: 2, gap: 1, text: "text-xs" },
     sm: { outer: 40, ring: 3, gap: 2, text: "text-sm" },
     md: { outer: 48, ring: 3, gap: 2, text: "text-base" },
@@ -18,7 +20,7 @@ const sizeMap = {
     "2xl": { outer: 128, ring: 5, gap: 3, text: "text-3xl" },
 };
 
-// Google 4-color ring
+// Google 4-color ring for PRO users
 const GOOGLE_RING =
     "conic-gradient(from 0deg, #EA4335 0deg 45deg, #4285F4 45deg 135deg, #34A853 135deg 250deg, #FBBC05 250deg 290deg, #EA4335 290deg 360deg)";
 
@@ -59,6 +61,7 @@ export default function AvatarWithProBadge({
     avatarUrl,
     fullName,
     isPro,
+    isRegistered,
     size = "md",
     className = "",
 }: AvatarWithProBadgeProps) {
@@ -70,8 +73,8 @@ export default function AvatarWithProBadge({
         .toUpperCase()
         .slice(0, 2);
 
-    // FREE users: clean avatar, no ring — Google-style
-    if (!isPro) {
+    // Non-registered / external authors: clean avatar, no ring at all
+    if (!isRegistered && !isPro) {
         return (
             <div
                 className={`relative inline-flex items-center justify-center shrink-0 rounded-full overflow-hidden ${className}`}
@@ -83,6 +86,37 @@ export default function AvatarWithProBadge({
                     initials={initials}
                     textClass={s.text}
                 />
+            </div>
+        );
+    }
+
+    // Registered FREE users: subtle gray ring to indicate platform member
+    if (!isPro && isRegistered) {
+        const avatarInset = s.ring + s.gap;
+        return (
+            <div
+                className={`relative inline-flex items-center justify-center shrink-0 ${className}`}
+                style={{ width: s.outer, height: s.outer }}
+            >
+                {/* Subtle gray ring for registered free users */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gray-300 to-gray-400" />
+                {/* White gap ring */}
+                <div
+                    className="absolute rounded-full bg-white"
+                    style={{ inset: s.ring }}
+                />
+                {/* Avatar */}
+                <div
+                    className="absolute rounded-full overflow-hidden"
+                    style={{ inset: avatarInset }}
+                >
+                    <AvatarContent
+                        avatarUrl={avatarUrl}
+                        fullName={fullName || "User"}
+                        initials={initials}
+                        textClass={s.text}
+                    />
+                </div>
             </div>
         );
     }
