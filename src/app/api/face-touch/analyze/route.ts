@@ -2,11 +2,77 @@ import { NextRequest, NextResponse } from "next/server";
 
 const FASTAPI_BASE_URL = process.env.FASTAPI_BASE_URL || "http://localhost:8000";
 
+const SERVICE_BOOT_HINT =
+    "Hãy khởi động Python AI service trong ai-service hoặc chạy scripts/start-all-ai.ps1.";
+
 type AnalyzeRequest = {
     image?: string;
     timestamp?: number;
     sampleRateFps?: number;
 };
+
+type ServiceHealthPayload = {
+    available: boolean;
+    baseUrl: string;
+    message: string;
+};
+
+function getServiceUnavailableMessage(reason?: "timeout" | "offline") {
+    if (reason === "timeout") {
+        return `Python face-touch service phản hồi quá chậm tại ${FASTAPI_BASE_URL}. ${SERVICE_BOOT_HINT}`;
+    }
+
+    return `Không kết nối được tới Python face-touch service tại ${FASTAPI_BASE_URL}. ${SERVICE_BOOT_HINT}`;
+}
+
+async function getServiceHealth(): Promise<ServiceHealthPayload> {
+    try {
+        const response = await fetch(`${FASTAPI_BASE_URL}/health`, {
+            method: "GET",
+            cache: "no-store",
+            signal: AbortSignal.timeout(5000),
+        });
+
+        if (!response.ok) {
+            return {
+                available: false,
+                baseUrl: FASTAPI_BASE_URL,
+                message: getServiceUnavailableMessage(),
+            };
+        }
+
+        return {
+            available: true,
+            baseUrl: FASTAPI_BASE_URL,
+            message: `Python face-touch service đang sẵn sàng tại ${FASTAPI_BASE_URL}.`,
+        };
+    } catch (error) {
+        const reason =
+            error instanceof Error &&
+            (error.name === "TimeoutError" || error.name === "AbortError")
+                ? "timeout"
+                : "offline";
+
+        return {
+            available: false,
+            baseUrl: FASTAPI_BASE_URL,
+            message: getServiceUnavailableMessage(reason),
+        };
+    }
+}
+
+export async function GET() {
+    const health = await getServiceHealth();
+
+    return NextResponse.json(
+        {
+            success: health.available,
+            data: health,
+            error: health.available ? undefined : health.message,
+        },
+        { status: health.available ? 200 : 503 },
+    );
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -40,8 +106,8 @@ export async function POST(request: NextRequest) {
             const message =
                 error instanceof Error &&
                 (error.name === "TimeoutError" || error.name === "AbortError")
-                    ? "Python face-touch service timeout. Hãy giảm FPS hoặc kiểm tra máy chủ AI."
-                    : "Không kết nối được tới Python face-touch service tại localhost:8000.";
+                    ? getServiceUnavailableMessage("timeout")
+                    : getServiceUnavailableMessage("offline");
 
             return NextResponse.json(
                 {

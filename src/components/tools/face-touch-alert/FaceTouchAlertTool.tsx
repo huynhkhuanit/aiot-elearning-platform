@@ -97,6 +97,27 @@ type DetectionResponse = {
     };
 };
 
+type ServiceState = "unknown" | "checking" | "ready" | "offline";
+
+type ServiceHealthResponse =
+    | {
+          success: true;
+          data: {
+              available: true;
+              baseUrl: string;
+              message: string;
+          };
+      }
+    | {
+          success: false;
+          data?: {
+              available: false;
+              baseUrl: string;
+              message: string;
+          };
+          error: string;
+      };
+
 const pipelineSteps = [
     "Frontend lấy webcam bằng getUserMedia và nén frame ở nhịp thấp để giảm độ trễ.",
     "Python AI service phát hiện khuôn mặt và bàn tay bằng MediaPipe/OpenCV.",
@@ -219,24 +240,70 @@ function formatPercent(score: number) {
     return `${Math.round(clampScore(score) * 100)}%`;
 }
 
+function projectOverlayPoint(
+    point: OverlayPoint,
+    sourceSize: { width: number; height: number },
+    canvasSize: { width: number; height: number },
+) {
+    const scale = Math.min(
+        canvasSize.width / Math.max(sourceSize.width, 1),
+        canvasSize.height / Math.max(sourceSize.height, 1),
+    );
+    const renderedWidth = sourceSize.width * scale;
+    const renderedHeight = sourceSize.height * scale;
+    const offsetX = (canvasSize.width - renderedWidth) / 2;
+    const offsetY = (canvasSize.height - renderedHeight) / 2;
+
+    return {
+        x: point.x * scale + offsetX,
+        y: point.y * scale + offsetY,
+    };
+}
+
+function projectOverlayBox(
+    box: OverlayBox,
+    sourceSize: { width: number; height: number },
+    canvasSize: { width: number; height: number },
+) {
+    const topLeft = projectOverlayPoint(
+        { x: box.x, y: box.y },
+        sourceSize,
+        canvasSize,
+    );
+    const bottomRight = projectOverlayPoint(
+        { x: box.x + box.width, y: box.y + box.height },
+        sourceSize,
+        canvasSize,
+    );
+
+    return {
+        x: topLeft.x,
+        y: topLeft.y,
+        width: bottomRight.x - topLeft.x,
+        height: bottomRight.y - topLeft.y,
+    };
+}
+
 function drawOverlay(
     context: CanvasRenderingContext2D,
     overlay: FrameOverlay,
-    size: { width: number; height: number },
+    canvasSize: { width: number; height: number },
+    sourceSize: { width: number; height: number },
     state: DetectionResponse["state"],
 ) {
-    context.clearRect(0, 0, size.width, size.height);
+    context.clearRect(0, 0, canvasSize.width, canvasSize.height);
 
     if (overlay.faceBox) {
+        const projectedFaceBox = projectOverlayBox(overlay.faceBox, sourceSize, canvasSize);
         context.save();
         context.strokeStyle = state === "touching_face" ? "#fb7185" : state === "near_face" ? "#fbbf24" : "#22c55e";
         context.lineWidth = 3;
         context.setLineDash([10, 8]);
         context.strokeRect(
-            overlay.faceBox.x,
-            overlay.faceBox.y,
-            overlay.faceBox.width,
-            overlay.faceBox.height,
+            projectedFaceBox.x,
+            projectedFaceBox.y,
+            projectedFaceBox.width,
+            projectedFaceBox.height,
         );
         context.restore();
     }
@@ -244,8 +311,9 @@ function drawOverlay(
     context.save();
     context.fillStyle = "rgba(96, 165, 250, 0.85)";
     overlay.facePoints.forEach((point) => {
+        const projectedPoint = projectOverlayPoint(point, sourceSize, canvasSize);
         context.beginPath();
-        context.arc(point.x, point.y, 2.4, 0, Math.PI * 2);
+        context.arc(projectedPoint.x, projectedPoint.y, 2.4, 0, Math.PI * 2);
         context.fill();
     });
     context.restore();
@@ -254,15 +322,17 @@ function drawOverlay(
     context.strokeStyle = "rgba(6, 182, 212, 0.95)";
     context.lineWidth = 2;
     overlay.handBoxes.forEach((box) => {
-        context.strokeRect(box.x, box.y, box.width, box.height);
+        const projectedBox = projectOverlayBox(box, sourceSize, canvasSize);
+        context.strokeRect(projectedBox.x, projectedBox.y, projectedBox.width, projectedBox.height);
     });
     context.restore();
 
     context.save();
     context.fillStyle = state === "touching_face" ? "rgba(251, 113, 133, 0.95)" : "rgba(34, 211, 238, 0.95)";
     overlay.handPoints.forEach((point) => {
+        const projectedPoint = projectOverlayPoint(point, sourceSize, canvasSize);
         context.beginPath();
-        context.arc(point.x, point.y, 3.2, 0, Math.PI * 2);
+        context.arc(projectedPoint.x, projectedPoint.y, 3.2, 0, Math.PI * 2);
         context.fill();
     });
     context.restore();
@@ -280,18 +350,92 @@ export function FaceTouchAlertTool() {
     const cooldownUntilRef = useRef(0);
     const smoothedScoreRef = useRef(0);
     const audioContextRef = useRef<AudioContext | null>(null);
+    const lastHealthCheckAtRef = useRef(0);
 
     const [cameraActive, setCameraActive] = useState(false);
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [detectorState, setDetectorState] = useState<DetectorState>("idle");
+    const [serviceState, setServiceState] = useState<ServiceState>("unknown");
     const [detection, setDetection] = useState<DetectionResponse>(defaultDetection);
     const [displayScore, setDisplayScore] = useState(0);
     const [alertCount, setAlertCount] = useState(0);
-    const [sampleRate, setSampleRate] = useState([10]);
+    const [sampleRate, setSampleRate] = useState([15]);
     const [cameraError, setCameraError] = useState<string | null>(null);
     const [serviceStatus, setServiceStatus] = useState<string>(
         "Camera chưa khởi động. Công cụ sẽ gửi frame về Python service khi bắt đầu.",
     );
+
+    const syncOverlayCanvasSize = () => {
+        const overlayCanvas = overlayRef.current;
+        if (!overlayCanvas) {
+            return;
+        }
+
+        const { width, height } = overlayCanvas.getBoundingClientRect();
+        const nextWidth = Math.max(1, Math.round(width));
+        const nextHeight = Math.max(1, Math.round(height));
+
+        if (overlayCanvas.width !== nextWidth || overlayCanvas.height !== nextHeight) {
+            overlayCanvas.width = nextWidth;
+            overlayCanvas.height = nextHeight;
+        }
+    };
+
+    const isServiceConnectivityError = (message: string) => {
+        const normalized = message.toLowerCase();
+        return (
+            normalized.includes("python face-touch service") ||
+            normalized.includes("không kết nối được") ||
+            normalized.includes("phản hồi quá chậm") ||
+            normalized.includes("localhost:8000") ||
+            normalized.includes("start-all-ai.ps1")
+        );
+    };
+
+    const checkServiceHealth = async (options?: { silent?: boolean }) => {
+        const silent = options?.silent ?? false;
+        lastHealthCheckAtRef.current = Date.now();
+
+        if (!silent) {
+            setServiceState("checking");
+        }
+
+        try {
+            const response = await fetch("/api/face-touch/analyze", {
+                method: "GET",
+                cache: "no-store",
+            });
+
+            const payload = (await response.json()) as ServiceHealthResponse;
+
+            if (response.ok && payload.success) {
+                setServiceState("ready");
+
+                if (cameraActive) {
+                    setServiceStatus("Webcam đã sẵn sàng. Python service đang nhận frame realtime.");
+                } else if (!silent) {
+                    setServiceStatus(payload.data.message);
+                }
+
+                return true;
+            }
+
+            const message =
+                payload.success === false
+                    ? payload.data?.message || payload.error
+                    : "Python face-touch service hiện chưa sẵn sàng.";
+
+            setServiceState("offline");
+            setServiceStatus(message);
+            return false;
+        } catch {
+            const message =
+                "Không thể kiểm tra Python face-touch service. Hãy chạy scripts/start-all-ai.ps1 hoặc khởi động FastAPI trong ai-service.";
+            setServiceState("offline");
+            setServiceStatus(message);
+            return false;
+        }
+    };
 
     const playAlertTone = () => {
         if (!audioEnabled || typeof window === "undefined") {
@@ -341,7 +485,11 @@ export function FaceTouchAlertTool() {
         setDetectorState("idle");
         setDetection(defaultDetection);
         setDisplayScore(0);
-        setServiceStatus("Camera đã dừng. Bạn có thể bật lại để tiếp tục demo.");
+        setServiceStatus(
+            serviceState === "ready"
+                ? "Camera đã dừng. Python service vẫn sẵn sàng cho lần khởi động tiếp theo."
+                : "Camera đã dừng. Bạn có thể bật lại sau khi Python service sẵn sàng.",
+        );
     }
 
     async function analyzeCurrentFrame() {
@@ -352,7 +500,18 @@ export function FaceTouchAlertTool() {
             return;
         }
 
-        const width = 640;
+        if (serviceState !== "ready") {
+            const now = Date.now();
+            const shouldRetryHealthCheck = now - lastHealthCheckAtRef.current > 4000;
+
+            if (serviceState === "unknown" || shouldRetryHealthCheck) {
+                void checkServiceHealth({ silent: serviceState === "offline" });
+            }
+
+            return;
+        }
+
+        const width = 480;
         const height = Math.round((video.videoHeight / video.videoWidth) * width);
         captureCanvas.width = width;
         captureCanvas.height = height;
@@ -363,7 +522,7 @@ export function FaceTouchAlertTool() {
         }
 
         context.drawImage(video, 0, 0, width, height);
-        const dataUrl = captureCanvas.toDataURL("image/jpeg", 0.72);
+        const dataUrl = captureCanvas.toDataURL("image/jpeg", 0.55);
 
         pendingRequestRef.current = true;
         setDetectorState((current) => (current === "idle" ? "loading" : current));
@@ -391,7 +550,7 @@ export function FaceTouchAlertTool() {
 
             const nextDetection = payload.data;
             const nextScore = clampScore(nextDetection.score);
-            smoothedScoreRef.current = smoothedScoreRef.current * 0.62 + nextScore * 0.38;
+            smoothedScoreRef.current = smoothedScoreRef.current * 0.45 + nextScore * 0.55;
             setDisplayScore(smoothedScoreRef.current);
             setDetection(nextDetection);
             setDetectorState(nextDetection.state);
@@ -414,7 +573,13 @@ export function FaceTouchAlertTool() {
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : "Không thể phân tích frame.";
-            setDetectorState("error");
+            if (isServiceConnectivityError(message)) {
+                setServiceState("offline");
+                setDetectorState((current) => (current === "loading" ? "safe" : current));
+                consecutiveTouchFramesRef.current = 0;
+            } else {
+                setDetectorState("error");
+            }
             setServiceStatus(message);
         } finally {
             pendingRequestRef.current = false;
@@ -427,6 +592,8 @@ export function FaceTouchAlertTool() {
             return;
         }
 
+        syncOverlayCanvasSize();
+
         const overlayContext = overlayCanvas.getContext("2d");
         if (!overlayContext) {
             return;
@@ -437,7 +604,40 @@ export function FaceTouchAlertTool() {
             height: overlayCanvas.height,
         };
 
-        drawOverlay(overlayContext, detection.overlay, size, detection.state);
+        drawOverlay(overlayContext, detection.overlay, size, detection.frameSize, detection.state);
+    }, [detection]);
+
+    useEffect(() => {
+        const overlayCanvas = overlayRef.current;
+        if (!overlayCanvas || typeof ResizeObserver === "undefined") {
+            return;
+        }
+
+        const resizeObserver = new ResizeObserver(() => {
+            syncOverlayCanvasSize();
+
+            const overlayContext = overlayCanvas.getContext("2d");
+            if (!overlayContext) {
+                return;
+            }
+
+            drawOverlay(
+                overlayContext,
+                detection.overlay,
+                {
+                    width: overlayCanvas.width,
+                    height: overlayCanvas.height,
+                },
+                detection.frameSize,
+                detection.state,
+            );
+        });
+
+        resizeObserver.observe(overlayCanvas);
+
+        return () => {
+            resizeObserver.disconnect();
+        };
     }, [detection]);
 
     useEffect(() => {
@@ -477,6 +677,8 @@ export function FaceTouchAlertTool() {
     }, [cameraActive, sampleRate]);
 
     useEffect(() => {
+        void checkServiceHealth({ silent: true });
+
         return () => {
             stopCamera();
             audioContextRef.current?.close().catch(() => undefined);
@@ -490,7 +692,7 @@ export function FaceTouchAlertTool() {
 
         setCameraError(null);
         setDetectorState("loading");
-        setServiceStatus("Đang khởi tạo webcam và kết nối tới Python service...");
+        setServiceStatus("Đang khởi tạo webcam...");
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -510,8 +712,7 @@ export function FaceTouchAlertTool() {
             videoRef.current.srcObject = stream;
             await videoRef.current.play();
 
-            overlayRef.current.width = 640;
-            overlayRef.current.height = 480;
+            syncOverlayCanvasSize();
             lastSampleTimeRef.current = 0;
             pendingRequestRef.current = false;
             consecutiveTouchFramesRef.current = 0;
@@ -521,6 +722,7 @@ export function FaceTouchAlertTool() {
             setDetectorState("safe");
             setDetection(defaultDetection);
             setDisplayScore(0);
+            void checkServiceHealth();
         } catch (error) {
             const message =
                 error instanceof Error
@@ -539,6 +741,34 @@ export function FaceTouchAlertTool() {
             ? detectorState
             : "safe";
     const liveStateConfig = stateConfig[liveState];
+        const statusLabel =
+                detectorState === "error"
+                        ? "Lỗi xử lý"
+                        : serviceState === "offline"
+                            ? "Service offline"
+                            : serviceState === "checking"
+                                ? "Đang kiểm tra"
+                                : detectorState === "loading"
+                                    ? "Đang tải"
+                                    : liveStateConfig.label;
+        const statusTone =
+                detectorState === "error"
+                        ? "bg-rose-500/15 text-rose-100 border-rose-400/20"
+                        : serviceState === "offline"
+                            ? "bg-amber-500/15 text-amber-100 border-amber-400/20"
+                            : serviceState === "checking"
+                                ? "bg-cyan-500/15 text-cyan-100 border-cyan-400/20"
+                                : liveStateConfig.tone;
+        const statusDescription =
+                cameraError
+                        ? "Webcam chưa khởi động được hoặc chưa được cấp quyền truy cập."
+                        : detectorState === "error"
+                            ? "Pipeline phân tích frame đang gặp lỗi nội bộ và cần kiểm tra response từ service."
+                            : serviceState === "offline"
+                                ? "Webcam vẫn có thể hoạt động, nhưng Python service chưa chạy nên chưa phân tích được frame."
+                                : serviceState === "checking"
+                                    ? "Đang kiểm tra kết nối tới Python service trước khi gửi frame realtime."
+                                    : liveStateConfig.description;
     const progressStyle = {
         "--progress-indicator": liveStateConfig.progress,
     } as CSSProperties;
@@ -631,8 +861,8 @@ export function FaceTouchAlertTool() {
                                         Preview trực tiếp với overlay face và hand landmarks.
                                     </p>
                                 </div>
-                                <Badge className={cn("rounded-full border px-3 py-1", liveStateConfig.tone)}>
-                                    {liveStateConfig.label}
+                                <Badge className={cn("rounded-full border px-3 py-1", statusTone)}>
+                                    {statusLabel}
                                 </Badge>
                             </div>
 
@@ -641,7 +871,7 @@ export function FaceTouchAlertTool() {
                                     ref={videoRef}
                                     muted
                                     playsInline
-                                    className="aspect-[4/3] w-full object-cover"
+                                    className="aspect-[4/3] w-full object-contain"
                                 />
                                 <canvas
                                     ref={overlayRef}
@@ -728,17 +958,11 @@ export function FaceTouchAlertTool() {
                                                 Trạng thái hiện tại
                                             </p>
                                             <p className="mt-1 text-sm text-slate-400">
-                                                {detectorState === "error"
-                                                    ? "Service hoặc webcam đang gặp lỗi."
-                                                    : liveStateConfig.description}
+                                                {statusDescription}
                                             </p>
                                         </div>
-                                        <Badge className={cn("rounded-full border px-3 py-1", liveStateConfig.tone)}>
-                                            {detectorState === "loading"
-                                                ? "Đang tải"
-                                                : detectorState === "error"
-                                                  ? "Lỗi"
-                                                  : liveStateConfig.label}
+                                        <Badge className={cn("rounded-full border px-3 py-1", statusTone)}>
+                                            {statusLabel}
                                         </Badge>
                                     </div>
 
@@ -779,7 +1003,7 @@ export function FaceTouchAlertTool() {
                                             Nhịp suy luận
                                         </p>
                                         <p className="mt-1 text-sm leading-6 text-slate-600">
-                                            Giảm FPS khi demo trên CPU yếu. Từ 10 đến 12 FPS là mức hợp lý cho bài toán này.
+                                            Giảm FPS khi demo trên CPU yếu. 12–18 FPS cho kết quả mượt nhất.
                                         </p>
                                     </div>
 
@@ -787,7 +1011,7 @@ export function FaceTouchAlertTool() {
                                         <Slider
                                             value={sampleRate}
                                             min={5}
-                                            max={15}
+                                            max={24}
                                             step={1}
                                             onValueChange={setSampleRate}
                                         />
@@ -796,7 +1020,7 @@ export function FaceTouchAlertTool() {
                                             <span className="font-semibold text-slate-900">
                                                 {sampleRate[0]} FPS
                                             </span>
-                                            <span>15 FPS</span>
+                                            <span>24 FPS</span>
                                         </div>
                                     </div>
 
@@ -866,11 +1090,44 @@ export function FaceTouchAlertTool() {
                                 <p className="mt-2 text-sm leading-6 text-slate-600">
                                     {serviceStatus}
                                 </p>
+                                {serviceState === "offline" ? (
+                                    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                                        <div className="flex items-start gap-3">
+                                            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" />
+                                            <div className="space-y-2">
+                                                <p className="font-semibold">
+                                                    Webcam không phải nguyên nhân chính. Python service ở cổng 8000 đang tắt hoặc chưa phản hồi.
+                                                </p>
+                                                <p>
+                                                    Khởi động service bằng scripts/start-all-ai.ps1 hoặc chạy FastAPI trong thư mục ai-service, sau đó bấm nút kiểm tra lại.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : null}
                                 {cameraError ? (
                                     <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                                         {cameraError}
                                     </div>
                                 ) : null}
+                                <div className="mt-4 flex flex-wrap gap-3">
+                                    <Button
+                                        variant="outline"
+                                        className="rounded-xl bg-white"
+                                        onClick={() => {
+                                            void checkServiceHealth();
+                                        }}
+                                    >
+                                        {serviceState === "checking" ? (
+                                            <LoaderCircle className="mr-2 size-4 animate-spin" />
+                                        ) : serviceState === "ready" ? (
+                                            <CheckCircle2 className="mr-2 size-4" />
+                                        ) : (
+                                            <RefreshCcw className="mr-2 size-4" />
+                                        )}
+                                        Kiểm tra Python service
+                                    </Button>
+                                </div>
                                 <div className="mt-4 flex flex-wrap gap-2">
                                     {detection.regions.length > 0 ? (
                                         detection.regions.map((region) => (
