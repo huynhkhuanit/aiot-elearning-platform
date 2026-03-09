@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     FACE_TOUCH_HAND_FACE_RATIO_HARD_MAX: float = 1.85
     FACE_TOUCH_OCCLUSION_LOW: float = 0.20
     FACE_TOUCH_OCCLUSION_HIGH: float = 0.50
-    FACE_TOUCH_CONTACT_RATIO: float = 0.09
+    FACE_TOUCH_CONTACT_RATIO: float = 0.11
     FACE_TOUCH_CONTACT_SOFT_MULT: float = 3.0
     FACE_TOUCH_ENABLE_MEDIAPIPE: bool = True
     # MediaPipe confidence (video streaming mode)

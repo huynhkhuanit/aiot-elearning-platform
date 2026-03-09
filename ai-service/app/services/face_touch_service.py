@@ -419,6 +419,85 @@ def _in_front_of_face_penalty(occlusion_ratio: float, hand_box: Box, face_box: B
     return max(0.08, 1.0 - penalty_strength)
 
 
+def _hand_in_front_confidence(
+    hand_box: Box,
+    face_box: Box,
+    face_points: Sequence[Point],
+) -> float:
+    """Ước lượng xác suất tay đang ở TRƯỚC mặt thay vì chạm mặt.
+
+    Khi tay ở trước mặt (giữa camera và mặt):
+    - Tâm mặt nằm bên trong hand box
+    - Hand box phủ phần lớn face box
+    - Che đều cả hai bên trái/phải khuôn mặt (đối xứng)
+    - Tâm hand gần tâm face
+
+    Khi tay chạm mặt từ bên cạnh:
+    - Chỉ che một bên mặt (không đối xứng)
+    - Tâm hand lệch xa tâm face
+
+    Returns 0.0–1.0 (cao = rất có khả năng tay ở trước mặt).
+    """
+    face_cx, face_cy = face_box.center
+
+    # Signal 1: Tâm mặt nằm trong hand box
+    face_center_inside = (
+        hand_box.x <= face_cx <= hand_box.x + hand_box.width
+        and hand_box.y <= face_cy <= hand_box.y + hand_box.height
+    )
+
+    # Signal 2: Tỉ lệ face box bị hand box phủ
+    ix_left = max(hand_box.x, face_box.x)
+    iy_top = max(hand_box.y, face_box.y)
+    ix_right = min(hand_box.x + hand_box.width, face_box.x + face_box.width)
+    iy_bottom = min(hand_box.y + hand_box.height, face_box.y + face_box.height)
+    if ix_right > ix_left and iy_bottom > iy_top:
+        face_coverage = ((ix_right - ix_left) * (iy_bottom - iy_top)
+                         / max(face_box.area, 1.0))
+    else:
+        face_coverage = 0.0
+
+    # Signal 3: Đối xứng — hand che cả hai bên mặt đều nhau
+    left_occ = 0
+    right_occ = 0
+    left_total = 0
+    right_total = 0
+    for p in face_points:
+        inside = (hand_box.x <= p.x <= hand_box.x + hand_box.width
+                  and hand_box.y <= p.y <= hand_box.y + hand_box.height)
+        if p.x < face_cx:
+            left_total += 1
+            if inside:
+                left_occ += 1
+        else:
+            right_total += 1
+            if inside:
+                right_occ += 1
+
+    left_ratio = left_occ / max(left_total, 1)
+    right_ratio = right_occ / max(right_total, 1)
+
+    # Symmetry cao khi CẢ HAI bên đều bị che đáng kể
+    if left_ratio > 0.15 and right_ratio > 0.15:
+        symmetry = min(left_ratio, right_ratio) / max(left_ratio, right_ratio, 1e-6)
+    else:
+        symmetry = 0.0
+
+    # Signal 4: Tâm hand gần tâm face
+    dx = abs(hand_box.center[0] - face_cx) / max(face_box.width, 1)
+    dy = abs(hand_box.center[1] - face_cy) / max(face_box.height, 1)
+    center_alignment = max(0.0, 1.0 - math.sqrt(dx * dx + dy * dy))
+
+    confidence = 0.0
+    if face_center_inside:
+        confidence += 0.25
+    confidence += min(face_coverage, 1.0) * 0.25
+    confidence += symmetry * 0.30
+    confidence += center_alignment * 0.20
+
+    return _clamp_score(confidence)
+
+
 def _region_box(face_box: Box, relative_box: Tuple[float, float, float, float]) -> Box:
     left, top, right, bottom = relative_box
     return Box(
@@ -609,15 +688,22 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
             + touch_proximity_score * 0.20
             + fingertip_score * 0.35
         )
-        # When contact is high AND hand size is realistic AND face is NOT heavily
-        # occluded, it's a genuine touch from the side/below → trust contact score.
-        # When occlusion is high, hand is IN FRONT of face → keep penalty active.
-        if contact >= 0.5 and size_consistency >= 0.5 and occlusion < 0.40:
+        # Phân tích xem tay có đang ở TRƯỚC mặt thay vì chạm mặt không
+        in_front = _hand_in_front_confidence(hand_box, face_box, face_overlay_pts)
+
+        # Bypass penalty CHỈ khi: contact cao + tay kích thước hợp lý
+        # + occlusion thấp + KHÔNG có dấu hiệu tay ở trước mặt
+        if (contact >= 0.5 and size_consistency >= 0.5
+                and occlusion < 0.40 and in_front < 0.35):
             effective_penalty = max(occlusion_penalty, 0.85)
+        elif in_front >= 0.35:
+            # Tay có khả năng ở trước mặt → phạt mạnh hơn tỉ lệ với confidence
+            front_penalty = max(0.08, 1.0 - in_front * 1.1)
+            effective_penalty = min(occlusion_penalty, front_penalty)
         else:
             effective_penalty = occlusion_penalty
         touch_score = _clamp_score(
-            max(contact * 0.82, base_touch)
+            max(contact * 0.88, base_touch)
             * size_consistency
             * effective_penalty
         )
@@ -644,6 +730,11 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
     palm_score = _clamp_score(max(palm_scores, default=0.0))
     touch_score = _clamp_score(max(touch_scores, default=0.0))
     near_score = _clamp_score(max(near_scores, default=0.0))
+    # Tính in_front tổng hợp cho debug output
+    in_front_max = 0.0
+    for hb in hand_boxes:
+        in_front_max = max(in_front_max,
+                          _hand_in_front_confidence(hb, face_box, face_overlay_pts))
     largest_hand_face_ratio = max(
         (_hand_face_area_ratio(hand_box, face_box) for hand_box in hand_boxes),
         default=0.0,
@@ -715,5 +806,6 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
             "overlapScore": round(_clamp_score(overlap_score), 4),
             "proximityScore": round(_clamp_score(proximity_score), 4),
             "fingertipScore": round(_clamp_score(fingertip_score), 4),
+            "inFrontScore": round(_clamp_score(in_front_max), 4),
         },
     )
