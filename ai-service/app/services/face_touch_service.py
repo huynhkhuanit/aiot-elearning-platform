@@ -110,6 +110,7 @@ class Box:
 class Point:
     x: float
     y: float
+    z: float = 0.0
 
 
 def _require_dependencies() -> None:
@@ -204,7 +205,11 @@ _runtime = _MediaPipeRuntime()
 
 def _landmarks_to_points(landmarks: Sequence, width: int, height: int) -> List[Point]:
     return [
-        Point(x=min(max(landmark.x * width, 0), width), y=min(max(landmark.y * height, 0), height))
+        Point(
+            x=min(max(landmark.x * width, 0), width),
+            y=min(max(landmark.y * height, 0), height),
+            z=float(getattr(landmark, "z", 0.0)),
+        )
         for landmark in landmarks
     ]
 
@@ -314,6 +319,52 @@ def _hand_face_size_consistency(hand_box: Box, face_box: Box) -> float:
         return 0.0
 
     return 1.0 - (ratio - soft_limit) / max(hard_limit - soft_limit, 1e-6)
+
+
+def _face_points_occluded_by_hand(face_points: Sequence[Point], hand_box: Box) -> float:
+    """Tỉ lệ face contour points nằm trong hand bounding box.
+
+    Khi tay ở TRƯỚC mặt (giữa camera và mặt), phần lớn face landmarks
+    bị hand box bao phủ (>40%). Khi chạm mặt thật từ bên cạnh, chỉ có
+    một phần nhỏ face landmarks nằm trong hand box (<30%).
+    """
+    if not face_points:
+        return 0.0
+    inside = sum(
+        1 for p in face_points
+        if (hand_box.x <= p.x <= hand_box.x + hand_box.width
+            and hand_box.y <= p.y <= hand_box.y + hand_box.height)
+    )
+    return inside / len(face_points)
+
+
+def _in_front_of_face_penalty(occlusion_ratio: float, hand_box: Box, face_box: Box) -> float:
+    """Penalty multiplier khi tay đang ở trước mặt thay vì chạm mặt.
+
+    Kết hợp occlusion ratio (bao nhiêu face points bị hand box che) và
+    mức độ hand center trùng với face center để phát hiện tay đặt trước mặt.
+    """
+    low = settings.FACE_TOUCH_OCCLUSION_LOW
+    high = settings.FACE_TOUCH_OCCLUSION_HIGH
+
+    if occlusion_ratio <= low:
+        return 1.0
+
+    # Tay càng trùng tâm mặt → càng có khả năng tay ở trước mặt
+    hand_cx, hand_cy = hand_box.center
+    face_cx, face_cy = face_box.center
+    dx = abs(hand_cx - face_cx) / max(face_box.width, 1)
+    dy = abs(hand_cy - face_cy) / max(face_box.height, 1)
+    center_alignment = max(0.0, 1.0 - math.sqrt(dx * dx + dy * dy))
+
+    if occlusion_ratio >= high:
+        occlusion_t = 1.0
+    else:
+        occlusion_t = (occlusion_ratio - low) / max(high - low, 1e-6)
+
+    # center_alignment tăng cường penalty; floor 0.25 để vẫn phạt dù lệch tâm
+    penalty_strength = occlusion_t * max(center_alignment, 0.25) * 0.92
+    return max(0.08, 1.0 - penalty_strength)
 
 
 def _region_box(face_box: Box, relative_box: Tuple[float, float, float, float]) -> Box:
@@ -428,6 +479,8 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
     near_scores: List[float] = []
     touch_scores: List[float] = []
 
+    face_overlay_pts = _face_overlay_subset(face_points)
+
     touch_region_boxes = {
         name: _region_box(face_box, relative_box)
         for name, relative_box in SENSITIVE_REGIONS.items()
@@ -460,6 +513,8 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
         palm_score = _palm_to_face_score(palm, expanded_face_box)
         palm_scores.append(palm_score)
         size_consistency = _hand_face_size_consistency(hand_box, face_box)
+        occlusion = _face_points_occluded_by_hand(face_overlay_pts, hand_box)
+        occlusion_penalty = _in_front_of_face_penalty(occlusion, hand_box, face_box)
 
         # Region scoring: touch dùng face box thật, near dùng expanded face box
         weighted_touch_region_scores = []
@@ -503,6 +558,7 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
                 + fingertip_score * 0.35
             )
             * size_consistency
+            * occlusion_penalty
         )
         near_score = _clamp_score(
             (
@@ -511,7 +567,8 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
                 + near_region_score * 0.25
                 + palm_score * 0.15
             )
-            * size_consistency
+            * max(size_consistency, 0.55)
+            * max(occlusion_penalty, 0.25)
         )
 
         overlap_scores.append(_clamp_score(touch_overlap_score))
@@ -554,8 +611,6 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
         note = "Phát hiện tay ở rất gần camera nhưng chưa đủ bằng chứng để kết luận là chạm mặt."
     else:
         note = "Tay xuất hiện nhưng vẫn giữ khoảng cách an toàn với khuôn mặt."
-
-    face_overlay_pts = _face_overlay_subset(face_points)
 
     # Scale tọa độ về kích thước frame gốc cho overlay
     inv_scale = 1.0 / scale if scale != 1.0 else 1.0

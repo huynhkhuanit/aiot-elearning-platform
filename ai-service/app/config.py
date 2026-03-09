@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     FACE_TOUCH_FINGERTIP_NEAR_RATIO: float = 0.18
     FACE_TOUCH_HAND_FACE_RATIO_SOFT_MAX: float = 1.15
     FACE_TOUCH_HAND_FACE_RATIO_HARD_MAX: float = 1.85
+    FACE_TOUCH_OCCLUSION_LOW: float = 0.20
+    FACE_TOUCH_OCCLUSION_HIGH: float = 0.50
     FACE_TOUCH_ENABLE_MEDIAPIPE: bool = True
     # MediaPipe confidence (video streaming mode)
     FACE_TOUCH_FACE_DETECT_CONFIDENCE: float = 0.6
