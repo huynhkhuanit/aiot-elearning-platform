@@ -2,7 +2,12 @@
 Pydantic Models Package
 """
 
-from .request import UserProfileRequest, GenerateRoadmapRequest, NodeDetailRequest
+from .request import (
+    UserProfileRequest,
+    GenerateRoadmapRequest,
+    NodeDetailRequest,
+    FaceTouchAnalyzeRequest,
+)
 from .response import (
     RoadmapPhase,
     RoadmapSection,
@@ -14,12 +19,19 @@ from .response import (
     GeneratedRoadmap,
     GenerationMetadata,
     RoadmapResponse,
+    DetectionOverlayBox,
+    DetectionOverlayPoint,
+    DetectionOverlay,
+    FaceTouchDebugScores,
+    FaceTouchFrameSize,
+    FaceTouchAnalyzeResponse,
 )
 
 __all__ = [
     "UserProfileRequest",
     "GenerateRoadmapRequest",
     "NodeDetailRequest",
+    "FaceTouchAnalyzeRequest",
     "RoadmapPhase",
     "RoadmapSection",
     "RoadmapSubsection",
@@ -30,4 +42,10 @@ __all__ = [
     "GeneratedRoadmap",
     "GenerationMetadata",
     "RoadmapResponse",
+    "DetectionOverlayBox",
+    "DetectionOverlayPoint",
+    "DetectionOverlay",
+    "FaceTouchDebugScores",
+    "FaceTouchFrameSize",
+    "FaceTouchAnalyzeResponse",
 ]

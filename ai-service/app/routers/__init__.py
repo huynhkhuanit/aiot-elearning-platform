@@ -1,7 +1,5 @@
-"""
-API Routers Package
-"""
+"""API routers package."""
 
-from . import roadmap
+from . import face_touch, ollama, roadmap
 
-__all__ = ["roadmap"]
+__all__ = ["roadmap", "ollama", "face_touch"]

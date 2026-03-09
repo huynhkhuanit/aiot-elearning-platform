@@ -141,3 +141,56 @@ class RoadmapResponse(BaseModel):
     roadmap: GeneratedRoadmap = Field(..., description="The generated roadmap")
     metadata: GenerationMetadata = Field(..., description="Generation metadata")
     error: Optional[str] = Field(None, description="Error message if any")
+
+
+class DetectionOverlayBox(BaseModel):
+    x: float = Field(..., ge=0)
+    y: float = Field(..., ge=0)
+    width: float = Field(..., ge=0)
+    height: float = Field(..., ge=0)
+
+
+class DetectionOverlayPoint(BaseModel):
+    x: float = Field(..., ge=0)
+    y: float = Field(..., ge=0)
+
+
+class DetectionOverlay(BaseModel):
+    faceBox: Optional[DetectionOverlayBox] = Field(
+        default=None,
+        description="Bounding box for detected face",
+    )
+    handBoxes: List[DetectionOverlayBox] = Field(default_factory=list)
+    facePoints: List[DetectionOverlayPoint] = Field(default_factory=list)
+    handPoints: List[DetectionOverlayPoint] = Field(default_factory=list)
+
+
+class FaceTouchDebugScores(BaseModel):
+    overlapScore: float = Field(..., ge=0, le=1)
+    proximityScore: float = Field(..., ge=0, le=1)
+    fingertipScore: float = Field(..., ge=0, le=1)
+
+
+class FaceTouchFrameSize(BaseModel):
+    width: int = Field(..., ge=1)
+    height: int = Field(..., ge=1)
+
+
+class FaceTouchAnalyzeResponse(BaseModel):
+    state: Literal["safe", "near_face", "touching_face"] = Field(
+        ...,
+        description="Classified state for the current frame",
+    )
+    score: float = Field(..., ge=0, le=1)
+    alert: bool = Field(..., description="Whether the frame crosses alert threshold")
+    regions: List[Literal["forehead", "left_cheek", "right_cheek", "nose", "mouth", "chin", "eye_zone"]] = Field(
+        default_factory=list,
+        description="Sensitive regions near or touched by the hand",
+    )
+    hands: int = Field(..., ge=0, le=2)
+    faceDetected: bool = Field(...)
+    latencyMs: int = Field(..., ge=0)
+    note: str = Field(...)
+    frameSize: FaceTouchFrameSize = Field(...)
+    overlay: DetectionOverlay = Field(default_factory=DetectionOverlay)
+    debug: FaceTouchDebugScores = Field(...)

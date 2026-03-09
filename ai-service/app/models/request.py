@@ -87,3 +87,23 @@ class NodeDetailRequest(BaseModel):
         default="intermediate",
         description="User's skill level for tailored explanations"
     )
+
+
+class FaceTouchAnalyzeRequest(BaseModel):
+    """Request body for webcam frame analysis"""
+
+    image: str = Field(
+        ...,
+        description="Base64 encoded frame image or data URL",
+    )
+    timestamp: int = Field(
+        ...,
+        ge=0,
+        description="Client timestamp in milliseconds",
+    )
+    sample_rate_fps: int = Field(
+        default=10,
+        ge=1,
+        le=30,
+        description="Sampling rate used by the frontend",
+    )

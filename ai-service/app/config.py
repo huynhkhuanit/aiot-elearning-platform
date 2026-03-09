@@ -40,6 +40,18 @@ class Settings(BaseSettings):
     
     # Prompt Configuration
     PROMPT_VERSION: str = "2.0.0"  # Updated for roadmap.sh-style detailed prompts with sections
+
+    # Face touch detection configuration
+    FACE_TOUCH_MAX_IMAGE_BYTES: int = 4_000_000
+    FACE_TOUCH_DEFAULT_WIDTH: int = 640
+    FACE_TOUCH_DEFAULT_HEIGHT: int = 480
+    FACE_TOUCH_FACE_MARGIN_RATIO: float = 0.20
+    FACE_TOUCH_NEAR_THRESHOLD: float = 0.35
+    FACE_TOUCH_TOUCH_THRESHOLD: float = 0.65
+    FACE_TOUCH_REGION_TOUCH_THRESHOLD: float = 0.28
+    FACE_TOUCH_REGION_NEAR_THRESHOLD: float = 0.12
+    FACE_TOUCH_FINGERTIP_NEAR_RATIO: float = 0.18
+    FACE_TOUCH_ENABLE_MEDIAPIPE: bool = True
     
     class Config:
         env_file = ".env"

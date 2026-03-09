@@ -62,7 +62,7 @@ export const toolLinks: ToolLink[] = [
     {
         id: "face-touch-alert",
         name: "Cảnh báo sờ tay lên mặt",
-        href: "/tools#face-touch-alert",
+        href: "/tools/face-touch-alert",
     },
 ];
 
