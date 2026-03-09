@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     FACE_TOUCH_MAX_IMAGE_BYTES: int = 4_000_000
     FACE_TOUCH_DEFAULT_WIDTH: int = 640
     FACE_TOUCH_DEFAULT_HEIGHT: int = 480
-    FACE_TOUCH_PROCESS_WIDTH: int = 480  # Downscale trước khi xử lý MediaPipe → tăng FPS
+    FACE_TOUCH_PROCESS_WIDTH: int = 640  # Giữ nguyên độ phân giải để MediaPipe detect tay tốt hơn
     FACE_TOUCH_FACE_MARGIN_RATIO: float = 0.18
     FACE_TOUCH_NEAR_THRESHOLD: float = 0.30
     FACE_TOUCH_TOUCH_THRESHOLD: float = 0.58
@@ -56,12 +56,14 @@ class Settings(BaseSettings):
     FACE_TOUCH_HAND_FACE_RATIO_HARD_MAX: float = 1.85
     FACE_TOUCH_OCCLUSION_LOW: float = 0.20
     FACE_TOUCH_OCCLUSION_HIGH: float = 0.50
+    FACE_TOUCH_CONTACT_RATIO: float = 0.09
+    FACE_TOUCH_CONTACT_SOFT_MULT: float = 3.0
     FACE_TOUCH_ENABLE_MEDIAPIPE: bool = True
     # MediaPipe confidence (video streaming mode)
     FACE_TOUCH_FACE_DETECT_CONFIDENCE: float = 0.6
     FACE_TOUCH_FACE_TRACK_CONFIDENCE: float = 0.5
-    FACE_TOUCH_HAND_DETECT_CONFIDENCE: float = 0.6
-    FACE_TOUCH_HAND_TRACK_CONFIDENCE: float = 0.5
+    FACE_TOUCH_HAND_DETECT_CONFIDENCE: float = 0.3
+    FACE_TOUCH_HAND_TRACK_CONFIDENCE: float = 0.2
     
     class Config:
         env_file = ".env"

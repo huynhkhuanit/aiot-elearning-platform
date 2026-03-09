@@ -62,6 +62,13 @@ FINGERTIP_PRIORITY = (4, 8, 12)
 KNUCKLE_INDICES = (5, 9, 13, 17)  # MCP joints cho hand box chính xác hơn
 WRIST_INDEX = 0
 PALM_CENTER_INDICES = (0, 5, 9, 13, 17)  # Wrist + MCP joints → palm centroid
+# All joints that can make contact with face (fingertips + DIP + PIP + MCP)
+ALL_CONTACT_INDICES = (
+    4, 8, 12, 16, 20,   # fingertips
+    3, 7, 11, 15, 19,   # DIP joints
+    2, 6, 10, 14, 18,   # PIP joints
+    5, 9, 13, 17,        # MCP/knuckle joints
+)
 
 # Face landmarks: jawline contour + key points cho bounding box chính xác ở mọi khoảng cách
 FACE_CONTOUR_INDICES = (
@@ -338,6 +345,51 @@ def _face_points_occluded_by_hand(face_points: Sequence[Point], hand_box: Box) -
     return inside / len(face_points)
 
 
+def _fingertip_contact_score(
+    hand_points: Sequence[Point],
+    face_points: Sequence[Point],
+    face_box: Box,
+) -> float:
+    """Kiểm tra xem bất kỳ điểm nào trên bàn tay có chạm vào gần khuôn mặt không.
+
+    Kiểm tra tất cả các đốt ngón tay (fingertip, DIP, PIP, MCP) thay vì chỉ đầu
+    ngón tay. Khi úp tay vào cằm/má, các đốt giữa là điểm gần mặt nhất.
+    Dùng toàn bộ 468 face landmarks để phát hiện tiếp xúc ở bất kỳ vùng nào.
+    Trả về score 0-1: 1.0 nếu có điểm tay sát mặt, 0.0 nếu xa.
+    """
+    if not hand_points or not face_points:
+        return 0.0
+
+    contact_joints = [hand_points[i] for i in ALL_CONTACT_INDICES if i < len(hand_points)]
+    if not contact_joints:
+        return 0.0
+
+    contact_dist = face_box.diagonal * settings.FACE_TOUCH_CONTACT_RATIO
+    soft_dist = contact_dist * settings.FACE_TOUCH_CONTACT_SOFT_MULT
+
+    face_xs = [fp.x for fp in face_points]
+    face_ys = [fp.y for fp in face_points]
+
+    best_score = 0.0
+    for joint in contact_joints:
+        min_d_sq = float("inf")
+        jx, jy = joint.x, joint.y
+        for fx, fy in zip(face_xs, face_ys):
+            d_sq = (jx - fx) ** 2 + (jy - fy) ** 2
+            if d_sq < min_d_sq:
+                min_d_sq = d_sq
+        min_d = math.sqrt(min_d_sq)
+
+        if min_d <= contact_dist:
+            return 1.0
+        if min_d <= soft_dist:
+            s = 1.0 - (min_d - contact_dist) / (soft_dist - contact_dist)
+            if s > best_score:
+                best_score = s
+
+    return best_score
+
+
 def _in_front_of_face_penalty(occlusion_ratio: float, hand_box: Box, face_box: Box) -> float:
     """Penalty multiplier khi tay đang ở trước mặt thay vì chạm mặt.
 
@@ -515,6 +567,7 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
         size_consistency = _hand_face_size_consistency(hand_box, face_box)
         occlusion = _face_points_occluded_by_hand(face_overlay_pts, hand_box)
         occlusion_penalty = _in_front_of_face_penalty(occlusion, hand_box, face_box)
+        contact = _fingertip_contact_score(points, face_points, face_box)
 
         # Region scoring: touch dùng face box thật, near dùng expanded face box
         weighted_touch_region_scores = []
@@ -551,14 +604,22 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
 
         fingertip_score = _clamp_score(max(weighted_touch_region_scores, default=0.0))
         near_region_score = _clamp_score(max(weighted_near_region_scores, default=0.0))
+        base_touch = (
+            touch_overlap_score * 0.45
+            + touch_proximity_score * 0.20
+            + fingertip_score * 0.35
+        )
+        # When contact is high AND hand size is realistic AND face is NOT heavily
+        # occluded, it's a genuine touch from the side/below → trust contact score.
+        # When occlusion is high, hand is IN FRONT of face → keep penalty active.
+        if contact >= 0.5 and size_consistency >= 0.5 and occlusion < 0.40:
+            effective_penalty = max(occlusion_penalty, 0.85)
+        else:
+            effective_penalty = occlusion_penalty
         touch_score = _clamp_score(
-            (
-                touch_overlap_score * 0.45
-                + touch_proximity_score * 0.20
-                + fingertip_score * 0.35
-            )
+            max(contact * 0.82, base_touch)
             * size_consistency
-            * occlusion_penalty
+            * effective_penalty
         )
         near_score = _clamp_score(
             (
