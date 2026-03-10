@@ -8,6 +8,7 @@ import {
     Github,
     Globe,
     Camera,
+    Plus,
 } from "lucide-react";
 import type { CVData, CVAction, CVSectionType } from "@/types/cv";
 import { CVSectionEditor } from "./CVSectionEditor";
@@ -38,10 +39,10 @@ export function CVDocument({
                 color: "#334155",
             }}
         >
-            <div className="p-12">
+            <div className="px-10 py-8">
                 {/* ── Header: Personal Info ────────────────────── */}
                 <div
-                    className="mb-8 flex gap-6 cursor-pointer rounded-lg border-2 border-transparent p-2 transition-colors hover:border-slate-100"
+                    className="mb-4 flex gap-6 cursor-pointer rounded-lg border-2 border-transparent p-2 transition-colors hover:border-slate-100"
                     onClick={() => onFocusSection("personal-info")}
                 >
                     {/* Avatar Upload */}
@@ -53,10 +54,12 @@ export function CVDocument({
                                 className="h-32 w-32 object-cover rounded-md border shadow-sm"
                             />
                         ) : (
-                            <div className="h-32 w-32 rounded-md border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400 transition-colors hover:border-sky-400 hover:text-sky-500 hover:bg-sky-50">
-                                <Camera className="size-8" />
-                                <span className="absolute bottom-2 text-[10px] font-medium">
-                                    Tải ảnh lên
+                            <div className="h-32 w-32 rounded-md border-2 border-dashed border-slate-200 bg-transparent flex flex-col items-center justify-center text-slate-300 transition-colors hover:border-sky-400 hover:text-sky-500 group relative cursor-pointer">
+                                <Camera className="size-8 mb-1" />
+                                <span className="text-[10px] font-medium text-center px-2">
+                                    Nhấn để tải ảnh
+                                    <br />
+                                    hoặc để trống để dán ảnh thật
                                 </span>
                             </div>
                         )}
@@ -219,7 +222,7 @@ export function CVDocument({
                 </div>
 
                 {/* ── Dynamic Sections ─────────────────────────── */}
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
                     {sections
                         .sort((a, b) => a.order - b.order)
                         .filter((s) => s.visible)
@@ -233,6 +236,29 @@ export function CVDocument({
                                 onFocus={() => onFocusSection(section.type)}
                             />
                         ))}
+
+                    {/* Add Section Button */}
+                    <div className="mt-2 flex justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <button
+                            onClick={() => {
+                                dispatch({
+                                    type: "ADD_SECTION",
+                                    section: {
+                                        id: `cv-${Date.now()}`,
+                                        type: "custom",
+                                        title: "Mục Tùy Chỉnh",
+                                        items: [],
+                                        order: sections.length + 1,
+                                        visible: true,
+                                    },
+                                });
+                            }}
+                            className="flex items-center gap-1.5 rounded-full border border-dashed border-slate-300 bg-slate-50 px-4 py-1.5 text-sm font-medium text-slate-500 hover:border-sky-400 hover:bg-sky-50 hover:text-sky-600 transition-colors"
+                        >
+                            <Plus className="size-4" />
+                            Thêm mục mới
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

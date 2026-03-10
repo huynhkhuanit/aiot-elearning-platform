@@ -68,7 +68,7 @@ export function CVSectionEditor({
 
     return (
         <div
-            className={`group relative mb-2 rounded-lg border-2 p-3 transition-colors ${
+            className={`group relative rounded-lg border-2 px-3 py-1.5 transition-colors ${
                 isActive
                     ? "border-sky-400 bg-sky-50/20"
                     : "border-transparent hover:border-slate-100"
@@ -123,7 +123,7 @@ export function CVSectionEditor({
 
             {/* Section Title */}
             <div
-                className="mb-3 flex items-center gap-2 border-b-2 pb-1 relative"
+                className="mb-2 flex items-center gap-2 border-b-2 pb-1 relative"
                 style={{ borderColor: accentColor }}
             >
                 <div className="absolute -left-6 top-1/2 -translate-y-1/2 cursor-move text-slate-300 opacity-0 transition-opacity group-hover:opacity-100">
@@ -147,7 +147,7 @@ export function CVSectionEditor({
             </div>
 
             {/* Items */}
-            <div className="space-y-3">
+            <div className="space-y-2">
                 {section.items.map((item) => (
                     <div key={item.id} className="relative group/item">
                         {/* Remove item button */}
@@ -300,13 +300,15 @@ export function CVSectionEditor({
             </div>
 
             {/* Add Item Button */}
-            <button
-                onClick={handleAddItem}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 py-1.5 text-sm text-slate-400 opacity-0 transition-all hover:border-sky-400 hover:text-sky-600 group-hover:opacity-100"
-            >
-                <Plus className="size-3.5" />
-                Thêm thông tin
-            </button>
+            <div className="absolute -bottom-3 left-1/2 z-10 -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                    onClick={handleAddItem}
+                    className="flex items-center justify-center gap-1.5 rounded-full border shadow shadow-slate-100 bg-white px-3 py-1 text-xs font-medium text-slate-500 hover:border-sky-400 border-slate-200 hover:text-sky-600"
+                >
+                    <Plus className="size-3.5" />
+                    Thêm thông tin
+                </button>
+            </div>
         </div>
     );
 }
