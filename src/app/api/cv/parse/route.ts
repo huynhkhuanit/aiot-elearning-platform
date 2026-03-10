@@ -5,7 +5,7 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL ?? "http://localhost:8000";
 export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
-        const file = formData.get("file") as File | null;
+        const file = (formData as any).get("file") as File | Blob | null;
 
         if (!file) {
             return NextResponse.json(
@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if (!file.name.toLowerCase().endsWith(".pdf")) {
+        const filename = "name" in file ? (file as any).name : "";
+        if (!filename.toLowerCase().endsWith(".pdf")) {
             return NextResponse.json(
                 { error: "Only PDF files are accepted" },
                 { status: 400 },
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
 
         // Forward to Python AI service
         const forwardForm = new FormData();
-        forwardForm.append("file", file);
+        forwardForm.append("file", file as Blob, filename || "document.pdf");
 
         const response = await fetch(`${AI_SERVICE_URL}/cv/parse-pdf`, {
             method: "POST",

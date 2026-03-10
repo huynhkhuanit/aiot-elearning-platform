@@ -33,14 +33,16 @@ interface CVSectionEditorProps {
 }
 
 const SECTION_ICONS: Record<CVSectionType, React.ElementType | null> = {
+    "personal-info": null,
+    overview: null,
     experience: Briefcase,
     education: GraduationCap,
     skills: Wrench,
     projects: FolderKanban,
     certifications: Award,
     languages: Languages,
-    interests: Heart,
-    "personal-info": null,
+    references: Heart,
+    custom: null,
 };
 
 export function CVSectionEditor({
@@ -121,10 +123,10 @@ export function CVSectionEditor({
 
             {/* Section Title */}
             <div
-                className="mb-3 flex items-center gap-2 border-b-2 pb-1"
+                className="mb-3 flex items-center gap-2 border-b-2 pb-1 relative"
                 style={{ borderColor: accentColor }}
             >
-                <div className="cursor-move text-slate-300 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute -left-6 top-1/2 -translate-y-1/2 cursor-move text-slate-300 opacity-0 transition-opacity group-hover:opacity-100">
                     <GripVertical className="size-5" />
                 </div>
                 {Icon && (
@@ -164,7 +166,7 @@ export function CVSectionEditor({
                         </button>
 
                         {/* Top row: Title + Date/Location */}
-                        <div className="flex flex-wrap items-center justify-between gap-x-4">
+                        <div className="flex flex-nowrap items-center justify-between gap-x-4">
                             <EditableField
                                 value={item.value}
                                 onChange={(val) =>
@@ -179,7 +181,7 @@ export function CVSectionEditor({
                                 className="flex-1 font-bold text-slate-800"
                             />
                             {item.meta && (
-                                <div className="flex items-center gap-2 text-sm text-slate-500">
+                                <div className="flex items-center justify-end shrink-0 text-sm text-slate-500">
                                     {item.meta.period !== undefined && (
                                         <EditableField
                                             value={item.meta.period}
@@ -197,7 +199,7 @@ export function CVSectionEditor({
                                                 })
                                             }
                                             placeholder="Thời gian"
-                                            className="text-right"
+                                            className="text-right whitespace-nowrap min-w-[100px]"
                                         />
                                     )}
                                 </div>
