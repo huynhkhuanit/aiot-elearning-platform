@@ -25,12 +25,15 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
     // Kiểm tra nếu đang ở trang playground (/playground)
     const isPlaygroundPage = pathname?.startsWith("/playground");
 
+    // Kiểm tra nếu đang ở trang tools (/tools/*)
+    const isToolPage = pathname?.startsWith("/tools/");
+
     // Kiểm tra nếu đang ở trang chi tiết khóa học (/courses/*)
     const isCourseLandingPage =
         pathname?.startsWith("/courses/") && pathname !== "/courses";
 
-    // Nếu là trang admin, học tập, hoặc playground → không hiển thị layout
-    if (isAdminPage || isLearningPage || isPlaygroundPage) {
+    // Nếu là trang admin, học tập, playground, hoặc tools → không hiển thị layout
+    if (isAdminPage || isLearningPage || isPlaygroundPage || isToolPage) {
         return <>{children}</>;
     }
 

@@ -2,7 +2,6 @@
 
 import {
     AlertTriangle,
-    ArrowRight,
     Camera,
     CameraOff,
     CheckCircle2,
@@ -20,34 +19,22 @@ import {
     Waves,
     type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
-import {
-    type CSSProperties,
-    useEffect,
-    useRef,
-    useState,
-} from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
-type DetectorState = "idle" | "loading" | "safe" | "near_face" | "touching_face" | "error";
+type DetectorState =
+    | "idle"
+    | "loading"
+    | "safe"
+    | "near_face"
+    | "touching_face"
+    | "error";
 type FaceRegion =
     | "forehead"
     | "left_cheek"
@@ -159,6 +146,7 @@ const stateConfig: Record<
         ring: string;
         progress: string;
         description: string;
+        dotColor: string;
     }
 > = {
     safe: {
@@ -166,21 +154,27 @@ const stateConfig: Record<
         tone: "bg-emerald-500/15 text-emerald-200 border-emerald-400/20",
         ring: "shadow-[0_0_0_1px_rgba(16,185,129,0.22)]",
         progress: "bg-emerald-400",
-        description: "Tay đang ở xa mặt hoặc chưa xuất hiện vùng giao cắt đáng kể.",
+        description:
+            "Tay đang ở xa mặt hoặc chưa xuất hiện vùng giao cắt đáng kể.",
+        dotColor: "bg-emerald-500",
     },
     near_face: {
         label: "Đưa tay gần mặt",
         tone: "bg-amber-500/15 text-amber-100 border-amber-400/20",
         ring: "shadow-[0_0_0_1px_rgba(251,191,36,0.22)]",
         progress: "bg-amber-400",
-        description: "Có dấu hiệu tay tiến gần mặt. Hệ thống đang tăng persistence score.",
+        description:
+            "Có dấu hiệu tay tiến gần mặt. Hệ thống đang tăng persistence score.",
+        dotColor: "bg-amber-500",
     },
     touching_face: {
         label: "Đang chạm mặt",
         tone: "bg-rose-500/15 text-rose-100 border-rose-400/20",
         ring: "shadow-[0_0_0_1px_rgba(244,63,94,0.22)]",
         progress: "bg-rose-400",
-        description: "Vùng tay và mặt đã overlap đủ mạnh để phát cảnh báo realtime.",
+        description:
+            "Vùng tay và mặt đã overlap đủ mạnh để phát cảnh báo realtime.",
+        dotColor: "bg-rose-500",
     },
 };
 
@@ -190,18 +184,18 @@ const statusCards: Array<{
     icon: LucideIcon;
 }> = [
     {
-        title: "Hybrid realtime",
-        description: "Webcam và overlay chạy ở frontend, nhận diện hình học được xử lý trong Python service.",
+        title: "Hybrid Realtime",
+        description: "Xử lý ảnh cục bộ kết hợp máy chủ.",
         icon: Cpu,
     },
     {
         title: "Privacy-first",
-        description: "Frame được gửi ở độ phân giải thấp và chỉ dùng cho nhận diện trạng thái, phù hợp demo AIoT cục bộ.",
+        description: "Không lưu trữ hình ảnh người dùng.",
         icon: ShieldAlert,
     },
     {
         title: "Sẵn sàng mở rộng",
-        description: "Có thể nối thêm log sự kiện, clip review hoặc lớp AI multimodal để giải thích hành vi.",
+        description: "Kiến trúc dễ dàng tích hợp API.",
         icon: Sparkles,
     },
 ];
@@ -294,9 +288,18 @@ function drawOverlay(
     context.clearRect(0, 0, canvasSize.width, canvasSize.height);
 
     if (overlay.faceBox) {
-        const projectedFaceBox = projectOverlayBox(overlay.faceBox, sourceSize, canvasSize);
+        const projectedFaceBox = projectOverlayBox(
+            overlay.faceBox,
+            sourceSize,
+            canvasSize,
+        );
         context.save();
-        context.strokeStyle = state === "touching_face" ? "#fb7185" : state === "near_face" ? "#fbbf24" : "#22c55e";
+        context.strokeStyle =
+            state === "touching_face"
+                ? "#fb7185"
+                : state === "near_face"
+                  ? "#fbbf24"
+                  : "#22c55e";
         context.lineWidth = 3;
         context.setLineDash([10, 8]);
         context.strokeRect(
@@ -311,7 +314,11 @@ function drawOverlay(
     context.save();
     context.fillStyle = "rgba(96, 165, 250, 0.85)";
     overlay.facePoints.forEach((point) => {
-        const projectedPoint = projectOverlayPoint(point, sourceSize, canvasSize);
+        const projectedPoint = projectOverlayPoint(
+            point,
+            sourceSize,
+            canvasSize,
+        );
         context.beginPath();
         context.arc(projectedPoint.x, projectedPoint.y, 2.4, 0, Math.PI * 2);
         context.fill();
@@ -323,14 +330,26 @@ function drawOverlay(
     context.lineWidth = 2;
     overlay.handBoxes.forEach((box) => {
         const projectedBox = projectOverlayBox(box, sourceSize, canvasSize);
-        context.strokeRect(projectedBox.x, projectedBox.y, projectedBox.width, projectedBox.height);
+        context.strokeRect(
+            projectedBox.x,
+            projectedBox.y,
+            projectedBox.width,
+            projectedBox.height,
+        );
     });
     context.restore();
 
     context.save();
-    context.fillStyle = state === "touching_face" ? "rgba(251, 113, 133, 0.95)" : "rgba(34, 211, 238, 0.95)";
+    context.fillStyle =
+        state === "touching_face"
+            ? "rgba(251, 113, 133, 0.95)"
+            : "rgba(34, 211, 238, 0.95)";
     overlay.handPoints.forEach((point) => {
-        const projectedPoint = projectOverlayPoint(point, sourceSize, canvasSize);
+        const projectedPoint = projectOverlayPoint(
+            point,
+            sourceSize,
+            canvasSize,
+        );
         context.beginPath();
         context.arc(projectedPoint.x, projectedPoint.y, 3.2, 0, Math.PI * 2);
         context.fill();
@@ -356,7 +375,8 @@ export function FaceTouchAlertTool() {
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [detectorState, setDetectorState] = useState<DetectorState>("idle");
     const [serviceState, setServiceState] = useState<ServiceState>("unknown");
-    const [detection, setDetection] = useState<DetectionResponse>(defaultDetection);
+    const [detection, setDetection] =
+        useState<DetectionResponse>(defaultDetection);
     const [displayScore, setDisplayScore] = useState(0);
     const [alertCount, setAlertCount] = useState(0);
     const [sampleRate, setSampleRate] = useState([15]);
@@ -364,6 +384,13 @@ export function FaceTouchAlertTool() {
     const [serviceStatus, setServiceStatus] = useState<string>(
         "Camera chưa khởi động. Công cụ sẽ gửi frame về Python service khi bắt đầu.",
     );
+    const [logEntries, setLogEntries] = useState<
+        Array<{ type: string; message: string }>
+    >([
+        { type: "INFO", message: "Initializing webcam feed..." },
+        { type: "INFO", message: "Loading MediaPipe models..." },
+        { type: "INFO", message: "Service ready. Awaiting frames." },
+    ]);
 
     const syncOverlayCanvasSize = () => {
         const overlayCanvas = overlayRef.current;
@@ -375,7 +402,10 @@ export function FaceTouchAlertTool() {
         const nextWidth = Math.max(1, Math.round(width));
         const nextHeight = Math.max(1, Math.round(height));
 
-        if (overlayCanvas.width !== nextWidth || overlayCanvas.height !== nextHeight) {
+        if (
+            overlayCanvas.width !== nextWidth ||
+            overlayCanvas.height !== nextHeight
+        ) {
             overlayCanvas.width = nextWidth;
             overlayCanvas.height = nextHeight;
         }
@@ -390,6 +420,10 @@ export function FaceTouchAlertTool() {
             normalized.includes("localhost:8000") ||
             normalized.includes("start-all-ai.ps1")
         );
+    };
+
+    const addLog = (type: string, message: string) => {
+        setLogEntries((prev) => [...prev.slice(-19), { type, message }]);
     };
 
     const checkServiceHealth = async (options?: { silent?: boolean }) => {
@@ -410,9 +444,12 @@ export function FaceTouchAlertTool() {
 
             if (response.ok && payload.success) {
                 setServiceState("ready");
+                addLog("SYS", "Python service connected.");
 
                 if (cameraActive) {
-                    setServiceStatus("Webcam đã sẵn sàng. Python service đang nhận frame realtime.");
+                    setServiceStatus(
+                        "Webcam đã sẵn sàng. Python service đang nhận frame realtime.",
+                    );
                 } else if (!silent) {
                     setServiceStatus(payload.data.message);
                 }
@@ -427,12 +464,14 @@ export function FaceTouchAlertTool() {
 
             setServiceState("offline");
             setServiceStatus(message);
+            addLog("WARN", "Service offline.");
             return false;
         } catch {
             const message =
                 "Không thể kiểm tra Python face-touch service. Hãy chạy scripts/start-all-ai.ps1 hoặc khởi động FastAPI trong ai-service.";
             setServiceState("offline");
             setServiceStatus(message);
+            addLog("ERR", "Cannot reach Python service.");
             return false;
         }
     };
@@ -442,9 +481,13 @@ export function FaceTouchAlertTool() {
             return;
         }
 
-        const AudioContextCtor = window.AudioContext || (window as typeof window & {
-            webkitAudioContext?: typeof AudioContext;
-        }).webkitAudioContext;
+        const AudioContextCtor =
+            window.AudioContext ||
+            (
+                window as typeof window & {
+                    webkitAudioContext?: typeof AudioContext;
+                }
+            ).webkitAudioContext;
 
         if (!AudioContextCtor) {
             return;
@@ -459,8 +502,14 @@ export function FaceTouchAlertTool() {
         oscillator.type = "sine";
         oscillator.frequency.value = 880;
         gainNode.gain.value = 0.0001;
-        gainNode.gain.exponentialRampToValueAtTime(0.045, audioContext.currentTime + 0.02);
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.22);
+        gainNode.gain.exponentialRampToValueAtTime(
+            0.045,
+            audioContext.currentTime + 0.02,
+        );
+        gainNode.gain.exponentialRampToValueAtTime(
+            0.0001,
+            audioContext.currentTime + 0.22,
+        );
 
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
@@ -485,6 +534,7 @@ export function FaceTouchAlertTool() {
         setDetectorState("idle");
         setDetection(defaultDetection);
         setDisplayScore(0);
+        addLog("INFO", "Camera stopped.");
         setServiceStatus(
             serviceState === "ready"
                 ? "Camera đã dừng. Python service vẫn sẵn sàng cho lần khởi động tiếp theo."
@@ -496,13 +546,19 @@ export function FaceTouchAlertTool() {
         const video = videoRef.current;
         const captureCanvas = captureCanvasRef.current;
 
-        if (!video || !captureCanvas || video.videoWidth === 0 || video.videoHeight === 0) {
+        if (
+            !video ||
+            !captureCanvas ||
+            video.videoWidth === 0 ||
+            video.videoHeight === 0
+        ) {
             return;
         }
 
         if (serviceState !== "ready") {
             const now = Date.now();
-            const shouldRetryHealthCheck = now - lastHealthCheckAtRef.current > 4000;
+            const shouldRetryHealthCheck =
+                now - lastHealthCheckAtRef.current > 4000;
 
             if (serviceState === "unknown" || shouldRetryHealthCheck) {
                 void checkServiceHealth({ silent: serviceState === "offline" });
@@ -512,7 +568,9 @@ export function FaceTouchAlertTool() {
         }
 
         const width = 480;
-        const height = Math.round((video.videoHeight / video.videoWidth) * width);
+        const height = Math.round(
+            (video.videoHeight / video.videoWidth) * width,
+        );
         captureCanvas.width = width;
         captureCanvas.height = height;
 
@@ -525,7 +583,9 @@ export function FaceTouchAlertTool() {
         const dataUrl = captureCanvas.toDataURL("image/jpeg", 0.55);
 
         pendingRequestRef.current = true;
-        setDetectorState((current) => (current === "idle" ? "loading" : current));
+        setDetectorState((current) =>
+            current === "idle" ? "loading" : current,
+        );
 
         try {
             const response = await fetch("/api/face-touch/analyze", {
@@ -545,16 +605,26 @@ export function FaceTouchAlertTool() {
                 | { success: false; error: string };
 
             if (!response.ok || !payload.success) {
-                throw new Error(payload.success ? "Face touch service error" : payload.error);
+                throw new Error(
+                    payload.success
+                        ? "Face touch service error"
+                        : payload.error,
+                );
             }
 
             const nextDetection = payload.data;
             const nextScore = clampScore(nextDetection.score);
-            smoothedScoreRef.current = smoothedScoreRef.current * 0.45 + nextScore * 0.55;
+            smoothedScoreRef.current =
+                smoothedScoreRef.current * 0.45 + nextScore * 0.55;
             setDisplayScore(smoothedScoreRef.current);
             setDetection(nextDetection);
             setDetectorState(nextDetection.state);
             setServiceStatus(nextDetection.note);
+
+            addLog(
+                "DATA",
+                `H:${nextDetection.hands} F:${nextDetection.faceDetected ? 1 : 0} | Score: ${nextScore.toFixed(2)}`,
+            );
 
             const now = Date.now();
             if (nextDetection.state === "touching_face") {
@@ -567,20 +637,27 @@ export function FaceTouchAlertTool() {
                     cooldownUntilRef.current = now + 1500;
                     setAlertCount((count) => count + 1);
                     playAlertTone();
+                    addLog("ALERT", "Face touch detected!");
                 }
             } else {
                 consecutiveTouchFramesRef.current = 0;
             }
         } catch (error) {
-            const message = error instanceof Error ? error.message : "Không thể phân tích frame.";
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : "Không thể phân tích frame.";
             if (isServiceConnectivityError(message)) {
                 setServiceState("offline");
-                setDetectorState((current) => (current === "loading" ? "safe" : current));
+                setDetectorState((current) =>
+                    current === "loading" ? "safe" : current,
+                );
                 consecutiveTouchFramesRef.current = 0;
             } else {
                 setDetectorState("error");
             }
             setServiceStatus(message);
+            addLog("ERR", message);
         } finally {
             pendingRequestRef.current = false;
         }
@@ -604,7 +681,13 @@ export function FaceTouchAlertTool() {
             height: overlayCanvas.height,
         };
 
-        drawOverlay(overlayContext, detection.overlay, size, detection.frameSize, detection.state);
+        drawOverlay(
+            overlayContext,
+            detection.overlay,
+            size,
+            detection.frameSize,
+            detection.state,
+        );
     }, [detection]);
 
     useEffect(() => {
@@ -693,6 +776,7 @@ export function FaceTouchAlertTool() {
         setCameraError(null);
         setDetectorState("loading");
         setServiceStatus("Đang khởi tạo webcam...");
+        addLog("INFO", "Initializing webcam...");
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -722,6 +806,7 @@ export function FaceTouchAlertTool() {
             setDetectorState("safe");
             setDetection(defaultDetection);
             setDisplayScore(0);
+            addLog("SYS", `Processing at ${sampleRate[0]} FPS.`);
             void checkServiceHealth();
         } catch (error) {
             const message =
@@ -731,6 +816,7 @@ export function FaceTouchAlertTool() {
             setCameraError(message);
             setDetectorState("error");
             setServiceStatus(message);
+            addLog("ERR", message);
         }
     }
 
@@ -741,554 +827,666 @@ export function FaceTouchAlertTool() {
             ? detectorState
             : "safe";
     const liveStateConfig = stateConfig[liveState];
-        const statusLabel =
-                detectorState === "error"
-                        ? "Lỗi xử lý"
-                        : serviceState === "offline"
-                            ? "Service offline"
-                            : serviceState === "checking"
-                                ? "Đang kiểm tra"
-                                : detectorState === "loading"
-                                    ? "Đang tải"
-                                    : liveStateConfig.label;
-        const statusTone =
-                detectorState === "error"
-                        ? "bg-rose-500/15 text-rose-100 border-rose-400/20"
-                        : serviceState === "offline"
-                            ? "bg-amber-500/15 text-amber-100 border-amber-400/20"
-                            : serviceState === "checking"
-                                ? "bg-cyan-500/15 text-cyan-100 border-cyan-400/20"
-                                : liveStateConfig.tone;
-        const statusDescription =
-                cameraError
-                        ? "Webcam chưa khởi động được hoặc chưa được cấp quyền truy cập."
-                        : detectorState === "error"
-                            ? "Pipeline phân tích frame đang gặp lỗi nội bộ và cần kiểm tra response từ service."
-                            : serviceState === "offline"
-                                ? "Webcam vẫn có thể hoạt động, nhưng Python service chưa chạy nên chưa phân tích được frame."
-                                : serviceState === "checking"
-                                    ? "Đang kiểm tra kết nối tới Python service trước khi gửi frame realtime."
-                                    : liveStateConfig.description;
+    const statusLabel =
+        detectorState === "error"
+            ? "Lỗi xử lý"
+            : serviceState === "offline"
+              ? "Service offline"
+              : serviceState === "checking"
+                ? "Đang kiểm tra"
+                : detectorState === "loading"
+                  ? "Đang tải"
+                  : liveStateConfig.label;
+    const statusTone =
+        detectorState === "error"
+            ? "bg-rose-500/15 text-rose-100 border-rose-400/20"
+            : serviceState === "offline"
+              ? "bg-amber-500/15 text-amber-100 border-amber-400/20"
+              : serviceState === "checking"
+                ? "bg-cyan-500/15 text-cyan-100 border-cyan-400/20"
+                : liveStateConfig.tone;
+    const statusDescription = cameraError
+        ? "Webcam chưa khởi động được hoặc chưa được cấp quyền truy cập."
+        : detectorState === "error"
+          ? "Pipeline phân tích frame đang gặp lỗi nội bộ và cần kiểm tra response từ service."
+          : serviceState === "offline"
+            ? "Webcam vẫn có thể hoạt động, nhưng Python service chưa chạy nên chưa phân tích được frame."
+            : serviceState === "checking"
+              ? "Đang kiểm tra kết nối tới Python service trước khi gửi frame realtime."
+              : liveStateConfig.description;
     const progressStyle = {
         "--progress-indicator": liveStateConfig.progress,
     } as CSSProperties;
 
-    return (
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.2),_transparent_26%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_24%),linear-gradient(180deg,_#07111f_0%,_#0b1220_46%,_#eaf5ff_46%,_#f7fbff_100%)]">
-            <section className="relative overflow-hidden border-b border-white/10 px-4 pb-18 pt-24 sm:px-6 lg:px-8">
-                <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.06fr_0.94fr] lg:items-center">
-                    <div className="space-y-7 text-white">
-                        <Badge className="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-cyan-100 hover:bg-cyan-400/10">
-                            <Sparkles className="mr-2 size-3.5" />
-                            AIoT Realtime Tool
-                        </Badge>
+    const contactScorePercent = Math.round(clampScore(displayScore) * 100);
 
-                        <div className="space-y-4">
-                            <p className="text-sm font-semibold uppercase tracking-[0.34em] text-cyan-200/80">
-                                Face Touch Alert
-                            </p>
-                            <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-                                Cảnh báo sờ tay lên mặt với luồng webcam realtime và Python CV service.
+    return (
+        <div className="min-h-screen bg-[#07111f] font-[family-name:var(--font-space-grotesk),var(--font-sans)]">
+            {/* ── Sticky Navbar ── */}
+            <header className="sticky top-0 z-50 flex items-center justify-between border-b border-[#13b6ec]/20 bg-[#07111f]/80 px-6 py-4 backdrop-blur-md md:px-10">
+                <div className="flex items-center gap-3">
+                    <ScanFace className="size-6 text-[#13b6ec]" />
+                    <h2 className="text-lg font-bold uppercase tracking-tight text-slate-100">
+                        Face Touch Alert
+                    </h2>
+                </div>
+                <div className="flex items-center gap-4 md:gap-8">
+                    <span className="hidden rounded-full bg-[#13b6ec]/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#13b6ec] md:inline-flex">
+                        AIoT Realtime Tool
+                    </span>
+                    <Button
+                        className="h-10 rounded-xl bg-[#13b6ec] px-6 text-sm font-bold text-[#07111f] hover:bg-[#13b6ec]/90"
+                        onClick={() => {
+                            if (cameraActive) {
+                                stopCamera();
+                                return;
+                            }
+                            void startCamera();
+                        }}
+                    >
+                        {cameraActive ? (
+                            <>
+                                <CameraOff className="mr-2 size-4" />
+                                Dừng Camera
+                            </>
+                        ) : (
+                            <>
+                                <Camera className="mr-2 size-4" />
+                                Bật Camera
+                            </>
+                        )}
+                    </Button>
+                </div>
+            </header>
+
+            {/* ── Hero Section ── */}
+            <section className="w-full bg-[#07111f] px-6 py-12 text-slate-100 md:px-12 lg:px-24">
+                <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 lg:grid-cols-2">
+                    {/* Left content */}
+                    <div className="flex flex-col gap-8">
+                        <div className="flex flex-col gap-4">
+                            <h1 className="max-w-2xl text-4xl font-black leading-tight tracking-tight md:text-5xl lg:text-6xl">
+                                Cảnh báo sờ tay lên mặt với luồng webcam
+                                realtime và Python CV service.
                             </h1>
-                            <p className="max-w-2xl text-lg leading-8 text-slate-300">
-                                Trang tool này được tối ưu để demo đồ án AIoT: giao diện trực quan, giải thích pipeline rõ ràng, và sẵn sàng kết nối module Python trong thư mục ai-service để phát hiện hành vi tay chạm mặt.
+                            <p className="max-w-2xl text-lg font-normal leading-relaxed text-slate-300 md:text-xl">
+                                Technical explanation of the graduation thesis
+                                project.
                             </p>
                         </div>
 
-                        <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             {statusCards.map((item) => (
                                 <div
                                     key={item.title}
-                                    className="rounded-2xl border border-white/10 bg-white/6 p-4 backdrop-blur-sm"
+                                    className="flex flex-col gap-3 rounded-xl border border-[#13b6ec]/20 bg-[#13b6ec]/5 p-5 backdrop-blur-sm"
                                 >
-                                    <item.icon className="mb-3 size-5 text-cyan-300" />
-                                    <p className="text-sm font-semibold text-white">{item.title}</p>
-                                    <p className="mt-2 text-sm leading-6 text-slate-300">
-                                        {item.description}
-                                    </p>
+                                    <div className="flex size-8 items-center justify-center rounded-lg bg-[#13b6ec]/10 text-[#13b6ec]">
+                                        <item.icon className="size-5" />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <h3 className="text-base font-bold leading-tight">
+                                            {item.title}
+                                        </h3>
+                                        <p className="text-xs font-normal leading-normal text-slate-400">
+                                            {item.description}
+                                        </p>
+                                    </div>
                                 </div>
                             ))}
                         </div>
-
-                        <div className="flex flex-wrap gap-3">
-                            <Button
-                                size="lg"
-                                className="h-11 rounded-xl bg-cyan-400 px-5 font-semibold text-slate-950 hover:bg-cyan-300"
-                                onClick={() => {
-                                    if (cameraActive) {
-                                        stopCamera();
-                                        return;
-                                    }
-                                    void startCamera();
-                                }}
-                            >
-                                {cameraActive ? (
-                                    <>
-                                        <CameraOff className="mr-2 size-4" />
-                                        Dừng camera
-                                    </>
-                                ) : (
-                                    <>
-                                        <Camera className="mr-2 size-4" />
-                                        Khởi động demo
-                                    </>
-                                )}
-                            </Button>
-
-                            <Button
-                                asChild
-                                size="lg"
-                                variant="outline"
-                                className="h-11 rounded-xl border-white/15 bg-white/5 px-5 text-white hover:bg-white/10 hover:text-white"
-                            >
-                                <Link href="/tools">
-                                    Quay lại kho công cụ
-                                    <ArrowRight className="ml-2 size-4" />
-                                </Link>
-                            </Button>
-                        </div>
                     </div>
 
-                    <div className="relative">
-                        <div className="absolute inset-0 rounded-[32px] bg-cyan-400/15 blur-3xl" />
-                        <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-slate-950/80 p-4 shadow-[0_30px_100px_rgba(8,15,35,0.45)] backdrop-blur-xl">
-                            <div className="mb-4 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                                <div>
-                                    <p className="text-sm font-semibold text-white">
-                                        Camera workspace
-                                    </p>
-                                    <p className="text-xs text-slate-400">
-                                        Preview trực tiếp với overlay face và hand landmarks.
+                    {/* Right webcam preview */}
+                    <div className="relative overflow-hidden rounded-2xl border-2 border-[#13b6ec]/30 bg-black/50 p-2 shadow-2xl backdrop-blur-md">
+                        <div
+                            className={cn(
+                                "relative aspect-video overflow-hidden rounded-xl bg-slate-900",
+                                liveStateConfig.ring,
+                            )}
+                        >
+                            <video
+                                ref={videoRef}
+                                muted
+                                playsInline
+                                className="h-full w-full object-contain"
+                            />
+                            <canvas
+                                ref={overlayRef}
+                                className="pointer-events-none absolute inset-0 h-full w-full"
+                            />
+                            <canvas ref={captureCanvasRef} className="hidden" />
+
+                            {!cameraActive ? (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-slate-800 to-slate-900 px-8 text-center">
+                                    <ScanFace className="size-16 text-slate-700" />
+                                    <p className="text-sm text-slate-400">
+                                        Bấm &ldquo;Bật Camera&rdquo; để bắt đầu
                                     </p>
                                 </div>
-                                <Badge className={cn("rounded-full border px-3 py-1", statusTone)}>
-                                    {statusLabel}
-                                </Badge>
-                            </div>
+                            ) : null}
 
-                            <div className={cn("relative overflow-hidden rounded-[28px] border border-white/10 bg-slate-950", liveStateConfig.ring)}>
-                                <video
-                                    ref={videoRef}
-                                    muted
-                                    playsInline
-                                    className="aspect-[4/3] w-full object-contain"
+                            {/* Status badge overlay */}
+                            <div
+                                className={cn(
+                                    "absolute right-4 top-4 flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold backdrop-blur-sm",
+                                    statusTone,
+                                )}
+                            >
+                                <div
+                                    className={cn(
+                                        "size-2 rounded-full animate-pulse",
+                                        liveStateConfig.dotColor,
+                                    )}
                                 />
-                                <canvas
-                                    ref={overlayRef}
-                                    className="pointer-events-none absolute inset-0 h-full w-full"
-                                />
-                                <canvas ref={captureCanvasRef} className="hidden" />
-
-                                {!cameraActive ? (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/80 px-8 text-center">
-                                        <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 p-5 text-cyan-200">
-                                            <ScanFace className="size-8" />
-                                        </div>
-                                        <div>
-                                            <p className="text-lg font-semibold text-white">
-                                                Sẵn sàng cho buổi demo realtime
-                                            </p>
-                                            <p className="mt-2 max-w-md text-sm leading-6 text-slate-300">
-                                                Tool sẽ hiển thị khung mặt, vùng tay và state badge ngay khi webcam được cấp quyền.
-                                            </p>
-                                        </div>
-                                    </div>
-                                ) : null}
-
-                                <div className="absolute left-4 right-4 top-4 flex items-center justify-between gap-2 rounded-2xl border border-white/10 bg-slate-950/65 px-3 py-2 text-xs text-slate-300 backdrop-blur-md">
-                                    <span className="flex items-center gap-2">
-                                        <Waves className="size-3.5 text-cyan-300" />
-                                        FPS gửi frame: {sampleRate[0]}
-                                    </span>
-                                    <span className="flex items-center gap-2">
-                                        <Gauge className="size-3.5 text-cyan-300" />
-                                        Latency {detection.latencyMs}ms
-                                    </span>
-                                </div>
+                                {statusLabel}
                             </div>
+                        </div>
 
-                            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                                        Contact score
-                                    </p>
-                                    <p className="mt-2 text-3xl font-black text-white">
-                                        {formatPercent(displayScore)}
-                                    </p>
-                                </div>
-                                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                                        Regions
-                                    </p>
-                                    <p className="mt-2 text-3xl font-black text-white">
-                                        {detection.regions.length}
-                                    </p>
-                                </div>
-                                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                                        Alerts
-                                    </p>
-                                    <p className="mt-2 text-3xl font-black text-white">
-                                        {alertCount}
-                                    </p>
-                                </div>
+                        {/* Mini Metrics */}
+                        <div className="mt-2 grid grid-cols-3 gap-2">
+                            <div className="rounded-lg bg-slate-800/80 p-2 text-center">
+                                <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                                    Hands
+                                </p>
+                                <p className="text-sm font-bold text-slate-200">
+                                    {detection.hands}
+                                </p>
+                            </div>
+                            <div className="rounded-lg bg-slate-800/80 p-2 text-center">
+                                <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                                    Face
+                                </p>
+                                <p className="text-sm font-bold text-slate-200">
+                                    {detection.faceDetected ? "1" : "0"}
+                                </p>
+                            </div>
+                            <div className="rounded-lg bg-slate-800/80 p-2 text-center">
+                                <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                                    Latency
+                                </p>
+                                <p className="text-sm font-bold text-[#13b6ec]">
+                                    {detection.latencyMs}ms
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Contact Score Bar */}
+                        <div className="mt-2 rounded-lg bg-slate-800/80 p-2">
+                            <div className="mb-1 flex justify-between text-xs">
+                                <span className="text-slate-400">
+                                    Contact Score
+                                </span>
+                                <span className="font-bold text-slate-200">
+                                    {contactScorePercent}%
+                                </span>
+                            </div>
+                            <div className="h-1.5 w-full rounded-full bg-slate-700">
+                                <div
+                                    className="h-1.5 rounded-full bg-[#13b6ec] transition-all duration-300"
+                                    style={{ width: `${contactScorePercent}%` }}
+                                />
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section className="mx-auto -mt-10 max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
-                <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-                    <Card className="rounded-[28px] border-slate-200/70 bg-white/92 py-0 shadow-[0_24px_80px_rgba(12,24,48,0.08)] backdrop-blur-xl">
-                        <CardHeader className="border-b border-slate-100 px-7 py-6">
-                            <CardTitle className="text-2xl font-black text-slate-950">
-                                Detection console
-                            </CardTitle>
-                            <CardDescription className="text-sm leading-6 text-slate-600">
-                                Điều chỉnh tần số gửi frame, theo dõi score, debug tín hiệu overlap và quan sát trạng thái smoothing theo thời gian thực.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6 px-7 py-6">
-                            <div className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
-                                <div className="rounded-3xl bg-slate-950 p-5 text-white">
-                                    <div className="mb-4 flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-semibold text-white">
-                                                Trạng thái hiện tại
-                                            </p>
-                                            <p className="mt-1 text-sm text-slate-400">
-                                                {statusDescription}
-                                            </p>
-                                        </div>
-                                        <Badge className={cn("rounded-full border px-3 py-1", statusTone)}>
-                                            {statusLabel}
-                                        </Badge>
-                                    </div>
+            {/* ── Detection Panel ── */}
+            <section className="flex-1 w-full bg-slate-900 px-6 py-8 md:px-12 lg:px-24">
+                <div className="mx-auto flex max-w-5xl flex-col gap-8">
+                    {/* Tabs */}
+                    <Tabs defaultValue="webcam" className="gap-0">
+                        <TabsList className="mx-auto flex w-full justify-center rounded-none border-b border-slate-700 bg-transparent p-0">
+                            <TabsTrigger
+                                value="webcam"
+                                className="rounded-none border-b-2 border-transparent px-6 pb-3 pt-4 text-sm font-bold tracking-wide text-slate-400 hover:text-[#13b6ec]/70 hover:bg-slate-800/50 data-[state=active]:border-[#13b6ec] data-[state=active]:bg-transparent data-[state=active]:text-[#13b6ec] data-[state=active]:shadow-none"
+                            >
+                                Webcam &amp; Trạng thái
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="pipeline"
+                                className="rounded-none border-b-2 border-transparent px-6 pb-3 pt-4 text-sm font-bold tracking-wide text-slate-400 hover:text-[#13b6ec]/70 hover:bg-slate-800/50 data-[state=active]:border-[#13b6ec] data-[state=active]:bg-transparent data-[state=active]:text-[#13b6ec] data-[state=active]:shadow-none"
+                            >
+                                Pipeline kỹ thuật
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="evaluation"
+                                className="rounded-none border-b-2 border-transparent px-6 pb-3 pt-4 text-sm font-bold tracking-wide text-slate-400 hover:text-[#13b6ec]/70 hover:bg-slate-800/50 data-[state=active]:border-[#13b6ec] data-[state=active]:bg-transparent data-[state=active]:text-[#13b6ec] data-[state=active]:shadow-none"
+                            >
+                                Đánh giá &amp; Rủi ro
+                            </TabsTrigger>
+                        </TabsList>
 
-                                    <div style={progressStyle} className="space-y-3">
-                                        <Progress
-                                            value={displayScore * 100}
-                                            className="h-3 bg-white/10 [&_[data-slot=progress-indicator]]:bg-[var(--progress-indicator)]"
-                                        />
-                                        <div className="flex items-center justify-between text-sm text-slate-300">
-                                            <span>Raw score {formatPercent(detection.score)}</span>
-                                            <span>Smoothed {formatPercent(displayScore)}</span>
+                        {/* ─ Webcam & Trạng thái Tab ─ */}
+                        <TabsContent value="webcam" className="mt-6">
+                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                                {/* Left 2 cols — Controls + Console */}
+                                <div className="flex flex-col gap-6 lg:col-span-2">
+                                    {/* Control Bar */}
+                                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-800 bg-[#07111f] p-5 shadow-sm">
+                                        <div className="flex items-center gap-6">
+                                            <label className="flex items-center gap-3 text-sm font-bold text-slate-100">
+                                                Camera
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-checked={cameraActive}
+                                                    className={cn(
+                                                        "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
+                                                        cameraActive
+                                                            ? "bg-[#13b6ec]"
+                                                            : "bg-slate-700",
+                                                    )}
+                                                    onClick={() => {
+                                                        if (cameraActive) {
+                                                            stopCamera();
+                                                        } else {
+                                                            void startCamera();
+                                                        }
+                                                    }}
+                                                >
+                                                    <span
+                                                        className={cn(
+                                                            "pointer-events-none inline-block size-5 rounded-full bg-white shadow-lg transition-transform",
+                                                            cameraActive
+                                                                ? "translate-x-5"
+                                                                : "translate-x-0",
+                                                        )}
+                                                    />
+                                                </button>
+                                            </label>
+                                            <label className="flex items-center gap-3 text-sm font-bold text-slate-100">
+                                                {audioEnabled
+                                                    ? "Âm thanh"
+                                                    : "Tắt tiếng"}
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-checked={audioEnabled}
+                                                    className={cn(
+                                                        "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
+                                                        audioEnabled
+                                                            ? "bg-[#13b6ec]"
+                                                            : "bg-slate-700",
+                                                    )}
+                                                    onClick={() =>
+                                                        setAudioEnabled(
+                                                            (v) => !v,
+                                                        )
+                                                    }
+                                                >
+                                                    <span
+                                                        className={cn(
+                                                            "pointer-events-none inline-block size-5 rounded-full bg-white shadow-lg transition-transform",
+                                                            audioEnabled
+                                                                ? "translate-x-5"
+                                                                : "translate-x-0",
+                                                        )}
+                                                    />
+                                                </button>
+                                            </label>
                                         </div>
-                                    </div>
-
-                                    <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
-                                                Face detected
-                                            </p>
-                                            <p className="mt-2 text-xl font-bold text-white">
-                                                {detection.faceDetected ? "Có" : "Chưa"}
-                                            </p>
-                                        </div>
-                                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
-                                                Số tay phát hiện
-                                            </p>
-                                            <p className="mt-2 text-xl font-bold text-white">
-                                                {detection.hands}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                                    <div>
-                                        <p className="text-sm font-semibold text-slate-900">
-                                            Nhịp suy luận
-                                        </p>
-                                        <p className="mt-1 text-sm leading-6 text-slate-600">
-                                            Giảm FPS khi demo trên CPU yếu. 12–18 FPS cho kết quả mượt nhất.
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <Slider
-                                            value={sampleRate}
-                                            min={5}
-                                            max={24}
-                                            step={1}
-                                            onValueChange={setSampleRate}
-                                        />
-                                        <div className="flex items-center justify-between text-sm text-slate-600">
-                                            <span>5 FPS</span>
-                                            <span className="font-semibold text-slate-900">
+                                        <div className="flex flex-1 items-center gap-4 max-w-xs">
+                                            <span className="text-xs font-medium text-slate-500">
+                                                5 FPS
+                                            </span>
+                                            <Slider
+                                                value={sampleRate}
+                                                min={5}
+                                                max={24}
+                                                step={1}
+                                                onValueChange={setSampleRate}
+                                                className="flex-1"
+                                            />
+                                            <span className="text-xs font-medium text-slate-500">
                                                 {sampleRate[0]} FPS
                                             </span>
-                                            <span>24 FPS</span>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3 pt-2">
-                                        <Button
-                                            variant={audioEnabled ? "default" : "outline"}
-                                            className={cn(
-                                                "w-full rounded-xl",
-                                                audioEnabled
-                                                    ? "bg-slate-950 text-white hover:bg-slate-800"
-                                                    : "bg-white",
-                                            )}
-                                            onClick={() => setAudioEnabled((value) => !value)}
-                                        >
-                                            {audioEnabled ? (
-                                                <Volume2 className="mr-2 size-4" />
-                                            ) : (
-                                                <MicOff className="mr-2 size-4" />
-                                            )}
-                                            {audioEnabled ? "Âm thanh cảnh báo bật" : "Âm thanh cảnh báo tắt"}
-                                        </Button>
-
-                                        <Button
-                                            variant="outline"
-                                            className="w-full rounded-xl bg-white"
-                                            onClick={() => {
-                                                setAlertCount(0);
-                                                setDetection(defaultDetection);
-                                                setDisplayScore(0);
-                                                setServiceStatus("Đã reset bộ đếm cảnh báo và score.");
-                                                consecutiveTouchFramesRef.current = 0;
-                                                cooldownUntilRef.current = 0;
-                                            }}
-                                        >
-                                            <RefreshCcw className="mr-2 size-4" />
-                                            Reset trạng thái
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="grid gap-4 md:grid-cols-3">
-                                <MetricCard
-                                    icon={Radar}
-                                    label="Overlap"
-                                    value={formatPercent(detection.debug.overlapScore)}
-                                    description="Tỷ lệ giao cắt giữa hull tay và vùng mặt nhạy cảm."
-                                />
-                                <MetricCard
-                                    icon={Gauge}
-                                    label="Proximity"
-                                    value={formatPercent(detection.debug.proximityScore)}
-                                    description="Độ gần của fingertip đến các vùng như mũi, miệng và má."
-                                />
-                                <MetricCard
-                                    icon={Hand}
-                                    label="Fingertip focus"
-                                    value={formatPercent(detection.debug.fingertipScore)}
-                                    description="Điểm ưu tiên khi đầu ngón tay đi vào vùng dễ chạm mặt."
-                                />
-                            </div>
-
-                            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                                <p className="text-sm font-semibold text-slate-900">
-                                    Service notes
-                                </p>
-                                <p className="mt-2 text-sm leading-6 text-slate-600">
-                                    {serviceStatus}
-                                </p>
-                                {serviceState === "offline" ? (
-                                    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                                        <div className="flex items-start gap-3">
-                                            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" />
-                                            <div className="space-y-2">
-                                                <p className="font-semibold">
-                                                    Webcam không phải nguyên nhân chính. Python service ở cổng 8000 đang tắt hoặc chưa phản hồi.
-                                                </p>
-                                                <p>
-                                                    Khởi động service bằng scripts/start-all-ai.ps1 hoặc chạy FastAPI trong thư mục ai-service, sau đó bấm nút kiểm tra lại.
-                                                </p>
+                                    {/* System Logs Terminal */}
+                                    <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-800 bg-black/40 p-5 font-mono text-sm">
+                                        <div className="mb-3 flex items-center justify-between border-b border-slate-700 pb-2">
+                                            <span className="text-xs font-bold uppercase text-slate-500">
+                                                System Logs
+                                            </span>
+                                            <div className="flex gap-1.5">
+                                                <div className="size-2.5 rounded-full bg-red-500/80" />
+                                                <div className="size-2.5 rounded-full bg-yellow-500/80" />
+                                                <div className="size-2.5 rounded-full bg-green-500/80" />
                                             </div>
                                         </div>
-                                    </div>
-                                ) : null}
-                                {cameraError ? (
-                                    <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                                        {cameraError}
-                                    </div>
-                                ) : null}
-                                <div className="mt-4 flex flex-wrap gap-3">
-                                    <Button
-                                        variant="outline"
-                                        className="rounded-xl bg-white"
-                                        onClick={() => {
-                                            void checkServiceHealth();
-                                        }}
-                                    >
-                                        {serviceState === "checking" ? (
-                                            <LoaderCircle className="mr-2 size-4 animate-spin" />
-                                        ) : serviceState === "ready" ? (
-                                            <CheckCircle2 className="mr-2 size-4" />
-                                        ) : (
-                                            <RefreshCcw className="mr-2 size-4" />
-                                        )}
-                                        Kiểm tra Python service
-                                    </Button>
-                                </div>
-                                <div className="mt-4 flex flex-wrap gap-2">
-                                    {detection.regions.length > 0 ? (
-                                        detection.regions.map((region) => (
-                                            <Badge
-                                                key={region}
-                                                variant="secondary"
-                                                className="rounded-full bg-slate-900 text-white hover:bg-slate-900"
-                                            >
-                                                {region}
-                                            </Badge>
-                                        ))
-                                    ) : (
-                                        <Badge
-                                            variant="secondary"
-                                            className="rounded-full bg-slate-100 text-slate-600 hover:bg-slate-100"
-                                        >
-                                            Chưa có vùng nhạy cảm bị kích hoạt
-                                        </Badge>
-                                    )}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="rounded-[28px] border-slate-200/70 bg-white/92 py-0 shadow-[0_24px_80px_rgba(12,24,48,0.08)] backdrop-blur-xl">
-                        <CardHeader className="border-b border-slate-100 px-7 py-6">
-                            <CardTitle className="text-2xl font-black text-slate-950">
-                                Research and implementation guide
-                            </CardTitle>
-                            <CardDescription className="text-sm leading-6 text-slate-600">
-                                Tóm tắt tài liệu kỹ thuật thành từng khối để dễ demo, dễ báo cáo và dễ mở rộng sang logging hoặc AI multimodal sau này.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="px-7 py-6">
-                            <Tabs defaultValue="pipeline" className="gap-5">
-                                <TabsList className="w-full justify-start rounded-2xl bg-slate-100 p-1.5">
-                                    <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-                                    <TabsTrigger value="states">States</TabsTrigger>
-                                    <TabsTrigger value="evaluation">Đánh giá</TabsTrigger>
-                                    <TabsTrigger value="python">Python</TabsTrigger>
-                                </TabsList>
-
-                                <TabsContent value="pipeline" className="space-y-4">
-                                    {pipelineSteps.map((step, index) => (
                                         <div
-                                            key={step}
-                                            className="flex gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                                            className="flex-1 space-y-1 overflow-y-auto text-xs text-slate-400"
+                                            style={{ maxHeight: 200 }}
                                         >
-                                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white">
-                                                {index + 1}
-                                            </div>
-                                            <p className="text-sm leading-6 text-slate-700">{step}</p>
-                                        </div>
-                                    ))}
-                                </TabsContent>
-
-                                <TabsContent value="states" className="space-y-4">
-                                    {Object.values(stateConfig).map((item) => (
-                                        <div
-                                            key={item.label}
-                                            className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-                                        >
-                                            <div className="flex items-center justify-between gap-3">
-                                                <p className="text-base font-semibold text-slate-950">
-                                                    {item.label}
+                                            {logEntries.map((entry, index) => (
+                                                <p key={index}>
+                                                    <span
+                                                        className={cn(
+                                                            entry.type ===
+                                                                "INFO" &&
+                                                                "text-[#13b6ec]",
+                                                            entry.type ===
+                                                                "SYS" &&
+                                                                "text-green-500",
+                                                            entry.type ===
+                                                                "DATA" &&
+                                                                "text-slate-400",
+                                                            entry.type ===
+                                                                "WARN" &&
+                                                                "text-amber-400",
+                                                            entry.type ===
+                                                                "ERR" &&
+                                                                "text-rose-400",
+                                                            entry.type ===
+                                                                "ALERT" &&
+                                                                "text-rose-500 font-bold",
+                                                        )}
+                                                    >
+                                                        [{entry.type}]
+                                                    </span>{" "}
+                                                    {entry.message}
                                                 </p>
-                                                <Badge className={cn("rounded-full border px-3 py-1", item.tone)}>
-                                                    State
-                                                </Badge>
-                                            </div>
-                                            <p className="mt-3 text-sm leading-6 text-slate-600">
-                                                {item.description}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </TabsContent>
-
-                                <TabsContent value="evaluation" className="space-y-4">
-                                    {evaluationRows.map((row) => (
-                                        <div
-                                            key={row.label}
-                                            className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-                                        >
-                                            <p className="text-sm font-semibold text-slate-950">{row.label}</p>
-                                            <p className="mt-2 text-sm leading-6 text-slate-600">
-                                                {row.value}
-                                            </p>
-                                        </div>
-                                    ))}
-
-                                    <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
-                                        <p className="text-sm font-semibold text-amber-900">
-                                            Các rủi ro cần theo dõi khi demo
-                                        </p>
-                                        <ul className="mt-3 space-y-3 text-sm leading-6 text-amber-900/85">
-                                            {riskRows.map((row) => (
-                                                <li key={row} className="flex gap-3">
-                                                    <AlertTriangle className="mt-1 size-4 shrink-0 text-amber-600" />
-                                                    <span>{row}</span>
-                                                </li>
                                             ))}
-                                        </ul>
-                                    </div>
-                                </TabsContent>
-
-                                <TabsContent value="python" className="space-y-4">
-                                    <div className="rounded-3xl border border-slate-200 bg-slate-950 p-5 text-white">
-                                        <p className="text-base font-semibold text-white">
-                                            Mô-đun Python có thể triển khai ngay trong ai-service
-                                        </p>
-                                        <div className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
-                                            <p>
-                                                Router mới nhận frame base64, giải mã bằng OpenCV, suy luận bằng MediaPipe và trả về `state`, `score`, `regions`, `overlay` để frontend vẽ trực tiếp trên canvas.
-                                            </p>
-                                            <p>
-                                                Kiến trúc này giữ được tính trình diễn của đồ án: frontend đẹp và nhẹ, backend dễ benchmark, dễ log và có thể thêm clip review hoặc Qwen3-VL ở phase sau.
-                                            </p>
                                         </div>
                                     </div>
 
-                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                        <p className="text-sm font-semibold text-slate-950">
-                                            Stitch note
+                                    {/* Service notes & actions */}
+                                    <div className="rounded-xl border border-slate-800 bg-[#07111f] p-5">
+                                        <p className="text-sm font-bold text-slate-100">
+                                            Service notes
                                         </p>
-                                        <p className="mt-2 text-sm leading-6 text-slate-600">
-                                            Stitch project đã được tạo để giữ context thiết kế. Trong môi trường hiện tại chỉ có khả năng tạo project và chỉnh screen sẵn có, nhưng chưa có endpoint sinh screen đầu tiên từ prompt, nên phần UI đã được hiện thực trực tiếp theo visual direction hiện đại để không chặn tiến độ triển khai.
+                                        <p className="mt-2 text-sm leading-6 text-slate-400">
+                                            {serviceStatus}
+                                        </p>
+                                        {serviceState === "offline" ? (
+                                            <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                                                <div className="flex items-start gap-3">
+                                                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-400" />
+                                                    <div className="space-y-1">
+                                                        <p className="font-semibold">
+                                                            Python service ở
+                                                            cổng 8000 đang tắt
+                                                            hoặc chưa phản hồi.
+                                                        </p>
+                                                        <p className="text-amber-300/80">
+                                                            Khởi động service
+                                                            bằng
+                                                            scripts/start-all-ai.ps1
+                                                            hoặc chạy FastAPI
+                                                            trong thư mục
+                                                            ai-service.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                        {cameraError ? (
+                                            <div className="mt-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                                                {cameraError}
+                                            </div>
+                                        ) : null}
+                                        <div className="mt-4 flex flex-wrap gap-3">
+                                            <Button
+                                                variant="outline"
+                                                className="rounded-xl border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-slate-100"
+                                                onClick={() => {
+                                                    void checkServiceHealth();
+                                                }}
+                                            >
+                                                {serviceState === "checking" ? (
+                                                    <LoaderCircle className="mr-2 size-4 animate-spin" />
+                                                ) : serviceState === "ready" ? (
+                                                    <CheckCircle2 className="mr-2 size-4" />
+                                                ) : (
+                                                    <RefreshCcw className="mr-2 size-4" />
+                                                )}
+                                                Kiểm tra Python service
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                className="rounded-xl border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-slate-100"
+                                                onClick={() => {
+                                                    setAlertCount(0);
+                                                    setDetection(
+                                                        defaultDetection,
+                                                    );
+                                                    setDisplayScore(0);
+                                                    setServiceStatus(
+                                                        "Đã reset bộ đếm cảnh báo và score.",
+                                                    );
+                                                    consecutiveTouchFramesRef.current = 0;
+                                                    cooldownUntilRef.current = 0;
+                                                    addLog(
+                                                        "SYS",
+                                                        "Counters reset.",
+                                                    );
+                                                }}
+                                            >
+                                                <RefreshCcw className="mr-2 size-4" />
+                                                Reset trạng thái
+                                            </Button>
+                                        </div>
+                                        {/* Active regions */}
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            {detection.regions.length > 0 ? (
+                                                detection.regions.map(
+                                                    (region) => (
+                                                        <Badge
+                                                            key={region}
+                                                            variant="secondary"
+                                                            className="rounded-full bg-slate-800 text-slate-200 hover:bg-slate-800"
+                                                        >
+                                                            {region}
+                                                        </Badge>
+                                                    ),
+                                                )
+                                            ) : (
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="rounded-full bg-slate-800 text-slate-500 hover:bg-slate-800"
+                                                >
+                                                    Chưa có vùng nhạy cảm bị
+                                                    kích hoạt
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right col — Alert counter + Score cards */}
+                                <div className="flex flex-col gap-4">
+                                    {/* Alert Counter */}
+                                    <div className="flex flex-col items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 p-6 text-center">
+                                        <h3 className="mb-1 text-sm font-bold uppercase tracking-widest text-red-400">
+                                            Cảnh báo chạm mặt
+                                        </h3>
+                                        <div className="text-5xl font-black text-red-500">
+                                            {alertCount}
+                                        </div>
+                                        <p className="mt-2 text-xs text-red-400/70">
+                                            Trong phiên hiện tại
                                         </p>
                                     </div>
-                                </TabsContent>
-                            </Tabs>
-                        </CardContent>
-                    </Card>
+
+                                    {/* Score Breakdown Cards */}
+                                    <CircleScoreCard
+                                        label="Overlap Score"
+                                        subtitle="Bounding box overlap"
+                                        score={detection.debug.overlapScore}
+                                    />
+                                    <CircleScoreCard
+                                        label="Proximity Score"
+                                        subtitle="Hand to face distance"
+                                        score={detection.debug.proximityScore}
+                                    />
+                                    <CircleScoreCard
+                                        label="Fingertip Score"
+                                        subtitle="Keypoint alignment"
+                                        score={detection.debug.fingertipScore}
+                                    />
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        {/* ─ Pipeline kỹ thuật Tab ─ */}
+                        <TabsContent
+                            value="pipeline"
+                            className="mt-6 space-y-4"
+                        >
+                            {pipelineSteps.map((step, index) => (
+                                <div
+                                    key={step}
+                                    className="flex gap-4 rounded-xl border border-slate-800 bg-[#07111f] p-4"
+                                >
+                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#13b6ec] text-sm font-bold text-[#07111f]">
+                                        {index + 1}
+                                    </div>
+                                    <p className="text-sm leading-6 text-slate-300">
+                                        {step}
+                                    </p>
+                                </div>
+                            ))}
+
+                            {/* States overview */}
+                            <div className="mt-6 space-y-4">
+                                <h3 className="text-lg font-bold text-slate-100">
+                                    States
+                                </h3>
+                                {Object.values(stateConfig).map((item) => (
+                                    <div
+                                        key={item.label}
+                                        className="rounded-xl border border-slate-800 bg-[#07111f] p-4"
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <p className="text-base font-semibold text-slate-100">
+                                                {item.label}
+                                            </p>
+                                            <Badge
+                                                className={cn(
+                                                    "rounded-full border px-3 py-1",
+                                                    item.tone,
+                                                )}
+                                            >
+                                                State
+                                            </Badge>
+                                        </div>
+                                        <p className="mt-3 text-sm leading-6 text-slate-400">
+                                            {item.description}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Python module */}
+                            <div className="rounded-xl border border-slate-800 bg-black/40 p-5 text-white">
+                                <p className="text-base font-semibold text-white">
+                                    Mô-đun Python có thể triển khai ngay trong
+                                    ai-service
+                                </p>
+                                <div className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
+                                    <p>
+                                        Router mới nhận frame base64, giải mã
+                                        bằng OpenCV, suy luận bằng MediaPipe và
+                                        trả về state, score, regions, overlay để
+                                        frontend vẽ trực tiếp trên canvas.
+                                    </p>
+                                    <p>
+                                        Kiến trúc này giữ được tính trình diễn:
+                                        frontend đẹp và nhẹ, backend dễ
+                                        benchmark, dễ log và có thể thêm clip
+                                        review hoặc Qwen3-VL ở phase sau.
+                                    </p>
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        {/* ─ Đánh giá & Rủi ro Tab ─ */}
+                        <TabsContent
+                            value="evaluation"
+                            className="mt-6 space-y-4"
+                        >
+                            {evaluationRows.map((row) => (
+                                <div
+                                    key={row.label}
+                                    className="rounded-xl border border-slate-800 bg-[#07111f] p-4"
+                                >
+                                    <p className="text-sm font-semibold text-slate-100">
+                                        {row.label}
+                                    </p>
+                                    <p className="mt-2 text-sm leading-6 text-slate-400">
+                                        {row.value}
+                                    </p>
+                                </div>
+                            ))}
+
+                            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-5">
+                                <p className="text-sm font-semibold text-amber-300">
+                                    Các rủi ro cần theo dõi khi demo
+                                </p>
+                                <ul className="mt-3 space-y-3 text-sm leading-6 text-amber-200/85">
+                                    {riskRows.map((row) => (
+                                        <li key={row} className="flex gap-3">
+                                            <AlertTriangle className="mt-1 size-4 shrink-0 text-amber-400" />
+                                            <span>{row}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
                 </div>
             </section>
         </div>
     );
 }
 
-function MetricCard({
-    icon: Icon,
+/* ── Circular Score Card ── */
+function CircleScoreCard({
     label,
-    value,
-    description,
+    subtitle,
+    score,
 }: {
-    icon: LucideIcon;
     label: string;
-    value: string;
-    description: string;
+    subtitle: string;
+    score: number;
 }) {
+    const percent = Math.round(clampScore(score) * 100);
+    const dashArray = `${percent}, 100`;
+
     return (
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-            <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-cyan-100 p-2.5 text-cyan-700">
-                    <Icon className="size-4" />
-                </div>
-                <div>
-                    <p className="text-sm font-semibold text-slate-900">{label}</p>
-                    <p className="text-sm text-slate-500">{value}</p>
-                </div>
+        <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-[#07111f] p-4">
+            <div className="flex flex-col">
+                <span className="text-sm font-bold text-slate-100">
+                    {label}
+                </span>
+                <span className="text-xs text-slate-500">{subtitle}</span>
             </div>
-            <p className="mt-4 text-sm leading-6 text-slate-600">{description}</p>
+            <div className="relative flex size-12 items-center justify-center">
+                <svg className="size-full -rotate-90" viewBox="0 0 36 36">
+                    <path
+                        className="text-slate-700"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                    />
+                    <path
+                        className="text-[#13b6ec]"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeDasharray={dashArray}
+                        strokeLinecap="round"
+                        strokeWidth="3"
+                    />
+                </svg>
+                <span className="absolute text-[10px] font-bold text-slate-100">
+                    {percent}%
+                </span>
+            </div>
         </div>
     );
 }
