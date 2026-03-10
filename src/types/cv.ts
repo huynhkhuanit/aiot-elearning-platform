@@ -14,6 +14,8 @@ export type CVSectionType =
     | "certifications"
     | "languages"
     | "references"
+    | "awards"
+    | "activities"
     | "custom";
 
 /** Label map for Vietnamese UI display */
@@ -27,6 +29,8 @@ export const CV_SECTION_LABELS: Record<CVSectionType, string> = {
     certifications: "Chứng chỉ",
     languages: "Ngôn ngữ",
     references: "Người tham chiếu",
+    awards: "Giải thưởng",
+    activities: "Hoạt động",
     custom: "Mục tùy chỉnh",
 };
 

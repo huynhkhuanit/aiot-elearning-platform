@@ -13,6 +13,8 @@ import {
     Award,
     Languages,
     Heart,
+    Trophy,
+    Users,
 } from "lucide-react";
 import type {
     CVContentItem,
@@ -42,6 +44,8 @@ const SECTION_ICONS: Record<CVSectionType, React.ElementType | null> = {
     certifications: Award,
     languages: Languages,
     references: Heart,
+    awards: Trophy,
+    activities: Users,
     custom: null,
 };
 

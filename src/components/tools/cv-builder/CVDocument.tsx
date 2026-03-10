@@ -13,6 +13,8 @@ import {
 import type { CVData, CVAction, CVSectionType } from "@/types/cv";
 import { CVSectionEditor } from "./CVSectionEditor";
 import { EditableField } from "./EditableField";
+import { useState } from "react";
+import { AddSectionModal } from "./AddSectionModal";
 
 interface CVDocumentProps {
     data: CVData;
@@ -28,6 +30,7 @@ export function CVDocument({
     activeSectionType,
 }: CVDocumentProps) {
     const { personalInfo, sections, settings } = data;
+    const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
 
     return (
         <div
@@ -54,13 +57,17 @@ export function CVDocument({
                                 className="h-32 w-32 object-cover rounded-md border shadow-sm"
                             />
                         ) : (
-                            <div className="h-32 w-32 rounded-md border-2 border-dashed border-slate-200 bg-transparent flex flex-col items-center justify-center text-slate-300 transition-colors hover:border-sky-400 hover:text-sky-500 group relative cursor-pointer">
-                                <Camera className="size-8 mb-1" />
-                                <span className="text-[10px] font-medium text-center px-2">
-                                    Nhấn để tải ảnh
-                                    <br />
-                                    hoặc để trống để dán ảnh thật
-                                </span>
+                            <div className="h-32 w-32 rounded-md border border-slate-200 bg-[#f1f5f9] overflow-hidden flex items-end justify-center transition-colors group relative cursor-pointer ring-1 ring-transparent hover:border-sky-400">
+                                <svg
+                                    className="h-[120%] w-[120%] text-slate-300 translate-y-4"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                >
+                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                </svg>
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Camera className="text-white size-6" />
+                                </div>
                             </div>
                         )}
                         <input
@@ -240,19 +247,7 @@ export function CVDocument({
                     {/* Add Section Button */}
                     <div className="mt-2 flex justify-center opacity-0 hover:opacity-100 transition-opacity">
                         <button
-                            onClick={() => {
-                                dispatch({
-                                    type: "ADD_SECTION",
-                                    section: {
-                                        id: `cv-${Date.now()}`,
-                                        type: "custom",
-                                        title: "Mục Tùy Chỉnh",
-                                        items: [],
-                                        order: sections.length + 1,
-                                        visible: true,
-                                    },
-                                });
-                            }}
+                            onClick={() => setIsAddSectionModalOpen(true)}
                             className="flex items-center gap-1.5 rounded-full border border-dashed border-slate-300 bg-slate-50 px-4 py-1.5 text-sm font-medium text-slate-500 hover:border-sky-400 hover:bg-sky-50 hover:text-sky-600 transition-colors"
                         >
                             <Plus className="size-4" />
@@ -261,6 +256,16 @@ export function CVDocument({
                     </div>
                 </div>
             </div>
+
+            {/* Add Section Modal */}
+            <AddSectionModal
+                isOpen={isAddSectionModalOpen}
+                onClose={() => setIsAddSectionModalOpen(false)}
+                currentSections={sections}
+                onAddSection={(section) =>
+                    dispatch({ type: "ADD_SECTION", section })
+                }
+            />
         </div>
     );
 }
