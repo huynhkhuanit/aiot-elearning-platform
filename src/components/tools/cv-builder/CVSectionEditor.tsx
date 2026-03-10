@@ -25,6 +25,7 @@ import type {
 import { RichTextEditor } from "./RichTextEditor";
 import { cvId } from "@/lib/cv-templates";
 import { EditableField } from "./EditableField";
+import { Slider } from "@/components/ui/slider";
 
 interface CVSectionEditorProps {
     section: CVSection;
@@ -63,16 +64,19 @@ export function CVSectionEditor({
         let newItem: CVContentItem;
 
         switch (section.type) {
-            case "languages":
             case "skills":
                 newItem = {
                     id: cvId(),
-                    label:
-                        section.type === "languages" ? "Ngôn ngữ" : "Kỹ năng",
-                    value:
-                        section.type === "languages"
-                            ? "Tiếng Anh"
-                            : "Tên kỹ năng",
+                    label: "Kỹ năng",
+                    value: "Tên kỹ năng",
+                    meta: { proficiency: "80" },
+                };
+                break;
+            case "languages":
+                newItem = {
+                    id: cvId(),
+                    label: "Ngôn ngữ",
+                    value: "Tiếng Anh",
                     meta: { company: "Mức độ / Trình độ" },
                 };
                 break;
@@ -219,41 +223,177 @@ export function CVSectionEditor({
                             <Trash2 className="size-4" />
                         </button>
 
-                        {/* Top row: Title + Date/Location */}
-                        <div className="flex flex-nowrap items-center justify-between gap-x-4">
-                            <EditableField
-                                value={item.value}
-                                onChange={(val) =>
-                                    dispatch({
-                                        type: "UPDATE_ITEM",
-                                        sectionId: section.id,
-                                        itemId: item.id,
-                                        updates: { value: val },
-                                    })
-                                }
-                                placeholder={
-                                    ["languages"].includes(section.type)
-                                        ? "Tên ngôn ngữ"
-                                        : ["skills"].includes(section.type)
-                                          ? "Tên kỹ năng"
-                                          : [
-                                                  "awards",
-                                                  "certifications",
-                                              ].includes(section.type)
-                                            ? "Tên giải thưởng / Chứng chỉ"
-                                            : ["references"].includes(
-                                                    section.type,
-                                                )
-                                              ? "Họ và Tên"
-                                              : "Tên công ty / Trường học / Vị trí"
-                                }
-                                className="flex-1 font-bold text-slate-800"
-                            />
-                            {item.meta && (
-                                <div className="flex items-center justify-end shrink-0 text-sm text-slate-500">
-                                    {item.meta.period !== undefined && (
+                        {section.type === "skills" ? (
+                            <div className="flex flex-col gap-1.5 py-1">
+                                <div className="flex items-center justify-between gap-4">
+                                    <EditableField
+                                        value={item.value}
+                                        onChange={(val) =>
+                                            dispatch({
+                                                type: "UPDATE_ITEM",
+                                                sectionId: section.id,
+                                                itemId: item.id,
+                                                updates: { value: val },
+                                            })
+                                        }
+                                        placeholder="Tên kỹ năng"
+                                        className="flex-1 font-bold text-slate-800"
+                                    />
+                                </div>
+                                {/* Progress Bar with Level Label */}
+                                {(() => {
+                                    const levels = [
+                                        {
+                                            label: "Mới học",
+                                            value: "25",
+                                            color: "#ef4444",
+                                        },
+                                        {
+                                            label: "Trung bình",
+                                            value: "50",
+                                            color: "#f59e0b",
+                                        },
+                                        {
+                                            label: "Khá",
+                                            value: "75",
+                                            color: "#0ea5e9",
+                                        },
+                                        {
+                                            label: "Chuyên gia",
+                                            value: "100",
+                                            color: "#10b981",
+                                        },
+                                    ];
+                                    const currentValue =
+                                        item.meta?.proficiency || "50";
+                                    const activeIndex = levels.findIndex(
+                                        (l) => l.value === currentValue,
+                                    );
+                                    const activeLevel =
+                                        levels[activeIndex] || levels[1];
+
+                                    return (
+                                        <div className="flex items-center gap-2.5">
+                                            {/* Segmented Progress Bar */}
+                                            <div className="flex-1 flex items-center gap-[3px]">
+                                                {levels.map((level, idx) => {
+                                                    const isFilled =
+                                                        idx <= activeIndex;
+                                                    return (
+                                                        <button
+                                                            key={level.value}
+                                                            onClick={() =>
+                                                                dispatch({
+                                                                    type: "UPDATE_ITEM",
+                                                                    sectionId:
+                                                                        section.id,
+                                                                    itemId: item.id,
+                                                                    updates: {
+                                                                        meta: {
+                                                                            ...item.meta,
+                                                                            proficiency:
+                                                                                level.value,
+                                                                        },
+                                                                    },
+                                                                })
+                                                            }
+                                                            className={`flex-1 h-[7px] rounded-full transition-all duration-300 cursor-pointer hover:opacity-80 ${
+                                                                isFilled
+                                                                    ? "shadow-sm"
+                                                                    : "bg-slate-200 hover:bg-slate-300"
+                                                            }`}
+                                                            style={
+                                                                isFilled
+                                                                    ? {
+                                                                          backgroundColor:
+                                                                              activeLevel.color,
+                                                                      }
+                                                                    : {}
+                                                            }
+                                                            title={level.label}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                            {/* Level Label */}
+                                            <span
+                                                className="text-[10px] font-semibold whitespace-nowrap shrink-0 min-w-[56px] text-right"
+                                                style={{
+                                                    color: activeLevel.color,
+                                                }}
+                                            >
+                                                {activeLevel.label}
+                                            </span>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        ) : (
+                            <>
+                                {/* Top row: Title + Date/Location */}
+                                <div className="flex flex-nowrap items-center justify-between gap-x-4">
+                                    <EditableField
+                                        value={item.value}
+                                        onChange={(val) =>
+                                            dispatch({
+                                                type: "UPDATE_ITEM",
+                                                sectionId: section.id,
+                                                itemId: item.id,
+                                                updates: { value: val },
+                                            })
+                                        }
+                                        placeholder={
+                                            ["languages"].includes(section.type)
+                                                ? "Tên ngôn ngữ"
+                                                : ["skills"].includes(
+                                                        section.type,
+                                                    )
+                                                  ? "Tên kỹ năng"
+                                                  : [
+                                                          "awards",
+                                                          "certifications",
+                                                      ].includes(section.type)
+                                                    ? "Tên giải thưởng / Chứng chỉ"
+                                                    : ["references"].includes(
+                                                            section.type,
+                                                        )
+                                                      ? "Họ và Tên"
+                                                      : "Tên công ty / Trường học / Vị trí"
+                                        }
+                                        className="flex-1 font-bold text-slate-800"
+                                    />
+                                    {item.meta && (
+                                        <div className="flex items-center justify-end shrink-0 text-sm text-slate-500">
+                                            {item.meta.period !== undefined && (
+                                                <EditableField
+                                                    value={item.meta.period}
+                                                    onChange={(val) =>
+                                                        dispatch({
+                                                            type: "UPDATE_ITEM",
+                                                            sectionId:
+                                                                section.id,
+                                                            itemId: item.id,
+                                                            updates: {
+                                                                meta: {
+                                                                    ...item.meta,
+                                                                    period: val,
+                                                                },
+                                                            },
+                                                        })
+                                                    }
+                                                    placeholder="Thời gian"
+                                                    className="text-right whitespace-nowrap min-w-[100px]"
+                                                />
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Middle row: Subtitle/Meta */}
+                                {item.meta &&
+                                    item.meta.company !== undefined && (
                                         <EditableField
-                                            value={item.meta.period}
+                                            value={item.meta.company}
                                             onChange={(val) =>
                                                 dispatch({
                                                     type: "UPDATE_ITEM",
@@ -262,117 +402,98 @@ export function CVSectionEditor({
                                                     updates: {
                                                         meta: {
                                                             ...item.meta,
-                                                            period: val,
+                                                            company: val,
                                                         },
                                                     },
                                                 })
                                             }
-                                            placeholder="Thời gian"
-                                            className="text-right whitespace-nowrap min-w-[100px]"
+                                            placeholder={
+                                                [
+                                                    "languages",
+                                                    "skills",
+                                                ].includes(section.type)
+                                                    ? "Kinh nghiệm / Mức độ"
+                                                    : [
+                                                            "awards",
+                                                            "certifications",
+                                                        ].includes(section.type)
+                                                      ? "Tổ chức cấp"
+                                                      : "Tên công ty"
+                                            }
+                                            className="block w-full italic text-slate-600"
                                         />
                                     )}
-                                </div>
-                            )}
-                        </div>
+                                {item.meta &&
+                                    item.meta.degree !== undefined && (
+                                        <EditableField
+                                            value={item.meta.degree}
+                                            onChange={(val) =>
+                                                dispatch({
+                                                    type: "UPDATE_ITEM",
+                                                    sectionId: section.id,
+                                                    itemId: item.id,
+                                                    updates: {
+                                                        meta: {
+                                                            ...item.meta,
+                                                            degree: val,
+                                                        },
+                                                    },
+                                                })
+                                            }
+                                            placeholder="Loại bằng cấp"
+                                            className="block w-full italic text-slate-600"
+                                        />
+                                    )}
+                                {item.meta && item.meta.role !== undefined && (
+                                    <EditableField
+                                        value={item.meta.role}
+                                        onChange={(val) =>
+                                            dispatch({
+                                                type: "UPDATE_ITEM",
+                                                sectionId: section.id,
+                                                itemId: item.id,
+                                                updates: {
+                                                    meta: {
+                                                        ...item.meta,
+                                                        role: val,
+                                                    },
+                                                },
+                                            })
+                                        }
+                                        placeholder="Vai trò"
+                                        className="block w-full font-medium text-slate-600"
+                                    />
+                                )}
 
-                        {/* Middle row: Subtitle/Meta */}
-                        {item.meta && item.meta.company !== undefined && (
-                            <EditableField
-                                value={item.meta.company}
-                                onChange={(val) =>
-                                    dispatch({
-                                        type: "UPDATE_ITEM",
-                                        sectionId: section.id,
-                                        itemId: item.id,
-                                        updates: {
-                                            meta: {
-                                                ...item.meta,
-                                                company: val,
-                                            },
-                                        },
-                                    })
-                                }
-                                placeholder={
-                                    ["languages", "skills"].includes(
-                                        section.type,
-                                    )
-                                        ? "Kinh nghiệm / Mức độ"
-                                        : ["awards", "certifications"].includes(
-                                                section.type,
-                                            )
-                                          ? "Tổ chức cấp"
-                                          : "Tên công ty"
-                                }
-                                className="block w-full italic text-slate-600"
-                            />
-                        )}
-                        {item.meta && item.meta.degree !== undefined && (
-                            <EditableField
-                                value={item.meta.degree}
-                                onChange={(val) =>
-                                    dispatch({
-                                        type: "UPDATE_ITEM",
-                                        sectionId: section.id,
-                                        itemId: item.id,
-                                        updates: {
-                                            meta: {
-                                                ...item.meta,
-                                                degree: val,
-                                            },
-                                        },
-                                    })
-                                }
-                                placeholder="Loại bằng cấp"
-                                className="block w-full italic text-slate-600"
-                            />
-                        )}
-                        {item.meta && item.meta.role !== undefined && (
-                            <EditableField
-                                value={item.meta.role}
-                                onChange={(val) =>
-                                    dispatch({
-                                        type: "UPDATE_ITEM",
-                                        sectionId: section.id,
-                                        itemId: item.id,
-                                        updates: {
-                                            meta: {
-                                                ...item.meta,
-                                                role: val,
-                                            },
-                                        },
-                                    })
-                                }
-                                placeholder="Vai trò"
-                                className="block w-full font-medium text-slate-600"
-                            />
-                        )}
-
-                        {/* Rich Text Editor */}
-                        {(item.richHtml !== undefined ||
-                            (item.bullets && item.bullets.length > 0)) && (
-                            <div className="mt-1 text-slate-700">
-                                <RichTextEditor
-                                    value={
-                                        item.richHtml !== undefined
-                                            ? item.richHtml
-                                            : item.bullets
-                                              ? `<ul>${item.bullets.map((b) => `<li>${b}</li>`).join("")}</ul>`
-                                              : ""
-                                    }
-                                    onChange={(html) =>
-                                        dispatch({
-                                            type: "UPDATE_ITEM",
-                                            sectionId: section.id,
-                                            itemId: item.id,
-                                            updates: {
-                                                richHtml: html,
-                                                bullets: [],
-                                            },
-                                        })
-                                    }
-                                    placeholder="Mô tả chi tiết tại đây..."
-                                />
-                            </div>
+                                {/* Rich Text Editor */}
+                                {(item.richHtml !== undefined ||
+                                    (item.bullets &&
+                                        item.bullets.length > 0)) && (
+                                    <div className="mt-1 text-slate-700">
+                                        <RichTextEditor
+                                            value={
+                                                item.richHtml !== undefined
+                                                    ? item.richHtml
+                                                    : item.bullets
+                                                      ? `<ul>${item.bullets.map((b) => `<li>${b}</li>`).join("")}</ul>`
+                                                      : ""
+                                            }
+                                            onChange={(html) =>
+                                                dispatch({
+                                                    type: "UPDATE_ITEM",
+                                                    sectionId: section.id,
+                                                    itemId: item.id,
+                                                    updates: {
+                                                        richHtml: html,
+                                                        bullets: [],
+                                                    },
+                                                })
+                                            }
+                                            placeholder="Mô tả chi tiết tại đây..."
+                                        />
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 ))}

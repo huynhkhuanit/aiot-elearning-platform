@@ -94,15 +94,15 @@ export function AddSectionModal({
                                 className={`flex flex-col items-center justify-center gap-4 rounded-2xl border-2 p-6 transition-all ${
                                     isAdded
                                         ? "border-slate-50 bg-slate-50/50 opacity-40 cursor-not-allowed"
-                                        : "border-slate-50 bg-white hover:border-slate-200 hover:shadow-sm cursor-pointer shadow-[0_2px_12px_rgb(0,0,0,0.03)]"
+                                        : "border-slate-50 bg-white hover:border-sky-100 hover:bg-sky-50/10 hover:shadow-sm cursor-pointer shadow-[0_2px_12px_rgb(0,0,0,0.03)]"
                                 }`}
                             >
                                 <Icon
-                                    className={`size-8 ${isAdded ? "text-slate-300" : "text-slate-300"}`}
+                                    className={`size-8 ${isAdded ? "text-slate-300" : "text-sky-500"}`}
                                     strokeWidth={1.5}
                                 />
                                 <span
-                                    className={`text-[15px] font-medium text-center leading-tight ${isAdded ? "text-slate-400" : "text-slate-400"}`}
+                                    className={`text-[15px] font-medium text-center leading-tight ${isAdded ? "text-slate-400" : "text-slate-800"}`}
                                 >
                                     {label}
                                 </span>
