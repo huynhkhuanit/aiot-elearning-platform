@@ -37,7 +37,7 @@ export const toolLinks: ToolLink[] = [
     {
         id: "resume-builder",
         name: "Tạo CV xin việc",
-        href: "/tools#resume-builder",
+        href: "/tools/cv-builder",
     },
     {
         id: "link-shortener",
