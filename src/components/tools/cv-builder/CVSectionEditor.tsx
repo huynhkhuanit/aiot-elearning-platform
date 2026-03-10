@@ -6,10 +6,23 @@ import {
     Trash2,
     ChevronUp,
     ChevronDown,
+    Briefcase,
+    GraduationCap,
+    Wrench,
+    FolderKanban,
+    Award,
+    Languages,
+    Heart,
 } from "lucide-react";
-import type { CVContentItem, CVSection, CVAction } from "@/types/cv";
+import type {
+    CVContentItem,
+    CVSection,
+    CVAction,
+    CVSectionType,
+} from "@/types/cv";
 import { RichTextEditor } from "./RichTextEditor";
 import { cvId } from "@/lib/cv-templates";
+import { EditableField } from "./EditableField";
 
 interface CVSectionEditorProps {
     section: CVSection;
@@ -19,6 +32,17 @@ interface CVSectionEditorProps {
     isActive: boolean;
 }
 
+const SECTION_ICONS: Record<CVSectionType, React.ElementType | null> = {
+    experience: Briefcase,
+    education: GraduationCap,
+    skills: Wrench,
+    projects: FolderKanban,
+    certifications: Award,
+    languages: Languages,
+    interests: Heart,
+    "personal-info": null,
+};
+
 export function CVSectionEditor({
     section,
     accentColor,
@@ -26,6 +50,8 @@ export function CVSectionEditor({
     dispatch,
     isActive,
 }: CVSectionEditorProps) {
+    const Icon = SECTION_ICONS[section.type];
+
     // Add a new empty item
     const handleAddItem = () => {
         const newItem: CVContentItem = {
@@ -40,10 +66,10 @@ export function CVSectionEditor({
 
     return (
         <div
-            className={`group relative mb-6 rounded-lg border-2 p-4 transition-colors ${
+            className={`group relative mb-2 rounded-lg border-2 p-3 transition-colors ${
                 isActive
-                    ? "border-sky-400 bg-sky-50/30"
-                    : "border-transparent hover:border-slate-200"
+                    ? "border-sky-400 bg-sky-50/20"
+                    : "border-transparent hover:border-slate-100"
             }`}
             onClick={onFocus}
         >
@@ -95,29 +121,31 @@ export function CVSectionEditor({
 
             {/* Section Title */}
             <div
-                className="mb-4 flex items-center gap-2 border-b-2 pb-1"
+                className="mb-3 flex items-center gap-2 border-b-2 pb-1"
                 style={{ borderColor: accentColor }}
             >
                 <div className="cursor-move text-slate-300 opacity-0 transition-opacity group-hover:opacity-100">
                     <GripVertical className="size-5" />
                 </div>
-                <input
-                    type="text"
+                {Icon && (
+                    <Icon className="size-5" style={{ color: accentColor }} />
+                )}
+                <EditableField
                     value={section.title}
-                    onChange={(e) =>
+                    onChange={(val) =>
                         dispatch({
                             type: "UPDATE_SECTION_TITLE",
                             sectionId: section.id,
-                            title: e.target.value,
+                            title: val,
                         })
                     }
-                    className="flex-1 bg-transparent text-xl font-bold uppercase tracking-wider outline-none"
+                    className="flex-1 text-xl font-bold uppercase tracking-wider"
                     style={{ color: accentColor }}
                 />
             </div>
 
             {/* Items */}
-            <div className="space-y-4">
+            <div className="space-y-3">
                 {section.items.map((item) => (
                     <div key={item.id} className="relative group/item">
                         {/* Remove item button */}
@@ -136,28 +164,26 @@ export function CVSectionEditor({
                         </button>
 
                         {/* Top row: Title + Date/Location */}
-                        <div className="flex flex-wrap items-center justify-between gap-4">
-                            <input
-                                type="text"
+                        <div className="flex flex-wrap items-center justify-between gap-x-4">
+                            <EditableField
                                 value={item.value}
-                                onChange={(e) =>
+                                onChange={(val) =>
                                     dispatch({
                                         type: "UPDATE_ITEM",
                                         sectionId: section.id,
                                         itemId: item.id,
-                                        updates: { value: e.target.value },
+                                        updates: { value: val },
                                     })
                                 }
                                 placeholder="Tên công ty / Trường học / Vị trí"
-                                className="flex-1 bg-transparent font-bold text-slate-800 outline-none hover:bg-slate-100/50 focus:bg-white focus:ring-1 focus:ring-sky-400 p-1 -ml-1 rounded"
+                                className="flex-1 font-bold text-slate-800"
                             />
                             {item.meta && (
                                 <div className="flex items-center gap-2 text-sm text-slate-500">
                                     {item.meta.period !== undefined && (
-                                        <input
-                                            type="text"
+                                        <EditableField
                                             value={item.meta.period}
-                                            onChange={(e) =>
+                                            onChange={(val) =>
                                                 dispatch({
                                                     type: "UPDATE_ITEM",
                                                     sectionId: section.id,
@@ -165,14 +191,13 @@ export function CVSectionEditor({
                                                     updates: {
                                                         meta: {
                                                             ...item.meta,
-                                                            period: e.target
-                                                                .value,
+                                                            period: val,
                                                         },
                                                     },
                                                 })
                                             }
                                             placeholder="Thời gian"
-                                            className="w-[120px] text-right bg-transparent outline-none hover:bg-slate-100/50 focus:bg-white focus:ring-1 focus:ring-sky-400 p-1 -mr-1 rounded"
+                                            className="text-right"
                                         />
                                     )}
                                 </div>
@@ -181,73 +206,64 @@ export function CVSectionEditor({
 
                         {/* Middle row: Subtitle/Meta */}
                         {item.meta && item.meta.company !== undefined && (
-                            <div className="text-slate-600 mb-1">
-                                <input
-                                    type="text"
-                                    value={item.meta.company}
-                                    onChange={(e) =>
-                                        dispatch({
-                                            type: "UPDATE_ITEM",
-                                            sectionId: section.id,
-                                            itemId: item.id,
-                                            updates: {
-                                                meta: {
-                                                    ...item.meta,
-                                                    company: e.target.value,
-                                                },
+                            <EditableField
+                                value={item.meta.company}
+                                onChange={(val) =>
+                                    dispatch({
+                                        type: "UPDATE_ITEM",
+                                        sectionId: section.id,
+                                        itemId: item.id,
+                                        updates: {
+                                            meta: {
+                                                ...item.meta,
+                                                company: val,
                                             },
-                                        })
-                                    }
-                                    placeholder="Tên công ty"
-                                    className="w-full bg-transparent italic outline-none hover:bg-slate-100/50 focus:bg-white focus:ring-1 focus:ring-sky-400 p-1 -ml-1 rounded"
-                                />
-                            </div>
+                                        },
+                                    })
+                                }
+                                placeholder="Tên công ty"
+                                className="block w-full italic text-slate-600"
+                            />
                         )}
                         {item.meta && item.meta.degree !== undefined && (
-                            <div className="text-slate-600 mb-1">
-                                <input
-                                    type="text"
-                                    value={item.meta.degree}
-                                    onChange={(e) =>
-                                        dispatch({
-                                            type: "UPDATE_ITEM",
-                                            sectionId: section.id,
-                                            itemId: item.id,
-                                            updates: {
-                                                meta: {
-                                                    ...item.meta,
-                                                    degree: e.target.value,
-                                                },
+                            <EditableField
+                                value={item.meta.degree}
+                                onChange={(val) =>
+                                    dispatch({
+                                        type: "UPDATE_ITEM",
+                                        sectionId: section.id,
+                                        itemId: item.id,
+                                        updates: {
+                                            meta: {
+                                                ...item.meta,
+                                                degree: val,
                                             },
-                                        })
-                                    }
-                                    placeholder="Loại bằng cấp"
-                                    className="w-full bg-transparent italic outline-none hover:bg-slate-100/50 focus:bg-white focus:ring-1 focus:ring-sky-400 p-1 -ml-1 rounded"
-                                />
-                            </div>
+                                        },
+                                    })
+                                }
+                                placeholder="Loại bằng cấp"
+                                className="block w-full italic text-slate-600"
+                            />
                         )}
                         {item.meta && item.meta.role !== undefined && (
-                            <div className="text-slate-600 mb-1">
-                                <input
-                                    type="text"
-                                    value={item.meta.role}
-                                    onChange={(e) =>
-                                        dispatch({
-                                            type: "UPDATE_ITEM",
-                                            sectionId: section.id,
-                                            itemId: item.id,
-                                            updates: {
-                                                meta: {
-                                                    ...item.meta,
-                                                    role: e.target.value,
-                                                },
+                            <EditableField
+                                value={item.meta.role}
+                                onChange={(val) =>
+                                    dispatch({
+                                        type: "UPDATE_ITEM",
+                                        sectionId: section.id,
+                                        itemId: item.id,
+                                        updates: {
+                                            meta: {
+                                                ...item.meta,
+                                                role: val,
                                             },
-                                        })
-                                    }
-                                    placeholder="Vai trò"
-                                    className="w-full bg-transparent font-medium outline-none hover:bg-slate-100/50 focus:bg-white focus:ring-1 focus:ring-sky-400 p-1 -ml-1 rounded"
-                                />
-                            </div>
+                                        },
+                                    })
+                                }
+                                placeholder="Vai trò"
+                                className="block w-full font-medium text-slate-600"
+                            />
                         )}
 
                         {/* Rich Text Editor */}
@@ -284,9 +300,9 @@ export function CVSectionEditor({
             {/* Add Item Button */}
             <button
                 onClick={handleAddItem}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 py-2 text-sm text-slate-500 opacity-0 transition-all hover:border-sky-400 hover:text-sky-600 group-hover:opacity-100"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 py-1.5 text-sm text-slate-400 opacity-0 transition-all hover:border-sky-400 hover:text-sky-600 group-hover:opacity-100"
             >
-                <Plus className="size-4" />
+                <Plus className="size-3.5" />
                 Thêm thông tin
             </button>
         </div>

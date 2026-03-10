@@ -3,6 +3,7 @@
 import { Mail, MapPin, Phone, Linkedin, Github, Globe } from "lucide-react";
 import type { CVData, CVAction, CVSectionType } from "@/types/cv";
 import { CVSectionEditor } from "./CVSectionEditor";
+import { EditableField } from "./EditableField";
 
 interface CVDocumentProps {
     data: CVData;
@@ -19,12 +20,6 @@ export function CVDocument({
 }: CVDocumentProps) {
     const { personalInfo, sections, settings } = data;
 
-    // Auto-expand/shrink input
-    const autoGrow = (e: React.ChangeEvent<HTMLInputElement>) => {
-        e.target.style.width = "0px";
-        e.target.style.width = Math.max(e.target.scrollWidth, 50) + "px";
-    };
-
     return (
         <div
             id="cv-document-canvas"
@@ -38,107 +33,93 @@ export function CVDocument({
             <div className="p-12">
                 {/* ── Header: Personal Info ────────────────────── */}
                 <div
-                    className="mb-8 cursor-pointer rounded-lg border-2 border-transparent p-2 transition-colors hover:border-slate-200"
+                    className="mb-6 cursor-pointer rounded-lg border-2 border-transparent p-2 transition-colors hover:border-slate-100"
                     onClick={() => onFocusSection("personal-info")}
                 >
-                    <input
-                        type="text"
+                    <EditableField
                         value={personalInfo.fullName}
-                        onChange={(e) =>
+                        onChange={(val) =>
                             dispatch({
                                 type: "UPDATE_PERSONAL_INFO",
                                 field: "fullName",
-                                value: e.target.value,
+                                value: val,
                             })
                         }
                         placeholder="HỌ VÀ TÊN"
-                        className="w-full bg-transparent text-4xl font-black uppercase tracking-tight text-slate-900 outline-none focus:ring-2 focus:ring-sky-400"
+                        className="block w-full text-4xl font-black uppercase tracking-tight text-slate-900"
                         style={{ color: settings.accentColor }}
                     />
-                    <input
-                        type="text"
+                    <EditableField
                         value={personalInfo.jobTitle}
-                        onChange={(e) =>
+                        onChange={(val) =>
                             dispatch({
                                 type: "UPDATE_PERSONAL_INFO",
                                 field: "jobTitle",
-                                value: e.target.value,
+                                value: val,
                             })
                         }
                         placeholder="Vị trí ứng tuyển (vd: Fullstack Developer)"
-                        className="mt-1 w-full bg-transparent text-xl font-medium text-slate-600 outline-none focus:ring-2 focus:ring-sky-400"
+                        className="mt-1 block w-full text-xl font-medium text-slate-600"
                     />
 
                     {/* Contact Grid */}
-                    <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                        <div className="flex items-center gap-1.5 border-b border-transparent hover:border-slate-300 focus-within:border-sky-400">
+                    <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-600">
+                        <div className="flex items-center gap-1.5 focus-within:text-sky-600">
                             <Phone
                                 className="size-3.5"
                                 style={{ color: settings.accentColor }}
                             />
-                            <input
-                                type="text"
+                            <EditableField
                                 value={personalInfo.phone}
-                                onChange={(e) => {
+                                onChange={(val) => {
                                     dispatch({
                                         type: "UPDATE_PERSONAL_INFO",
                                         field: "phone",
-                                        value: e.target.value,
+                                        value: val,
                                     });
-                                    autoGrow(e);
                                 }}
-                                onInput={autoGrow}
                                 placeholder="Số điện thoại"
-                                className="bg-transparent outline-none w-[120px]"
                             />
                         </div>
-                        <div className="flex items-center gap-1.5 border-b border-transparent hover:border-slate-300 focus-within:border-sky-400">
+                        <div className="flex items-center gap-1.5 focus-within:text-sky-600">
                             <Mail
                                 className="size-3.5"
                                 style={{ color: settings.accentColor }}
                             />
-                            <input
-                                type="text"
+                            <EditableField
                                 value={personalInfo.email}
-                                onChange={(e) => {
+                                onChange={(val) => {
                                     dispatch({
                                         type: "UPDATE_PERSONAL_INFO",
                                         field: "email",
-                                        value: e.target.value,
+                                        value: val,
                                     });
-                                    autoGrow(e);
                                 }}
-                                onInput={autoGrow}
                                 placeholder="Email"
-                                className="bg-transparent outline-none w-[180px]"
                             />
                         </div>
-                        <div className="flex items-center gap-1.5 border-b border-transparent hover:border-slate-300 focus-within:border-sky-400">
+                        <div className="flex items-center gap-1.5 focus-within:text-sky-600">
                             <MapPin
                                 className="size-3.5"
                                 style={{ color: settings.accentColor }}
                             />
-                            <input
-                                type="text"
+                            <EditableField
                                 value={personalInfo.address}
-                                onChange={(e) => {
+                                onChange={(val) => {
                                     dispatch({
                                         type: "UPDATE_PERSONAL_INFO",
                                         field: "address",
-                                        value: e.target.value,
+                                        value: val,
                                     });
-                                    autoGrow(e);
                                 }}
-                                onInput={autoGrow}
                                 placeholder="Địa chỉ"
-                                className="bg-transparent outline-none w-[150px]"
                             />
                         </div>
 
                         {personalInfo.links?.map((link, idx) => (
                             <div
                                 key={idx}
-                                className="flex items-center gap-1.5 border-b border-transparent hover:border-slate-300 focus-within:border-sky-400"
+                                className="flex items-center gap-1.5 focus-within:text-sky-600"
                             >
                                 {link.label
                                     .toLowerCase()
@@ -160,27 +141,23 @@ export function CVDocument({
                                         style={{ color: settings.accentColor }}
                                     />
                                 )}
-                                <input
-                                    type="text"
+                                <EditableField
                                     value={link.url}
-                                    onChange={(e) => {
+                                    onChange={(val) => {
                                         const newLinks = [
                                             ...(personalInfo.links || []),
                                         ];
                                         newLinks[idx] = {
                                             ...link,
-                                            url: e.target.value,
+                                            url: val,
                                         };
                                         dispatch({
                                             type: "UPDATE_PERSONAL_INFO",
                                             field: "links",
                                             value: newLinks as any,
                                         });
-                                        autoGrow(e);
                                     }}
-                                    onInput={autoGrow}
                                     placeholder={link.label}
-                                    className="bg-transparent outline-none w-[180px]"
                                 />
                             </div>
                         ))}
@@ -188,7 +165,7 @@ export function CVDocument({
                 </div>
 
                 {/* ── Dynamic Sections ─────────────────────────── */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-4">
                     {sections
                         .sort((a, b) => a.order - b.order)
                         .filter((s) => s.visible)
