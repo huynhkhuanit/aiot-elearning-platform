@@ -1339,7 +1339,7 @@ export function FaceTouchAlertTool() {
                             {pipelineSteps.map((step, index) => (
                                 <div
                                     key={step}
-                                    className="flex gap-4 rounded-xl border border-slate-800 bg-[#07111f] p-4"
+                                    className="flex items-center gap-4 rounded-xl border border-slate-800 bg-[#07111f] p-4"
                                 >
                                     <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#13b6ec] text-sm font-bold text-[#07111f]">
                                         {index + 1}
