@@ -29,9 +29,12 @@ export function CVEditorLayout({
         const input = document.getElementById("cv-document-canvas");
         if (!input) return;
 
+        // Deselect any active section to remove focus rings/borders before snapshot
+        setActiveSection(null);
+
         try {
-            // Add a small delay to ensure fonts/icons are loaded
-            await new Promise((r) => setTimeout(r, 100));
+            // Add a delay to ensure React state updates have painted and fonts are loaded
+            await new Promise((r) => setTimeout(r, 200));
 
             const canvas = await html2canvas(input, {
                 scale: 2, // higher resolution
