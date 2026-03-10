@@ -60,13 +60,51 @@ export function CVSectionEditor({
 
     // Add a new empty item
     const handleAddItem = () => {
-        const newItem: CVContentItem = {
-            id: cvId(),
-            label: "Mục mới",
-            value: "Tiêu đề",
-            richHtml: "<p>Mô tả chi tiết tại đây...</p>",
-            meta: {},
-        };
+        let newItem: CVContentItem;
+
+        switch (section.type) {
+            case "languages":
+            case "skills":
+                newItem = {
+                    id: cvId(),
+                    label:
+                        section.type === "languages" ? "Ngôn ngữ" : "Kỹ năng",
+                    value:
+                        section.type === "languages"
+                            ? "Tiếng Anh"
+                            : "Tên kỹ năng",
+                    meta: { company: "Mức độ / Trình độ" },
+                };
+                break;
+            case "awards":
+            case "certifications":
+                newItem = {
+                    id: cvId(),
+                    label: "Mục mới",
+                    value: "Tên giải thưởng / Chứng chỉ",
+                    meta: { period: "2023 - 2024", company: "Tổ chức cấp" },
+                };
+                break;
+            case "references":
+                newItem = {
+                    id: cvId(),
+                    label: "Người tham chiếu",
+                    value: "Họ và Tên",
+                    meta: { role: "Chức vụ - Công ty" },
+                    richHtml:
+                        "<p>Số điện thoại: 0123 456 789<br/>Email: email@example.com</p>",
+                };
+                break;
+            default:
+                newItem = {
+                    id: cvId(),
+                    label: "Mục mới",
+                    value: "Tiêu đề",
+                    richHtml: "<p>Mô tả chi tiết tại đây...</p>",
+                    meta: {},
+                };
+        }
+
         dispatch({ type: "ADD_ITEM", sectionId: section.id, item: newItem });
     };
 
@@ -151,7 +189,19 @@ export function CVSectionEditor({
             </div>
 
             {/* Items */}
-            <div className="space-y-2">
+            <div
+                className={
+                    [
+                        "languages",
+                        "skills",
+                        "awards",
+                        "certifications",
+                        "references",
+                    ].includes(section.type)
+                        ? "grid grid-cols-2 gap-x-8 gap-y-4"
+                        : "space-y-2"
+                }
+            >
                 {section.items.map((item) => (
                     <div key={item.id} className="relative group/item">
                         {/* Remove item button */}
@@ -181,7 +231,22 @@ export function CVSectionEditor({
                                         updates: { value: val },
                                     })
                                 }
-                                placeholder="Tên công ty / Trường học / Vị trí"
+                                placeholder={
+                                    ["languages"].includes(section.type)
+                                        ? "Tên ngôn ngữ"
+                                        : ["skills"].includes(section.type)
+                                          ? "Tên kỹ năng"
+                                          : [
+                                                  "awards",
+                                                  "certifications",
+                                              ].includes(section.type)
+                                            ? "Tên giải thưởng / Chứng chỉ"
+                                            : ["references"].includes(
+                                                    section.type,
+                                                )
+                                              ? "Họ và Tên"
+                                              : "Tên công ty / Trường học / Vị trí"
+                                }
                                 className="flex-1 font-bold text-slate-800"
                             />
                             {item.meta && (
@@ -227,7 +292,17 @@ export function CVSectionEditor({
                                         },
                                     })
                                 }
-                                placeholder="Tên công ty"
+                                placeholder={
+                                    ["languages", "skills"].includes(
+                                        section.type,
+                                    )
+                                        ? "Kinh nghiệm / Mức độ"
+                                        : ["awards", "certifications"].includes(
+                                                section.type,
+                                            )
+                                          ? "Tổ chức cấp"
+                                          : "Tên công ty"
+                                }
                                 className="block w-full italic text-slate-600"
                             />
                         )}

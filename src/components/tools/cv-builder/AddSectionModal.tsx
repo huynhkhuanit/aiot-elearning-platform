@@ -91,16 +91,19 @@ export function AddSectionModal({
                                     handleAdd(type as CVSectionType, label)
                                 }
                                 disabled={isAdded}
-                                className={`flex flex-col items-center justify-center gap-3 rounded-lg border-2 p-6 transition-all ${
+                                className={`flex flex-col items-center justify-center gap-4 rounded-2xl border-2 p-6 transition-all ${
                                     isAdded
-                                        ? "border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed"
-                                        : "border-transparent bg-slate-50 hover:bg-white hover:border-sky-200 hover:shadow-md cursor-pointer"
+                                        ? "border-slate-50 bg-slate-50/50 opacity-40 cursor-not-allowed"
+                                        : "border-slate-50 bg-white hover:border-slate-200 hover:shadow-sm cursor-pointer shadow-[0_2px_12px_rgb(0,0,0,0.03)]"
                                 }`}
                             >
-                                <div className="rounded-full bg-white p-3 shadow-sm text-slate-400">
-                                    <Icon className="size-6" />
-                                </div>
-                                <span className="text-sm font-medium text-slate-600 text-center leading-tight">
+                                <Icon
+                                    className={`size-8 ${isAdded ? "text-slate-300" : "text-slate-300"}`}
+                                    strokeWidth={1.5}
+                                />
+                                <span
+                                    className={`text-[15px] font-medium text-center leading-tight ${isAdded ? "text-slate-400" : "text-slate-400"}`}
+                                >
                                     {label}
                                 </span>
                             </button>
