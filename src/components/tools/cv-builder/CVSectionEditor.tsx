@@ -163,10 +163,10 @@ export function CVSectionEditor({
                                     itemId: item.id,
                                 })
                             }
-                            className="absolute -left-3 top-1 hidden -translate-x-full rounded-full bg-slate-100 p-1.5 text-slate-400 hover:bg-rose-100 hover:text-rose-500 group-hover/item:block"
+                            className="absolute -left-[38px] top-1 hidden rounded-full bg-slate-100 p-1.5 text-slate-400 hover:bg-rose-100 hover:text-rose-500 group-hover/item:flex group-focus-within/item:flex items-center justify-center transition-colors z-10"
                             title="Xóa ý này"
                         >
-                            <Trash2 className="size-3.5" />
+                            <Trash2 className="size-4" />
                         </button>
 
                         {/* Top row: Title + Date/Location */}

@@ -45,12 +45,12 @@ export function RichTextEditor({
     return (
         <div
             className={cn(
-                "group relative rounded-md border border-transparent hover:border-slate-200 focus-within:border-sky-400 focus-within:ring-1 focus-within:ring-sky-400",
+                "group/rte relative rounded-md border border-transparent hover:border-slate-200 focus-within:border-sky-400 focus-within:ring-1 focus-within:ring-sky-400",
                 className,
             )}
         >
-            {/* Formatting Toolbar - pops up on focus/hover */}
-            <div className="absolute -top-10 left-0 z-10 hidden gap-1 rounded border border-slate-200 bg-white p-1 shadow-sm group-focus-within:flex group-hover:flex">
+            {/* Formatting Toolbar - pops up on focus */}
+            <div className="absolute -top-10 left-0 z-10 hidden gap-1 rounded border border-slate-200 bg-white p-1 shadow-sm group-focus-within/rte:flex">
                 <button
                     type="button"
                     tabIndex={-1}
