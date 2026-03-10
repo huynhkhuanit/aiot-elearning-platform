@@ -57,15 +57,29 @@ export function CVDocument({
                                 className="h-32 w-32 object-cover rounded-md border shadow-sm"
                             />
                         ) : (
-                            <div className="h-32 w-32 rounded-md border border-slate-200 bg-[#f1f5f9] overflow-hidden flex items-end justify-center transition-colors group relative cursor-pointer ring-1 ring-transparent hover:border-sky-400">
+                            <div className="h-32 w-32 rounded-md border-2 border-dashed border-slate-300 bg-slate-50 overflow-hidden flex flex-col items-center justify-center transition-colors group relative cursor-pointer hover:border-sky-400 hover:bg-sky-50/50">
                                 <svg
-                                    className="h-[120%] w-[120%] text-slate-300 translate-y-4"
-                                    viewBox="0 0 24 24"
-                                    fill="currentColor"
+                                    className="h-16 w-16 text-slate-300 mb-0.5"
+                                    viewBox="0 0 64 64"
+                                    fill="none"
                                 >
-                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                    {/* Head */}
+                                    <circle
+                                        cx="32"
+                                        cy="22"
+                                        r="10"
+                                        fill="currentColor"
+                                    />
+                                    {/* Shoulders */}
+                                    <path
+                                        d="M12 54c0-11.046 8.954-20 20-20s20 8.954 20 20"
+                                        fill="currentColor"
+                                    />
                                 </svg>
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="text-[9px] font-medium text-slate-400 group-hover:text-sky-500 transition-colors">
+                                    Tải ảnh lên
+                                </span>
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
                                     <Camera className="text-white size-6" />
                                 </div>
                             </div>
