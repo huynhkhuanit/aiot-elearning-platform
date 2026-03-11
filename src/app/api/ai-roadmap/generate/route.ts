@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
             target_months: profile.targetMonths,
             preferred_language: profile.preferredLanguage,
             focus_areas: profile.focusAreas,
+            audience_type: profile.audienceType || 'self-learner',
           },
         }),
         // Add timeout

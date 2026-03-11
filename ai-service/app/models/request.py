@@ -61,6 +61,33 @@ class UserProfileRequest(BaseModel):
         default=None,
         description="Specific areas to focus on"
     )
+    audience_type: Optional[Literal[
+        "self-learner", "teacher", "team-lead", "mentor", "content-creator",
+        "worker", "student", "university_student", "recent_graduate", "other"
+    ]] = Field(
+        default="self-learner",
+        description="Who this roadmap is for (self-study, teaching, team training, etc.)"
+    )
+    
+    # Audience-specific detail fields
+    specific_job: Optional[str] = Field(
+        default=None,
+        description="Specific job title (for 'worker' audience type)"
+    )
+    class_level: Optional[str] = Field(
+        default=None,
+        description="Class level e.g. '10', '11', '12' (for 'student' audience type)"
+    )
+    major: Optional[str] = Field(
+        default=None,
+        description="Major/field of study (for 'university_student' or 'recent_graduate')"
+    )
+    study_year: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=6,
+        description="Year of study (for 'university_student' audience type)"
+    )
 
 
 class GenerateRoadmapRequest(BaseModel):

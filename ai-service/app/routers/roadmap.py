@@ -83,6 +83,7 @@ async def create_roadmap_stream(request: GenerateRoadmapRequest):
         target_months=profile.target_months,
         preferred_language=profile.preferred_language,
         focus_areas=profile.focus_areas,
+        audience_type=profile.audience_type,
     )
     
     async def event_generator():
@@ -145,7 +146,7 @@ async def validate_profile(profile: UserProfileRequest):
 
 
 @router.post("/node-detail")
-async def get_node_detail(request: "NodeDetailRequest"):
+async def get_node_detail(request: NodeDetailRequest):
     """
     Generate detailed explanation and resources for a specific topic.
     
@@ -161,7 +162,6 @@ async def get_node_detail(request: "NodeDetailRequest"):
     Returns:
         Detailed node information with resources
     """
-    from app.models import NodeDetailRequest as NDR
     from urllib.parse import quote_plus
     
     topic = request.topic

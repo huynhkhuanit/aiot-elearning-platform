@@ -2,7 +2,7 @@
 Roadmap Generator Service - Main business logic
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from app.models import (
@@ -17,6 +17,7 @@ from app.models import (
     RoadmapNodeData,
     RoadmapEdge,
     LearningResources,
+    NodePosition,
 )
 from app.prompts import build_user_prompt
 from app.services.groq_service import generate_roadmap_json
@@ -47,7 +48,8 @@ def calculate_personalization_score(
     
     # Time fit score
     available_hours = profile.hours_per_week * profile.target_months * 4
-    time_ratio = roadmap.total_estimated_hours / available_hours if available_hours > 0 else 0
+    estimated = roadmap.total_estimated_hours or 1  # guard against 0 from AI
+    time_ratio = estimated / available_hours if available_hours > 0 else 0
     time_fit_score = max(0, 1 - abs(1 - time_ratio))  # Closer to 1 is better
     score += time_fit_score * weights["time_fit"]
     
@@ -70,7 +72,7 @@ def calculate_personalization_score(
                 difficulty_levels.get(n.data.difficulty, 1) for n in first_nodes
             ) / len(first_nodes)
             # Score is higher if starting difficulty matches user level
-            difficulty_match = max(0, 1 - abs(avg_difficulty - user_level) / 3)
+            difficulty_match = max(0.0, 1.0 - abs(avg_difficulty - user_level) / 3.0)
             score += difficulty_match * weights["difficulty_match"]
     
     # Structure score (sections/phases, edges, node types variety)
@@ -86,7 +88,8 @@ def calculate_personalization_score(
         structure_score += 0.3
     score += structure_score * weights["structure"]
     
-    return round(min(1.0, max(0.0, score)), 2)
+    clamped = min(1.0, max(0.0, score))
+    return int(clamped * 100) / 100.0
 
 
 def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
@@ -218,6 +221,9 @@ def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
             # For backward compatibility, also keep phase_id
             phase_id = n.get("phase_id", section_id)
             
+            # Parse position if provided by AI
+            position_data = n.get("position", {})
+            
             nodes.append(RoadmapNode(
                 id=n.get("id", ""),
                 phase_id=phase_id,  # Backward compatibility
@@ -237,6 +243,10 @@ def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
                         suggested_type=normalized_type,
                     ),
                 ),
+                position=NodePosition(
+                    x=position_data.get("x", 0),
+                    y=position_data.get("y", 0),
+                ),
             ))
         
         # Parse edges
@@ -251,7 +261,7 @@ def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
         
         return GeneratedRoadmap(
             roadmap_title=raw_data.get("roadmap_title", "Learning Roadmap"),
-            roadmap_description=raw_data.get("roadmap_description", ""),
+            roadmap_description=raw_data.get("roadmap_description", raw_data.get("description", "")),
             total_estimated_hours=raw_data.get("total_estimated_hours", 0),
             sections=sections,  # NEW: roadmap.sh-style sections
             phases=phases,      # Backward compatibility
@@ -284,6 +294,7 @@ async def generate_roadmap(profile: UserProfileRequest) -> RoadmapResponse:
         target_months=profile.target_months,
         preferred_language=profile.preferred_language,
         focus_areas=profile.focus_areas,
+        audience_type=profile.audience_type,
     )
     
     # Generate roadmap using Groq (Llama 3)
@@ -303,7 +314,7 @@ async def generate_roadmap(profile: UserProfileRequest) -> RoadmapResponse:
         latency_ms=raw_metadata["latency_ms"],
         prompt_version=raw_metadata["prompt_version"],
         personalization_score=personalization_score,
-        generated_at=datetime.utcnow().isoformat(),
+        generated_at=datetime.now(timezone.utc).isoformat(),
     )
     
     return RoadmapResponse(

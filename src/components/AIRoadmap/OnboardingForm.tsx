@@ -7,21 +7,23 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import RoleStep from './steps/RoleStep';
+import AudienceStep from './steps/AudienceStep';
 import GoalStep from './steps/GoalStep';
 import SkillsStep from './steps/SkillsStep';
 import StyleStep from './steps/StyleStep';
 import TimelineStep from './steps/TimelineStep';
-import type { UserProfile, SkillLevel, LearningStyle, PreferredLanguage } from '@/types/ai-roadmap';
+import type { UserProfile, SkillLevel, LearningStyle, PreferredLanguage, AudienceType } from '@/types/ai-roadmap';
 
 interface OnboardingFormProps {
   onSubmit: (profile: UserProfile) => Promise<void>;
   isLoading?: boolean;
 }
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 const stepTitles = [
   'Bạn là ai?',
+  'Bạn học cho ai?',
   'Mục tiêu của bạn?',
   'Kỹ năng hiện tại',
   'Phong cách học',
@@ -30,6 +32,7 @@ const stepTitles = [
 
 const stepDescriptions = [
   'Cho chúng tôi biết về vai trò hiện tại của bạn',
+  'Lộ trình này phục vụ mục đích gì của bạn?',
   'Bạn muốn trở thành vị trí nào trong tương lai?',
   'Bạn đã biết những công nghệ/kỹ năng nào rồi?',
   'Bạn thích học theo cách nào nhất?',
@@ -50,6 +53,7 @@ export default function OnboardingForm({ onSubmit, isLoading = false }: Onboardi
     targetMonths: 6,
     preferredLanguage: 'vi',
     focusAreas: [],
+    audienceType: 'self-learner',
   });
 
   const updateFormData = (updates: Partial<UserProfile>) => {
@@ -61,12 +65,14 @@ export default function OnboardingForm({ onSubmit, isLoading = false }: Onboardi
       case 1:
         return formData.currentRole && formData.currentRole.length > 0;
       case 2:
-        return formData.targetRole && formData.targetRole.length > 0;
+        return !!formData.audienceType;
       case 3:
-        return formData.currentSkills && formData.currentSkills.length >= 0; // Allow empty (no skills)
+        return formData.targetRole && formData.targetRole.length > 0;
       case 4:
-        return formData.learningStyle && formData.learningStyle.length > 0;
+        return formData.currentSkills && formData.currentSkills.length >= 0; // Allow empty (no skills)
       case 5:
+        return formData.learningStyle && formData.learningStyle.length > 0;
+      case 6:
         return formData.hoursPerWeek && formData.targetMonths;
       default:
         return false;
@@ -98,6 +104,7 @@ export default function OnboardingForm({ onSubmit, isLoading = false }: Onboardi
       targetMonths: formData.targetMonths || 6,
       preferredLanguage: (formData.preferredLanguage as PreferredLanguage) || 'vi',
       focusAreas: formData.focusAreas || [],
+      audienceType: (formData.audienceType as AudienceType) || 'self-learner',
     };
 
     await onSubmit(profile);
@@ -115,12 +122,14 @@ export default function OnboardingForm({ onSubmit, isLoading = false }: Onboardi
       case 1:
         return <RoleStep {...commonProps} />;
       case 2:
-        return <GoalStep {...commonProps} />;
+        return <AudienceStep {...commonProps} />;
       case 3:
-        return <SkillsStep {...commonProps} />;
+        return <GoalStep {...commonProps} />;
       case 4:
-        return <StyleStep {...commonProps} />;
+        return <SkillsStep {...commonProps} />;
       case 5:
+        return <StyleStep {...commonProps} />;
+      case 6:
         return <TimelineStep {...commonProps} />;
       default:
         return null;

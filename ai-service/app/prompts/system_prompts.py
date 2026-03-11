@@ -75,6 +75,7 @@ def build_user_prompt(
     target_months: int,
     preferred_language: str,
     focus_areas: List[str] | None = None,
+    audience_type: str | None = None,
 ) -> str:
     """Builds a dynamic prompt based on user constraints."""
     
@@ -100,10 +101,26 @@ def build_user_prompt(
     
     lang_instruction = "VIETNAMESE (Tiếng Việt)" if preferred_language == "vi" else "ENGLISH"
 
+    # Audience context mapping
+    audience_descriptions = {
+        "self-learner": "The learner is studying independently for personal career growth.",
+        "teacher": "The user is a teacher/lecturer who needs this roadmap to design a curriculum for students.",
+        "team-lead": "The user is a team lead/manager who needs to train their team members.",
+        "mentor": "The user is a mentor/coach guiding others in skill development.",
+        "content-creator": "The user creates educational content (courses, blogs, videos) and needs a structured path.",
+        "worker": "The user is a working professional looking to upskill or transition careers.",
+        "student": "The user is a high school student exploring technology and building foundational skills.",
+        "university_student": "The user is a university student studying a related major, looking to build industry-ready skills.",
+        "recent_graduate": "The user recently graduated and wants to quickly gain practical skills for job readiness.",
+        "other": "General purpose learning roadmap.",
+    }
+    audience_context = audience_descriptions.get(audience_type or "self-learner", audience_descriptions["self-learner"])
+
     prompt = f"""
     GENERATE A LEARNING ROADMAP FOR:
     - **Target Role:** {target_role}
     - **Current Context:** {current_role} (Level: {skill_level})
+    - **Audience Context:** {audience_context}
     - **Known Skills (Skip basics of these):** {skills_text}
     - **Focus Areas:** {focus_text}
     - **Constraints:** {target_months} months ({hours_per_week}h/week ≈ {total_hours}h total).

@@ -1,0 +1,13 @@
+{
+    "executionEnvironments": [
+        {
+            "root": "ai-service",
+            "extraPaths": ["ai-service"],
+            "pythonVersion": "3.10",
+            "venvPath": "ai-service",
+            "venv": "venv"
+        }
+    ],
+    "typeCheckingMode": "basic",
+    "reportMissingImports": "warning"
+}

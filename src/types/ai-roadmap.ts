@@ -9,6 +9,7 @@
 export type SkillLevel = 'beginner' | 'intermediate' | 'advanced';
 export type LearningStyle = 'documentation' | 'video' | 'project' | 'interactive';
 export type PreferredLanguage = 'vi' | 'en';
+export type AudienceType = 'self-learner' | 'teacher' | 'team-lead' | 'mentor' | 'content-creator' | 'other';
 
 export interface UserProfile {
   // Basic info
@@ -29,6 +30,7 @@ export interface UserProfile {
   // Optional preferences
   preferredLanguage: PreferredLanguage;
   focusAreas?: string[];         // Specific areas to focus on
+  audienceType?: AudienceType;   // Who is this roadmap for?
 }
 
 // Predefined options for the onboarding form
@@ -43,6 +45,15 @@ export const CURRENT_ROLE_OPTIONS = [
   { value: 'mid-dev', label: 'Developer (1-3 năm)' },
   { value: 'senior-dev', label: 'Senior Developer (3+ năm)' },
   { value: 'other', label: 'Khác' },
+] as const;
+
+export const AUDIENCE_TYPE_OPTIONS = [
+  { value: 'self-learner', label: 'Tự học cho bản thân', description: 'Tôi muốn tự học để phát triển sự nghiệp' },
+  { value: 'teacher', label: 'Giảng viên / Giáo viên', description: 'Tôi cần lộ trình để dạy sinh viên/học viên' },
+  { value: 'team-lead', label: 'Team Lead / Manager', description: 'Tôi cần đào tạo đội nhóm của mình' },
+  { value: 'mentor', label: 'Mentor / Coach', description: 'Tôi hướng dẫn người khác phát triển kỹ năng' },
+  { value: 'content-creator', label: 'Content Creator', description: 'Tôi tạo nội dung giáo dục (khóa học, blog, video)' },
+  { value: 'other', label: 'Khác', description: 'Mục đích khác' },
 ] as const;
 
 export const TARGET_ROLE_OPTIONS = [

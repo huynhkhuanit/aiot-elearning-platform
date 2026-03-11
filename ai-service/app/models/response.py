@@ -4,7 +4,7 @@ Response Models for API Endpoints
 
 from pydantic import BaseModel, Field
 from typing import List, Literal, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class LearningResources(BaseModel):
@@ -42,6 +42,12 @@ class RoadmapNodeData(BaseModel):
     )
 
 
+class NodePosition(BaseModel):
+    """Position of a node in the roadmap graph (for layout)"""
+    x: float = Field(default=0, description="X coordinate")
+    y: float = Field(default=0, description="Y coordinate")
+
+
 class RoadmapNode(BaseModel):
     """A node in the roadmap graph"""
     id: str = Field(..., description="Unique node identifier")
@@ -58,6 +64,10 @@ class RoadmapNode(BaseModel):
         description="True if this is a hub node that branches to multiple children. Hub nodes are central concepts that split into detailed subtopics."
     )
     data: RoadmapNodeData = Field(..., description="Node data payload")
+    position: NodePosition = Field(
+        default_factory=NodePosition,
+        description="Position coordinates for graph layout"
+    )
 
 
 class RoadmapEdge(BaseModel):
@@ -130,7 +140,7 @@ class GenerationMetadata(BaseModel):
         description="Score indicating personalization quality"
     )
     generated_at: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat(),
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         description="Timestamp of generation"
     )
 
