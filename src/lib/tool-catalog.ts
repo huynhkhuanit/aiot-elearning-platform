@@ -42,7 +42,7 @@ export const toolLinks: ToolLink[] = [
     {
         id: "link-shortener",
         name: "Rút gọn liên kết",
-        href: "/tools#link-shortener",
+        href: "/tools/link-shortener",
     },
     {
         id: "clip-path-maker",
