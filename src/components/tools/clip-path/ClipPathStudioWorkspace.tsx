@@ -380,7 +380,7 @@ export function ClipPathStudioWorkspace() {
                     </div>
                 </div>
 
-                <div className="grid gap-6 xl:grid-cols-[292px_minmax(0,1.35fr)_340px] 2xl:grid-cols-[300px_minmax(0,1.45fr)_352px]">
+                <div className="grid gap-6 xl:grid-cols-[268px_minmax(0,1.6fr)_320px] 2xl:grid-cols-[280px_minmax(0,1.75fr)_332px]">
                     <ClipPathPresetRail
                         activeCategory={activeCategory}
                         activePresetId={activePreset.id}

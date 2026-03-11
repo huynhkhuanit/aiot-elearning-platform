@@ -187,7 +187,7 @@ export function ClipPathCanvasPanel({
                         </div>
                     </div>
 
-                    <div className="clip-path-canvas-shell relative aspect-[5/6] overflow-hidden rounded-[24px] border border-[#cfe8e3] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] sm:aspect-[16/10] sm:rounded-[28px]">
+                    <div className="clip-path-canvas-shell relative aspect-[4/5] overflow-hidden rounded-[24px] border border-[#cfe8e3] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] sm:aspect-[16/9] sm:rounded-[28px]">
                         <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap gap-2 sm:left-4 sm:right-auto sm:top-4">
                             <Button
                                 type="button"
@@ -264,7 +264,7 @@ export function ClipPathCanvasPanel({
                         {showGrid ? (
                             <div className="absolute inset-0 bg-[linear-gradient(to_right,_rgba(15,118,110,0.08)_1px,_transparent_1px),linear-gradient(to_bottom,_rgba(15,118,110,0.08)_1px,_transparent_1px)] [background-size:10%_10%]" />
                         ) : null}
-                        <div className="absolute inset-[4.25rem_0.9rem_0.9rem] overflow-hidden rounded-[20px] border border-white/80 shadow-[0_20px_50px_rgba(15,23,42,0.08)] sm:inset-5 sm:rounded-[24px]">
+                        <div className="absolute inset-[4.25rem_0.9rem_0.9rem] overflow-hidden rounded-[20px] border border-white/80 shadow-[0_20px_50px_rgba(15,23,42,0.08)] sm:inset-[3rem_0.75rem_0.75rem] sm:rounded-[24px]">
                             <div
                                 className="absolute inset-0 bg-[linear-gradient(135deg,_#0f766e_0%,_#14b8a6_52%,_#f97316_110%)] transition-[clip-path,transform] duration-300 ease-out"
                                 style={{
@@ -433,7 +433,7 @@ export function ClipPathCanvasPanel({
                                 ))}
                             </svg>
                         </div>
-                        <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 flex flex-col gap-2 rounded-2xl border border-white/60 bg-white/88 px-3 py-3 shadow-[0_16px_32px_rgba(15,23,42,0.10)] backdrop-blur sm:inset-x-5 sm:bottom-5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
+                        <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 flex flex-col gap-2 rounded-2xl border border-white/60 bg-white/88 px-3 py-2.5 shadow-[0_16px_32px_rgba(15,23,42,0.10)] backdrop-blur sm:inset-x-3 sm:bottom-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
                             <div>
                                 <p className="text-sm font-semibold text-slate-900">
                                     Kéo điểm để chỉnh trực tiếp
