@@ -1,7 +1,7 @@
 "use client";
 
 /* ══════════════════════════════════════════════════════════════
-   Link Shortener Tool – Redesigned with Stitch / Gemini 3 Pro
+   Link Shortener Tool – Hybrid Ownership (Anonymous + Auth)
    ══════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,6 +14,19 @@ interface ShortLink {
     shortUrl?: string;
     clicks: number;
     createdAt: string;
+}
+
+/* ── Anonymous ID helper ──────────────────────────────────── */
+const ANON_KEY = "cs_link_shortener_id";
+
+function getAnonymousId(): string {
+    if (typeof window === "undefined") return "";
+    let id = localStorage.getItem(ANON_KEY);
+    if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem(ANON_KEY, id);
+    }
+    return id;
 }
 
 /* ── QR helper — tiny inline SVG QR for a URL ─────────────── */
@@ -49,14 +62,63 @@ export function LinkShortenerTool() {
     const [showAdvanced, setShowAdvanced] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    /* ── Fetch recent links on mount ──────────────────────── */
+    /* ── Auth state ────────────────────────────────────────── */
+    const [authUserId, setAuthUserId] = useState<string | null>(null);
+    const [authChecked, setAuthChecked] = useState(false);
+
+    /* ── Pagination state ─────────────────────────────────── */
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
+
+    /* ── Check auth status on mount ───────────────────────── */
     useEffect(() => {
-        fetchRecent();
+        async function checkAuth() {
+            try {
+                const res = await fetch("/api/auth/me", {
+                    credentials: "include",
+                });
+                const json = await res.json();
+                if (json.success && json.data?.user?.id) {
+                    setAuthUserId(json.data.user.id);
+
+                    // Claim anonymous links if user just logged in
+                    const anonId = localStorage.getItem(ANON_KEY);
+                    if (anonId) {
+                        await fetch("/api/links", {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            credentials: "include",
+                            body: JSON.stringify({ anonymousId: anonId }),
+                        });
+                        // Keep the anonymous ID for future sessions
+                    }
+                }
+            } catch {
+                // Not logged in — that's fine
+            } finally {
+                setAuthChecked(true);
+            }
+        }
+        checkAuth();
     }, []);
+
+    /* ── Fetch recent links after auth check ──────────────── */
+    useEffect(() => {
+        if (authChecked) fetchRecent();
+    }, [authChecked, authUserId]);
 
     async function fetchRecent() {
         try {
-            const res = await fetch("/api/links");
+            // Build query with identity
+            const params = new URLSearchParams();
+            if (!authUserId) {
+                const anonId = getAnonymousId();
+                if (anonId) params.set("anonymousId", anonId);
+            }
+
+            const res = await fetch(`/api/links?${params.toString()}`, {
+                credentials: "include",
+            });
             const json = await res.json();
             if (json.success) setRecentLinks(json.data);
         } catch {
@@ -85,13 +147,21 @@ export function LinkShortenerTool() {
 
         setLoading(true);
         try {
+            const body: Record<string, string | undefined> = {
+                url: trimmed,
+                customCode: customCode.trim() || undefined,
+            };
+
+            // Attach anonymous ID if not logged in
+            if (!authUserId) {
+                body.anonymousId = getAnonymousId();
+            }
+
             const res = await fetch("/api/links", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    url: trimmed,
-                    customCode: customCode.trim() || undefined,
-                }),
+                credentials: "include",
+                body: JSON.stringify(body),
             });
             const json = await res.json();
 
@@ -99,7 +169,8 @@ export function LinkShortenerTool() {
                 setError(json.message || "Có lỗi xảy ra");
             } else {
                 setResult(json.data);
-                setRecentLinks((prev) => [json.data, ...prev].slice(0, 20));
+                setRecentLinks((prev) => [json.data, ...prev].slice(0, 30));
+                setCurrentPage(1);
                 setUrl("");
                 setCustomCode("");
             }
@@ -108,7 +179,7 @@ export function LinkShortenerTool() {
         } finally {
             setLoading(false);
         }
-    }, [url, customCode]);
+    }, [url, customCode, authUserId]);
 
     /* ── Copy to clipboard ────────────────────────────────── */
     const handleCopy = useCallback(async (text: string, id?: string) => {
@@ -139,47 +210,16 @@ export function LinkShortenerTool() {
         [handleShorten, loading],
     );
 
+    /* ── Pagination logic ─────────────────────────────────── */
+    const totalPages = Math.ceil(recentLinks.length / itemsPerPage);
+    const currentLinks = recentLinks.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage,
+    );
+
     /* ── Render ────────────────────────────────────────────── */
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-            {/* ── Header ──────────────────────────────────── */}
-            <header className="sticky top-0 z-20 border-b border-slate-200/60 bg-white/80 backdrop-blur-xl">
-                <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3.5">
-                    <a
-                        href="/tools"
-                        className="group flex items-center gap-2 text-sm font-medium text-slate-800 transition hover:text-teal-600"
-                    >
-                        <svg
-                            className="size-5 rounded-lg bg-teal-500 p-0.5 text-white"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2.5}
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
-                            />
-                        </svg>
-                        CodeSense
-                    </a>
-
-                    <nav className="flex items-center gap-1.5 text-xs text-slate-400">
-                        <a
-                            href="/tools"
-                            className="transition hover:text-teal-600"
-                        >
-                            Công cụ
-                        </a>
-                        <span>/</span>
-                        <span className="font-medium text-slate-600">
-                            Rút gọn liên kết
-                        </span>
-                    </nav>
-                </div>
-            </header>
-
             <main className="mx-auto max-w-3xl px-6 py-12">
                 {/* ── Hero section ────────────────────────── */}
                 <div className="mb-10 text-center">
@@ -516,11 +556,48 @@ export function LinkShortenerTool() {
                                         d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
                                     />
                                 </svg>
-                                Liên kết gần đây
+                                Liên kết của {authUserId ? "bạn" : "bạn"}
+                                <span className="ml-auto text-xs font-normal text-slate-400">
+                                    {authUserId ? (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-teal-600">
+                                            <svg
+                                                className="size-3"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                strokeWidth={2}
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+                                                />
+                                            </svg>
+                                            Đã đồng bộ tài khoản
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 text-slate-400">
+                                            <svg
+                                                className="size-3"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                strokeWidth={2}
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25"
+                                                />
+                                            </svg>
+                                            Lưu trên thiết bị này
+                                        </span>
+                                    )}
+                                </span>
                             </h3>
 
-                            <div className="space-y-2">
-                                {recentLinks.map((link) => (
+                            <div className="space-y-2.5">
+                                {currentLinks.map((link) => (
                                     <div
                                         key={link.id}
                                         className="group flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-4 py-3.5 transition-all hover:border-teal-200/60 hover:shadow-sm"
@@ -625,6 +702,82 @@ export function LinkShortenerTool() {
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="mt-6 flex items-center justify-center gap-1">
+                                    <button
+                                        onClick={() =>
+                                            setCurrentPage((p) =>
+                                                Math.max(1, p - 1),
+                                            )
+                                        }
+                                        disabled={currentPage === 1}
+                                        className="flex size-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-teal-50 hover:text-teal-600 disabled:pointer-events-none disabled:opacity-50"
+                                    >
+                                        <svg
+                                            className="size-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            strokeWidth={2}
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M15 19l-7-7 7-7"
+                                            />
+                                        </svg>
+                                    </button>
+
+                                    <div className="flex items-center gap-1 px-2">
+                                        {Array.from({ length: totalPages }).map(
+                                            (_, idx) => {
+                                                const page = idx + 1;
+                                                return (
+                                                    <button
+                                                        key={page}
+                                                        onClick={() =>
+                                                            setCurrentPage(page)
+                                                        }
+                                                        className={`flex size-8 items-center justify-center rounded-lg text-sm font-medium transition-all ${
+                                                            currentPage === page
+                                                                ? "bg-teal-500 text-white shadow-sm shadow-teal-200/50"
+                                                                : "text-slate-500 hover:bg-teal-50 hover:text-teal-600"
+                                                        }`}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                );
+                                            },
+                                        )}
+                                    </div>
+
+                                    <button
+                                        onClick={() =>
+                                            setCurrentPage((p) =>
+                                                Math.min(totalPages, p + 1),
+                                            )
+                                        }
+                                        disabled={currentPage === totalPages}
+                                        className="flex size-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-teal-50 hover:text-teal-600 disabled:pointer-events-none disabled:opacity-50"
+                                    >
+                                        <svg
+                                            className="size-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            strokeWidth={2}
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M9 5l7 7-7 7"
+                                            />
+                                        </svg>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

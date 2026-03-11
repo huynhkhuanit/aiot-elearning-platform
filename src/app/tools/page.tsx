@@ -29,6 +29,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { ClipPathMakerTool } from "@/components/tools/clip-path/ClipPathMakerTool";
 import { toolCatalog, type ToolCatalogItem } from "@/lib/tool-catalog";
 import { cn } from "@/lib/utils";
 
@@ -154,6 +155,17 @@ const methodologyPillars = [
     },
 ];
 
+function getLinkProps(href: string) {
+    if (href.startsWith("http://") || href.startsWith("https://")) {
+        return {
+            target: "_blank" as const,
+            rel: "noopener noreferrer" as const,
+        };
+    }
+
+    return {};
+}
+
 /* ══════════════════════════════════════════════════════════════
    PAGE COMPONENT
    ══════════════════════════════════════════════════════════════ */
@@ -243,6 +255,7 @@ export default function ToolsPage() {
                                                 <Link
                                                     key={tool.id}
                                                     href={tool.href}
+                                                    {...getLinkProps(tool.href)}
                                                     className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-colors hover:bg-white/10"
                                                 >
                                                     <div
@@ -356,12 +369,14 @@ export default function ToolsPage() {
                     <div className="hidden gap-2 sm:flex">
                         <button
                             type="button"
+                            aria-label="Lọc công cụ"
                             className="rounded-lg border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50"
                         >
                             <Filter className="size-5" />
                         </button>
                         <button
                             type="button"
+                            aria-label="Tìm kiếm công cụ"
                             className="rounded-lg border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50"
                         >
                             <Search className="size-5" />
@@ -378,7 +393,11 @@ export default function ToolsPage() {
                         return (
                             <Card
                                 key={tool.id}
-                                id={tool.id}
+                                id={
+                                    tool.id === "clip-path-maker"
+                                        ? "clip-path-maker-card"
+                                        : tool.id
+                                }
                                 className="group scroll-mt-28 overflow-hidden rounded-[32px] border border-slate-200 bg-white py-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl flex flex-col"
                             >
                                 {/* Solid accent bar */}
@@ -463,7 +482,10 @@ export default function ToolsPage() {
                                             accent.hoverBtn,
                                         )}
                                     >
-                                        <Link href={tool.href}>
+                                        <Link
+                                            href={tool.href}
+                                            {...getLinkProps(tool.href)}
+                                        >
                                             Mở công cụ
                                             <ExternalLink className="ml-2 size-3.5" />
                                         </Link>
@@ -476,6 +498,8 @@ export default function ToolsPage() {
             </section>
 
             {/* ── BOTTOM SECTION ────────────────────────── */}
+            <ClipPathMakerTool />
+
             <section className="border-t border-slate-200 bg-slate-50 py-16">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">

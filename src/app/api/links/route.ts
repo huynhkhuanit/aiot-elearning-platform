@@ -1,15 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { supabaseAdmin } from "@/lib/supabase";
+import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
+
+/* ── Helper: resolve creator identity from request ──────── */
+interface CreatorIdentity {
+    creatorId: string;
+    creatorType: "anonymous" | "user";
+}
+
+function resolveCreator(
+    request: NextRequest,
+    bodyAnonymousId?: string,
+): CreatorIdentity | null {
+    // Priority 1: Authenticated user (auth_token cookie or Authorization header)
+    const cookieToken = request.cookies.get("auth_token")?.value;
+    const headerToken = extractTokenFromHeader(
+        request.headers.get("Authorization"),
+    );
+    const token = cookieToken || headerToken;
+
+    if (token) {
+        const payload = verifyToken(token);
+        if (payload?.userId) {
+            return { creatorId: payload.userId, creatorType: "user" };
+        }
+    }
+
+    // Priority 2: Anonymous ID from request body/query
+    if (bodyAnonymousId && typeof bodyAnonymousId === "string") {
+        return { creatorId: bodyAnonymousId, creatorType: "anonymous" };
+    }
+
+    return null;
+}
 
 /**
  * POST /api/links — Create a short link
- * Body: { url: string, customCode?: string }
+ * Body: { url: string, customCode?: string, anonymousId?: string }
  */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { url, customCode } = body;
+        const { url, customCode, anonymousId } = body;
 
         if (!url || typeof url !== "string") {
             return NextResponse.json(
@@ -32,6 +65,19 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 { success: false, message: "Database not configured" },
                 { status: 500 },
+            );
+        }
+
+        // Resolve creator identity
+        const creator = resolveCreator(request, anonymousId);
+        if (!creator) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message:
+                        "Creator identity required (login or provide anonymousId)",
+                },
+                { status: 400 },
             );
         }
 
@@ -73,10 +119,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Insert
+        // Insert with creator info
         const { data, error } = await supabaseAdmin
             .from("short_links")
-            .insert({ code, original_url: url })
+            .insert({
+                code,
+                original_url: url,
+                creator_id: creator.creatorId,
+                creator_type: creator.creatorType,
+            })
             .select()
             .single();
 
@@ -110,9 +161,11 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/links — List recent short links
+ * GET /api/links — List short links belonging to the caller
+ * Query: ?anonymousId=<uuid> (for guests)
+ * Auth users are identified automatically via auth_token
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         if (!supabaseAdmin) {
             return NextResponse.json(
@@ -121,11 +174,21 @@ export async function GET() {
             );
         }
 
+        const anonymousId =
+            request.nextUrl.searchParams.get("anonymousId") || undefined;
+        const creator = resolveCreator(request, anonymousId);
+
+        // If no identity at all, return empty list (never leak others' links)
+        if (!creator) {
+            return NextResponse.json({ success: true, data: [] });
+        }
+
         const { data, error } = await supabaseAdmin
             .from("short_links")
             .select("*")
+            .eq("creator_id", creator.creatorId)
             .order("created_at", { ascending: false })
-            .limit(20);
+            .limit(30);
 
         if (error) {
             console.error("Failed to fetch links:", error);
@@ -137,7 +200,7 @@ export async function GET() {
 
         return NextResponse.json({
             success: true,
-            data: data.map((row: any) => ({
+            data: (data || []).map((row: any) => ({
                 id: row.id,
                 code: row.code,
                 originalUrl: row.original_url,
@@ -147,6 +210,85 @@ export async function GET() {
         });
     } catch (error) {
         console.error("Error in GET /api/links:", error);
+        return NextResponse.json(
+            { success: false, message: "Internal server error" },
+            { status: 500 },
+        );
+    }
+}
+
+/**
+ * PATCH /api/links — Claim anonymous links when user logs in
+ * Body: { anonymousId: string }
+ * Requires auth_token
+ */
+export async function PATCH(request: NextRequest) {
+    try {
+        if (!supabaseAdmin) {
+            return NextResponse.json(
+                { success: false, message: "Database not configured" },
+                { status: 500 },
+            );
+        }
+
+        // Must be authenticated
+        const cookieToken = request.cookies.get("auth_token")?.value;
+        const headerToken = extractTokenFromHeader(
+            request.headers.get("Authorization"),
+        );
+        const token = cookieToken || headerToken;
+
+        if (!token) {
+            return NextResponse.json(
+                { success: false, message: "Authentication required" },
+                { status: 401 },
+            );
+        }
+
+        const payload = verifyToken(token);
+        if (!payload?.userId) {
+            return NextResponse.json(
+                { success: false, message: "Invalid token" },
+                { status: 401 },
+            );
+        }
+
+        const body = await request.json();
+        const { anonymousId } = body;
+
+        if (!anonymousId || typeof anonymousId !== "string") {
+            return NextResponse.json(
+                { success: false, message: "anonymousId is required" },
+                { status: 400 },
+            );
+        }
+
+        // Transfer anonymous links to authenticated user
+        const { data, error } = await supabaseAdmin
+            .from("short_links")
+            .update({
+                creator_id: payload.userId,
+                creator_type: "user",
+            })
+            .eq("creator_id", anonymousId)
+            .eq("creator_type", "anonymous")
+            .select("id");
+
+        if (error) {
+            console.error("Failed to claim links:", error);
+            return NextResponse.json(
+                { success: false, message: "Failed to claim links" },
+                { status: 500 },
+            );
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: `Claimed ${data?.length || 0} links`,
+            claimedCount: data?.length || 0,
+        });
+    } catch (error) {
+        console.error("Error in PATCH /api/links:", error);
         return NextResponse.json(
             { success: false, message: "Internal server error" },
             { status: 500 },
