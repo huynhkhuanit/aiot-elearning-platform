@@ -100,7 +100,7 @@ export function ClipPathInspectorPanel({
     svgPath,
 }: ClipPathInspectorPanelProps) {
     return (
-        <Card className="overflow-hidden rounded-[30px] border-[#d5ebe7] bg-white/95 shadow-[0_24px_70px_rgba(15,118,110,0.10)]">
+        <Card className="clip-path-panel clip-path-stagger-in order-2 overflow-hidden rounded-[28px] border-[#d5ebe7] bg-white/95 shadow-[0_24px_70px_rgba(15,118,110,0.10)] xl:order-3" data-stagger="3">
             <CardHeader className="border-b border-[#e5f3f0] pb-5">
                 <div className="flex items-start gap-3">
                     <div className="flex size-11 items-center justify-center rounded-2xl bg-[#0f172a] text-white">
@@ -108,27 +108,27 @@ export function ClipPathInspectorPanel({
                     </div>
                     <div>
                         <CardTitle className="text-xl text-slate-950">
-                            Properties va export
+                            Thuộc tính & xuất mã
                         </CardTitle>
                         <CardDescription className="mt-1 text-slate-500">
-                            Chinh diem dang chon, bien doi nhanh shape va copy code
-                            theo dung dinh dang ban can.
+                            Canh điểm đang chọn, biến đổi shape nhanh và xuất đúng
+                            định dạng mã bạn cần ngay trong panel này.
                         </CardDescription>
                     </div>
                 </div>
             </CardHeader>
 
             <CardContent className="pt-6">
-                <ScrollArea className="h-[780px] pr-3">
+                <ScrollArea className="h-[420px] pr-3 md:h-[540px] xl:h-[780px]">
                     <div className="space-y-6">
                         <div className="rounded-[24px] border border-[#e2efec] bg-[#f9fcfb] p-4">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-sm font-semibold text-slate-950">
-                                        Selected point
+                                        Điểm đang chọn
                                     </p>
                                     <p className="mt-1 text-sm text-slate-500">
-                                        Diem #{selectedPointIndex + 1} -{" "}
+                                        Điểm #{selectedPointIndex + 1} -{" "}
                                         {formatPoint(currentPoint)}
                                     </p>
                                 </div>
@@ -141,7 +141,7 @@ export function ClipPathInspectorPanel({
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <Label className="text-sm font-semibold text-slate-900">
-                                            Toa do X
+                                            Tọa độ X
                                         </Label>
                                         <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white">
                                             {currentPoint.x}%
@@ -163,7 +163,7 @@ export function ClipPathInspectorPanel({
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <Label className="text-sm font-semibold text-slate-900">
-                                            Toa do Y
+                                            Tọa độ Y
                                         </Label>
                                         <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white">
                                             {currentPoint.y}%
@@ -183,7 +183,7 @@ export function ClipPathInspectorPanel({
                                 </div>
                             </div>
 
-                            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -191,7 +191,7 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl border-[#cde8e3] bg-white text-slate-900 hover:bg-[#f1fbf8]"
                                 >
                                     <Plus className="mr-1.5 size-4" />
-                                    Them diem
+                                    Thêm điểm
                                 </Button>
                                 <Button
                                     type="button"
@@ -201,21 +201,21 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl border-[#cde8e3] bg-white text-slate-900 hover:bg-[#f1fbf8]"
                                 >
                                     <Minus className="mr-1.5 size-4" />
-                                    Xoa diem
+                                    Xóa điểm
                                 </Button>
                             </div>
                         </div>
 
                         <div className="rounded-[24px] border border-[#e2efec] bg-white p-4">
                             <p className="text-sm font-semibold text-slate-950">
-                                Quick transforms
+                                Biến đổi nhanh
                             </p>
                             <p className="mt-1 text-sm text-slate-500">
-                                Bien doi nhanh shape hien tai de thu nhieu huong bo
-                                cuc hon.
+                                Thử nhanh các hướng biến đổi để tìm ra hình phù hợp
+                                trước khi tinh chỉnh chi tiết.
                             </p>
 
-                            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -223,7 +223,7 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl border-[#cde8e3] bg-white text-slate-900 hover:bg-[#f1fbf8]"
                                 >
                                     <ArrowLeftRight className="mr-1.5 size-4" />
-                                    Thu vao
+                                    Thu vào
                                 </Button>
                                 <Button
                                     type="button"
@@ -232,7 +232,7 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl border-[#cde8e3] bg-white text-slate-900 hover:bg-[#f1fbf8]"
                                 >
                                     <ArrowLeftRight className="mr-1.5 size-4" />
-                                    No ra
+                                    Nở ra
                                 </Button>
                                 <Button
                                     type="button"
@@ -241,7 +241,7 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl border-[#cde8e3] bg-white text-slate-900 hover:bg-[#f1fbf8]"
                                 >
                                     <ArrowLeftRight className="mr-1.5 size-4" />
-                                    Rong hon
+                                    Rộng hơn
                                 </Button>
                                 <Button
                                     type="button"
@@ -250,7 +250,7 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl border-[#cde8e3] bg-white text-slate-900 hover:bg-[#f1fbf8]"
                                 >
                                     <ArrowUpDown className="mr-1.5 size-4" />
-                                    Cao hon
+                                    Cao hơn
                                 </Button>
                                 <Button
                                     type="button"
@@ -259,7 +259,7 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl border-[#cde8e3] bg-white text-slate-900 hover:bg-[#f1fbf8]"
                                 >
                                     <Shuffle className="mr-1.5 size-4" />
-                                    Ngau nhien
+                                    Ngẫu nhiên
                                 </Button>
                                 <Button
                                     type="button"
@@ -268,7 +268,7 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl border-[#cde8e3] bg-white text-slate-900 hover:bg-[#f1fbf8]"
                                 >
                                     <Shuffle className="mr-1.5 size-4" />
-                                    Jitter nhe
+                                    Jitter nhẹ
                                 </Button>
                                 <Button
                                     type="button"
@@ -277,11 +277,11 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl border-[#cde8e3] bg-white text-slate-900 hover:bg-[#f1fbf8] sm:col-span-2"
                                 >
                                     <ArrowLeftRight className="mr-1.5 size-4" />
-                                    Can doi shape
+                                    Cân đối shape
                                 </Button>
                             </div>
 
-                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -289,7 +289,7 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl border-[#cde8e3] bg-white text-slate-900 hover:bg-[#f1fbf8]"
                                 >
                                     <ArrowLeftRight className="mr-1.5 size-4" />
-                                    Hep ngang
+                                    Hẹp ngang
                                 </Button>
                             </div>
                         </div>
@@ -298,11 +298,11 @@ export function ClipPathInspectorPanel({
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-sm font-semibold text-slate-950">
-                                        History va reset
+                                        Lịch sử chỉnh sửa
                                     </p>
                                     <p className="mt-1 text-sm text-slate-500">
-                                        Ho tro thu nhanh ma khong so mat shape dang
-                                        lam.
+                                        Hoàn tác, làm lại hoặc đặt lại về preset gốc
+                                        mà không mất luồng thao tác.
                                     </p>
                                 </div>
                                 <Badge className="rounded-full border border-[#d7ebe7] bg-[#f8fcfb] px-3 py-1 text-slate-600 hover:bg-[#f8fcfb]">
@@ -310,7 +310,7 @@ export function ClipPathInspectorPanel({
                                 </Badge>
                             </div>
 
-                            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -319,7 +319,7 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl border-[#cde8e3] bg-white text-slate-900 hover:bg-[#f1fbf8]"
                                 >
                                     <Undo2 className="mr-1.5 size-4" />
-                                    Undo
+                                    Hoàn tác
                                 </Button>
                                 <Button
                                     type="button"
@@ -329,7 +329,7 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl border-[#cde8e3] bg-white text-slate-900 hover:bg-[#f1fbf8]"
                                 >
                                     <Redo2 className="mr-1.5 size-4" />
-                                    Redo
+                                    Làm lại
                                 </Button>
                                 <Button
                                     type="button"
@@ -338,7 +338,7 @@ export function ClipPathInspectorPanel({
                                     className="rounded-xl bg-slate-100 text-slate-900 hover:bg-slate-200"
                                 >
                                     <RotateCcw className="mr-1.5 size-4" />
-                                    Reset
+                                    Đặt lại
                                 </Button>
                             </div>
                         </div>
@@ -347,18 +347,18 @@ export function ClipPathInspectorPanel({
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-sm font-semibold text-slate-950">
-                                        Save thanh custom preset
+                                        Lưu preset tùy chỉnh
                                     </p>
                                     <p className="mt-1 text-sm text-slate-500">
-                                        Luu lai shape hien tai de dua vao bo suu tap
-                                        rieng.
+                                        Lưu lại shape hiện tại để tái sử dụng trong
+                                        bộ preset cá nhân của bạn.
                                     </p>
                                 </div>
                                 <Save className="size-5 text-[#c2410c]" />
                             </div>
 
                             <div className="mt-4 space-y-2">
-                                <Label htmlFor="custom-preset-name">Ten preset</Label>
+                                <Label htmlFor="custom-preset-name">Tên preset</Label>
                                 <Input
                                     id="custom-preset-name"
                                     value={customPresetName}
@@ -367,7 +367,7 @@ export function ClipPathInspectorPanel({
                                             event.target.value,
                                         )
                                     }
-                                    placeholder="My hero shape"
+                                    placeholder="Ví dụ: Hero chéo mềm"
                                     className="h-11 rounded-2xl border-[#d7ebe7]"
                                 />
                             </div>
@@ -379,15 +379,23 @@ export function ClipPathInspectorPanel({
                             >
                                 <Save className="mr-1.5 size-4" />
                                 {activePreset.category === "custom"
-                                    ? "Cap nhat preset custom"
-                                    : "Luu preset custom moi"}
+                                    ? "Cập nhật preset tùy chỉnh"
+                                    : "Lưu preset tùy chỉnh"}
                             </Button>
                         </div>
 
                         <div className="rounded-[24px] border border-[#e2efec] bg-white p-4">
+                            <p className="text-sm font-semibold text-slate-950">
+                                Xuất mã
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">
+                                Chọn định dạng phù hợp với stack của bạn rồi sao chép
+                                trực tiếp.
+                            </p>
+
                             <div className="space-y-2">
                                 <Label htmlFor="clip-path-class-name">
-                                    Ten class CSS
+                                    Tên class CSS
                                 </Label>
                                 <Input
                                     id="clip-path-class-name"
@@ -401,7 +409,7 @@ export function ClipPathInspectorPanel({
                                 {safeClassName !==
                                 classNameInput.trim().toLowerCase() ? (
                                     <p className="text-xs text-slate-500">
-                                        Se duoc chuan hoa thanh{" "}
+                                        Sẽ được chuẩn hóa thành{" "}
                                         <span className="font-semibold text-slate-900">
                                             .{safeClassName}
                                         </span>
@@ -480,7 +488,7 @@ export function ClipPathInspectorPanel({
                                 ))}
                             </Tabs>
 
-                            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <Button
                                     type="button"
                                     onClick={() =>
@@ -493,7 +501,7 @@ export function ClipPathInspectorPanel({
                                     ) : (
                                         <Copy className="mr-1.5 size-4" />
                                     )}
-                                    Copy code
+                                    Sao chép mã
                                 </Button>
                                 <Button
                                     type="button"
@@ -515,7 +523,7 @@ export function ClipPathInspectorPanel({
                                     ) : (
                                         <Copy className="mr-1.5 size-4" />
                                     )}
-                                    Copy polygon
+                                    Sao chép polygon
                                 </Button>
                             </div>
 
@@ -530,27 +538,27 @@ export function ClipPathInspectorPanel({
                                 ) : (
                                     <Copy className="mr-1.5 size-4" />
                                 )}
-                                Copy SVG path
+                                Sao chép SVG path
                             </Button>
                         </div>
 
                         <div className="rounded-[24px] border border-[#f5dccd] bg-[#fff7f1] p-4">
                             <p className="text-sm font-semibold text-slate-950">
-                                Luu y khi dung that
+                                Gợi ý khi dùng thật
                             </p>
                             <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
                                 <li>
-                                    Shape co it diem se de dat text hon, shape nhieu
-                                    diem hop cho media va sticker.
+                                    Shape ít điểm sẽ dễ đặt text hơn; shape nhiều điểm
+                                    hợp cho media, thumbnail hoặc sticker.
                                 </li>
                                 <li>
-                                    Khi can crop anh, giu them lop{" "}
+                                    Khi cần crop ảnh, hãy giữ thêm lớp{" "}
                                     <code>overflow-hidden</code> neu ban muon bo goc
-                                    ngoai.
+                                    ngoài.
                                 </li>
                                 <li>
-                                    CSS va JSX da kem ca <code>WebkitClipPath</code>{" "}
-                                    de Safari on dinh hon.
+                                    CSS và JSX đã kèm <code>WebkitClipPath</code> để
+                                    Safari ổn định hơn.
                                 </li>
                             </ul>
                         </div>

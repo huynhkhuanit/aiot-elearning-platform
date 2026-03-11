@@ -54,7 +54,7 @@ export function ClipPathPresetRail({
     searchQuery,
 }: ClipPathPresetRailProps) {
     return (
-        <Card className="overflow-hidden rounded-[30px] border-[#d5ebe7] bg-white/95 shadow-[0_24px_70px_rgba(15,118,110,0.10)]">
+        <Card className="clip-path-panel clip-path-stagger-in order-3 overflow-hidden rounded-[28px] border-[#d5ebe7] bg-white/95 shadow-[0_24px_70px_rgba(15,118,110,0.10)] xl:order-1" data-stagger="2">
             <CardHeader className="border-b border-[#e5f3f0] pb-5">
                 <div className="flex items-start gap-3">
                     <div className="flex size-11 items-center justify-center rounded-2xl bg-[#d9f4ef] text-[#0f766e]">
@@ -62,11 +62,11 @@ export function ClipPathPresetRail({
                     </div>
                     <div>
                         <CardTitle className="text-xl text-slate-950">
-                            Thu vien shape
+                            Thư viện preset
                         </CardTitle>
                         <CardDescription className="mt-1 text-slate-500">
-                            Nhieu dang cat hon, co tim kiem va luu custom preset de
-                            dung lai nhanh.
+                            Chọn nhanh từ thư viện shape, lọc theo ngữ cảnh dùng và
+                            tìm lại preset đã lưu chỉ trong vài giây.
                         </CardDescription>
                     </div>
                 </div>
@@ -74,14 +74,14 @@ export function ClipPathPresetRail({
 
             <CardContent className="space-y-5 pt-6">
                 <div className="space-y-2">
-                    <Label htmlFor="clip-path-search">Tim preset</Label>
+                    <Label htmlFor="clip-path-search">Tìm preset</Label>
                     <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                         <Input
                             id="clip-path-search"
                             value={searchQuery}
                             onChange={(event) => onSearchChange(event.target.value)}
-                            placeholder="Tim theo ten, tag, cong dung..."
+                            placeholder="Tìm theo tên, tag hoặc công dụng"
                             className="h-11 rounded-2xl border-[#d7ebe7] pl-9"
                         />
                     </div>
@@ -112,18 +112,18 @@ export function ClipPathPresetRail({
                 </div>
 
                 <div className="rounded-2xl border border-[#e7f4f1] bg-[#f4fbfa] p-4">
-                    <p className="text-sm font-semibold text-slate-900">Meo thao tac</p>
+                    <p className="text-sm font-semibold text-slate-900">Mẹo thao tác</p>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
-                        Bat dau tu{" "}
+                        Bắt đầu từ{" "}
                         <span className="font-semibold text-slate-900">
                             Square Base
                         </span>{" "}
-                        neu ban muon ve tu dau. Con neu can nhanh, chon preset gan nhu
-                        cau roi keo lai tung diem.
+                        nếu bạn muốn dựng shape từ đầu. Nếu cần nhanh hơn, hãy chọn
+                        preset gần đúng rồi tinh chỉnh từng điểm trên canvas.
                     </p>
                 </div>
 
-                <ScrollArea className="h-[760px] pr-3">
+                <ScrollArea className="h-[360px] pr-3 md:h-[420px] xl:h-[760px]">
                     <div className="grid gap-3">
                         {filteredPresets.map((preset) => {
                             const isActive = preset.id === activePresetId;
@@ -137,14 +137,14 @@ export function ClipPathPresetRail({
                                     type="button"
                                     onClick={() => onApplyPreset(preset.id)}
                                     className={cn(
-                                        "cursor-pointer rounded-[24px] border px-4 py-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0d9488] focus-visible:ring-offset-2",
+                                        "clip-path-preset-card cursor-pointer rounded-[24px] border px-4 py-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0d9488] focus-visible:ring-offset-2",
                                         isActive
                                             ? "border-[#0d9488] bg-[#eefbf8] shadow-sm"
                                             : "border-[#e3efec] bg-white hover:border-[#6bc8be] hover:bg-[#f8fcfb]",
                                     )}
                                 >
                                     <div className="flex items-start gap-3">
-                                        <div className="w-[86px] shrink-0">
+                                        <div className="w-[82px] shrink-0 sm:w-[98px]">
                                             <div className="rounded-2xl border border-white/70 bg-[#f6fbfa] p-2 shadow-sm">
                                                 <div className="relative aspect-[6/5] overflow-hidden rounded-xl bg-slate-100">
                                                     <div className="absolute inset-0 bg-[linear-gradient(135deg,_rgba(15,23,42,0.06),_transparent_65%)]" />

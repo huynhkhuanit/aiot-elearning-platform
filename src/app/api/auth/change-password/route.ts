@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         const validation = changePasswordSchema.safeParse(body);
         if (!validation.success) {
             const firstErr =
-                validation.error.errors[0]?.message || "Dữ liệu không hợp lệ";
+                validation.error.issues[0]?.message || "Dữ liệu không hợp lệ";
             return NextResponse.json(
                 { success: false, message: firstErr },
                 { status: 400 },

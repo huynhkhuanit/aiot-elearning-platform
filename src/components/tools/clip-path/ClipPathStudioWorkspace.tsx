@@ -42,10 +42,10 @@ function getDefaultCustomPresetName(preset: ClipPathPreset) {
 
 function getReadableModeLabel(preset: ClipPathPreset, points: Point[]) {
     if (preset.category === "custom") {
-        return "Custom";
+        return "Tùy chỉnh";
     }
 
-    return pointsEqual(points, preset.points) ? "Preset" : "Dang custom";
+    return pointsEqual(points, preset.points) ? "Preset gốc" : "Đang chỉnh";
 }
 
 function createCustomPreset(
@@ -58,9 +58,9 @@ function createCustomPreset(
         id: id ?? `custom-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`,
         name,
         category: "custom",
-        summary: "Shape tu luu de tai su dung trong project.",
+        summary: "Shape tự lưu để tái sử dụng nhanh trong project.",
         tags: ["custom", referencePreset.tags[0] ?? "saved", "editable"],
-        bestFor: ["Tai su dung", "Thu nghiem", "Bo suu tap rieng"],
+        bestFor: ["Tái sử dụng", "Thử nghiệm", "Bộ sưu tập riêng"],
         points: clonePoints(points),
     };
 }
@@ -99,13 +99,13 @@ function normalizeStoredPresets(value: unknown): ClipPathPreset[] {
                 name: preset.name,
                 category: "custom",
                 summary:
-                    preset.summary ?? "Shape tu luu de tai su dung trong project.",
+                    preset.summary ?? "Shape tự lưu để tái sử dụng nhanh trong project.",
                 tags: Array.isArray(preset.tags)
                     ? preset.tags.slice(0, 3)
                     : ["custom", "saved", "editable"],
                 bestFor: Array.isArray(preset.bestFor)
                     ? preset.bestFor.slice(0, 3)
-                    : ["Tai su dung", "Thu nghiem", "Bo suu tap rieng"],
+                    : ["Tái sử dụng", "Thử nghiệm", "Bộ sưu tập riêng"],
                 points,
             },
         ];
@@ -221,9 +221,9 @@ export function ClipPathStudioWorkspace() {
     };
     const previewStats = [
         { label: "Preset", value: `${allPresets.length}` },
-        { label: "Custom", value: `${customPresets.length}` },
-        { label: "Points", value: `${points.length}` },
-        { label: "Mode", value: getReadableModeLabel(activePreset, points) },
+        { label: "Đã lưu", value: `${customPresets.length}` },
+        { label: "Điểm", value: `${points.length}` },
+        { label: "Chế độ", value: getReadableModeLabel(activePreset, points) },
     ];
 
     function resetHistory(nextPoints: Point[]) {
@@ -258,7 +258,7 @@ export function ClipPathStudioWorkspace() {
         setSelectedPointIndex(0);
         setSymmetryLock(false);
         setCustomPresetName(getDefaultCustomPresetName(preset));
-        setStatusMessage(`Da chuyen sang preset ${preset.name}.`);
+        setStatusMessage(`Đã chuyển sang preset ${preset.name}.`);
         resetHistory(preset.points);
     }
 
@@ -278,6 +278,11 @@ export function ClipPathStudioWorkspace() {
             commitPoints(makeSymmetric(pointsRef.current));
         }
         setSymmetryLock(checked);
+        setStatusMessage(
+            checked
+                ? "Đã bật khóa đối xứng để chỉnh hai bên cùng lúc."
+                : "Đã tắt khóa đối xứng.",
+        );
     }
 
     useEffect(() => {
@@ -307,6 +312,7 @@ export function ClipPathStudioWorkspace() {
         function handlePointerUp() {
             setDraggingPointIndex(null);
             commitPoints(pointsRef.current);
+            setStatusMessage("Đã cập nhật polygon sau khi kéo điểm.");
         }
 
         window.addEventListener("pointermove", handlePointerMove);
@@ -333,7 +339,7 @@ export function ClipPathStudioWorkspace() {
         }
 
         setCopiedState(state);
-        setStatusMessage("Da sao chep vao clipboard.");
+        setStatusMessage("Đã sao chép vào bộ nhớ tạm.");
     }
 
     return (
@@ -342,26 +348,26 @@ export function ClipPathStudioWorkspace() {
             className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.12),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(249,115,22,0.1),_transparent_28%)] py-16"
         >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <div className="max-w-3xl">
                         <span className="inline-flex rounded-full border border-[#b7e3dd] bg-white px-3 py-1 text-sm font-semibold text-[#0f766e]">
                             Clip Path Studio
                         </span>
                         <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-                            Chon preset, keo diem, luu shape rieng va xuat code ngay
+                            Không gian chỉnh clip-path với canvas là trung tâm thao tác
                         </h2>
                         <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-                            Workspace moi tap trung vao 3 viec quan trong: duyet thu
-                            vien shape, chinh polygon truc tiep tren canvas, va xuat
-                            code sach de dua vao du an ma khong can doi cong cu.
+                            Duyệt preset ở bên trái, kéo thả trực tiếp trên canvas ở
+                            giữa, rồi kiểm soát tọa độ và xuất mã ở panel phải mà
+                            không làm đứt mạch chỉnh sửa.
                         </p>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-4">
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         {previewStats.map((item) => (
                             <div
                                 key={item.label}
-                                className="rounded-2xl border border-[#d7ebe7] bg-white/95 px-4 py-3 shadow-sm"
+                                className="clip-path-stagger-in rounded-2xl border border-[#d7ebe7] bg-white/95 px-4 py-3 shadow-sm"
                             >
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                                     {item.label}
@@ -374,7 +380,7 @@ export function ClipPathStudioWorkspace() {
                     </div>
                 </div>
 
-                <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)_360px]">
+                <div className="grid gap-6 xl:grid-cols-[292px_minmax(0,1.35fr)_340px] 2xl:grid-cols-[300px_minmax(0,1.45fr)_352px]">
                     <ClipPathPresetRail
                         activeCategory={activeCategory}
                         activePresetId={activePreset.id}
@@ -386,6 +392,8 @@ export function ClipPathStudioWorkspace() {
                     />
                     <ClipPathCanvasPanel
                         activePreset={activePreset}
+                        canRedo={historyState.index < historyState.stack.length - 1}
+                        canUndo={historyState.index > 0}
                         currentModeLabel={getReadableModeLabel(activePreset, points)}
                         editorSurfaceRef={editorSurfaceRef}
                         onCanvasKeyDown={(event) => {
@@ -416,21 +424,64 @@ export function ClipPathStudioWorkspace() {
                         }}
                         onPreviewModeChange={setPreviewMode}
                         onRandomize={() =>
-                            commitPoints(randomizePoints(pointsRef.current, 6))
+                            (commitPoints(randomizePoints(pointsRef.current, 6)),
+                            setStatusMessage("Đã tạo một biến thể ngẫu nhiên."))
                         }
+                        onRedo={() => {
+                            if (historyState.index >= historyState.stack.length - 1) {
+                                return;
+                            }
+                            const nextIndex = historyState.index + 1;
+                            setHistoryState((current) => ({
+                                ...current,
+                                index: nextIndex,
+                            }));
+                            setPoints(clonePoints(historyState.stack[nextIndex]));
+                            setStatusMessage("Đã làm lại một bước.");
+                        }}
+                        onReset={() => {
+                            resetHistory(activePreset.points);
+                            setSelectedPointIndex(0);
+                            setStatusMessage(`Đã đặt lại theo preset ${activePreset.name}.`);
+                        }}
                         onSelectPoint={setSelectedPointIndex}
-                        onSetShowGrid={setShowGrid}
-                        onSetSnapToGrid={setSnapToGrid}
+                        onSetShowGrid={(checked) => {
+                            setShowGrid(checked);
+                            setStatusMessage(
+                                checked ? "Đã bật lưới căn chỉnh." : "Đã tắt lưới căn chỉnh.",
+                            );
+                        }}
+                        onSetSnapToGrid={(checked) => {
+                            setSnapToGrid(checked);
+                            setStatusMessage(
+                                checked
+                                    ? `Snap ${SNAP_STEP}% đang bật.`
+                                    : "Đã tắt snap để kéo tự do.",
+                            );
+                        }}
                         onSetSymmetryLock={handleSymmetryLockChange}
                         onStartDrag={(index) => {
                             setSelectedPointIndex(index);
                             setDraggingPointIndex(index);
+                            setStatusMessage(`Đang chỉnh điểm #${index + 1}.`);
+                        }}
+                        onUndo={() => {
+                            if (historyState.index === 0) {
+                                return;
+                            }
+                            const nextIndex = historyState.index - 1;
+                            setHistoryState((current) => ({
+                                ...current,
+                                index: nextIndex,
+                            }));
+                            setPoints(clonePoints(historyState.stack[nextIndex]));
+                            setStatusMessage("Đã quay lại một bước.");
                         }}
                         points={points}
                         previewMode={previewMode}
                         selectedPointIndex={selectedPointIndex}
                         showGrid={showGrid}
-                        snapLabel={snapToGrid ? `Snap ${SNAP_STEP}%` : "Free move"}
+                        snapLabel={snapToGrid ? `Snap ${SNAP_STEP}%` : "Kéo tự do"}
                         snapToGrid={snapToGrid}
                         symmetryLock={symmetryLock}
                     />
@@ -452,6 +503,7 @@ export function ClipPathStudioWorkspace() {
                                 Math.min(selectedPointIndex + 1, next.length - 1),
                             );
                             commitPoints(next);
+                            setStatusMessage("Đã thêm một điểm mới vào polygon.");
                         }}
                         onClassNameChange={setClassNameInput}
                         onCodeFormatChange={setCodeFormat}
@@ -468,17 +520,24 @@ export function ClipPathStudioWorkspace() {
                         }}
                         onCurrentPointCommit={() => commitPoints(pointsRef.current)}
                         onExpand={() =>
-                            commitPoints(scalePoints(pointsRef.current, 1.06, 1.06))
+                            (commitPoints(scalePoints(pointsRef.current, 1.06, 1.06)),
+                            setStatusMessage("Đã nở shape hiện tại."))
                         }
-                        onJitter={() => commitPoints(randomizePoints(pointsRef.current, 5))}
+                        onJitter={() => {
+                            commitPoints(randomizePoints(pointsRef.current, 5));
+                            setStatusMessage("Đã jitter nhẹ để thử biến thể mới.");
+                        }}
                         onMakeSymmetric={() =>
-                            commitPoints(makeSymmetric(pointsRef.current))
+                            (commitPoints(makeSymmetric(pointsRef.current)),
+                            setStatusMessage("Đã cân đối shape theo trục dọc."))
                         }
                         onNarrow={() =>
-                            commitPoints(scalePoints(pointsRef.current, 0.92, 1))
+                            (commitPoints(scalePoints(pointsRef.current, 0.92, 1)),
+                            setStatusMessage("Đã thu ngang shape hiện tại."))
                         }
                         onRandomize={() =>
-                            commitPoints(randomizePoints(pointsRef.current, 6))
+                            (commitPoints(randomizePoints(pointsRef.current, 6)),
+                            setStatusMessage("Đã tạo biến thể ngẫu nhiên mới."))
                         }
                         onRedo={() => {
                             if (historyState.index >= historyState.stack.length - 1) {
@@ -490,6 +549,7 @@ export function ClipPathStudioWorkspace() {
                                 index: nextIndex,
                             }));
                             setPoints(clonePoints(historyState.stack[nextIndex]));
+                            setStatusMessage("Đã làm lại một bước.");
                         }}
                         onRemovePoint={() => {
                             if (pointsRef.current.length <= 3) {
@@ -503,8 +563,13 @@ export function ClipPathStudioWorkspace() {
                                 Math.min(selectedPointIndex, next.length - 1),
                             );
                             commitPoints(next);
+                            setStatusMessage("Đã xóa điểm đang chọn.");
                         }}
-                        onReset={() => applyPreset(activePreset.id)}
+                        onReset={() => {
+                            resetHistory(activePreset.points);
+                            setSelectedPointIndex(0);
+                            setStatusMessage(`Đã đặt lại theo preset ${activePreset.name}.`);
+                        }}
                         onSaveCustomPreset={() => {
                             const trimmedName =
                                 customPresetName.trim() ||
@@ -527,16 +592,19 @@ export function ClipPathStudioWorkspace() {
                             setActiveCategory("custom");
                             setCustomPresetName(nextPreset.name);
                             resetHistory(pointsRef.current);
-                            setStatusMessage(`Da luu shape ${nextPreset.name}.`);
+                            setStatusMessage(`Đã lưu shape ${nextPreset.name}.`);
                         }}
                         onShrink={() =>
-                            commitPoints(scalePoints(pointsRef.current, 0.94, 0.94))
+                            (commitPoints(scalePoints(pointsRef.current, 0.94, 0.94)),
+                            setStatusMessage("Đã thu nhỏ shape hiện tại."))
                         }
                         onStretchHorizontal={() =>
-                            commitPoints(scalePoints(pointsRef.current, 1.08, 1))
+                            (commitPoints(scalePoints(pointsRef.current, 1.08, 1)),
+                            setStatusMessage("Đã kéo rộng theo chiều ngang."))
                         }
                         onStretchVertical={() =>
-                            commitPoints(scalePoints(pointsRef.current, 1, 1.08))
+                            (commitPoints(scalePoints(pointsRef.current, 1, 1.08)),
+                            setStatusMessage("Đã kéo cao theo chiều dọc."))
                         }
                         onUndo={() => {
                             if (historyState.index === 0) {
@@ -548,6 +616,7 @@ export function ClipPathStudioWorkspace() {
                                 index: nextIndex,
                             }));
                             setPoints(clonePoints(historyState.stack[nextIndex]));
+                            setStatusMessage("Đã quay lại một bước.");
                         }}
                         onUpdateCustomPresetName={setCustomPresetName}
                         points={points}
@@ -556,6 +625,21 @@ export function ClipPathStudioWorkspace() {
                         snippets={snippets}
                         svgPath={svgPath}
                     />
+                </div>
+
+                <div className="clip-path-stagger-in mt-6 flex flex-col gap-3 rounded-[24px] border border-[#d7ebe7] bg-white/92 px-4 py-3 shadow-[0_16px_42px_rgba(15,118,110,0.08)] backdrop-blur md:flex-row md:items-center md:justify-between" data-stagger="3">
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <span className="clip-path-status-pill rounded-full border border-[#cde8e3] bg-[#eefbf8] px-3 py-1 font-semibold text-[#0f766e]">
+                            Sẵn sàng chỉnh sửa
+                        </span>
+                        <span className="clip-path-status-pill rounded-full border border-[#e2e8f0] bg-white px-3 py-1 text-slate-600">
+                            Preset: {activePreset.name}
+                        </span>
+                        <span className="clip-path-status-pill rounded-full border border-[#e2e8f0] bg-white px-3 py-1 text-slate-600">
+                            {snapToGrid ? `Snap ${SNAP_STEP}% đang bật` : "Đang kéo tự do"}
+                        </span>
+                    </div>
+                    <p className="text-sm text-slate-600 md:text-right">{statusMessage || "Chọn preset hoặc kéo một điểm để bắt đầu."}</p>
                 </div>
             </div>
 
