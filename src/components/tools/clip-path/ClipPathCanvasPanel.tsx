@@ -187,7 +187,7 @@ export function ClipPathCanvasPanel({
                         </div>
                     </div>
 
-                    <div className="clip-path-canvas-shell relative aspect-[4/5] overflow-hidden rounded-[24px] border border-[#cfe8e3] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] sm:aspect-[16/9] sm:rounded-[28px]">
+                    <div className="clip-path-canvas-shell relative aspect-[4/5] overflow-hidden rounded-[24px] border border-[#cfe8e3] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] sm:aspect-[16/9] sm:min-h-[420px] sm:rounded-[28px] 2xl:aspect-[2/1]">
                         <div className="absolute left-3 right-3 top-3 z-20 flex flex-wrap gap-2 sm:left-4 sm:right-auto sm:top-4">
                             <Button
                                 type="button"

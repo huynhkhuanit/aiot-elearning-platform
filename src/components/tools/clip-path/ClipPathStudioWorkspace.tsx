@@ -347,7 +347,7 @@ export function ClipPathStudioWorkspace() {
             id="clip-path-maker-workspace"
             className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.12),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(249,115,22,0.1),_transparent_28%)] py-16"
         >
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-8">
                 <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <div className="max-w-3xl">
                         <span className="inline-flex rounded-full border border-[#b7e3dd] bg-white px-3 py-1 text-sm font-semibold text-[#0f766e]">
@@ -380,7 +380,7 @@ export function ClipPathStudioWorkspace() {
                     </div>
                 </div>
 
-                <div className="grid gap-6 xl:grid-cols-[268px_minmax(0,1.6fr)_320px] 2xl:grid-cols-[280px_minmax(0,1.75fr)_332px]">
+                <div className="grid gap-5 xl:grid-cols-[256px_minmax(0,2fr)_300px] 2xl:grid-cols-[272px_minmax(0,2.4fr)_316px]">
                     <ClipPathPresetRail
                         activeCategory={activeCategory}
                         activePresetId={activePreset.id}
