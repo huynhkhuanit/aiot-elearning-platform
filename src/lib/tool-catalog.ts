@@ -47,7 +47,7 @@ export const toolLinks: ToolLink[] = [
     {
         id: "clip-path-maker",
         name: "Clip-path maker",
-        href: "/tools#clip-path-maker",
+        href: "/clip-path-maker",
     },
     {
         id: "snippet-generator",

@@ -434,23 +434,23 @@ export function ClipPathMakerTool() {
 
     return (
         <section
-            id="clip-path-maker"
-            className="border-y border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.16),_transparent_28%),linear-gradient(to_bottom,_#ffffff,_#fff7ed)] py-24"
+            id="clip-path-maker-workspace"
+            className="py-16"
         >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="mb-12 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
                     <div className="max-w-3xl">
-                        <Badge className="mb-4 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700 hover:bg-amber-50">
-                            Frontend Tool
+                        <Badge className="mb-4 rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700 hover:bg-white">
+                            Workspace
                         </Badge>
                         <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                            Clip-path maker trực quan, đủ nhanh để dùng ngay
+                            Khu vực tạo shape và xuất code
                         </h2>
                         <p className="mt-4 text-base leading-7 text-slate-600">
-                            Chọn preset, tinh chỉnh độ cắt và sao chép mã CSS
-                            hoặc JSX ngay trên cùng trang. Maker ưu tiên thao tác
-                            ít bước, preview rõ ràng và phù hợp các bối cảnh
-                            hero, card, thumbnail trong khu công cụ.
+                            Chọn preset phù hợp, điều chỉnh shape trên preview
+                            và lấy mã ngay trong cùng một flow. Mọi thành phần
+                            đều tối ưu cho thao tác nhanh, đọc dễ và thân thiện
+                            với người dùng mới.
                         </p>
                     </div>
 
@@ -458,7 +458,7 @@ export function ClipPathMakerTool() {
                         {previewStats.map((item) => (
                             <div
                                 key={item.label}
-                                className="rounded-2xl border border-amber-100 bg-white/90 px-4 py-3 shadow-sm"
+                                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
                             >
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                                     {item.label}

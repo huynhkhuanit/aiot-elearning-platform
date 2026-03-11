@@ -29,7 +29,6 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { ClipPathMakerTool } from "@/components/tools/clip-path/ClipPathMakerTool";
 import { toolCatalog, type ToolCatalogItem } from "@/lib/tool-catalog";
 import { cn } from "@/lib/utils";
 
@@ -393,11 +392,7 @@ export default function ToolsPage() {
                         return (
                             <Card
                                 key={tool.id}
-                                id={
-                                    tool.id === "clip-path-maker"
-                                        ? "clip-path-maker-card"
-                                        : tool.id
-                                }
+                                id={tool.id}
                                 className="group scroll-mt-28 overflow-hidden rounded-[32px] border border-slate-200 bg-white py-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl flex flex-col"
                             >
                                 {/* Solid accent bar */}
@@ -498,8 +493,6 @@ export default function ToolsPage() {
             </section>
 
             {/* ── BOTTOM SECTION ────────────────────────── */}
-            <ClipPathMakerTool />
-
             <section className="border-t border-slate-200 bg-slate-50 py-16">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
