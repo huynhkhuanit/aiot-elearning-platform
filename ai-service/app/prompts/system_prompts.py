@@ -76,6 +76,10 @@ def build_user_prompt(
     preferred_language: str,
     focus_areas: List[str] | None = None,
     audience_type: str | None = None,
+    specific_job: str | None = None,
+    class_level: str | None = None,
+    major: str | None = None,
+    study_year: int | None = None,
 ) -> str:
     """Builds a dynamic prompt based on user constraints."""
     
@@ -101,20 +105,14 @@ def build_user_prompt(
     
     lang_instruction = "VIETNAMESE (Tiếng Việt)" if preferred_language == "vi" else "ENGLISH"
 
-    # Audience context mapping
-    audience_descriptions = {
-        "self-learner": "The learner is studying independently for personal career growth.",
-        "teacher": "The user is a teacher/lecturer who needs this roadmap to design a curriculum for students.",
-        "team-lead": "The user is a team lead/manager who needs to train their team members.",
-        "mentor": "The user is a mentor/coach guiding others in skill development.",
-        "content-creator": "The user creates educational content (courses, blogs, videos) and needs a structured path.",
-        "worker": "The user is a working professional looking to upskill or transition careers.",
-        "student": "The user is a high school student exploring technology and building foundational skills.",
-        "university_student": "The user is a university student studying a related major, looking to build industry-ready skills.",
-        "recent_graduate": "The user recently graduated and wants to quickly gain practical skills for job readiness.",
-        "other": "General purpose learning roadmap.",
-    }
-    audience_context = audience_descriptions.get(audience_type or "self-learner", audience_descriptions["self-learner"])
+    # Build rich audience context from type + detail fields
+    audience_context = _build_audience_context(
+        audience_type=audience_type,
+        specific_job=specific_job,
+        class_level=class_level,
+        major=major,
+        study_year=study_year,
+    )
 
     prompt = f"""
     GENERATE A LEARNING ROADMAP FOR:
@@ -145,3 +143,49 @@ def build_user_prompt(
     """
     
     return prompt
+
+
+def _build_audience_context(
+    audience_type: str | None,
+    specific_job: str | None = None,
+    class_level: str | None = None,
+    major: str | None = None,
+    study_year: int | None = None,
+) -> str:
+    """Build a rich audience context string from audience type and detail fields."""
+    at = audience_type or "worker"
+    
+    if at == "worker":
+        job_info = f" working as {specific_job}" if specific_job else ""
+        return f"The learner is a working professional{job_info} looking to upskill or transition careers. Tailor the roadmap to complement their work experience."
+    
+    elif at == "non-worker":
+        return "The learner is not currently employed and wants to learn new skills from scratch. Start from fundamentals and build up progressively."
+    
+    elif at == "student":
+        grade_info = f" in grade {class_level}" if class_level else ""
+        return f"The learner is a high school student{grade_info} exploring technology. Use age-appropriate content, start from basics, and emphasize hands-on learning."
+    
+    elif at == "university_student":
+        parts = ["The learner is a university student"]
+        if major:
+            parts.append(f"majoring in {major}")
+        if study_year:
+            parts.append(f"in year {study_year}")
+        parts.append(". Build on their academic foundation and focus on industry-ready, practical skills.")
+        return " ".join(parts)
+    
+    elif at == "recent_graduate":
+        major_info = f" in {major}" if major else ""
+        return f"The learner recently graduated{major_info} and wants to quickly gain practical skills for job readiness. Focus on portfolio-building projects and interview-relevant skills."
+    
+    # Legacy types for backward compatibility
+    legacy_descriptions = {
+        "self-learner": "The learner is studying independently for personal career growth.",
+        "teacher": "The user is a teacher/lecturer who needs this roadmap to design a curriculum for students.",
+        "team-lead": "The user is a team lead/manager who needs to train their team members.",
+        "mentor": "The user is a mentor/coach guiding others in skill development.",
+        "content-creator": "The user creates educational content (courses, blogs, videos) and needs a structured path.",
+        "other": "General purpose learning roadmap.",
+    }
+    return legacy_descriptions.get(at, legacy_descriptions["self-learner"])

@@ -84,6 +84,10 @@ async def create_roadmap_stream(request: GenerateRoadmapRequest):
         preferred_language=profile.preferred_language,
         focus_areas=profile.focus_areas,
         audience_type=profile.audience_type,
+        specific_job=profile.specific_job,
+        class_level=profile.class_level,
+        major=profile.major,
+        study_year=profile.study_year,
     )
     
     async def event_generator():

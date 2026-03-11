@@ -295,6 +295,10 @@ async def generate_roadmap(profile: UserProfileRequest) -> RoadmapResponse:
         preferred_language=profile.preferred_language,
         focus_areas=profile.focus_areas,
         audience_type=profile.audience_type,
+        specific_job=profile.specific_job,
+        class_level=profile.class_level,
+        major=profile.major,
+        study_year=profile.study_year,
     )
     
     # Generate roadmap using Groq (Llama 3)

@@ -62,11 +62,11 @@ class UserProfileRequest(BaseModel):
         description="Specific areas to focus on"
     )
     audience_type: Optional[Literal[
-        "self-learner", "teacher", "team-lead", "mentor", "content-creator",
-        "worker", "student", "university_student", "recent_graduate", "other"
+        "worker", "non-worker", "student", "university_student", "recent_graduate",
+        "self-learner", "teacher", "team-lead", "mentor", "content-creator", "other"
     ]] = Field(
-        default="self-learner",
-        description="Who this roadmap is for (self-study, teaching, team training, etc.)"
+        default="worker",
+        description="Who this roadmap is for (worker, student, university_student, etc.)"
     )
     
     # Audience-specific detail fields
