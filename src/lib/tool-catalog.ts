@@ -57,7 +57,7 @@ export const toolLinks: ToolLink[] = [
     {
         id: "css-grid-generator",
         name: "CSS Grid generator",
-        href: "/tools#css-grid-generator",
+        href: "/tools/css-grid-generator",
     },
     {
         id: "face-touch-alert",
@@ -158,18 +158,18 @@ export const toolCatalog: ToolCatalogItem[] = [
         focus: "Layout responsive",
         audience: "Frontend, người học CSS",
         summary:
-            "Dựng layout grid bằng thao tác trực quan, xem kết quả và lấy mã CSS ngay.",
+            "Dựng layout grid trực quan với preset library lớn, breakpoint responsive và export CSS, HTML, Tailwind.",
         description:
-            "Phù hợp khi bạn cần thử bố cục dashboard, card list hoặc landing page mà không nhớ chính xác từng thuộc tính của CSS Grid.",
+            "Dành cho frontend cần dựng dashboard, bento, docs, admin shell hoặc gallery bằng visual editor có drag, resize, autosave draft, share URL và code output đồng bộ.",
         highlights: [
-            "Chỉnh số cột, hàng và khoảng cách bằng giao diện thay vì nhập tay.",
-            "Có preview theo desktop và mobile để kiểm tra responsive.",
-            "Xuất CSS dễ đọc để đưa vào component hoặc stylesheet hiện có.",
+            "Có hơn 12 preset và block library để thêm header, sidebar, hero, card, chart, CTA, content và footer.",
+            "Chỉnh desktop, tablet, mobile theo inheritance, không bị mất layout gốc khi tối ưu responsive.",
+            "Xuất CSS, HTML, Tailwind; tự fallback line-based khi template areas chưa hợp lệ trên mọi breakpoint.",
         ],
         tooltip:
-            "Hữu ích khi bạn muốn hiểu CSS Grid trực quan hơn và giảm thời gian thử sai với layout phức tạp.",
+            "Hữu ích khi bạn muốn một CSS Grid generator nhiều hơn F8: có preset phong phú hơn, autosave, share URL và Tailwind export.",
         outcome:
-            "Giúp bạn dựng layout nhanh hơn, nắm rõ quan hệ cột hàng và giảm thời gian tinh chỉnh giao diện.",
+            "Giúp dựng layout nhanh hơn, nhìn trực quan hơn và rút ngắn đáng kể thời gian từ ý tưởng sang mã dùng được trong dự án thật.",
         accent: "rose",
     },
     {
