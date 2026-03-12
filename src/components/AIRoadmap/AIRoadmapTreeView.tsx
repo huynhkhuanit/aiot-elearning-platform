@@ -11,8 +11,7 @@ import NodeDetailSidebar from '../NodeDetailSidebar';
 import type { 
   AIGeneratedRoadmap, 
   RoadmapNode, 
-  NodeStatus, 
-  RoadmapPhase 
+  NodeStatus
 } from '@/types/ai-roadmap';
 import '@/app/roadmap-tree.css';
 
@@ -23,6 +22,8 @@ interface TreeNode {
   description: string;
   type: 'core' | 'optional' | 'beginner' | 'alternative' | 'project';
   status: NodeStatus;
+  subtitle?: string;
+  itemCount?: number;
   duration?: string;
   technologies?: string[];
   difficulty?: string;
@@ -48,43 +49,93 @@ function convertToTree(
   roadmap: AIGeneratedRoadmap, 
   progress: Record<string, NodeStatus>
 ): TreeNode {
-  const phases = roadmap.phases || [];
+  const sections = roadmap.sections && roadmap.sections.length > 0
+    ? roadmap.sections
+    : (roadmap.phases || []).map((phase) => ({
+        id: phase.id,
+        name: phase.name,
+        order: phase.order,
+        description: `Giai doan ${phase.order}`,
+        subsections: [{ id: `${phase.id}-sub-1`, name: 'Core Topics', order: 1 }],
+      }));
   const nodes = roadmap.nodes || [];
+  const phases = sections.map((section) => ({
+    id: section.id,
+    name: section.name,
+    order: section.order,
+  }));
   const edges = roadmap.edges || [];
-
-  // Group nodes by phase
   const nodesByPhase: Record<string, RoadmapNode[]> = {};
-  nodes.forEach(node => {
-    const phaseId = node.phase_id || node.section_id || 'default';
+  const subsectionNameMap = new Map<string, string>();
+
+  sections.forEach((section) => {
+    (section.subsections || []).forEach((subsection) => {
+      subsectionNameMap.set(subsection.id, subsection.name);
+    });
+  });
+
+  nodes.forEach((node) => {
+    const phaseId = node.section_id || node.phase_id || 'default';
     if (!nodesByPhase[phaseId]) {
       nodesByPhase[phaseId] = [];
     }
     nodesByPhase[phaseId].push(node);
   });
 
-  // Build edge map for dependencies
   const edgeMap: Record<string, string[]> = {};
-  edges.forEach(edge => {
+  edges.forEach((edge) => {
     if (!edgeMap[edge.source]) {
       edgeMap[edge.source] = [];
     }
     edgeMap[edge.source].push(edge.target);
   });
 
-  // Convert node to tree node
-  const convertNode = (node: RoadmapNode): TreeNode => {
-    const status = progress[node.id] || 'pending';
-    return {
-      id: node.id,
-      title: node.data.label,
-      description: node.data.description,
-      type: node.type as TreeNode['type'] || 'core',
-      status,
-      duration: `${node.data.estimated_hours}h`,
-      difficulty: node.data.difficulty,
-      technologies: node.data.learning_resources?.keywords,
-    };
+  const sortNodes = (nodeList: RoadmapNode[]) =>
+    [...nodeList].sort((left, right) => {
+      const leftHubWeight = left.is_hub ? -1 : 0;
+      const rightHubWeight = right.is_hub ? -1 : 0;
+      if (leftHubWeight !== rightHubWeight) {
+        return leftHubWeight - rightHubWeight;
+      }
+
+      const difficultyRank = {
+        beginner: 0,
+        intermediate: 1,
+        advanced: 2,
+      } as const;
+      const leftDifficulty = difficultyRank[left.data.difficulty] ?? 0;
+      const rightDifficulty = difficultyRank[right.data.difficulty] ?? 0;
+      if (leftDifficulty !== rightDifficulty) {
+        return leftDifficulty - rightDifficulty;
+      }
+
+      return left.data.label.localeCompare(right.data.label);
+    });
+
+  const aggregateStatus = (statuses: NodeStatus[]): NodeStatus => {
+    if (statuses.length === 0) return 'pending';
+    if (statuses.every((status) => status === 'completed')) return 'completed';
+    if (statuses.some((status) => status === 'in_progress' || status === 'completed')) {
+      return 'in_progress';
+    }
+    return 'pending';
   };
+
+  const convertNode = (node: RoadmapNode, subsectionName?: string): TreeNode => ({
+    id: node.id,
+    title: node.data.label,
+    description: node.data.description,
+    type: node.type as TreeNode['type'] || 'core',
+    status: progress[node.id] || 'pending',
+    subtitle:
+      subsectionName ||
+      (node.subsection_id
+        ? subsectionNameMap.get(node.subsection_id)
+        : undefined),
+    duration: `${node.data.estimated_hours}h`,
+    difficulty: node.data.difficulty,
+    technologies: node.data.learning_resources?.keywords,
+  });
 
   // Create phase nodes as top-level children
   const phaseNodes: TreeNode[] = phases.map(phase => {
@@ -348,7 +399,14 @@ const SubTopicNode: React.FC<{
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
-        <span className="roadmap-subtopic-node__title">{node.title}</span>
+        <div className="flex flex-col gap-1">
+          <span className="roadmap-subtopic-node__title">{node.title}</span>
+          {(node.subtitle || node.difficulty || node.duration) && (
+            <span className="text-[11px] text-slate-500">
+              {[node.subtitle, node.difficulty, node.duration].filter(Boolean).join(' • ')}
+            </span>
+          )}
+        </div>
         {isDone && (
           <CheckCircle className="roadmap-subtopic-node__check" />
         )}
@@ -435,7 +493,14 @@ const PhaseRow: React.FC<{
           whileHover={{ scale: 1.03, y: -2 }}
           whileTap={{ scale: 0.98 }}
         >
-          <span className="roadmap-main-node__title">{node.title}</span>
+          <div className="flex flex-col">
+            <span className="roadmap-main-node__title">{node.title}</span>
+            {(node.itemCount || node.description) && (
+              <span className="mt-1 text-[11px] text-slate-500">
+                {node.itemCount ? `${node.itemCount} cum noi dung` : node.description}
+              </span>
+            )}
+          </div>
           
           {isDone && (
             <div className="roadmap-main-node__badge roadmap-main-node__badge--done">

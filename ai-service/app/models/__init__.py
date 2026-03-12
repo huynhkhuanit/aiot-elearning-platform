@@ -3,6 +3,8 @@ Pydantic Models Package
 """
 
 from .request import (
+    GenerationDirectivesRequest,
+    GenerationPreferencesRequest,
     UserProfileRequest,
     GenerateRoadmapRequest,
     NodeDetailRequest,
@@ -29,6 +31,8 @@ from .response import (
 )
 
 __all__ = [
+    "GenerationDirectivesRequest",
+    "GenerationPreferencesRequest",
     "UserProfileRequest",
     "GenerateRoadmapRequest",
     "NodeDetailRequest",

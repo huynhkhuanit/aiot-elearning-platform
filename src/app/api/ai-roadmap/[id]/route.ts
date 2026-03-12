@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import { ensureRoadmapSections } from '@/lib/ai-roadmap-sections';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -78,6 +79,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       });
     }
 
+    const hydratedRoadmap = ensureRoadmapSections({
+      roadmap_title: roadmap.title,
+      roadmap_description: roadmap.description || '',
+      total_estimated_hours: roadmap.total_estimated_hours || 0,
+      sections: Array.isArray(roadmap.sections) ? roadmap.sections : [],
+      phases: Array.isArray(roadmap.phases) ? roadmap.phases : [],
+      nodes: Array.isArray(roadmap.nodes) ? roadmap.nodes : [],
+      edges: Array.isArray(roadmap.edges) ? roadmap.edges : [],
+    });
+
     // 4. Return roadmap with progress
     return NextResponse.json({
       success: true,
@@ -85,10 +96,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         id: roadmap.id,
         title: roadmap.title,
         description: roadmap.description,
-        total_estimated_hours: roadmap.total_estimated_hours,
-        phases: roadmap.phases,
-        nodes: roadmap.nodes,
-        edges: roadmap.edges,
+        total_estimated_hours: hydratedRoadmap.total_estimated_hours,
+        sections: hydratedRoadmap.sections,
+        phases: hydratedRoadmap.phases,
+        nodes: hydratedRoadmap.nodes,
+        edges: hydratedRoadmap.edges,
         generation_metadata: roadmap.generation_metadata,
         created_at: roadmap.created_at,
         progress: progressMap,

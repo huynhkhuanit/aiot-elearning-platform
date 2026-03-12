@@ -18,6 +18,7 @@ import type {
     PreferredLanguage,
     AudienceType,
 } from "@/types/ai-roadmap";
+import { DEFAULT_GENERATION_PREFERENCES } from "@/lib/ai-roadmap-generation";
 
 interface OnboardingFormProps {
     onSubmit: (profile: UserProfile) => Promise<void>;
@@ -31,7 +32,7 @@ const stepTitles = [
     "Mục tiêu của bạn?",
     "Kỹ năng hiện tại",
     "Phong cách học",
-    "Thời gian & Timeline",
+    "Thời gian & lộ trình",
 ];
 
 const stepDescriptions = [
@@ -89,6 +90,7 @@ export default function OnboardingForm({
         targetMonths: 6,
         preferredLanguage: "vi",
         focusAreas: [],
+        generationPreferences: DEFAULT_GENERATION_PREFERENCES,
     });
 
     const updateFormData = (updates: Partial<UserProfile>) => {
@@ -172,6 +174,9 @@ export default function OnboardingForm({
             preferredLanguage:
                 (formData.preferredLanguage as PreferredLanguage) || "vi",
             focusAreas: formData.focusAreas || [],
+            generationPreferences:
+                formData.generationPreferences ||
+                DEFAULT_GENERATION_PREFERENCES,
         };
 
         await onSubmit(profile);

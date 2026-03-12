@@ -40,7 +40,10 @@ async def create_roadmap(request: GenerateRoadmapRequest):
         RoadmapResponse with generated roadmap and metadata
     """
     try:
-        response = await generate_roadmap(request.profile)
+        response = await generate_roadmap(
+            request.profile,
+            request.generation_directives,
+        )
         return response
     except GroqAPIError as e:
         logger.error(f"GroqAPIError: status_code={e.status_code}, error_type={e.error_type}, message={e.message}")
@@ -88,6 +91,10 @@ async def create_roadmap_stream(request: GenerateRoadmapRequest):
         class_level=profile.class_level,
         major=profile.major,
         study_year=profile.study_year,
+        generation_preferences=profile.generation_preferences.model_dump(),
+        generation_directives=request.generation_directives.model_dump()
+        if request.generation_directives
+        else None,
     )
     
     async def event_generator():
@@ -130,11 +137,11 @@ async def validate_profile(profile: UserProfileRequest):
     
     # Estimate node count based on timeline
     if profile.target_months <= 3:
-        estimated_nodes = "15-25"
+        estimated_nodes = "45-60"
     elif profile.target_months <= 6:
-        estimated_nodes = "25-40"
+        estimated_nodes = "70-110"
     else:
-        estimated_nodes = "40-60"
+        estimated_nodes = "110-150"
     
     return {
         "valid": True,

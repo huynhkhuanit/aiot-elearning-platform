@@ -139,6 +139,10 @@ class GenerationMetadata(BaseModel):
         le=1,
         description="Score indicating personalization quality"
     )
+    quality_warnings: List[str] = Field(
+        default_factory=list,
+        description="Non-fatal quality warnings when the AI output is usable but below ideal density",
+    )
     generated_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         description="Timestamp of generation"

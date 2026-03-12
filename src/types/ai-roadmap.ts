@@ -13,12 +13,43 @@ export type LearningStyle =
     | "project"
     | "interactive";
 export type PreferredLanguage = "vi" | "en";
+export type ContentBias =
+    | "theory_heavy"
+    | "balanced"
+    | "practice_heavy";
+export type RoadmapDepth = "standard" | "deep" | "expert";
+export type LessonGranularity = "compact" | "detailed" | "micro_lesson";
+export type FoundationCoverage = "auto" | "full_foundation" | "fast_track";
 export type AudienceType =
     | "worker"
     | "non-worker"
     | "student"
     | "university_student"
     | "recent_graduate";
+
+export interface GenerationPreferences {
+    contentBias: ContentBias;
+    roadmapDepth: RoadmapDepth;
+    lessonGranularity: LessonGranularity;
+    foundationCoverage: FoundationCoverage;
+}
+
+export interface RangeConstraint {
+    min: number;
+    max: number;
+}
+
+export interface GenerationDirectives {
+    availableHoursTotal: number;
+    targetNodeRange: RangeConstraint;
+    minSections: number;
+    minSubsectionsPerSection: number;
+    minLessonsPerSubsection: RangeConstraint;
+    theoryRatioTarget: number;
+    projectCadence: string;
+    requirePrerequisites: boolean;
+    requireLearningOutcomes: boolean;
+}
 
 export interface UserProfile {
     // Basic info
@@ -48,6 +79,7 @@ export interface UserProfile {
     // Optional preferences
     preferredLanguage: PreferredLanguage;
     focusAreas?: string[]; // Specific areas to focus on
+    generationPreferences: GenerationPreferences;
 }
 
 // Predefined options for the onboarding form
@@ -94,6 +126,19 @@ export const STUDY_YEAR_OPTIONS = [
     { value: 2, label: "Năm 2" },
     { value: 3, label: "Năm 3" },
     { value: 4, label: "Năm 4" },
+] as const;
+
+export const CURRENT_ROLE_OPTIONS = [
+    { value: "student-1", label: "Sinh viên năm 1" },
+    { value: "student-2", label: "Sinh viên năm 2" },
+    { value: "student-3", label: "Sinh viên năm 3" },
+    { value: "student-4", label: "Sinh viên năm 4" },
+    { value: "fresh-graduate", label: "Mới tốt nghiệp" },
+    { value: "career-changer", label: "Chuyển hướng nghề nghiệp" },
+    { value: "junior-dev", label: "Junior Developer" },
+    { value: "mid-dev", label: "Mid-level Developer" },
+    { value: "senior-dev", label: "Senior Developer" },
+    { value: "other", label: "Khác" },
 ] as const;
 
 export const TARGET_ROLE_OPTIONS = [
@@ -187,6 +232,78 @@ export const LEARNING_STYLE_OPTIONS = [
         value: "interactive",
         label: "Bài tập tương tác",
         description: "Coding challenges, quizzes",
+    },
+] as const;
+
+export const CONTENT_BIAS_OPTIONS = [
+    {
+        value: "theory_heavy",
+        label: "Nặng lý thuyết",
+        description: "Ưu tiên khái niệm, nguyên lý, tài liệu và các bài học nền tảng",
+    },
+    {
+        value: "balanced",
+        label: "Cân bằng",
+        description: "Kết hợp lý thuyết, bài tập và project theo tỷ lệ đều",
+    },
+    {
+        value: "practice_heavy",
+        label: "Nặng thực hành",
+        description: "Ưu tiên project, bài tập và checkpoint thực chiến",
+    },
+] as const;
+
+export const LESSON_GRANULARITY_OPTIONS = [
+    {
+        value: "compact",
+        label: "Gọn",
+        description: "Gộp nhóm bài học thành topic lớn để đi nhanh",
+    },
+    {
+        value: "detailed",
+        label: "Chi tiết",
+        description: "Chia bài học rõ ràng theo từng cụm kiến thức",
+    },
+    {
+        value: "micro_lesson",
+        label: "Vi bài học",
+        description: "Tách nhỏ thành nhiều bài học có độ chi tiết cao và rất dày",
+    },
+] as const;
+
+export const ROADMAP_DEPTH_OPTIONS = [
+    {
+        value: "standard",
+        label: "Standard",
+        description: "Lộ trình đầy đủ ở mức cơ bản cho mục tiêu nghề nghiệp",
+    },
+    {
+        value: "deep",
+        label: "Deep",
+        description: "Đào sâu lý thuyết, hệ thống hóa kiến thức và best practices",
+    },
+    {
+        value: "expert",
+        label: "Expert",
+        description: "Mở rộng thêm internals, kiến trúc, tối ưu và ecosystem",
+    },
+] as const;
+
+export const FOUNDATION_COVERAGE_OPTIONS = [
+    {
+        value: "auto",
+        label: "Tự động",
+        description: "AI cân đối giữa nền tảng và tốc độ dựa trên hồ sơ của bạn",
+    },
+    {
+        value: "full_foundation",
+        label: "Nền tảng đầy đủ",
+        description: "Đi lại nền tảng một cách hệ thống trước khi lên phần nâng cao",
+    },
+    {
+        value: "fast_track",
+        label: "Fast track",
+        description: "Rút gọn nền tảng để đi nhanh vào kỹ năng mục tiêu",
     },
 ] as const;
 
@@ -291,6 +408,7 @@ export interface GenerationMetadata {
     latency_ms: number;
     prompt_version: string;
     personalization_score?: number;
+    quality_warnings?: string[];
     generated_at: string;
 }
 
@@ -312,6 +430,25 @@ export interface UserAIProfile {
     focus_areas: string[];
     created_at: string;
     updated_at: string;
+}
+
+export interface GenerationPreferencesRequest {
+    content_bias: ContentBias;
+    roadmap_depth: RoadmapDepth;
+    lesson_granularity: LessonGranularity;
+    foundation_coverage: FoundationCoverage;
+}
+
+export interface GenerationDirectivesRequest {
+    available_hours_total: number;
+    target_node_range: RangeConstraint;
+    min_sections: number;
+    min_subsections_per_section: number;
+    min_lessons_per_subsection: RangeConstraint;
+    theory_ratio_target: number;
+    project_cadence: string;
+    require_prerequisites: boolean;
+    require_learning_outcomes: boolean;
 }
 
 export interface AIGeneratedRoadmapDB {

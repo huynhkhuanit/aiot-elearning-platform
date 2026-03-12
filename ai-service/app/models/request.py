@@ -2,122 +2,203 @@
 Request Models for API Endpoints
 """
 
-from pydantic import BaseModel, Field
 from typing import List, Literal, Optional
+
+from pydantic import BaseModel, Field
+
+
+class RangeConstraintRequest(BaseModel):
+    """Numeric range used for node and lesson density targets."""
+
+    min: int = Field(..., ge=1, description="Minimum value")
+    max: int = Field(..., ge=1, description="Maximum value")
+
+
+class GenerationPreferencesRequest(BaseModel):
+    """Preference hints collected from the multi-step form."""
+
+    content_bias: Literal["theory_heavy", "balanced", "practice_heavy"] = Field(
+        default="theory_heavy",
+        description="Bias the roadmap toward theory/docs, balance, or practice",
+    )
+    roadmap_depth: Literal["standard", "deep", "expert"] = Field(
+        default="deep",
+        description="Desired roadmap depth",
+    )
+    lesson_granularity: Literal["compact", "detailed", "micro_lesson"] = Field(
+        default="detailed",
+        description="How granular each lesson cluster should be",
+    )
+    foundation_coverage: Literal["auto", "full_foundation", "fast_track"] = Field(
+        default="auto",
+        description="How much foundational theory should be covered before advanced topics",
+    )
+
+
+class GenerationDirectivesRequest(BaseModel):
+    """Derived generation directives computed by the Next.js layer."""
+
+    available_hours_total: int = Field(
+        ...,
+        ge=1,
+        description="Total hours available across the roadmap timeline",
+    )
+    target_node_range: RangeConstraintRequest = Field(
+        ...,
+        description="Target node range for the generated roadmap",
+    )
+    min_sections: int = Field(..., ge=1, description="Minimum section count")
+    min_subsections_per_section: int = Field(
+        ...,
+        ge=1,
+        description="Minimum subsection count per section",
+    )
+    min_lessons_per_subsection: RangeConstraintRequest = Field(
+        ...,
+        description="Minimum lesson count expected per subsection",
+    )
+    theory_ratio_target: float = Field(
+        ...,
+        ge=0,
+        le=1,
+        description="Desired ratio of theory-heavy lessons",
+    )
+    project_cadence: str = Field(
+        ...,
+        description="Text instruction describing how often projects/checkpoints should appear",
+    )
+    require_prerequisites: bool = Field(
+        default=True,
+        description="Whether the model must populate prerequisites",
+    )
+    require_learning_outcomes: bool = Field(
+        default=True,
+        description="Whether the model must populate learning outcomes",
+    )
 
 
 class UserProfileRequest(BaseModel):
-    """User profile for generating personalized roadmap"""
-    
-    # Basic info
+    """User profile for generating personalized roadmap."""
+
     current_role: str = Field(
         ...,
         description="Current role/status of the user",
-        examples=["Sinh viên năm 3", "Developer 1 năm kinh nghiệm"]
+        examples=["Sinh vien nam 3", "Developer 1 nam kinh nghiem"],
     )
     target_role: str = Field(
         ...,
         description="Target career role",
-        examples=["Frontend Developer", "AI Engineer"]
+        examples=["Frontend Developer", "AI Engineer"],
     )
-    
-    # Skills
     current_skills: List[str] = Field(
         default=[],
         description="List of current skills",
-        examples=[["HTML/CSS", "JavaScript", "React"]]
+        examples=[["HTML/CSS", "JavaScript", "React"]],
     )
     skill_level: Literal["beginner", "intermediate", "advanced"] = Field(
         default="beginner",
-        description="Overall skill level"
+        description="Overall skill level",
     )
-    
-    # Learning preferences
-    learning_style: List[Literal["documentation", "video", "project", "interactive"]] = Field(
+    learning_style: List[
+        Literal["documentation", "video", "project", "interactive"]
+    ] = Field(
         default=["video"],
-        description="Preferred learning styles"
+        description="Preferred learning styles",
     )
-    
-    # Time commitment
     hours_per_week: int = Field(
         default=10,
         ge=1,
         le=60,
-        description="Hours available per week for learning"
+        description="Hours available per week for learning",
     )
     target_months: int = Field(
         default=6,
         ge=1,
         le=24,
-        description="Target timeline in months"
+        description="Target timeline in months",
     )
-    
-    # Optional preferences
     preferred_language: Literal["vi", "en"] = Field(
         default="vi",
-        description="Preferred language for roadmap content"
+        description="Preferred language for roadmap content",
     )
     focus_areas: Optional[List[str]] = Field(
         default=None,
-        description="Specific areas to focus on"
+        description="Specific areas to focus on",
     )
-    audience_type: Optional[Literal[
-        "worker", "non-worker", "student", "university_student", "recent_graduate",
-        "self-learner", "teacher", "team-lead", "mentor", "content-creator", "other"
-    ]] = Field(
+    audience_type: Optional[
+        Literal[
+            "worker",
+            "non-worker",
+            "student",
+            "university_student",
+            "recent_graduate",
+            "self-learner",
+            "teacher",
+            "team-lead",
+            "mentor",
+            "content-creator",
+            "other",
+        ]
+    ] = Field(
         default="worker",
-        description="Who this roadmap is for (worker, student, university_student, etc.)"
+        description="Who this roadmap is for (worker, student, university_student, etc.)",
     )
-    
-    # Audience-specific detail fields
     specific_job: Optional[str] = Field(
         default=None,
-        description="Specific job title (for 'worker' audience type)"
+        description="Specific job title (for 'worker' audience type)",
     )
     class_level: Optional[str] = Field(
         default=None,
-        description="Class level e.g. '10', '11', '12' (for 'student' audience type)"
+        description="Class level e.g. '10', '11', '12' (for 'student' audience type)",
     )
     major: Optional[str] = Field(
         default=None,
-        description="Major/field of study (for 'university_student' or 'recent_graduate')"
+        description="Major/field of study (for 'university_student' or 'recent_graduate')",
     )
     study_year: Optional[int] = Field(
         default=None,
         ge=1,
         le=6,
-        description="Year of study (for 'university_student' audience type)"
+        description="Year of study (for 'university_student' audience type)",
+    )
+    generation_preferences: GenerationPreferencesRequest = Field(
+        default_factory=GenerationPreferencesRequest,
+        description="Hints for roadmap density and content bias",
     )
 
 
 class GenerateRoadmapRequest(BaseModel):
-    """Request body for generating roadmap"""
-    
+    """Request body for generating roadmap."""
+
     profile: UserProfileRequest = Field(
         ...,
-        description="User profile for personalization"
+        description="User profile for personalization",
+    )
+    generation_directives: Optional[GenerationDirectivesRequest] = Field(
+        default=None,
+        description="Normalized generation directives derived by the frontend",
     )
 
 
 class NodeDetailRequest(BaseModel):
-    """Request body for getting node detail with AI explanation"""
-    
+    """Request body for getting node detail with AI explanation."""
+
     topic: str = Field(
         ...,
-        description="The topic/node title to get details for"
+        description="The topic/node title to get details for",
     )
     context: Optional[str] = Field(
         default=None,
-        description="Parent topic or roadmap context"
+        description="Parent topic or roadmap context",
     )
     user_level: Literal["beginner", "intermediate", "advanced"] = Field(
         default="intermediate",
-        description="User's skill level for tailored explanations"
+        description="User's skill level for tailored explanations",
     )
 
 
 class FaceTouchAnalyzeRequest(BaseModel):
-    """Request body for webcam frame analysis"""
+    """Request body for webcam frame analysis."""
 
     image: str = Field(
         ...,

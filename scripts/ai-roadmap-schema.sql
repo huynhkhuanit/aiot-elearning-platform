@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS ai_generated_roadmaps (
   total_estimated_hours INTEGER DEFAULT 0,
   
   -- JSON data for React Flow
+  sections JSONB NOT NULL DEFAULT '[]', -- Array of section objects with subsections
   phases JSONB NOT NULL DEFAULT '[]',  -- Array of phase objects
   nodes JSONB NOT NULL DEFAULT '[]',   -- Array of node objects
   edges JSONB NOT NULL DEFAULT '[]',   -- Array of edge objects
@@ -81,6 +82,9 @@ CREATE TABLE IF NOT EXISTS ai_generated_roadmaps (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE ai_generated_roadmaps
+  ADD COLUMN IF NOT EXISTS sections JSONB NOT NULL DEFAULT '[]';
 
 -- Indexes for ai_generated_roadmaps
 CREATE INDEX IF NOT EXISTS idx_ai_roadmaps_user_id ON ai_generated_roadmaps(user_id);
@@ -165,6 +169,7 @@ RETURNS TABLE (
   title TEXT,
   description TEXT,
   total_estimated_hours INTEGER,
+  sections JSONB,
   phases JSONB,
   nodes JSONB,
   edges JSONB,
@@ -179,6 +184,7 @@ BEGIN
     r.title,
     r.description,
     r.total_estimated_hours,
+    r.sections,
     r.phases,
     r.nodes,
     r.edges,

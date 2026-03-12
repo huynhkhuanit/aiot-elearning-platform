@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import {
+    buildRoadmapGenerationDirectives,
+    normalizeGenerationPreferences,
+    toGenerationDirectivesRequest,
+    toGenerationPreferencesRequest,
+} from "@/lib/ai-roadmap-generation";
 import type {
     UserProfile,
     GenerateRoadmapResponse,
@@ -48,6 +54,19 @@ export async function POST(request: NextRequest) {
                 { status: 400 },
             );
         }
+
+        const generationPreferences = normalizeGenerationPreferences(
+            profile.generationPreferences,
+        );
+        const generationDirectives = buildRoadmapGenerationDirectives({
+            hoursPerWeek: profile.hoursPerWeek,
+            targetMonths: profile.targetMonths,
+            generationPreferences,
+        });
+        const generationPreferencesRequest =
+            toGenerationPreferencesRequest(generationPreferences);
+        const generationDirectivesRequest =
+            toGenerationDirectivesRequest(generationDirectives);
 
         // 3. Save user profile to database (optional - continue even if fails)
         let savedProfile = null;
@@ -111,12 +130,15 @@ export async function POST(request: NextRequest) {
                             preferred_language: profile.preferredLanguage,
                             focus_areas: profile.focusAreas,
                             audience_type: profile.audienceType || "worker",
+                            generation_preferences:
+                                generationPreferencesRequest,
                             // Audience-specific detail fields
                             specific_job: profile.specificJob || null,
                             class_level: profile.classLevel || null,
                             major: profile.major || null,
                             study_year: profile.studyYear || null,
                         },
+                        generation_directives: generationDirectivesRequest,
                     }),
                     // Add timeout
                     signal: AbortSignal.timeout(60000), // 60 seconds timeout
@@ -235,12 +257,23 @@ export async function POST(request: NextRequest) {
                         description: aiResponse.roadmap.roadmap_description,
                         total_estimated_hours:
                             aiResponse.roadmap.total_estimated_hours,
+                        sections: aiResponse.roadmap.sections || [],
                         phases: aiResponse.roadmap.phases,
                         nodes: aiResponse.roadmap.nodes,
                         edges: aiResponse.roadmap.edges,
                         generation_metadata: {
                             ...aiResponse.metadata,
                             total_latency_ms: totalLatency,
+                            generation_input: {
+                                audience_type: profile.audienceType || "worker",
+                                target_role: profile.targetRole,
+                                current_role: profile.currentRole,
+                                focus_areas: profile.focusAreas || [],
+                                generation_preferences:
+                                    generationPreferencesRequest,
+                                generation_directives:
+                                    generationDirectivesRequest,
+                            },
                         },
                         is_active: true,
                     })
