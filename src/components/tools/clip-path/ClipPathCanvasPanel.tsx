@@ -16,6 +16,32 @@ import type { ClipPathPreset } from "./clipPathData";
 import type { PreviewMode } from "./clipPathStudioTypes";
 import { formatPoint, pointsToPolygon, type Point } from "./clipPathUtils";
 
+/* ─── Color palette for unique point colors (like clippy.f8.edu.vn) ─── */
+const POINT_COLORS = [
+    "#ef4444", // red
+    "#f97316", // orange
+    "#eab308", // yellow
+    "#22c55e", // green
+    "#06b6d4", // cyan
+    "#3b82f6", // blue
+    "#8b5cf6", // violet
+    "#ec4899", // pink
+    "#14b8a6", // teal
+    "#f59e0b", // amber
+    "#10b981", // emerald
+    "#6366f1", // indigo
+];
+
+function getPointColor(index: number) {
+    return POINT_COLORS[index % POINT_COLORS.length];
+}
+
+/* ─── Canvas sizing constants ─── */
+// The SVG viewBox adds padding around the 0-100 shape area so edge dots aren't clipped
+const PAD = 8; // padding in SVG units
+const VB_MIN = -PAD;
+const VB_SIZE = 100 + PAD * 2; // total viewBox dimension
+
 type ClipPathCanvasPanelProps = {
     activePreset: ClipPathPreset;
     currentModeLabel: string;
@@ -122,151 +148,236 @@ export function ClipPathCanvasPanel({
                 </div>
             </div>
 
-            {/* ── Full-size canvas ── */}
+            {/* ── Canvas workspace — centered, constrained shape ── */}
             <div
-                className="relative min-h-[420px] flex-1"
+                className="relative flex min-h-[460px] flex-1 items-center justify-center bg-[#f4faf9] p-6"
                 onKeyDown={onCanvasKeyDown}
                 role="application"
                 tabIndex={0}
             >
-                {/* Grid overlay */}
-                {showGrid ? (
-                    <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(to_right,_rgba(15,118,110,0.06)_1px,_transparent_1px),linear-gradient(to_bottom,_rgba(15,118,110,0.06)_1px,_transparent_1px)] [background-size:10%_10%]" />
-                ) : null}
+                {/* Centered shape container with max-size constraint */}
+                <div
+                    className="relative w-full"
+                    style={{ maxWidth: 420, aspectRatio: "1 / 1" }}
+                >
+                    {/* Inner working area — the "demo box" like clippy */}
+                    <div className="absolute inset-0 overflow-visible rounded-lg border border-dashed border-[#b0d8d0] bg-white shadow-[0_4px_24px_rgba(15,118,110,0.08)]">
+                        {/* Grid overlay inside working area */}
+                        {showGrid ? (
+                            <div className="pointer-events-none absolute inset-0 z-[1] rounded-lg bg-[linear-gradient(to_right,_rgba(15,118,110,0.06)_1px,_transparent_1px),linear-gradient(to_bottom,_rgba(15,118,110,0.06)_1px,_transparent_1px)] [background-size:10%_10%]" />
+                        ) : null}
 
-                {/* Shape preview fill */}
-                <div className="absolute inset-0 bg-[#f7fdfc]">
-                    <div
-                        className="absolute inset-0 bg-[linear-gradient(135deg,_#0f766e_0%,_#14b8a6_52%,_#f97316_110%)] opacity-20 transition-[clip-path] duration-200 ease-out"
-                        style={{
-                            WebkitClipPath: clipPath,
-                            clipPath,
-                        }}
-                    />
+                        {/* Shape preview fill with gradient */}
+                        <div
+                            className="absolute inset-0 rounded-lg bg-[linear-gradient(135deg,_#0f766e_0%,_#14b8a6_52%,_#f97316_110%)] opacity-20 transition-[clip-path] duration-200 ease-out"
+                            style={{
+                                WebkitClipPath: clipPath,
+                                clipPath,
+                            }}
+                        />
+
+                        {/* Checkerboard pattern background for transparency indication */}
+                        <div className="pointer-events-none absolute inset-0 rounded-lg opacity-[0.03] [background-image:repeating-conic-gradient(#0f766e_0%_25%,transparent_0%_50%)] [background-size:16px_16px]" />
+                    </div>
+
+                    {/* SVG editor surface — with overflow visible for edge handles */}
+                    <svg
+                        ref={editorSurfaceRef}
+                        viewBox={`${VB_MIN} ${VB_MIN} ${VB_SIZE} ${VB_SIZE}`}
+                        preserveAspectRatio="xMidYMid meet"
+                        className="absolute inset-0 z-10 h-full w-full touch-none cursor-crosshair"
+                        style={{ overflow: "visible" }}
+                        aria-label="Canvas chỉnh polygon"
+                    >
+                        {/* Working area boundary rect (0-100 range) */}
+                        <rect
+                            x={0}
+                            y={0}
+                            width={100}
+                            height={100}
+                            fill="none"
+                            stroke="transparent"
+                            strokeWidth={0}
+                        />
+
+                        {/* Filled polygon shape */}
+                        <polygon
+                            points={points
+                                .map((point) => `${point.x},${point.y}`)
+                                .join(" ")}
+                            fill="rgba(15,118,110,0.06)"
+                            stroke="#0d9488"
+                            strokeWidth="1.5"
+                            strokeLinejoin="round"
+                            vectorEffect="non-scaling-stroke"
+                        />
+
+                        {/* Edge lines between consecutive points */}
+                        {points.map((point, index) => {
+                            const next = points[(index + 1) % points.length];
+                            return (
+                                <line
+                                    key={`edge-${index}`}
+                                    x1={point.x}
+                                    y1={point.y}
+                                    x2={next.x}
+                                    y2={next.y}
+                                    stroke="#0d9488"
+                                    strokeWidth="1"
+                                    strokeDasharray="4 3"
+                                    vectorEffect="non-scaling-stroke"
+                                    opacity={0.35}
+                                />
+                            );
+                        })}
+
+                        {/* Draggable control points with unique colors */}
+                        {points.map((point, index) => {
+                            const isSelected = selectedPointIndex === index;
+                            const color = getPointColor(index);
+
+                            return (
+                                <g key={`pt-${index}`}>
+                                    {/* Invisible larger hit area for easy grabbing */}
+                                    <circle
+                                        cx={point.x}
+                                        cy={point.y}
+                                        r={isSelected ? 5 : 4}
+                                        fill="transparent"
+                                        className="cursor-grab active:cursor-grabbing"
+                                        onPointerDown={(event) => {
+                                            event.preventDefault();
+                                            onStartDrag(index);
+                                        }}
+                                    />
+                                    {/* Outer glow ring for selected point */}
+                                    {isSelected ? (
+                                        <circle
+                                            cx={point.x}
+                                            cy={point.y}
+                                            r={3.6}
+                                            fill="none"
+                                            stroke={color}
+                                            strokeWidth="2"
+                                            vectorEffect="non-scaling-stroke"
+                                            opacity={0.25}
+                                            className="clip-path-active-point"
+                                        />
+                                    ) : null}
+                                    {/* Visible dot — fixed visual size via vectorEffect */}
+                                    <circle
+                                        cx={point.x}
+                                        cy={point.y}
+                                        r={isSelected ? 2 : 1.6}
+                                        className="pointer-events-none transition-all duration-150"
+                                        fill={color}
+                                        stroke="white"
+                                        strokeWidth={isSelected ? 2 : 1.5}
+                                        vectorEffect="non-scaling-stroke"
+                                    />
+                                    {/* Point index label — positioned smartly near edges */}
+                                    <text
+                                        x={point.x}
+                                        y={
+                                            point.y > 88
+                                                ? point.y - 5
+                                                : point.y + 6.5
+                                        }
+                                        textAnchor="middle"
+                                        fontSize="3"
+                                        fontWeight="700"
+                                        fill={color}
+                                        opacity={isSelected ? 1 : 0.7}
+                                        className="pointer-events-none select-none"
+                                    >
+                                        {index + 1}
+                                    </text>
+                                    {/* Tooltip badge for selected point */}
+                                    {isSelected ? (
+                                        <>
+                                            <rect
+                                                x={
+                                                    point.x > 75
+                                                        ? point.x - 28
+                                                        : point.x + 4
+                                                }
+                                                y={
+                                                    point.y > 12
+                                                        ? point.y - 9
+                                                        : point.y + 4
+                                                }
+                                                width="24"
+                                                height="7"
+                                                rx="3.5"
+                                                fill="rgba(15,23,42,0.88)"
+                                            />
+                                            <text
+                                                x={
+                                                    point.x > 75
+                                                        ? point.x - 16
+                                                        : point.x + 16
+                                                }
+                                                y={
+                                                    point.y > 12
+                                                        ? point.y - 4.2
+                                                        : point.y + 9
+                                                }
+                                                textAnchor="middle"
+                                                fontSize="2.8"
+                                                fontWeight="500"
+                                                fill="white"
+                                                className="pointer-events-none"
+                                            >
+                                                {Math.round(point.x)}% ·{" "}
+                                                {Math.round(point.y)}%
+                                            </text>
+                                        </>
+                                    ) : null}
+                                </g>
+                            );
+                        })}
+                    </svg>
+
+                    {/* Coordinate axis labels on edges */}
+                    <div className="pointer-events-none absolute -left-5 top-1/2 z-20 -translate-y-1/2 -rotate-90 text-[10px] font-medium tracking-wide text-[#0d9488]/40">
+                        Y
+                    </div>
+                    <div className="pointer-events-none absolute -bottom-5 left-1/2 z-20 -translate-x-1/2 text-[10px] font-medium tracking-wide text-[#0d9488]/40">
+                        X
+                    </div>
+
+                    {/* Corner labels 0% / 100% */}
+                    <div className="pointer-events-none absolute -left-1 -top-4 z-20 text-[9px] font-semibold text-[#0d9488]/30">
+                        0,0
+                    </div>
+                    <div className="pointer-events-none absolute -bottom-4 -right-1 z-20 text-[9px] font-semibold text-[#0d9488]/30">
+                        100,100
+                    </div>
                 </div>
 
-                {/* SVG editor surface */}
-                <svg
-                    ref={editorSurfaceRef}
-                    viewBox="0 0 100 100"
-                    preserveAspectRatio="none"
-                    className="absolute inset-0 z-10 h-full w-full touch-none cursor-crosshair"
-                    aria-label="Canvas chỉnh polygon"
-                >
-                    {/* Filled polygon */}
-                    <polygon
-                        points={points
-                            .map((point) => `${point.x},${point.y}`)
-                            .join(" ")}
-                        fill="rgba(15,118,110,0.08)"
-                        stroke="#0d9488"
-                        strokeWidth="1.4"
-                        strokeLinejoin="round"
-                        vectorEffect="non-scaling-stroke"
-                    />
-
-                    {/* Edge lines between consecutive points */}
-                    {points.map((point, index) => {
-                        const next = points[(index + 1) % points.length];
-                        return (
-                            <line
-                                key={`edge-${index}`}
-                                x1={point.x}
-                                y1={point.y}
-                                x2={next.x}
-                                y2={next.y}
-                                stroke="#0d9488"
-                                strokeWidth="0.6"
-                                strokeDasharray="1.5 1"
-                                vectorEffect="non-scaling-stroke"
-                                opacity={0.4}
-                            />
-                        );
-                    })}
-
-                    {/* Draggable control points */}
-                    {points.map((point, index) => {
-                        const isSelected = selectedPointIndex === index;
-                        return (
-                            <g key={`pt-${index}`}>
-                                {/* Larger invisible hit area */}
-                                <circle
-                                    cx={point.x}
-                                    cy={point.y}
-                                    r={4}
-                                    fill="transparent"
-                                    className="cursor-grab active:cursor-grabbing"
-                                    onPointerDown={(event) => {
-                                        event.preventDefault();
-                                        onStartDrag(index);
-                                    }}
-                                />
-                                {/* Visible point */}
-                                <circle
-                                    cx={point.x}
-                                    cy={point.y}
-                                    r={isSelected ? 2.4 : 1.6}
-                                    className={cn(
-                                        "pointer-events-none transition-all duration-150",
-                                        isSelected && "clip-path-active-point",
-                                    )}
-                                    fill={isSelected ? "#f97316" : "#0d9488"}
-                                    stroke="white"
-                                    strokeWidth={isSelected ? 1 : 0.7}
-                                    vectorEffect="non-scaling-stroke"
-                                />
-                                {/* Point index label */}
-                                <text
-                                    x={point.x}
-                                    y={
-                                        point.y > 90
-                                            ? point.y - 4
-                                            : point.y + 5.5
-                                    }
-                                    textAnchor="middle"
-                                    fontSize="2.8"
-                                    fontWeight="600"
-                                    fill={isSelected ? "#f97316" : "#0d9488"}
-                                    opacity={isSelected ? 1 : 0.6}
-                                    className="pointer-events-none select-none"
-                                >
-                                    {index + 1}
-                                </text>
-                                {/* Tooltip for selected point */}
-                                {isSelected ? (
-                                    <>
-                                        <rect
-                                            x={Math.min(point.x + 3, 74)}
-                                            y={Math.max(point.y - 8, 2)}
-                                            width="24"
-                                            height="6.5"
-                                            rx="3"
-                                            fill="rgba(15,23,42,0.88)"
-                                        />
-                                        <text
-                                            x={Math.min(point.x + 15, 86)}
-                                            y={Math.max(point.y - 3.5, 7)}
-                                            textAnchor="middle"
-                                            fontSize="2.5"
-                                            fill="white"
-                                            className="pointer-events-none"
-                                        >
-                                            {point.x}% · {point.y}%
-                                        </text>
-                                    </>
-                                ) : null}
-                            </g>
-                        );
-                    })}
-                </svg>
-
-                {/* Selected point info badge */}
+                {/* Selected point info badge — floating bottom-left */}
                 <div className="pointer-events-none absolute bottom-3 left-3 z-20 flex items-center gap-2">
-                    <span className="rounded-full border border-white/80 bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur">
+                    <span
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/80 bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur"
+                    >
+                        <span
+                            className="inline-block size-2 rounded-full"
+                            style={{
+                                backgroundColor: getPointColor(selectedPointIndex),
+                            }}
+                        />
                         Điểm #{selectedPointIndex + 1}
                     </span>
                     <span className="rounded-full border border-[#f5d2bf] bg-[#fff6ef]/90 px-3 py-1 text-xs font-semibold text-[#c2410c] shadow-sm backdrop-blur">
-                        X: {currentPoint.x}% · Y: {currentPoint.y}%
+                        X: {Math.round(currentPoint.x)}% · Y:{" "}
+                        {Math.round(currentPoint.y)}%
+                    </span>
+                </div>
+
+                {/* Total points badge — floating top-right */}
+                <div className="pointer-events-none absolute right-3 top-3 z-20">
+                    <span className="rounded-full border border-[#d5ebe7] bg-white/90 px-3 py-1 text-[10px] font-semibold text-[#0f766e] shadow-sm backdrop-blur">
+                        {points.length} điểm
                     </span>
                 </div>
             </div>
@@ -294,6 +405,12 @@ export function ClipPathCanvasPanel({
                                     : "border-[#e5f0ed] bg-white text-slate-500 hover:border-[#0d9488]/50 hover:text-[#0d9488]",
                             )}
                         >
+                            <span
+                                className="mr-1 inline-block size-1.5 rounded-full"
+                                style={{
+                                    backgroundColor: getPointColor(index),
+                                }}
+                            />
                             #{index + 1}{" "}
                             <span className="opacity-70">
                                 {formatPoint(point)}

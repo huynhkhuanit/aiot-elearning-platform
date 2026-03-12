@@ -298,10 +298,13 @@ export function ClipPathStudioWorkspace() {
                 return;
             }
 
-            const nextPoint = {
-                x: ((event.clientX - bounds.left) / bounds.width) * 100,
-                y: ((event.clientY - bounds.top) / bounds.height) * 100,
-            };
+            // ViewBox is "-PAD -PAD (100+2*PAD) (100+2*PAD)" with PAD=8
+            // Map screen coords → viewBox coords → shape coords (0-100)
+            const PAD = 8;
+            const VB_SIZE = 100 + PAD * 2;
+            const rawX = ((event.clientX - bounds.left) / bounds.width) * VB_SIZE - PAD;
+            const rawY = ((event.clientY - bounds.top) / bounds.height) * VB_SIZE - PAD;
+            const nextPoint = { x: rawX, y: rawY };
 
             handlePointUpdate(
                 activeDragIndex,
