@@ -1,7 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Copy, Check, RotateCcw, Undo2, Redo2, X } from "lucide-react";
+import {
+    Copy,
+    Check,
+    RotateCcw,
+    Undo2,
+    Redo2,
+    X,
+    Settings2,
+} from "lucide-react";
 import Prism from "prismjs";
 import "prismjs/components/prism-css";
 import "prismjs/components/prism-markup";
@@ -1180,13 +1188,14 @@ export function CssGridGenerator() {
                         variant="ghost"
                         onClick={() => setShowSettings(!showSettings)}
                         className={cn(
-                            "h-8 px-2.5 text-xs",
+                            "h-8 w-8 p-0 transition-colors",
                             showSettings
-                                ? "text-cyan-400 hover:text-cyan-300"
-                                : "text-slate-400 hover:text-white",
+                                ? "text-cyan-400 hover:bg-white/8 hover:text-cyan-300"
+                                : "text-slate-400 hover:bg-white/8 hover:text-white",
                         )}
+                        title="Settings"
                     >
-                        Settings
+                        <Settings2 className="size-4" />
                     </Button>
                 </div>
 
