@@ -86,8 +86,8 @@
     border-bottom: 1px solid #e2e8f0;
     padding: 16px 24px;
     position: sticky;
-    top: 0;
-    z-index: 50;
+    top: 66px;
+    z-index: 20;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
