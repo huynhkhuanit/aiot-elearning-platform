@@ -270,7 +270,12 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(135deg, rgba(20, 184, 166, 0.08), transparent 38%, rgba(249, 115, 22, 0.06));
+    background: linear-gradient(
+        135deg,
+        rgba(20, 184, 166, 0.08),
+        transparent 38%,
+        rgba(249, 115, 22, 0.06)
+    );
     opacity: 0;
     transition: opacity 220ms ease;
     pointer-events: none;
@@ -318,7 +323,12 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.18) 45%, transparent 70%);
+    background: linear-gradient(
+        120deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.18) 45%,
+        transparent 70%
+    );
     transform: translateX(-120%);
     animation: clip-path-shimmer 5.8s ease-in-out infinite;
     pointer-events: none;
@@ -1502,7 +1512,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.87 0.00 0);
+    --primary: oklch(0.87 0 0);
     --primary-foreground: oklch(0.205 0 0);
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
@@ -1529,6 +1539,61 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* ── CSS Grid Generator: Prism.js syntax highlighting ── */
+.prism-code {
+    color: #e2e8f0;
+}
+.prism-code .token.comment,
+.prism-code .token.prolog,
+.prism-code .token.doctype,
+.prism-code .token.cdata {
+    color: #64748b;
+    font-style: italic;
+}
+.prism-code .token.punctuation {
+    color: #94a3b8;
+}
+.prism-code .token.tag,
+.prism-code .token.boolean,
+.prism-code .token.number,
+.prism-code .token.constant,
+.prism-code .token.symbol,
+.prism-code .token.deleted {
+    color: #f472b6;
+}
+.prism-code .token.property {
+    color: #67e8f9;
+}
+.prism-code .token.selector,
+.prism-code .token.attr-name,
+.prism-code .token.string,
+.prism-code .token.char,
+.prism-code .token.builtin,
+.prism-code .token.inserted {
+    color: #86efac;
+}
+.prism-code .token.operator,
+.prism-code .token.entity,
+.prism-code .token.url,
+.prism-code .language-css .token.string,
+.prism-code .style .token.string {
+    color: #c4b5fd;
+}
+.prism-code .token.atrule,
+.prism-code .token.attr-value,
+.prism-code .token.keyword {
+    color: #93c5fd;
+}
+.prism-code .token.function,
+.prism-code .token.class-name {
+    color: #fcd34d;
+}
+.prism-code .token.regex,
+.prism-code .token.important,
+.prism-code .token.variable {
+    color: #fdba74;
+}
+
 @layer base {
     * {
         @apply border-border outline-ring/50;
@@ -1536,7 +1601,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     body {
         @apply bg-background text-foreground;
     }
-  html {
-    @apply font-sans;
+    html {
+        @apply font-sans;
     }
 }
