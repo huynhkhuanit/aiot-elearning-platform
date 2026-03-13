@@ -4,6 +4,13 @@
     "pythonVersion": "3.10",
     "typeCheckingMode": "basic",
     "reportMissingImports": "warning",
+    "reportMissingModuleSource": "none",
     "venvPath": ".",
-    "venv": "venv"
+    "venv": "venv",
+    "executionEnvironments": [
+        {
+            "root": ".",
+            "extraPaths": ["."]
+        }
+    ]
 }

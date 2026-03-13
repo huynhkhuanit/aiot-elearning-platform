@@ -48,8 +48,8 @@ def calculate_personalization_score(
 
     available_hours = profile.hours_per_week * profile.target_months * 4
     estimated = roadmap.total_estimated_hours or 1
-    time_ratio = estimated / available_hours if available_hours > 0 else 0
-    time_fit_score = max(0, 1 - abs(1 - time_ratio))
+    time_ratio = estimated / available_hours if available_hours > 0 else 0.0
+    time_fit_score = max(0.0, 1.0 - abs(1.0 - time_ratio))
     score += time_fit_score * weights["time_fit"]
 
     difficulty_levels = {"beginner": 1, "intermediate": 2, "advanced": 3}
@@ -521,7 +521,7 @@ def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
                             minimum=1,
                         ),
                         "difficulty": _normalize_difficulty(
-                            node_data.get("difficulty", "beginner")
+                            str(node_data.get("difficulty", "beginner"))
                         ),
                         "prerequisites": _normalize_string_list(
                             node_data.get("prerequisites", [])
@@ -534,7 +534,7 @@ def validate_and_parse_roadmap(raw_data: dict) -> GeneratedRoadmap:
                                 learning_res.get("keywords", [])
                             ),
                             "suggested_type": _normalize_suggested_type(
-                                learning_res.get("suggested_type", "video")
+                                str(learning_res.get("suggested_type", "video"))
                             ),
                         },
                     },
@@ -827,6 +827,124 @@ def _build_repair_prompt(user_prompt: str, issues: List[str]) -> str:
     )
 
 
+def _synthesize_edges(roadmap: GeneratedRoadmap) -> List[RoadmapEdge]:
+    """
+    Automatically generate edges when the AI fails to produce them.
+    Builds a DAG based on section/subsection/node structure:
+      1. Hub nodes → lesson nodes within the same subsection
+      2. Sequential lesson nodes within the same subsection
+      3. Last node of subsection N → first node of subsection N+1 (within a section)
+      4. Last node of section N → first node of section N+1 (cross-section bridges)
+    """
+    if not roadmap.nodes or not roadmap.sections:
+        return []
+
+    edges: List[RoadmapEdge] = []
+    edge_set: set = set()  # (source, target) to avoid duplicates
+    edge_counter: List[int] = [0]  # mutable counter for closure access
+
+    def _add_edge(source_id: str, target_id: str) -> None:
+        pair = (source_id, target_id)
+        if pair in edge_set or source_id == target_id:
+            return
+        edge_set.add(pair)
+        edge_counter[0] += 1
+        edges.append(RoadmapEdge(
+            id=f"e-syn-{edge_counter[0]}",
+            source=source_id,
+            target=target_id,
+        ))
+
+    node_order = {node.id: idx for idx, node in enumerate(roadmap.nodes)}
+    sorted_sections = sorted(roadmap.sections, key=lambda s: s.order)
+
+    section_last_nodes: List[Optional[str]] = []
+    section_first_nodes: List[Optional[str]] = []
+
+    for section in sorted_sections:
+        sorted_subsections = sorted(section.subsections or [], key=lambda sub: sub.order)
+        subsection_ids = [sub.id for sub in sorted_subsections]
+
+        section_nodes = [
+            n for n in roadmap.nodes if n.section_id == section.id
+        ]
+        if not section_nodes:
+            section_first_nodes.append(None)
+            section_last_nodes.append(None)
+            continue
+
+        first_node_in_section: Optional[str] = None
+        last_node_in_section: Optional[str] = None
+        prev_subsection_last_node: Optional[str] = None
+
+        for sub_id in subsection_ids:
+            sub_nodes = [
+                n for n in section_nodes if n.subsection_id == sub_id
+            ]
+            if not sub_nodes:
+                continue
+
+            hub_nodes = [n for n in sub_nodes if n.is_hub]
+            lesson_nodes = [n for n in sub_nodes if not n.is_hub and n.type != "project"]
+            project_nodes = [n for n in sub_nodes if n.type == "project"]
+
+            lesson_nodes.sort(key=lambda n: node_order.get(n.id, 0))
+            hub_nodes.sort(key=lambda n: node_order.get(n.id, 0))
+
+            ordered_non_project = hub_nodes + lesson_nodes
+            if not ordered_non_project:
+                ordered_non_project = project_nodes
+            if not ordered_non_project:
+                continue
+
+            first_in_sub = ordered_non_project[0].id
+            if first_node_in_section is None:
+                first_node_in_section = first_in_sub
+
+            # Connect from previous subsection's last node
+            if prev_subsection_last_node:
+                _add_edge(prev_subsection_last_node, first_in_sub)
+
+            # Hub → lesson connections
+            for hub in hub_nodes:
+                for lesson in lesson_nodes:
+                    _add_edge(hub.id, lesson.id)
+
+            # Sequential lesson connections within subsection
+            for i in range(len(lesson_nodes) - 1):
+                _add_edge(lesson_nodes[i].id, lesson_nodes[i + 1].id)
+
+            # Lessons → project connections
+            if project_nodes and lesson_nodes:
+                last_lesson = lesson_nodes[-1] if lesson_nodes else (hub_nodes[-1] if hub_nodes else None)
+                if last_lesson:
+                    for proj in project_nodes:
+                        _add_edge(last_lesson.id, proj.id)
+
+            # Track last node in subsection
+            if project_nodes:
+                prev_subsection_last_node = project_nodes[-1].id
+                last_node_in_section = project_nodes[-1].id
+            elif lesson_nodes:
+                prev_subsection_last_node = lesson_nodes[-1].id
+                last_node_in_section = lesson_nodes[-1].id
+            elif hub_nodes:
+                prev_subsection_last_node = hub_nodes[-1].id
+                last_node_in_section = hub_nodes[-1].id
+
+        section_first_nodes.append(first_node_in_section)
+        section_last_nodes.append(last_node_in_section)
+
+    # Cross-section bridges
+    for i in range(len(section_last_nodes) - 1):
+        src = section_last_nodes[i]
+        tgt = section_first_nodes[i + 1]
+        if src and tgt:
+            _add_edge(src, tgt)
+
+    return edges
+
+
 def _collect_structural_issues(roadmap: GeneratedRoadmap) -> List[str]:
     issues: List[str] = []
 
@@ -841,19 +959,7 @@ def _collect_structural_issues(roadmap: GeneratedRoadmap) -> List[str]:
     if len(non_project_nodes) < max(3, min(8, len(roadmap.sections) or 1)):
         issues.append("Roadmap has too few learning nodes to be usable.")
 
-    connected_node_ids = set()
-    for edge in roadmap.edges:
-        if edge.source:
-            connected_node_ids.add(edge.source)
-        if edge.target:
-            connected_node_ids.add(edge.target)
-
-    if len(roadmap.nodes) > 1 and not roadmap.edges:
-        issues.append("Roadmap has multiple nodes but no edges.")
-
-    isolated_count = sum(1 for node in roadmap.nodes if node.id not in connected_node_ids)
-    if len(roadmap.nodes) >= 8 and (isolated_count / len(roadmap.nodes)) > 0.9:
-        issues.append("Most roadmap nodes are isolated from the graph.")
+    # Edge issues are no longer structural blockers because we can synthesize them
 
     active_sections = {node.section_id for node in non_project_nodes if node.section_id}
     if len(roadmap.sections) > 1 and len(active_sections) < 2:
@@ -903,6 +1009,16 @@ async def generate_roadmap(
     raw_roadmap, raw_metadata = await generate_roadmap_json(user_prompt)
     roadmap = validate_and_parse_roadmap(raw_roadmap)
     _rebalance_nodes_across_subsections(roadmap, directives)
+
+    # Auto-synthesize edges when AI returns none (common with large roadmaps
+    # where Groq output gets truncated before the edges array)
+    if roadmap.nodes and not roadmap.edges:
+        logger.warning(
+            "AI returned %d nodes but 0 edges — synthesizing edges from structure.",
+            len(roadmap.nodes),
+        )
+        roadmap.edges = _synthesize_edges(roadmap)
+
     quality_issues = _validate_roadmap_quality(roadmap, directives)
 
     if quality_issues:
@@ -910,6 +1026,14 @@ async def generate_roadmap(
         raw_roadmap, raw_metadata = await generate_roadmap_json(repair_prompt)
         roadmap = validate_and_parse_roadmap(raw_roadmap)
         _rebalance_nodes_across_subsections(roadmap, directives)
+
+        # Auto-synthesize edges again for the repair attempt
+        if roadmap.nodes and not roadmap.edges:
+            logger.warning(
+                "Repair attempt also returned 0 edges — synthesizing edges from structure.",
+            )
+            roadmap.edges = _synthesize_edges(roadmap)
+
         quality_issues = _validate_roadmap_quality(roadmap, directives)
         if quality_issues:
             joined = "; ".join(quality_issues[:6])

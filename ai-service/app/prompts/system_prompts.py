@@ -60,11 +60,18 @@ CONTENT QUALITY RULES:
 - Prerequisites must reference human-readable prior topics, not node IDs.
 - Learning outcomes must be concrete and skill-oriented.
 
-EDGE RULES:
+EDGE RULES (CRITICAL - DO NOT SKIP):
+- The "edges" array is MANDATORY and must NOT be empty.
 - Connect section progression from earlier hubs to later hubs.
 - Connect hub nodes to detailed lesson nodes inside the same subsection.
+- Connect sequential lesson nodes within each subsection.
 - Connect lesson clusters to milestone or checkpoint nodes when appropriate.
 - Every node must have at least one incoming or outgoing edge, except the very first hub and the final capstone endpoint.
+- Each edge must have: "id", "source" (source node id), "target" (target node id).
+
+OUTPUT ORDERING:
+- Write "edges" immediately after "nodes" in the JSON output.
+- Do NOT place edges at the very end of the JSON — ensure they are generated before reaching any token limit.
 """
 
 
