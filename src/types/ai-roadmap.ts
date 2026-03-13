@@ -13,10 +13,7 @@ export type LearningStyle =
     | "project"
     | "interactive";
 export type PreferredLanguage = "vi" | "en";
-export type ContentBias =
-    | "theory_heavy"
-    | "balanced"
-    | "practice_heavy";
+export type ContentBias = "theory_heavy" | "balanced" | "practice_heavy";
 export type RoadmapDepth = "standard" | "deep" | "expert";
 export type LessonGranularity = "compact" | "detailed" | "micro_lesson";
 export type FoundationCoverage = "auto" | "full_foundation" | "fast_track";
@@ -239,7 +236,8 @@ export const CONTENT_BIAS_OPTIONS = [
     {
         value: "theory_heavy",
         label: "Nặng lý thuyết",
-        description: "Ưu tiên khái niệm, nguyên lý, tài liệu và các bài học nền tảng",
+        description:
+            "Ưu tiên khái niệm, nguyên lý, tài liệu và các bài học nền tảng",
     },
     {
         value: "balanced",
@@ -267,7 +265,8 @@ export const LESSON_GRANULARITY_OPTIONS = [
     {
         value: "micro_lesson",
         label: "Vi bài học",
-        description: "Tách nhỏ thành nhiều bài học có độ chi tiết cao và rất dày",
+        description:
+            "Tách nhỏ thành nhiều bài học có độ chi tiết cao và rất dày",
     },
 ] as const;
 
@@ -280,7 +279,8 @@ export const ROADMAP_DEPTH_OPTIONS = [
     {
         value: "deep",
         label: "Deep",
-        description: "Đào sâu lý thuyết, hệ thống hóa kiến thức và best practices",
+        description:
+            "Đào sâu lý thuyết, hệ thống hóa kiến thức và best practices",
     },
     {
         value: "expert",
@@ -293,12 +293,14 @@ export const FOUNDATION_COVERAGE_OPTIONS = [
     {
         value: "auto",
         label: "Tự động",
-        description: "AI cân đối giữa nền tảng và tốc độ dựa trên hồ sơ của bạn",
+        description:
+            "AI cân đối giữa nền tảng và tốc độ dựa trên hồ sơ của bạn",
     },
     {
         value: "full_foundation",
         label: "Nền tảng đầy đủ",
-        description: "Đi lại nền tảng một cách hệ thống trước khi lên phần nâng cao",
+        description:
+            "Đi lại nền tảng một cách hệ thống trước khi lên phần nâng cao",
     },
     {
         value: "fast_track",
@@ -327,7 +329,7 @@ export const TARGET_MONTHS_OPTIONS = [
 
 export type NodeType = "core" | "optional" | "project" | "alternative";
 export type NodeDifficulty = "beginner" | "intermediate" | "advanced";
-export type NodeStatus = "pending" | "in_progress" | "completed";
+export type NodeStatus = "pending" | "in_progress" | "completed" | "skipped";
 
 export interface LearningResources {
     keywords: string[];

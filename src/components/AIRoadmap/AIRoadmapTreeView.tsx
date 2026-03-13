@@ -264,6 +264,7 @@ const ContextMenu: React.FC<{
 
     const isDone = node.status === "completed";
     const isLearning = node.status === "in_progress";
+    const isSkipped = node.status === "skipped";
 
     return (
         <motion.div
@@ -312,6 +313,18 @@ const ContextMenu: React.FC<{
                     {isLearning
                         ? "Bỏ trạng thái đang học"
                         : "Đánh dấu đang học"}
+                </span>
+            </div>
+
+            <div
+                className={`roadmap-tree__context-menu-item ${isSkipped ? "roadmap-tree__context-menu-item--active" : ""}`}
+                onClick={() =>
+                    onStatusChange(isSkipped ? "pending" : "skipped")
+                }
+            >
+                <X className="w-4 h-4" />
+                <span>
+                    {isSkipped ? "Bỏ trạng thái bỏ qua" : "Đánh dấu bỏ qua"}
                 </span>
             </div>
         </motion.div>
@@ -480,6 +493,7 @@ const SubTopicNode: React.FC<{
 }> = ({ node, onNodeClick, onContextMenu, position }) => {
     const isDone = node.status === "completed";
     const isLearning = node.status === "in_progress";
+    const isSkipped = node.status === "skipped";
 
     const getNodeClasses = () => {
         const classes = [
@@ -488,6 +502,7 @@ const SubTopicNode: React.FC<{
         ];
         if (isDone) classes.push("roadmap-subtopic-node--done");
         if (isLearning) classes.push("roadmap-subtopic-node--learning");
+        if (isSkipped) classes.push("roadmap-subtopic-node--skipped");
         return classes.join(" ");
     };
 
@@ -572,6 +587,7 @@ const PhaseRow: React.FC<{
 }> = ({ node, onNodeClick, onContextMenu, isFirst, isLast }) => {
     const isDone = node.status === "completed";
     const isLearning = node.status === "in_progress";
+    const isSkipped = node.status === "skipped";
     const hasChildren = node.children && node.children.length > 0;
     const [isExpanded, setIsExpanded] = useState(true);
 
@@ -601,6 +617,7 @@ const PhaseRow: React.FC<{
         ];
         if (isDone) classes.push("roadmap-main-node--done");
         if (isLearning) classes.push("roadmap-main-node--learning");
+        if (isSkipped) classes.push("roadmap-main-node--skipped");
         return classes.join(" ");
     };
 

@@ -51,6 +51,8 @@ interface RoadmapTreeViewProps {
     roadmapId: string;
     roadmapTitle: string;
     roadmapData: RoadmapNodeData;
+    initialProgress?: Record<string, string>;
+    onProgressUpdate?: (nodeId: string, status: string) => void;
 }
 
 interface ContextMenuState {
@@ -526,6 +528,8 @@ export default function RoadmapTreeView({
     roadmapId,
     roadmapTitle,
     roadmapData,
+    initialProgress,
+    onProgressUpdate,
 }: RoadmapTreeViewProps) {
     const [selectedNode, setSelectedNode] = useState<RoadmapNodeData | null>(
         null,
@@ -554,6 +558,23 @@ export default function RoadmapTreeView({
                 }
             };
             collectStatus(roadmapData);
+            // Merge with persisted progress from DB (overrides static defaults)
+            if (initialProgress) {
+                for (const [nodeId, status] of Object.entries(
+                    initialProgress,
+                )) {
+                    if (statusMap.has(nodeId) && status !== "pending") {
+                        // Map DB statuses to component statuses
+                        const mapped =
+                            status === "completed"
+                                ? "done"
+                                : status === "in_progress"
+                                  ? "learning"
+                                  : status;
+                        statusMap.set(nodeId, mapped);
+                    }
+                }
+            }
             return statusMap;
         },
     );
@@ -600,8 +621,21 @@ export default function RoadmapTreeView({
                 return newMap;
             });
             setContextMenu(null);
+            // Persist to DB via callback
+            if (onProgressUpdate) {
+                // Map component statuses back to DB statuses
+                const dbStatus =
+                    newStatus === "done"
+                        ? "completed"
+                        : newStatus === "learning"
+                          ? "in_progress"
+                          : newStatus === "available"
+                            ? "pending"
+                            : newStatus; // 'skipped' stays as-is
+                onProgressUpdate(nodeId, dbStatus);
+            }
         },
-        [],
+        [onProgressUpdate],
     );
 
     // Node click handler
