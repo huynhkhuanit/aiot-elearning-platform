@@ -810,69 +810,107 @@ export default function AIRoadmapTreeView({
 
     return (
         <div className="roadmap-tree-page">
+            {/* Compact Header */}
             <div className="roadmap-tree-header">
                 <div className="roadmap-tree-header__inner">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                    {/* Row 1: Breadcrumb */}
+                    <nav className="roadmap-tree-header__breadcrumb">
                         <Link
                             href="/"
-                            className="hover:text-indigo-600 transition-colors flex items-center gap-1"
+                            className="roadmap-tree-header__breadcrumb-link"
                         >
-                            <Home className="w-3.5 h-3.5" />
+                            <Home className="w-3 h-3" />
                             <span>Trang chủ</span>
                         </Link>
-                        <ChevronRight className="w-3.5 h-3.5" />
+                        <ChevronRight className="w-3 h-3 text-gray-300 flex-shrink-0" />
                         <Link
                             href="/roadmap/my"
-                            className="hover:text-indigo-600 transition-colors"
+                            className="roadmap-tree-header__breadcrumb-link"
                         >
                             Lộ trình AI
                         </Link>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                        <span className="text-gray-900 font-medium truncate max-w-[200px]">
+                        <ChevronRight className="w-3 h-3 text-gray-300 flex-shrink-0" />
+                        <span className="roadmap-tree-header__breadcrumb-current">
                             {roadmap.roadmap_title}
                         </span>
-                    </div>
+                    </nav>
 
-                    <div className="flex items-center justify-between flex-wrap gap-4">
-                        <div className="flex items-center space-x-4">
+                    {/* Row 2: Toolbar */}
+                    <div className="roadmap-tree-header__toolbar">
+                        {/* Left: Back + Title */}
+                        <div className="roadmap-tree-header__left">
                             <Link
                                 href="/roadmap/my"
-                                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+                                className="roadmap-tree-header__back"
+                                title="Quay lại"
                             >
-                                <ArrowLeft className="w-5 h-5" />
-                                <span className="font-medium">Quay lại</span>
+                                <ArrowLeft className="w-4 h-4" />
                             </Link>
-                            <div className="self-stretch w-px bg-gray-200"></div>
-                            <div>
-                                <h2 className="roadmap-tree-header__title">
-                                    {roadmap.roadmap_title}
-                                </h2>
-                                <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                                    <span>{progressStats.total} topics</span>
-                                    <span>•</span>
-                                    <span className="text-green-600 font-medium">
-                                        {progressStats.completed} hoàn thành
-                                    </span>
-                                    <span>•</span>
-                                    <span className="text-purple-600 font-medium">
-                                        {progressStats.inProgress} đang học
-                                    </span>
-                                    {isTempRoadmap && (
-                                        <>
-                                            <span>•</span>
-                                            <span className="flex items-center gap-1 text-amber-600 font-medium">
-                                                <AlertCircle className="w-3.5 h-3.5" />
-                                                Chưa lưu
-                                            </span>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                            <h1 className="roadmap-tree-header__title">
+                                {roadmap.roadmap_title}
+                            </h1>
+                            <span className="roadmap-tree-header__count">
+                                {progressStats.total} topics
+                            </span>
+                            {isTempRoadmap && (
+                                <span
+                                    style={{
+                                        fontSize: 11,
+                                        fontWeight: 600,
+                                        color: "#d97706",
+                                        background: "#fef3c7",
+                                        padding: "2px 8px",
+                                        borderRadius: 10,
+                                        whiteSpace: "nowrap",
+                                        flexShrink: 0,
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 4,
+                                    }}
+                                >
+                                    <AlertCircle
+                                        style={{ width: 12, height: 12 }}
+                                    />
+                                    Chưa lưu
+                                </span>
+                            )}
                         </div>
 
-                        <div className="flex items-center space-x-3">
-                            <div className="relative">
-                                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        {/* Center: Progress bar */}
+                        <div className="roadmap-tree-header__progress">
+                            <div className="roadmap-tree-header__stats">
+                                <span className="roadmap-tree-header__stat roadmap-tree-header__stat--done">
+                                    {progressStats.completed} hoàn thành
+                                </span>
+                                <span className="roadmap-tree-header__stat-dot">
+                                    ·
+                                </span>
+                                <span className="roadmap-tree-header__stat roadmap-tree-header__stat--learning">
+                                    {progressStats.inProgress} đang học
+                                </span>
+                            </div>
+                            <div className="roadmap-tree-header__progress-track">
+                                <motion.div
+                                    className="roadmap-tree-header__progress-fill"
+                                    initial={{ width: 0 }}
+                                    animate={{
+                                        width: `${progressStats.percentage}%`,
+                                    }}
+                                    transition={{
+                                        duration: 0.6,
+                                        ease: "easeOut",
+                                    }}
+                                />
+                            </div>
+                            <span className="roadmap-tree-header__progress-pct">
+                                {progressStats.percentage}%
+                            </span>
+                        </div>
+
+                        {/* Right: Search */}
+                        <div className="roadmap-tree-header__right">
+                            <div className="roadmap-tree-header__search">
+                                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                                 <input
                                     ref={searchRef}
                                     type="text"
@@ -881,25 +919,17 @@ export default function AIRoadmapTreeView({
                                     onChange={(e) =>
                                         setSearchQuery(e.target.value)
                                     }
-                                    className="w-60 pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                    className="roadmap-tree-header__search-input"
                                 />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery("")}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                )}
                             </div>
-                        </div>
-                    </div>
-
-                    <div className="roadmap-tree-header__progress">
-                        <div className="roadmap-tree-header__progress-bar">
-                            <motion.div
-                                className="roadmap-tree-header__progress-fill"
-                                initial={{ width: 0 }}
-                                animate={{
-                                    width: `${progressStats.percentage}%`,
-                                }}
-                                transition={{ duration: 0.5 }}
-                            />
-                        </div>
-                        <div className="roadmap-tree-header__progress-text">
-                            {progressStats.percentage}%
                         </div>
                     </div>
                 </div>
