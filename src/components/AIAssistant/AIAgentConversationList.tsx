@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { History, Search, Trash2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -54,71 +53,29 @@ export default function AIAgentConversationList({
     if (conversations.length === 0) {
         return (
             <div
-                className={cn(
-                    "border-b px-3 py-4",
-                    themed.chrome,
-                    themed.panelMutedSurface,
-                )}
+                className={cn("border-b px-4 py-6 text-center", themed.chrome)}
             >
-                <div
-                    className={cn(
-                        "rounded-2xl border border-dashed px-4 py-5 text-center",
-                        themed.borderSoft,
-                    )}
-                >
-                    <div
-                        className={cn(
-                            "mx-auto mb-2.5 flex size-9 items-center justify-center rounded-xl border",
-                            themed.borderSoft,
-                            themed.panelSurface,
-                        )}
-                    >
-                        <History className={cn("size-4", themed.textMuted)} />
-                    </div>
-                    <p className={cn("text-[13px] font-medium", themed.textStrong)}>
-                        Chưa có lịch sử trò chuyện
-                    </p>
-                    <p className={cn("mt-1 text-xs", themed.textMuted)}>
-                        Bắt đầu một cuộc trò chuyện mới để tạo thread đầu tiên.
-                    </p>
-                </div>
+                <History
+                    className={cn("mx-auto mb-2 size-5", themed.textMuted)}
+                />
+                <p className={cn("text-sm font-medium", themed.textStrong)}>
+                    Chưa có lịch sử
+                </p>
+                <p className={cn("mt-1 text-xs", themed.textMuted)}>
+                    Bắt đầu một cuộc trò chuyện mới.
+                </p>
             </div>
         );
     }
 
     return (
-        <div
-            className={cn(
-                "border-b px-3 py-3",
-                themed.chrome,
-                themed.panelMutedSurface,
-            )}
-        >
-            <div className="mb-2 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                    <Badge
-                        variant="outline"
-                        className={cn(
-                            "rounded-full border px-2 py-0 text-[10px]",
-                            themed.borderSoft,
-                            themed.textMuted,
-                        )}
-                    >
-                        <History className="size-3" />
-                        Cuộc trò chuyện
-                    </Badge>
-                    <span className={cn("text-xs", themed.textMuted)}>
-                        {conversations.length}
-                    </span>
-                </div>
-            </div>
-
+        <div className={cn("border-b px-3 py-3", themed.chrome)}>
             {showSearch && (
-                <div className="relative mb-3">
+                <div className="relative mb-2">
                     <Search
                         className={cn(
                             "pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2",
-                            themed.textFaint,
+                            themed.textMuted,
                         )}
                     />
                     <Input
@@ -126,17 +83,14 @@ export default function AIAgentConversationList({
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Tìm cuộc trò chuyện..."
                         className={cn(
-                            "h-9 rounded-xl border pl-9 text-[13px] shadow-none",
+                            "h-8 rounded-lg pl-9 text-sm",
                             themed.composer,
-                            theme === "dark"
-                                ? "placeholder:text-zinc-500"
-                                : "placeholder:text-zinc-400",
                         )}
                     />
                 </div>
             )}
 
-            <div className="max-h-[15rem] space-y-1.5 overflow-y-auto pr-1">
+            <div className="max-h-48 space-y-1 overflow-y-auto">
                 {filtered.map((conversation) => {
                     const active = conversation.id === activeId;
 
@@ -147,50 +101,48 @@ export default function AIAgentConversationList({
                             tabIndex={0}
                             onClick={() => onSelect(conversation.id)}
                             onKeyDown={(event) => {
-                                if (event.key === "Enter" || event.key === " ") {
+                                if (
+                                    event.key === "Enter" ||
+                                    event.key === " "
+                                ) {
                                     event.preventDefault();
                                     onSelect(conversation.id);
                                 }
                             }}
                             className={cn(
-                                "group flex w-full items-start justify-between gap-3 rounded-2xl border px-3 py-2.5 text-left transition-colors",
-                                active
-                                    ? cn(
-                                          themed.itemActive,
-                                          themed.textStrong,
-                                          themed.chrome,
-                                      )
-                                    : cn(
-                                          themed.panelSurface,
-                                          themed.borderSoft,
-                                          themed.itemHover,
-                                      ),
+                                "group flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                                active ? themed.itemActive : themed.itemHover,
                             )}
                         >
                             <div className="min-w-0 flex-1">
-                                <p className="truncate text-[13px] font-medium">
+                                <p
+                                    className={cn(
+                                        "truncate font-medium",
+                                        themed.textBody,
+                                    )}
+                                >
                                     {conversation.title}
                                 </p>
-                                <div
+                                <p
                                     className={cn(
-                                        "mt-1 flex flex-wrap items-center gap-2 text-[10px]",
+                                        "mt-0.5 text-xs",
                                         themed.textMuted,
                                     )}
                                 >
-                                    <span>{timeAgo(conversation.updatedAt)}</span>
-                                    <span>{conversation.messageCount} tin nhắn</span>
-                                </div>
+                                    {timeAgo(conversation.updatedAt)} ·{" "}
+                                    {conversation.messageCount} tin nhắn
+                                </p>
                             </div>
 
                             <Button
                                 type="button"
                                 variant="ghost"
-                                size="icon-xs"
+                                size="icon"
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     onDelete(conversation.id);
                                 }}
-                                className="mt-0.5 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                                className="size-6 shrink-0 rounded-md opacity-0 transition-opacity group-hover:opacity-100"
                                 title="Xóa"
                             >
                                 <Trash2 className="size-3.5" />
@@ -200,15 +152,14 @@ export default function AIAgentConversationList({
                 })}
 
                 {filtered.length === 0 && (
-                    <div
+                    <p
                         className={cn(
-                            "rounded-2xl border border-dashed px-4 py-4 text-center text-[13px]",
-                            themed.borderSoft,
+                            "py-3 text-center text-xs",
                             themed.textMuted,
                         )}
                     >
-                        Không tìm thấy cuộc trò chuyện phù hợp.
-                    </div>
+                        Không tìm thấy cuộc trò chuyện.
+                    </p>
                 )}
             </div>
         </div>

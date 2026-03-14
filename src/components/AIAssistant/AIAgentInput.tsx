@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { ArrowUp, Square, FileCode2, CornerDownLeft, Wand2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ArrowUp, Square, Plus, Globe, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { AIAgentMode } from "./types";
-import { getAIAccent, getAITheme } from "./theme";
+import { getAITheme } from "./theme";
 
 interface AIAgentInputProps {
     onSend: (message: string) => void;
@@ -17,28 +16,29 @@ interface AIAgentInputProps {
     mode?: AIAgentMode;
     modelName?: string;
     theme?: "light" | "dark";
+    suggestions?: string[];
+    onSuggestionClick?: (suggestion: string) => void;
 }
 
 export default function AIAgentInput({
     onSend,
     isLoading,
     onStop,
-    codeContext,
-    language,
-    mode = "agent",
+    mode = "ask",
     modelName,
     theme = "dark",
+    suggestions = [],
+    onSuggestionClick,
 }: AIAgentInputProps) {
     const [input, setInput] = useState("");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const themed = getAITheme(theme);
-    const accent = getAIAccent(mode === "agent" ? "amber" : "blue", theme);
 
     const handleInputChange = useCallback(
         (e: React.ChangeEvent<HTMLTextAreaElement>) => {
             setInput(e.target.value);
             e.target.style.height = "auto";
-            e.target.style.height = Math.min(e.target.scrollHeight, 128) + "px";
+            e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
         },
         [],
     );
@@ -62,105 +62,107 @@ export default function AIAgentInput({
         [handleSend],
     );
 
-    const placeholderMap: Record<AIAgentMode, string> = {
-        agent: "Mô tả thay đổi bạn muốn AI thực hiện trên code hiện tại...",
-        ask: "Hỏi AI về code, lỗi, khái niệm hoặc hướng xử lý...",
-    };
-
     const hasInput = input.trim().length > 0;
 
     return (
-        <div
-            className={cn(
-                "border-t px-3 py-2 backdrop-blur-sm",
-                themed.chrome,
-                themed.headerSurface,
+        <div className="px-4 pb-4 pt-2">
+            {/* Suggestion pills */}
+            {suggestions.length > 0 && !hasInput && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                    {suggestions.map((suggestion) => (
+                        <button
+                            key={suggestion}
+                            type="button"
+                            onClick={() => {
+                                onSuggestionClick?.(suggestion);
+                                onSend(suggestion);
+                            }}
+                            className={cn(
+                                "rounded-full border px-3 py-1.5 text-xs transition-colors",
+                                themed.borderSoft,
+                                themed.textMuted,
+                                themed.itemHover,
+                            )}
+                        >
+                            {suggestion}
+                        </button>
+                    ))}
+                </div>
             )}
-        >
+
+            {/* Input container */}
             <div
                 className={cn(
-                    "rounded-[24px] border p-2.5 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.55)] transition-shadow",
+                    "rounded-2xl border transition-colors",
                     themed.composer,
-                    hasInput && accent.border,
+                    hasInput &&
+                        (theme === "dark"
+                            ? "border-zinc-600"
+                            : "border-zinc-400"),
                 )}
             >
-                <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                    <Badge
-                        variant="outline"
-                        className={cn(
-                            "rounded-full border px-2 py-0 text-[10px]",
-                            accent.soft,
-                        )}
-                    >
-                        <Wand2 className="size-3" />
-                        {mode === "agent" ? "Chế độ tác vụ" : "Chế độ trò chuyện"}
-                    </Badge>
-                    {modelName && (
-                        <Badge
-                            variant="outline"
-                            className={cn(
-                                "rounded-full border px-2 py-0 text-[10px]",
-                                themed.borderSoft,
-                                themed.textMuted,
-                            )}
-                        >
-                            {modelName}
-                        </Badge>
-                    )}
-                    {codeContext && language && (
-                        <Badge
-                            variant="outline"
-                            className={cn(
-                                "rounded-full border px-2 py-0 text-[10px]",
-                                themed.borderSoft,
-                                themed.textMuted,
-                            )}
-                        >
-                            <FileCode2 className="size-3" />
-                            {language}
-                        </Badge>
-                    )}
-                </div>
-
                 <textarea
                     ref={textareaRef}
                     value={input}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
-                    placeholder={placeholderMap[mode]}
+                    placeholder={
+                        mode === "agent"
+                            ? "Mô tả thay đổi bạn muốn AI thực hiện..."
+                            : "Bạn muốn hỏi gì?"
+                    }
                     className={cn(
-                        "min-h-[40px] w-full resize-none bg-transparent px-0.5 py-0.5 text-[13px] leading-6 outline-none",
+                        "min-h-[44px] w-full resize-none bg-transparent px-4 pt-3 pb-2 text-sm leading-relaxed outline-none",
                         themed.textBody,
                         theme === "dark"
                             ? "placeholder:text-zinc-500"
-                            : "placeholder:text-zinc-400",
+                            : "placeholder:text-muted-foreground",
                     )}
                     rows={1}
-                    style={{ maxHeight: 128 }}
+                    style={{ maxHeight: 160 }}
                     disabled={isLoading}
                 />
 
-                <div
-                    className={cn(
-                        "mt-2 flex flex-wrap items-end justify-between gap-2 border-t pt-2",
-                        themed.chrome,
-                    )}
-                >
-                    <div
-                        className={cn(
-                            "flex flex-wrap items-center gap-2 text-[10px]",
-                            themed.textMuted,
-                        )}
-                    >
-                        <span className="inline-flex items-center gap-1">
-                            <CornerDownLeft className="size-3" />
-                            Enter gửi
-                        </span>
-                        <span>Shift + Enter xuống dòng</span>
-                        {input.length > 0 && (
-                            <span className={cn("tabular-nums", themed.textFaint)}>
-                                {input.length} ký tự
-                            </span>
+                {/* Toolbar row */}
+                <div className="flex items-center justify-between px-3 pb-2.5">
+                    <div className="flex items-center gap-1">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                                "size-8 rounded-lg",
+                                themed.textMuted,
+                            )}
+                            title="Đính kèm"
+                        >
+                            <Plus className="size-4" />
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                                "size-8 rounded-lg",
+                                themed.textMuted,
+                            )}
+                            title="Tìm kiếm web"
+                        >
+                            <Globe className="size-4" />
+                        </Button>
+                        {modelName && (
+                            <button
+                                type="button"
+                                className={cn(
+                                    "ml-1 flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors",
+                                    themed.textMuted,
+                                    themed.itemHover,
+                                )}
+                                title="Mô hình AI"
+                            >
+                                <Settings2 className="size-3" />
+                                {modelName}
+                            </button>
                         )}
                     </div>
 
@@ -169,10 +171,10 @@ export default function AIAgentInput({
                             type="button"
                             size="icon"
                             onClick={onStop}
-                            className="size-9 rounded-full bg-rose-500/90 text-white hover:bg-rose-500"
+                            className="size-8 rounded-lg bg-rose-500 text-white hover:bg-rose-600"
                             title="Dừng"
                         >
-                            <Square className="size-4" />
+                            <Square className="size-3.5" />
                         </Button>
                     ) : (
                         <Button
@@ -181,10 +183,16 @@ export default function AIAgentInput({
                             onClick={handleSend}
                             disabled={!hasInput}
                             className={cn(
-                                "size-9 rounded-full shadow-lg shadow-black/10",
+                                "size-8 rounded-lg",
                                 hasInput
-                                    ? accent.primaryButton
-                                    : "bg-zinc-300 text-zinc-500 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-400",
+                                    ? "bg-foreground text-background hover:bg-foreground/90"
+                                    : "bg-muted text-muted-foreground",
+                                theme === "dark" &&
+                                    hasInput &&
+                                    "bg-zinc-100 text-zinc-950 hover:bg-zinc-200",
+                                theme === "dark" &&
+                                    !hasInput &&
+                                    "bg-zinc-800 text-zinc-500",
                             )}
                             title="Gửi"
                         >
@@ -193,7 +201,6 @@ export default function AIAgentInput({
                     )}
                 </div>
             </div>
-
         </div>
     );
 }

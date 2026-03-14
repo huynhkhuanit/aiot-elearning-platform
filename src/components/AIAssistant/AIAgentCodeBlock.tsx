@@ -96,27 +96,30 @@ export default function AIAgentCodeBlock({
 
     return (
         <div
-            className="my-4 overflow-hidden rounded-[24px] border transition-all duration-200"
-            style={{
-                borderColor: isDark ? "#1f2937" : "#cbd5e1",
-                boxShadow: isDark
-                    ? "0 18px 40px -32px rgba(15,23,42,0.85)"
-                    : "0 18px 40px -32px rgba(15,23,42,0.22)",
-            }}
+            className={cn(
+                "my-3 overflow-hidden rounded-xl border",
+                isDark ? "border-zinc-800" : "border-border",
+            )}
         >
+            {/* Header */}
             <div
-                className="flex items-center justify-between gap-2 px-3 py-2.5"
-                style={{ backgroundColor: isDark ? "#0f172a" : "#f1f5f9" }}
+                className={cn(
+                    "flex items-center justify-between px-3 py-2",
+                    isDark ? "bg-zinc-900" : "bg-muted",
+                )}
             >
-                <div className="flex min-w-0 items-center gap-2">
+                <div className="flex items-center gap-2">
                     <Code2
-                        className="size-3.5 shrink-0"
-                        aria-hidden
-                        style={{ color: isDark ? "#cbd5e1" : "#334155" }}
+                        className={cn(
+                            "size-3.5",
+                            isDark ? "text-zinc-400" : "text-muted-foreground",
+                        )}
                     />
                     <span
-                        className="truncate font-mono text-xs"
-                        style={{ color: isDark ? "#cbd5e1" : "#334155" }}
+                        className={cn(
+                            "font-mono text-xs",
+                            isDark ? "text-zinc-400" : "text-muted-foreground",
+                        )}
                     >
                         {langLabel}
                     </span>
@@ -125,34 +128,36 @@ export default function AIAgentCodeBlock({
                 <Button
                     type="button"
                     variant="ghost"
-                    size="icon-sm"
+                    size="icon"
                     onClick={handleCopy}
                     className={cn(
-                        "rounded-full transition-colors duration-150",
+                        "size-7 rounded-lg",
                         isDark
-                            ? "text-zinc-200 hover:bg-white/10 hover:text-white"
-                            : "text-slate-600 hover:bg-slate-200 hover:text-slate-900",
-                        copied && "bg-emerald-500/20 text-emerald-400",
+                            ? "text-zinc-400 hover:text-zinc-200"
+                            : "text-muted-foreground hover:text-foreground",
+                        copied && "text-emerald-500",
                     )}
-                    title={copied ? "Đã sao chép" : "Sao chép mã"}
-                    aria-label={copied ? "Đã sao chép" : "Sao chép mã"}
+                    title={copied ? "Đã sao chép" : "Sao chép"}
                 >
                     {copied ? (
-                        <Check className="size-4" />
+                        <Check className="size-3.5" />
                     ) : (
-                        <Copy className="size-4" />
+                        <Copy className="size-3.5" />
                     )}
                 </Button>
             </div>
 
+            {/* Code */}
             <div
-                className="overflow-x-auto"
+                className={cn(
+                    "overflow-x-auto",
+                    isDark ? "bg-zinc-950" : "bg-muted/30",
+                )}
                 style={{
-                    backgroundColor: isDark ? "#050816" : "#f8fafc",
                     scrollbarWidth: "thin",
                     scrollbarColor: isDark
-                        ? "#30363d transparent"
-                        : "#cbd5e1 transparent",
+                        ? "#3f3f46 transparent"
+                        : "#d4d4d8 transparent",
                 }}
             >
                 <pre
@@ -163,7 +168,7 @@ export default function AIAgentCodeBlock({
                         ref={codeRef}
                         className={cn(
                             `language-${normalizedLang}`,
-                            "!bg-transparent !text-[13px] !leading-[22px]",
+                            "!bg-transparent !text-[13px] !leading-relaxed",
                         )}
                         style={{
                             color: isDark ? "#e2e8f0" : "#0f172a",

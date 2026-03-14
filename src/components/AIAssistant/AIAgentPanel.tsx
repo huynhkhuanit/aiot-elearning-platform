@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ArrowDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAIChat } from "./useAIChat";
 import { useAIAgentChat } from "./useAIAgentChat";
@@ -19,11 +20,18 @@ import type {
     AIModel,
 } from "./types";
 import { AI_MODELS } from "./types";
-import { getAIAccent, getAITheme } from "./theme";
+import { getAITheme } from "./theme";
 
 interface ExtendedAIAgentPanelProps extends AIAgentPanelProps {
     aiServerStatus?: AIServerStatus;
 }
+
+const DEFAULT_SUGGESTIONS = [
+    "Giải thích code này",
+    "Tìm lỗi trong code",
+    "Cải thiện hiệu suất",
+    "Viết unit test",
+];
 
 function localizeAIError(error: string): string {
     const normalized = error.toLowerCase();
@@ -62,11 +70,15 @@ export default function AIAgentPanel({
     aiServerStatus = "checking",
 }: ExtendedAIAgentPanelProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const themed = getAITheme(theme);
+    const [showScrollBottom, setShowScrollBottom] = useState(false);
 
     const hasAgentContext = !!(code && onEditCode);
     const qwenModel = useMemo(
-        () => AI_MODELS.find((model) => model.id.includes("qwen")) || AI_MODELS[0],
+        () =>
+            AI_MODELS.find((model) => model.id.includes("qwen")) ||
+            AI_MODELS[0],
         [],
     );
     const [mode, setMode] = useState<AIAgentMode>(
@@ -139,9 +151,23 @@ export default function AIAgentPanel({
         stopGeneration,
     } = useAgentMode ? agentChat : normalChat;
 
+    /* ── Auto-scroll ── */
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
+
+    /* ── Show scroll-to-bottom button ── */
+    const handleScroll = useCallback(() => {
+        const el = scrollContainerRef.current;
+        if (!el) return;
+        const distanceFromBottom =
+            el.scrollHeight - el.scrollTop - el.clientHeight;
+        setShowScrollBottom(distanceFromBottom > 100);
+    }, []);
+
+    const scrollToBottom = useCallback(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, []);
 
     const handleSendMessage = useCallback(
         async (content: string) => {
@@ -151,7 +177,9 @@ export default function AIAgentPanel({
 
             if (messages.length === 0) {
                 const title =
-                    content.length > 40 ? `${content.slice(0, 40)}...` : content;
+                    content.length > 40
+                        ? `${content.slice(0, 40)}...`
+                        : content;
                 if (conversations.length > 0) {
                     updateConversation(conversations[0].id, {
                         title,
@@ -170,13 +198,6 @@ export default function AIAgentPanel({
         ],
     );
 
-    const handleQuickAction = useCallback(
-        (prompt: string) => {
-            handleSendMessage(prompt);
-        },
-        [handleSendMessage],
-    );
-
     const handleNewChat = useCallback(() => {
         clearHistory();
         createConversation();
@@ -187,28 +208,17 @@ export default function AIAgentPanel({
         stopThinking();
     }, [stopGeneration, stopThinking]);
 
-    const activeAccent = getAIAccent(
-        useAgentMode ? "amber" : "blue",
-        theme,
-    );
     const localizedError = error ? localizeAIError(error) : null;
 
     return (
         <div
             className={cn(
-                "relative flex h-full flex-col overflow-hidden rounded-[28px] border shadow-[0_24px_56px_-40px_rgba(15,23,42,0.85)]",
+                "relative flex h-full flex-col overflow-hidden rounded-2xl border",
                 themed.shell,
                 themed.chrome,
                 className,
             )}
         >
-            <div
-                className={cn(
-                    "pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b blur-3xl",
-                    themed.heroGlow,
-                )}
-            />
-
             <div className="relative flex h-full min-h-0 flex-col">
                 <AIAgentHeader
                     onNewChat={handleNewChat}
@@ -232,7 +242,10 @@ export default function AIAgentPanel({
                     />
                 )}
 
+                {/* ── Message area ── */}
                 <div
+                    ref={scrollContainerRef}
+                    onScroll={handleScroll}
                     className="relative min-h-0 flex-1 overflow-y-auto"
                     style={{
                         scrollbarWidth: "thin",
@@ -246,17 +259,18 @@ export default function AIAgentPanel({
                         <AIAgentWelcome
                             codeContext={codeContext}
                             language={language}
-                            onQuickAction={handleQuickAction}
+                            onQuickAction={handleSendMessage}
                             theme={theme}
                         />
                     ) : (
-                        <div className="pt-2">
+                        <div className="py-2">
                             {messages
                                 .filter(
                                     (message) =>
                                         !(
                                             isLoading &&
-                                            message === messages[messages.length - 1] &&
+                                            message ===
+                                                messages[messages.length - 1] &&
                                             message.role === "assistant" &&
                                             !message.content
                                         ),
@@ -274,18 +288,21 @@ export default function AIAgentPanel({
 
                             {isLoading &&
                                 messages.length > 0 &&
-                                messages[messages.length - 1].role === "assistant" &&
+                                messages[messages.length - 1].role ===
+                                    "assistant" &&
                                 !messages[messages.length - 1].content && (
                                     <AIAgentStreamingPlaceholder
                                         theme={theme}
                                         accent={useAgentMode ? "amber" : "blue"}
                                         statusLabel={
-                                            isThinking && thinkingSteps.length > 0
-                                                ? thinkingSteps.find(
+                                            isThinking &&
+                                            thinkingSteps.length > 0
+                                                ? (thinkingSteps.find(
                                                       (step) =>
-                                                          step.status === "active",
+                                                          step.status ===
+                                                          "active",
                                                   )?.label ??
-                                                  "AI đang tạo phản hồi..."
+                                                  "AI đang tạo phản hồi...")
                                                 : "AI đang tạo phản hồi..."
                                         }
                                     />
@@ -294,45 +311,45 @@ export default function AIAgentPanel({
                             <div ref={messagesEndRef} />
                         </div>
                     )}
-                </div>
 
-                {useAgentMode &&
-                    selectedModel.id.includes("deepseek-coder") &&
-                    !error && (
-                        <div
+                    {/* Scroll to bottom button */}
+                    {showScrollBottom && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={scrollToBottom}
                             className={cn(
-                                "mx-3 mb-2 flex items-start gap-2 rounded-[18px] border px-3 py-2",
-                                activeAccent.softStrong,
+                                "absolute bottom-3 left-1/2 z-10 size-8 -translate-x-1/2 rounded-full shadow-lg",
+                                themed.composer,
                             )}
                         >
-                            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                            <p className="text-[12px] leading-5">
-                                DeepSeek 1.3B có thể không hỗ trợ tools. Nên chọn{" "}
-                                <strong>Qwen 2.5 Coder 7B</strong> để AI đọc và
-                                sửa code ổn định hơn.
-                            </p>
-                        </div>
+                            <ArrowDown className="size-4" />
+                        </Button>
                     )}
+                </div>
 
+                {/* ── Error banner ── */}
                 {error && (
                     <div
                         className={cn(
-                            "mx-3 mb-2 rounded-[18px] border border-rose-300/30 bg-rose-500/10 px-3 py-2.5",
-                            theme === "light" &&
-                                "border-rose-200 bg-rose-50 text-rose-700",
+                            "mx-4 mb-2 flex items-start gap-2 rounded-xl border px-3 py-2.5 text-sm",
+                            theme === "dark"
+                                ? "border-rose-500/20 bg-rose-500/10 text-rose-300"
+                                : "border-rose-200 bg-rose-50 text-rose-700",
                         )}
                     >
-                        <div className="flex items-start gap-2.5">
-                            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-400" />
-                            <div className="flex-1">
-                                <p className="text-[12px] font-medium">
-                                    {localizedError}
-                                </p>
-                                <p className={cn("mt-0.5 text-[11px]", themed.textMuted)}>
-                                    Kiểm tra kết nối AI server hoặc thử lại sau ít
-                                    phút.
-                                </p>
-                            </div>
+                        <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                        <div>
+                            <p className="font-medium">{localizedError}</p>
+                            <p
+                                className={cn(
+                                    "mt-0.5 text-xs",
+                                    themed.textMuted,
+                                )}
+                            >
+                                Kiểm tra kết nối AI server hoặc thử lại sau.
+                            </p>
                         </div>
                     </div>
                 )}
@@ -346,6 +363,11 @@ export default function AIAgentPanel({
                     mode={mode}
                     modelName={selectedModel.name}
                     theme={theme}
+                    suggestions={
+                        messages.length === 0 && !codeContext
+                            ? DEFAULT_SUGGESTIONS
+                            : []
+                    }
                 />
             </div>
         </div>
