@@ -42,7 +42,11 @@ export const ModelSelectorContent = ({
     title = "Model Selector",
     ...props
 }: ModelSelectorContentProps) => (
-    <DialogContent className={cn("p-0", className)} {...props}>
+    <DialogContent
+        className={cn("border-0 p-0", className)}
+        showCloseButton={false}
+        {...props}
+    >
         <DialogTitle className="sr-only">{title}</DialogTitle>
         <Command className="**:data-[slot=command-input-wrapper]:h-auto">
             {children}
@@ -175,7 +179,7 @@ export const ModelSelectorLogo = ({
     <img
         {...props}
         alt={`${provider} logo`}
-        className={cn("size-3 dark:invert", className)}
+        className={cn("size-3 dark:brightness-0 dark:invert", className)}
         height={12}
         src={`https://models.dev/logos/${provider}.svg`}
         width={12}
@@ -190,7 +194,7 @@ export const ModelSelectorLogoGroup = ({
 }: ModelSelectorLogoGroupProps) => (
     <div
         className={cn(
-            "-space-x-1 flex shrink-0 items-center [&>img]:rounded-full [&>img]:bg-background [&>img]:p-px [&>img]:ring-1 dark:[&>img]:bg-foreground",
+            "-space-x-1 flex shrink-0 items-center [&>img]:rounded-full [&>img]:p-px",
             className,
         )}
         {...props}
