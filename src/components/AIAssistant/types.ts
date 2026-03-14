@@ -6,6 +6,9 @@ export interface AIModel {
     id: string;
     name: string;
     provider: string;
+    /** Slug for models.dev logo — see https://models.dev/logos */
+    providerSlug: string;
+    description?: string;
 }
 
 export const AI_MODELS: AIModel[] = [
@@ -13,11 +16,29 @@ export const AI_MODELS: AIModel[] = [
         id: "deepseek-coder:1.3b",
         name: "DeepSeek Coder 1.3B",
         provider: "Ollama",
+        providerSlug: "deepseek",
+        description: "Mô hình nhỏ, phản hồi nhanh",
     },
     {
         id: "qwen2.5-coder:7b-instruct",
         name: "Qwen 2.5 Coder 7B",
         provider: "Ollama",
+        providerSlug: "alibaba",
+        description: "Hỗ trợ tool calling, phù hợp Agent mode",
+    },
+    {
+        id: "llama3.2:3b",
+        name: "Llama 3.2 3B",
+        provider: "Ollama",
+        providerSlug: "llama",
+        description: "Mô hình đa năng từ Meta",
+    },
+    {
+        id: "gemma3:4b",
+        name: "Gemma 3 4B",
+        provider: "Ollama",
+        providerSlug: "google",
+        description: "Mô hình của Google, hiệu suất tốt",
     },
 ];
 
@@ -73,10 +94,7 @@ export interface AIAgentPanelProps {
     /** Full code state for Agent mode tools (read_code, edit_code) */
     code?: CodeState;
     /** Edit code by tab for Agent mode edit_code tool */
-    onEditCode?: (
-        tab: "html" | "css" | "javascript",
-        content: string,
-    ) => void;
+    onEditCode?: (tab: "html" | "css" | "javascript", content: string) => void;
     className?: string;
     theme?: "light" | "dark";
 }

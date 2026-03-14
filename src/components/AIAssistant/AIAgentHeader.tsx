@@ -3,7 +3,7 @@
 import { History, MessageCircle, Plus, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { AIServerStatus, AIAgentMode } from "./types";
+import type { AIServerStatus, AIAgentMode, AIModel } from "./types";
 import { AI_MODE_CONFIG } from "./types";
 import { getAIAccent, getAIStatusTone, getAITheme } from "./theme";
 
@@ -15,12 +15,8 @@ interface AIAgentHeaderProps {
     theme?: "light" | "dark";
     mode: AIAgentMode;
     onModeChange: (mode: AIAgentMode) => void;
-    selectedModel: { id: string; name: string; provider: string };
-    onModelChange: (model: {
-        id: string;
-        name: string;
-        provider: string;
-    }) => void;
+    selectedModel: AIModel;
+    onModelChange: (model: AIModel) => void;
 }
 
 export default function AIAgentHeader({

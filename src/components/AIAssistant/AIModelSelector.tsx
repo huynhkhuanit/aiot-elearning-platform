@@ -1,31 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { CheckIcon, ChevronsUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from "@/components/ui/command";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
+    ModelSelector,
+    ModelSelectorContent,
+    ModelSelectorEmpty,
+    ModelSelectorGroup,
+    ModelSelectorInput,
+    ModelSelectorItem,
+    ModelSelectorList,
+    ModelSelectorLogo,
+    ModelSelectorLogoGroup,
+    ModelSelectorName,
+    ModelSelectorTrigger,
+} from "@/components/ai/model-selector";
 import { cn } from "@/lib/utils";
 import type { AIModel } from "./types";
 import { AI_MODELS } from "./types";
 
-interface AIModelSelectorProps {
-    selectedModel: AIModel;
-    onModelChange: (model: AIModel) => void;
-    theme?: "light" | "dark";
-}
-
-/** Group models by provider for the command palette. */
+/* ── Group models by provider ── */
 function groupByProvider(models: AIModel[]) {
     const groups: Record<string, AIModel[]> = {};
     for (const model of models) {
@@ -35,6 +30,12 @@ function groupByProvider(models: AIModel[]) {
     return groups;
 }
 
+interface AIModelSelectorProps {
+    selectedModel: AIModel;
+    onModelChange: (model: AIModel) => void;
+    theme?: "light" | "dark";
+}
+
 export default function AIModelSelector({
     selectedModel,
     onModelChange,
@@ -42,91 +43,87 @@ export default function AIModelSelector({
 }: AIModelSelectorProps) {
     const [open, setOpen] = useState(false);
     const grouped = groupByProvider(AI_MODELS);
+    const providers = Object.keys(grouped);
     const isDark = theme === "dark";
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <button
-                    type="button"
-                    role="combobox"
-                    aria-expanded={open}
+        <ModelSelector open={open} onOpenChange={setOpen}>
+            <ModelSelectorTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="sm"
                     className={cn(
-                        "inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs transition-colors",
+                        "h-7 gap-1.5 rounded-lg px-2 text-xs font-normal",
                         isDark
                             ? "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                             : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                 >
-                    <ChevronsUpDown className="size-3 opacity-50" />
-                    <span className="max-w-[140px] truncate">
-                        {selectedModel.name}
-                    </span>
-                </button>
-            </PopoverTrigger>
-
-            <PopoverContent
-                align="start"
-                side="top"
-                sideOffset={8}
-                className={cn(
-                    "w-64 p-0",
-                    isDark && "border-zinc-800 bg-zinc-900",
-                )}
-            >
-                <Command className={cn(isDark && "bg-zinc-900")}>
-                    <CommandInput
-                        placeholder="Tìm mô hình..."
-                        className="text-sm"
+                    <ModelSelectorLogo
+                        provider={selectedModel.providerSlug}
+                        className="size-3.5"
                     />
+                    <ModelSelectorName className="max-w-[120px]">
+                        {selectedModel.name}
+                    </ModelSelectorName>
+                    <ChevronsUpDown className="size-3 opacity-40" />
+                </Button>
+            </ModelSelectorTrigger>
 
-                    <CommandList>
-                        <CommandEmpty className="py-4 text-center text-xs text-muted-foreground">
-                            Không tìm thấy mô hình.
-                        </CommandEmpty>
+            <ModelSelectorContent
+                title="Chọn mô hình AI"
+                className={cn(isDark && "dark")}
+            >
+                <ModelSelectorInput placeholder="Tìm mô hình..." />
 
-                        {Object.entries(grouped).map(([provider, models]) => (
-                            <CommandGroup key={provider} heading={provider}>
-                                {models.map((model) => {
-                                    const isActive =
-                                        model.id === selectedModel.id;
+                <ModelSelectorList>
+                    <ModelSelectorEmpty>
+                        Không tìm thấy mô hình nào.
+                    </ModelSelectorEmpty>
 
-                                    return (
-                                        <CommandItem
-                                            key={model.id}
-                                            value={`${model.name} ${model.provider}`}
-                                            onSelect={() => {
-                                                onModelChange(model);
-                                                setOpen(false);
-                                            }}
-                                            className={cn(
-                                                "flex items-center justify-between gap-2 rounded-md text-sm",
-                                                isDark &&
-                                                    "data-[selected=true]:bg-zinc-800",
-                                            )}
-                                        >
-                                            <span
-                                                className={cn(
-                                                    "truncate",
-                                                    isActive &&
-                                                        (isDark
-                                                            ? "text-zinc-50"
-                                                            : "text-foreground font-medium"),
-                                                )}
-                                            >
-                                                {model.name}
+                    {providers.map((provider) => (
+                        <ModelSelectorGroup key={provider} heading={provider}>
+                            {grouped[provider].map((model) => {
+                                const isActive = model.id === selectedModel.id;
+
+                                return (
+                                    <ModelSelectorItem
+                                        key={model.id}
+                                        value={`${model.name} ${model.provider} ${model.id}`}
+                                        onSelect={() => {
+                                            onModelChange(model);
+                                            setOpen(false);
+                                        }}
+                                    >
+                                        <ModelSelectorLogo
+                                            provider={model.providerSlug}
+                                            className="size-4"
+                                        />
+                                        <ModelSelectorName>
+                                            {model.name}
+                                        </ModelSelectorName>
+                                        {model.description && (
+                                            <span className="hidden text-xs text-muted-foreground sm:inline">
+                                                {model.description}
                                             </span>
-                                            {isActive && (
-                                                <Check className="size-4 shrink-0 text-emerald-500" />
-                                            )}
-                                        </CommandItem>
-                                    );
-                                })}
-                            </CommandGroup>
-                        ))}
-                    </CommandList>
-                </Command>
-            </PopoverContent>
-        </Popover>
+                                        )}
+                                        <ModelSelectorLogoGroup>
+                                            <ModelSelectorLogo
+                                                provider={model.providerSlug}
+                                            />
+                                        </ModelSelectorLogoGroup>
+                                        {isActive ? (
+                                            <CheckIcon className="ml-auto size-4 text-emerald-500" />
+                                        ) : (
+                                            <div className="ml-auto size-4" />
+                                        )}
+                                    </ModelSelectorItem>
+                                );
+                            })}
+                        </ModelSelectorGroup>
+                    ))}
+                </ModelSelectorList>
+            </ModelSelectorContent>
+        </ModelSelector>
     );
 }
