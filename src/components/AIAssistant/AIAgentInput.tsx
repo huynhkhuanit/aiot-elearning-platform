@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { ArrowUp, Square, Plus, Globe, Settings2 } from "lucide-react";
+import { ArrowUp, Square, Plus, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { AIAgentMode } from "./types";
+import type { AIAgentMode, AIModel } from "./types";
 import { getAITheme } from "./theme";
+import AIModelSelector from "./AIModelSelector";
 
 interface AIAgentInputProps {
     onSend: (message: string) => void;
@@ -14,7 +15,8 @@ interface AIAgentInputProps {
     codeContext?: string;
     language?: string;
     mode?: AIAgentMode;
-    modelName?: string;
+    selectedModel: AIModel;
+    onModelChange: (model: AIModel) => void;
     theme?: "light" | "dark";
     suggestions?: string[];
     onSuggestionClick?: (suggestion: string) => void;
@@ -25,7 +27,8 @@ export default function AIAgentInput({
     isLoading,
     onStop,
     mode = "ask",
-    modelName,
+    selectedModel,
+    onModelChange,
     theme = "dark",
     suggestions = [],
     onSuggestionClick,
@@ -150,20 +153,13 @@ export default function AIAgentInput({
                         >
                             <Globe className="size-4" />
                         </Button>
-                        {modelName && (
-                            <button
-                                type="button"
-                                className={cn(
-                                    "ml-1 flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors",
-                                    themed.textMuted,
-                                    themed.itemHover,
-                                )}
-                                title="Mô hình AI"
-                            >
-                                <Settings2 className="size-3" />
-                                {modelName}
-                            </button>
-                        )}
+
+                        {/* Model selector - shadcn command palette style */}
+                        <AIModelSelector
+                            selectedModel={selectedModel}
+                            onModelChange={onModelChange}
+                            theme={theme}
+                        />
                     </div>
 
                     {isLoading ? (

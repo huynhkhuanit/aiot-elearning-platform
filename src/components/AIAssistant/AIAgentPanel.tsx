@@ -361,7 +361,8 @@ export default function AIAgentPanel({
                     codeContext={codeContext}
                     language={language}
                     mode={mode}
-                    modelName={selectedModel.name}
+                    selectedModel={selectedModel}
+                    onModelChange={setSelectedModel}
                     theme={theme}
                     suggestions={
                         messages.length === 0 && !codeContext
