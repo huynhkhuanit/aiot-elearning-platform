@@ -179,9 +179,10 @@ export const ModelSelectorLogo = ({
     <img
         {...props}
         alt={`${provider} logo`}
-        className={cn("size-3 dark:brightness-0 dark:invert", className)}
+        className={cn("size-3", className)}
         height={12}
         src={`https://models.dev/logos/${provider}.svg`}
+        style={{ filter: "brightness(0) invert(1)" }}
         width={12}
     />
 );

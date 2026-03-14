@@ -133,10 +133,7 @@ export default function AIAgentInput({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className={cn(
-                                "size-8 rounded-lg",
-                                themed.textMuted,
-                            )}
+                            className={cn("size-8 rounded-lg", themed.textBody)}
                             title="Đính kèm"
                         >
                             <Plus className="size-4" />
@@ -145,10 +142,7 @@ export default function AIAgentInput({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className={cn(
-                                "size-8 rounded-lg",
-                                themed.textMuted,
-                            )}
+                            className={cn("size-8 rounded-lg", themed.textBody)}
                             title="Tìm kiếm web"
                         >
                             <Globe className="size-4" />
