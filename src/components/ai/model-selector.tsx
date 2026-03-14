@@ -43,7 +43,7 @@ export const ModelSelectorContent = ({
     ...props
 }: ModelSelectorContentProps) => (
     <DialogContent
-        className={cn("border-0 p-0", className)}
+        className={cn("!border-none p-0", className)}
         showCloseButton={false}
         {...props}
     >
