@@ -1,271 +1,496 @@
 export const dynamic = "force-dynamic";
 
 import React from "react";
-import {
-    CheckCircle,
-    Users,
-    Trophy,
-    Target,
-    Code,
-    Rocket,
-    Heart,
-    Globe,
-} from "lucide-react";
 import Link from "next/link";
+import { supabaseAdmin, supabase } from "@/lib/supabase";
 
-export default function AboutPage() {
+/* ── Fetch real platform statistics from Supabase ─────────── */
+async function getPlatformStats() {
+    const db = supabaseAdmin ?? supabase;
+    try {
+        const [usersRes, coursesRes, enrollmentsRes, reviewsRes] =
+            await Promise.all([
+                db.from("users").select("*", { count: "exact", head: true }),
+                db.from("courses").select("*", { count: "exact", head: true }),
+                db.from("enrollments").select("*", {
+                    count: "exact",
+                    head: true,
+                }),
+                db.from("course_reviews").select("rating"),
+            ]);
+
+        const totalUsers = usersRes.count ?? 0;
+        const totalCourses = coursesRes.count ?? 0;
+        const totalEnrollments = enrollmentsRes.count ?? 0;
+        const reviews = reviewsRes.data ?? [];
+        const avgRating =
+            reviews.length > 0
+                ? (
+                      reviews.reduce(
+                          (sum: number, r: { rating: number }) =>
+                              sum + r.rating,
+                          0,
+                      ) / reviews.length
+                  ).toFixed(1)
+                : "5.0";
+
+        return {
+            totalUsers,
+            totalCourses,
+            totalEnrollments,
+            avgRating,
+        };
+    } catch {
+        return {
+            totalUsers: 0,
+            totalCourses: 0,
+            totalEnrollments: 0,
+            avgRating: "5.0",
+        };
+    }
+}
+
+function formatStat(num: number): string {
+    if (num >= 1000) return `${(num / 1000).toFixed(0)}K+`;
+    return `${num}+`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ABOUT PAGE — Stitch Design (Project 14709360202479114425)
+   ══════════════════════════════════════════════════════════════ */
+export default async function AboutPage() {
+    const stats = await getPlatformStats();
+
     return (
-        <div className="min-h-screen bg-white">
-            {/* Hero Section with Gradient */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#6366f1] to-[#9333ea] text-white pt-32 pb-20">
-                <div className="absolute inset-0 bg-[url('/assets/img/grid-pattern.svg')] opacity-10"></div>
-                <div className="max-w-7xl mx-auto px-6 relative z-10">
-                    <div className="text-center max-w-4xl mx-auto">
-                        <div className="inline-flex items-center px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-8">
-                            <span className="text-sm font-medium">
-                                Hành trình kiến tạo tương lai
-                            </span>
-                        </div>
-                        <h1 className="text-5xl md:text-7xl font-[900] mb-8 leading-tight tracking-tight">
-                            Nâng tầm kỹ năng <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-purple-200">
-                                Lập trình của bạn
-                            </span>
-                        </h1>
-                        <p className="text-xl md:text-2xl text-blue-100 leading-relaxed max-w-2xl mx-auto mb-10">
-                            CodeSense AIoT không chỉ là nơi học tập, mà là cộng
-                            đồng những người đam mê công nghệ, cùng nhau chinh
-                            phục những đỉnh cao mới.
-                        </p>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link
-                                href="/roadmap"
-                                className="px-8 py-4 bg-white text-[#6366f1] font-bold rounded-xl hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-                            >
-                                Khám phá lộ trình
-                            </Link>
-                            <Link
-                                href="/contact"
-                                className="px-8 py-4 bg-[#6366f1]/20 backdrop-blur-sm border border-white/30 text-white font-bold rounded-xl hover:bg-[#6366f1]/30 transition-all"
-                            >
-                                Liên hệ tư vấn
-                            </Link>
-                        </div>
+        <div className="min-h-screen bg-white text-slate-900 antialiased overflow-x-hidden">
+            {/* ═══════════════════════════════════════════════
+                HERO SECTION
+                Light background + centered gradient blob
+                ═══════════════════════════════════════════════ */}
+            <section className="relative pt-32 pb-48 lg:pt-40 lg:pb-64 overflow-hidden">
+                {/* Light background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white -z-20" />
+                {/* Centered gradient blob */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-gradient-to-r from-[#6366f1]/30 to-[#9333ea]/30 rounded-full blur-[100px] opacity-50 -z-10 mix-blend-multiply" />
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm mb-8">
+                        <span className="flex h-2 w-2 rounded-full bg-[#6366f1]" />
+                        <span className="text-sm font-medium text-slate-700">
+                            Hành trình kiến tạo tương lai
+                        </span>
                     </div>
-                </div>
 
-                {/* Decorative shapes */}
-                <div className="absolute top-1/2 left-10 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-                <div className="absolute top-1/2 right-10 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-            </div>
-
-            {/* Stats Section - Floating Cards */}
-            <div className="max-w-7xl mx-auto px-6 -mt-16 relative z-20 mb-24">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    {[
-                        {
-                            label: "Học viên",
-                            value: "10K+",
-                            icon: Users,
-                            color: "text-blue-500",
-                            bg: "bg-blue-50",
-                        },
-                        {
-                            label: "Khóa học",
-                            value: "5+",
-                            icon: Code,
-                            color: "text-purple-500",
-                            bg: "bg-purple-50",
-                        },
-                        {
-                            label: "Giảng viên",
-                            value: "20+",
-                            icon: Trophy,
-                            color: "text-yellow-500",
-                            bg: "bg-yellow-50",
-                        },
-                        {
-                            label: "Đánh giá",
-                            value: "4.9",
-                            icon: Heart,
-                            color: "text-red-500",
-                            bg: "bg-red-50",
-                        },
-                    ].map((stat, index) => (
-                        <div
-                            key={index}
-                            className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+                    {/* Heading */}
+                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 max-w-4xl mx-auto leading-tight">
+                        Nâng tầm kỹ năng <br className="hidden md:block" />
+                        <span
+                            className="bg-gradient-to-r from-[#6366f1] to-[#9333ea] bg-clip-text"
+                            style={{ WebkitTextFillColor: "transparent" }}
                         >
-                            <div
-                                className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center mb-4`}
-                            >
-                                <stat.icon className="w-6 h-6" />
-                            </div>
-                            <div className="text-3xl font-[900] text-gray-900 mb-1">
-                                {stat.value}
-                            </div>
-                            <div className="text-gray-500 font-medium">
-                                {stat.label}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+                            Lập trình của bạn
+                        </span>
+                    </h1>
 
-            {/* Mission Section */}
-            <div className="max-w-7xl mx-auto px-6 mb-32">
-                <div className="grid lg:grid-cols-2 gap-16 items-center">
-                    <div className="space-y-8">
-                        <div className="inline-flex items-center space-x-2 text-[#6366f1] font-bold uppercase tracking-wider text-sm">
-                            <Target className="w-5 h-5" />
-                            <span>Sứ mệnh & Tầm nhìn</span>
-                        </div>
-                        <h2 className="text-4xl font-[900] text-gray-900 leading-tight">
-                            Kiến tạo nền tảng <br />
-                            <span className="text-[#6366f1]">
-                                Giáo dục công nghệ
-                            </span>{" "}
-                            hàng đầu
-                        </h2>
-                        <p className="text-lg text-gray-600 leading-relaxed">
-                            Tại CodeSense AIoT, chúng tôi tin rằng mọi người đều
-                            có khả năng trở thành một lập trình viên xuất sắc
-                            nếu được hướng dẫn đúng cách. Sứ mệnh của chúng tôi
-                            là xóa bỏ rào cản trong việc tiếp cận kiến thức công
-                            nghệ.
-                        </p>
+                    {/* Subtitle */}
+                    <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
+                        Hành trình kiến tạo tương lai. Tham gia cộng đồng công
+                        nghệ hàng đầu Việt Nam. Nơi ươm mầm những tài năng AIoT
+                        xuất chúng.
+                    </p>
 
-                        <div className="space-y-4">
-                            {[
-                                {
-                                    title: "Chất lượng hàng đầu",
-                                    desc: "Nội dung được biên soạn bởi các chuyên gia Senior.",
-                                },
-                                {
-                                    title: "Học tập thực chiến",
-                                    desc: "Làm dự án thực tế, không chỉ học lý thuyết suông.",
-                                },
-                                {
-                                    title: "Cộng đồng hỗ trợ",
-                                    desc: "Luôn có người đồng hành cùng bạn 24/7.",
-                                },
-                            ].map((item, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-start space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors"
-                                >
-                                    <div className="p-2 bg-[#6366f1]/10 text-[#6366f1] rounded-lg mt-1">
-                                        <CheckCircle className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-gray-900 text-lg">
-                                            {item.title}
-                                        </h4>
-                                        <p className="text-gray-600">
-                                            {item.desc}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-gradient-to-tr from-[#6366f1] to-[#9333ea] rounded-3xl transform rotate-3 opacity-20 blur-lg"></div>
-                        <div className="relative bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden aspect-square flex items-center justify-center p-8">
-                            {/* Abstract illustration placeholder */}
-                            <div className="text-center">
-                                <div className="w-32 h-32 bg-[#6366f1]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <Rocket className="w-16 h-16 text-[#6366f1]" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                    Ready to Launch?
-                                </h3>
-                                <p className="text-gray-500">
-                                    Bắt đầu hành trình của bạn ngay hôm nay
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Values Section */}
-            <div className="bg-gray-50 py-24 mb-24">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="text-center max-w-3xl mx-auto mb-16">
-                        <h2 className="text-3xl md:text-4xl font-[900] text-gray-900 mb-6">
-                            Giá trị cốt lõi
-                        </h2>
-                        <p className="text-lg text-gray-600">
-                            Những nguyên tắc định hình văn hóa và cách chúng tôi
-                            làm việc tại CodeSense AIoT.
-                        </p>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {[
-                            {
-                                title: "Tận tâm",
-                                desc: "Đặt lợi ích của học viên lên hàng đầu.",
-                                icon: Heart,
-                            },
-                            {
-                                title: "Sáng tạo",
-                                desc: "Không ngừng đổi mới phương pháp giảng dạy.",
-                                icon: Globe,
-                            },
-                            {
-                                title: "Chuyên nghiệp",
-                                desc: "Cam kết chất lượng trong từng bài giảng.",
-                                icon: Trophy,
-                            },
-                        ].map((item, index) => (
-                            <div
-                                key={index}
-                                className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 group"
-                            >
-                                <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-[#6366f1] transition-colors duration-300">
-                                    <item.icon className="w-7 h-7 text-gray-600 group-hover:text-white transition-colors duration-300" />
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                                    {item.title}
-                                </h3>
-                                <p className="text-gray-600 leading-relaxed">
-                                    {item.desc}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* CTA Section */}
-            <div className="max-w-7xl mx-auto px-6 mb-24">
-                <div className="bg-[#1a1a1a] rounded-3xl p-12 md:p-20 text-center relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                        <div className="absolute -top-[50%] -left-[20%] w-[80%] h-[200%] bg-[#6366f1] opacity-10 rotate-12 blur-3xl"></div>
-                        <div className="absolute -bottom-[50%] -right-[20%] w-[80%] h-[200%] bg-[#9333ea] opacity-10 -rotate-12 blur-3xl"></div>
-                    </div>
-
-                    <div className="relative z-10 max-w-3xl mx-auto">
-                        <h2 className="text-3xl md:text-5xl font-[900] text-white mb-6">
-                            Sẵn sàng bắt đầu hành trình?
-                        </h2>
-                        <p className="text-gray-400 text-lg mb-10">
-                            Tham gia cùng hàng ngàn học viên khác và bắt đầu sự
-                            nghiệp lập trình của bạn ngay hôm nay.
-                        </p>
+                    {/* CTAs */}
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Link
                             href="/roadmap"
-                            className="inline-flex items-center justify-center px-8 py-4 bg-[#6366f1] text-white font-bold rounded-xl hover:bg-[#5558e6] transition-all shadow-lg hover:shadow-[#6366f1]/50"
+                            className="group w-full sm:w-auto px-8 py-4 rounded-xl bg-[#6366f1] hover:bg-[#4f46e5] text-white font-medium transition-all shadow-lg shadow-[#6366f1]/30 flex items-center justify-center gap-2"
                         >
-                            Xem lộ trình học
-                            <Rocket className="w-5 h-5 ml-2" />
+                            Khám phá lộ trình
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="size-5 group-hover:translate-x-1 transition-transform"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="M5 12h14" />
+                                <path d="m12 5 7 7-7 7" />
+                            </svg>
+                        </Link>
+                        <Link
+                            href="/contact"
+                            className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white border border-slate-200 text-slate-900 font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+                        >
+                            Liên hệ tư vấn
                         </Link>
                     </div>
                 </div>
-            </div>
+            </section>
+
+            {/* ═══════════════════════════════════════════════
+                FLOATING STAT CARDS
+                ═══════════════════════════════════════════════ */}
+            <section className="relative -mt-32 md:-mt-48 z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    {/* Stat Card 1 — Học viên */}
+                    <div className="bg-white rounded-2xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
+                        <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="size-6"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                        </div>
+                        <p className="text-3xl font-bold mb-1">
+                            {formatStat(stats.totalEnrollments)}
+                        </p>
+                        <p className="text-sm font-medium text-slate-500">
+                            Học viên
+                        </p>
+                    </div>
+
+                    {/* Stat Card 2 — Khóa học */}
+                    <div className="bg-white rounded-2xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
+                        <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mb-4">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="size-6"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+                            </svg>
+                        </div>
+                        <p className="text-3xl font-bold mb-1">
+                            {formatStat(stats.totalCourses)}
+                        </p>
+                        <p className="text-sm font-medium text-slate-500">
+                            Khóa học
+                        </p>
+                    </div>
+
+                    {/* Stat Card 3 — Giảng viên */}
+                    <div className="bg-white rounded-2xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
+                        <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="size-6"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="M5 15c-1.65 0-3 1.35-3 3s1.35 3 3 3 3-1.35 3-3-1.35-3-3-3Zm1-8 3 3-3 3" />
+                                <path d="M22 12H10" />
+                                <path d="m15 7 5 5-5 5" />
+                            </svg>
+                        </div>
+                        <p className="text-3xl font-bold mb-1">20+</p>
+                        <p className="text-sm font-medium text-slate-500">
+                            Giảng viên
+                        </p>
+                    </div>
+
+                    {/* Stat Card 4 — Đánh giá */}
+                    <div className="bg-white rounded-2xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
+                        <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mb-4">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="size-6"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                            >
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                        </div>
+                        <p className="text-3xl font-bold mb-1">
+                            {stats.avgRating}
+                        </p>
+                        <p className="text-sm font-medium text-slate-500">
+                            Đánh giá trung bình
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* ═══════════════════════════════════════════════
+                MISSION & VISION SECTION
+                ═══════════════════════════════════════════════ */}
+            <section className="py-24 bg-[#f8fafc] relative overflow-hidden">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid lg:grid-cols-2 gap-16 items-center">
+                        {/* Left — Text */}
+                        <div>
+                            <div className="text-sm font-bold tracking-wider text-[#6366f1] uppercase mb-4">
+                                SỨ MỆNH &amp; TẦM NHÌN
+                            </div>
+                            <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+                                Kiến tạo môi trường học tập <br />
+                                <span
+                                    className="bg-gradient-to-r from-[#6366f1] to-[#9333ea] bg-clip-text"
+                                    style={{
+                                        WebkitTextFillColor: "transparent",
+                                    }}
+                                >
+                                    tốt nhất cho bạn
+                                </span>
+                            </h2>
+                            <p className="text-lg text-slate-600 mb-10">
+                                Chúng tôi cam kết mang lại môi trường học tập
+                                chất lượng cao, thực tiễn và không ngừng đổi mới
+                                để đáp ứng nhu cầu của kỷ nguyên số.
+                            </p>
+
+                            <div className="space-y-6">
+                                {[
+                                    {
+                                        title: "Chất lượng hàng đầu",
+                                        desc: "Nội dung bài giảng được cập nhật liên tục theo xu hướng công nghệ mới nhất từ các tập đoàn lớn.",
+                                    },
+                                    {
+                                        title: "Học tập thực chiến",
+                                        desc: "Thực hành ngay trên các dự án thực tế, xây dựng portfolio ấn tượng ngay trong quá trình học.",
+                                    },
+                                    {
+                                        title: "Cộng đồng hỗ trợ",
+                                        desc: "Đội ngũ mentor và cộng đồng học viên luôn sẵn sàng hỗ trợ giải đáp thắc mắc 24/7.",
+                                    },
+                                ].map((item, i) => (
+                                    <div key={i} className="flex gap-4">
+                                        <div className="mt-1 w-8 h-8 rounded-full bg-[#6366f1]/10 flex items-center justify-center text-[#6366f1] shrink-0">
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className="size-4"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="3"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            >
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-semibold mb-2">
+                                                {item.title}
+                                            </h3>
+                                            <p className="text-slate-600">
+                                                {item.desc}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Right — Decorative illustration */}
+                        <div className="relative">
+                            {/* Gradient blur behind */}
+                            <div className="absolute inset-0 bg-gradient-to-tr from-[#6366f1]/20 to-[#9333ea]/20 rounded-3xl blur-2xl transform rotate-3 scale-105" />
+
+                            <div className="relative bg-white rounded-3xl p-8 border border-slate-100 shadow-2xl">
+                                <div className="aspect-square rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center relative overflow-hidden">
+                                    {/* Gradient overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-[#6366f1]/30 to-[#9333ea]/30 mix-blend-overlay" />
+                                    {/* Rocket icon */}
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="w-32 h-32 text-slate-300 relative z-10 -rotate-45"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+                                        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+                                        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+                                        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+                                    </svg>
+
+                                    {/* Floating UI element */}
+                                    <div className="absolute top-6 right-6 px-3 py-2 bg-white/80 backdrop-blur-sm rounded-xl border border-white/20 flex items-center gap-2 shadow-lg z-20">
+                                        <div className="w-6 h-6 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center">
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className="size-3.5"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2.5"
+                                            >
+                                                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                                                <polyline points="16 7 22 7 22 13" />
+                                            </svg>
+                                        </div>
+                                        <div className="h-2 w-12 bg-slate-200 rounded-full" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ═══════════════════════════════════════════════
+                CORE VALUES
+                ═══════════════════════════════════════════════ */}
+            <section className="py-24">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h2 className="text-4xl font-bold mb-4">Giá trị cốt lõi</h2>
+                    <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-16">
+                        Những nguyên tắc dẫn lối chúng tôi mỗi ngày trong việc
+                        xây dựng nền tảng giáo dục.
+                    </p>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {/* Value 1 — Tận tâm */}
+                        <div className="group bg-[#f8fafc] rounded-2xl p-8 border border-slate-100 hover:border-[#6366f1]/50 transition-colors text-left">
+                            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center mb-6 group-hover:bg-[#6366f1] group-hover:text-white group-hover:border-[#6366f1] transition-all text-slate-600">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="size-7"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-2xl font-bold mb-3">Tận tâm</h3>
+                            <p className="text-slate-600 leading-relaxed">
+                                Luôn đồng hành cùng sự phát triển của học viên.
+                                Đặt chất lượng học tập và sự thành công của
+                                người học lên hàng đầu.
+                            </p>
+                        </div>
+
+                        {/* Value 2 — Sáng tạo */}
+                        <div className="group bg-[#f8fafc] rounded-2xl p-8 border border-slate-100 hover:border-[#6366f1]/50 transition-colors text-left">
+                            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center mb-6 group-hover:bg-[#6366f1] group-hover:text-white group-hover:border-[#6366f1] transition-all text-slate-600">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="size-7"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                                    <path d="M2 12h20" />
+                                </svg>
+                            </div>
+                            <h3 className="text-2xl font-bold mb-3">
+                                Sáng tạo
+                            </h3>
+                            <p className="text-slate-600 leading-relaxed">
+                                Liên tục đổi mới phương pháp giảng dạy và nội
+                                dung. Áp dụng các công nghệ mới nhất vào quá
+                                trình truyền đạt kiến thức.
+                            </p>
+                        </div>
+
+                        {/* Value 3 — Chuyên nghiệp */}
+                        <div className="group bg-[#f8fafc] rounded-2xl p-8 border border-slate-100 hover:border-[#6366f1]/50 transition-colors text-left">
+                            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center mb-6 group-hover:bg-[#6366f1] group-hover:text-white group-hover:border-[#6366f1] transition-all text-slate-600">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="size-7"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 9 6 9 6s2-2 4.5-2a2.5 2.5 0 0 1 0 5H12" />
+                                    <path d="M6 9h12l1 7H5z" />
+                                    <path d="M5 16h14l1 3H4z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-2xl font-bold mb-3">
+                                Chuyên nghiệp
+                            </h3>
+                            <p className="text-slate-600 leading-relaxed">
+                                Xây dựng môi trường học tập chuẩn mực và đẳng
+                                cấp. Quy trình làm việc và hỗ trợ bài bản, rõ
+                                ràng.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ═══════════════════════════════════════════════
+                CTA SECTION
+                ═══════════════════════════════════════════════ */}
+            <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="relative rounded-3xl bg-[#1a1a1a] overflow-hidden">
+                    {/* Decorative blurs */}
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-[#6366f1]/30 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
+                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#9333ea]/30 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2" />
+
+                    <div className="relative z-10 px-8 py-20 md:py-24 text-center">
+                        <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                            Sẵn sàng bắt đầu hành trình?
+                        </h2>
+                        <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
+                            Gia nhập cộng đồng hơn{" "}
+                            {formatStat(stats.totalEnrollments)} học viên và
+                            nâng tầm sự nghiệp của bạn ngay hôm nay.
+                        </p>
+                        <Link
+                            href="/roadmap"
+                            className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-[#6366f1] hover:bg-[#4f46e5] text-white font-bold text-lg transition-colors shadow-lg shadow-[#6366f1]/40"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="size-5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+                                <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+                                <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+                                <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+                            </svg>
+                            Bắt đầu học thử miễn phí
+                        </Link>
+                    </div>
+                </div>
+            </section>
         </div>
     );
 }
