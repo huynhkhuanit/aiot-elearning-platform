@@ -52,7 +52,7 @@ export const toolLinks: ToolLink[] = [
     {
         id: "snippet-generator",
         name: "Snippet generator",
-        href: "/tools#snippet-generator",
+        href: "/tools/snippet-generator",
     },
     {
         id: "css-grid-generator",
