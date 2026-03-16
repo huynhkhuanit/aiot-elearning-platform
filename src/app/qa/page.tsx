@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import PageContainer from "@/components/PageContainer";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
+import PageLoading from "@/components/PageLoading";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 
@@ -381,9 +382,7 @@ function QAPageContent() {
                         </div>
 
                         {loading ? (
-                            <div className="flex items-center justify-center py-12">
-                                <div className="text-gray-500">Đang tải...</div>
-                            </div>
+                            <PageLoading variant="section" />
                         ) : questions.length === 0 ? (
                             <div className="text-center py-12">
                                 <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -564,13 +563,7 @@ import { Suspense } from "react";
 
 export default function QAPage() {
     return (
-        <Suspense
-            fallback={
-                <div className="min-h-screen bg-white flex items-center justify-center">
-                    <div className="text-gray-500">Đang tải...</div>
-                </div>
-            }
-        >
+        <Suspense fallback={<PageLoading variant="section" />}>
             <QAPageContent />
         </Suspense>
     );

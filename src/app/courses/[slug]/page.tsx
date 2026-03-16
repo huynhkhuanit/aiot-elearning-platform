@@ -49,6 +49,7 @@ import Image from "next/image";
 import PageContainer from "@/components/PageContainer";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import CourseReviews from "@/components/CourseReviews";
+import PageLoading from "@/components/PageLoading";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 
@@ -359,33 +360,7 @@ export default function CourseDetailPage() {
 
     // Loading skeleton
     if (loading) {
-        return (
-            <div className="min-h-screen bg-[#0a0c10]">
-                <header className="sticky top-0 z-50 bg-transparent backdrop-blur-xl border-b border-white/5">
-                    <div className="max-w-7xl mx-auto px-6 h-16 flex items-center">
-                        <Link
-                            href="/"
-                            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-                        >
-                            <img
-                                src="/assets/img/logo.png"
-                                alt="DHV LearnX Logo"
-                                className="w-[48px] h-[48px] rounded-lg object-contain"
-                            />
-                            <span className="font-bold text-white text-sm hidden sm:inline uppercase tracking-wide">
-                                Học lập trình thông minh với AI &amp; IoT
-                            </span>
-                        </Link>
-                    </div>
-                </header>
-                <div className="py-20 text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-400 mx-auto mb-4" />
-                    <p className="text-gray-400 font-medium">
-                        Đang tải khóa học...
-                    </p>
-                </div>
-            </div>
-        );
+        return <PageLoading message="Đang tải khóa học..." bg="dark" />;
     }
 
     if (!course) return null;

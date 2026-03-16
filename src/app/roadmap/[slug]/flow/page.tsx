@@ -2,6 +2,7 @@
 
 import { notFound } from "next/navigation";
 import RoadmapTreeView from "@/components/RoadmapTreeView";
+import PageLoading from "@/components/PageLoading";
 import { use, useEffect, useState, useCallback } from "react";
 
 interface RoadmapNode {
@@ -895,14 +896,7 @@ export default function RoadmapFlowPage({
 
     // Wait for progress to load before rendering
     if (!isProgressLoaded) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50">
-                <div className="text-center">
-                    <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600">Đang tải lộ trình...</p>
-                </div>
-            </div>
-        );
+        return <PageLoading message="Đang tải lộ trình..." />;
     }
 
     return (

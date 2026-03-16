@@ -9,6 +9,7 @@ import ActivityHeatmap from "@/components/ActivityHeatmap";
 import ProfileStats from "@/components/ProfileStats";
 import PageContainer from "@/components/PageContainer";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
+import PageLoading from "@/components/PageLoading";
 import {
     Calendar,
     Github,
@@ -91,16 +92,7 @@ export default function UserProfilePage() {
     }, [usernameWithoutAt]);
 
     if (loading) {
-        return (
-            <PageContainer>
-                <div className="flex items-center justify-center min-h-screen">
-                    <div className="text-center">
-                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                        <p className="text-gray-600">Đang tải thông tin...</p>
-                    </div>
-                </div>
-            </PageContainer>
-        );
+        return <PageLoading message="Đang tải thông tin..." />;
     }
 
     if (error || !profile) {

@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import PageContainer from "@/components/PageContainer";
+import PageLoading from "@/components/PageLoading";
 import {
     FileText,
     Eye,
@@ -140,20 +141,7 @@ export default function MyPostsPage() {
     };
 
     if (authLoading || loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-                <PageContainer size="lg" className="py-12">
-                    <div className="flex items-center justify-center min-h-[400px]">
-                        <div className="text-center">
-                            <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-                            <p className="text-gray-600">
-                                Đang tải bài viết...
-                            </p>
-                        </div>
-                    </div>
-                </PageContainer>
-            </div>
-        );
+        return <PageLoading message="Đang tải bài viết..." />;
     }
 
     const filteredPosts =

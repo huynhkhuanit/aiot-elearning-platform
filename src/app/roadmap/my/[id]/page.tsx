@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 import AIRoadmapTreeView from "@/components/AIRoadmap/AIRoadmapTreeView";
 import { Button } from "@/components/ui/button";
+import PageLoading from "@/components/PageLoading";
 import { ensureRoadmapSections } from "@/lib/ai-roadmap-sections";
 import type { AIGeneratedRoadmap, NodeStatus } from "@/types/ai-roadmap";
 
@@ -126,14 +127,7 @@ export default function AIRoadmapDetailPage() {
     };
 
     if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50">
-                <div className="text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-4" />
-                    <p className="text-gray-600">Đang tải lộ trình...</p>
-                </div>
-            </div>
-        );
+        return <PageLoading message="Đang tải lộ trình..." />;
     }
 
     if (error || !roadmap) {

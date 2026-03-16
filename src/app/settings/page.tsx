@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import PageContainer from "@/components/PageContainer";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
-import SettingsSkeleton from "@/components/SettingsSkeleton";
+import PageLoading from "@/components/PageLoading";
 
 import {
     User,
@@ -593,29 +593,7 @@ export default function SettingsPage() {
     ];
 
     if (authLoading) {
-        return (
-            <PageContainer>
-                <div className="max-w-6xl mx-auto py-8 px-4">
-                    <div className="mb-8">
-                        <div className="h-8 w-56 bg-gray-200 rounded-lg animate-pulse mb-2" />
-                        <div className="h-5 w-80 bg-gray-100 rounded-lg animate-pulse" />
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-                        <div className="bg-white rounded-2xl border border-gray-200 p-3 space-y-2">
-                            {[1, 2, 3, 4].map((i) => (
-                                <div
-                                    key={i}
-                                    className="h-14 bg-gray-100 rounded-xl animate-pulse"
-                                />
-                            ))}
-                        </div>
-                        <div className="bg-white rounded-2xl border border-gray-200 p-8">
-                            <SettingsSkeleton />
-                        </div>
-                    </div>
-                </div>
-            </PageContainer>
-        );
+        return <PageLoading message="Đang tải cài đặt..." />;
     }
 
     if (!user) return null;
@@ -742,7 +720,7 @@ export default function SettingsPage() {
                                         </div>
 
                                         {initialLoading ? (
-                                            <SettingsSkeleton />
+                                            <PageLoading variant="section" />
                                         ) : (
                                             <form
                                                 onSubmit={handleProfileSubmit}
