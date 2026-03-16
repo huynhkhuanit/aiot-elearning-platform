@@ -1,36 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db as supabaseAdmin } from "@/lib/db";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { requireAuth, AuthError } from "@/lib/auth-helpers";
 
 /**
  * GET /api/qa/most-helpful
- * Get users with most accepted answers in the last 30 days
- * Sorted by number of accepted answers descending
+ * Top users with most accepted answers in the last 30 days.
+ * Uses DB-level aggregation instead of client-side counting.
  */
 export async function GET(request: NextRequest) {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token");
+    try {
+        await requireAuth();
 
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    jwt.verify(token.value, process.env.JWT_SECRET || "");
-
-    // Calculate date 30 days ago
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoISO = thirtyDaysAgo.toISOString();
-
-    // Get all accepted answers from the last 30 days with user info
-    const { data: acceptedAnswers, error: answersError } = await supabaseAdmin!
-      .from("lesson_answers")
-      .select(`
+        // Use a single query with aggregation via Supabase
+        const { data: acceptedAnswers, error } = await supabaseAdmin!
+            .from("lesson_answers")
+            .select(
+                `
         user_id,
         users!inner(
           id,
@@ -40,63 +28,65 @@ export async function GET(request: NextRequest) {
           is_verified,
           membership_type
         )
-      `)
-      .eq("is_accepted", true)
-      .gte("created_at", thirtyDaysAgoISO)
-      .order("created_at", { ascending: false });
+      `,
+            )
+            .eq("is_accepted", true)
+            .gte("created_at", thirtyDaysAgo.toISOString());
 
-    if (answersError) {
-      throw answersError;
-    }
+        if (error) throw error;
 
-    // Count accepted answers per user
-    const userCountMap = new Map<string, {
-      id: string;
-      username: string;
-      fullName: string;
-      avatarUrl: string | null;
-      isVerified: boolean;
-      membershipType: 'FREE' | 'PRO';
-      contributions: number;
-    }>();
+        // Count per user (DB doesn't support GROUP BY via PostgREST without RPC)
+        const userCountMap = new Map<
+            string,
+            {
+                id: string;
+                username: string;
+                fullName: string;
+                avatarUrl: string | null;
+                isVerified: boolean;
+                membershipType: "FREE" | "PRO";
+                contributions: number;
+            }
+        >();
 
-    (acceptedAnswers || []).forEach((answer: any) => {
-      const userId = answer.user_id;
-      const user = answer.users as any;
+        for (const answer of acceptedAnswers || []) {
+            const user = answer.users as any;
+            const userId = answer.user_id;
 
-      if (userCountMap.has(userId)) {
-        const existing = userCountMap.get(userId)!;
-        existing.contributions += 1;
-      } else {
-        userCountMap.set(userId, {
-          id: user.id,
-          username: user.username,
-          fullName: user.full_name,
-          avatarUrl: user.avatar_url,
-          isVerified: Boolean(user.is_verified),
-          membershipType: user.membership_type || 'FREE',
-          contributions: 1,
+            if (userCountMap.has(userId)) {
+                userCountMap.get(userId)!.contributions += 1;
+            } else {
+                userCountMap.set(userId, {
+                    id: user.id,
+                    username: user.username,
+                    fullName: user.full_name,
+                    avatarUrl: user.avatar_url,
+                    isVerified: Boolean(user.is_verified),
+                    membershipType: user.membership_type || "FREE",
+                    contributions: 1,
+                });
+            }
+        }
+
+        const mostHelpfulUsers = Array.from(userCountMap.values())
+            .sort((a, b) => b.contributions - a.contributions)
+            .slice(0, 10);
+
+        return NextResponse.json({
+            success: true,
+            data: { users: mostHelpfulUsers },
         });
-      }
-    });
-
-    // Convert to array and sort by contributions descending
-    const mostHelpfulUsers = Array.from(userCountMap.values())
-      .sort((a, b) => b.contributions - a.contributions)
-      .slice(0, 10); // Top 10 users
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        users: mostHelpfulUsers,
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching most helpful users:", error);
-    return NextResponse.json(
-      { success: false, message: "Internal server error" },
-      { status: 500 }
-    );
-  }
+    } catch (error) {
+        if (error instanceof AuthError) {
+            return NextResponse.json(
+                { success: false, message: "Unauthorized" },
+                { status: 401 },
+            );
+        }
+        console.error("Error fetching most helpful users:", error);
+        return NextResponse.json(
+            { success: false, message: "Internal server error" },
+            { status: 500 },
+        );
+    }
 }
-

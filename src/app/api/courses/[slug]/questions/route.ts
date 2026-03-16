@@ -1,302 +1,227 @@
 import { NextRequest, NextResponse } from "next/server";
 import { queryOneBuilder, db as supabaseAdmin } from "@/lib/db";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { requireAuth, AuthError } from "@/lib/auth-helpers";
 
 /**
  * GET /api/courses/[slug]/questions
- * Get all questions for a course, grouped by lesson
- * 
+ * Get all questions for a specific course, with filtering and pagination.
+ *
  * Query params:
- * - category: Filter by lesson category (all, theory, challenge, off-topic, flashcards, other)
+ * - category: Filter by lesson type (all, theory, challenge)
  * - search: Search in question title/content
- * - status: Filter by status (all, open, answered, resolved)
+ * - status: Filter by status (all, OPEN, ANSWERED, RESOLVED)
+ * - page / limit: Pagination
  */
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+    request: NextRequest,
+    { params }: { params: Promise<{ slug: string }> },
 ) {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token");
+    try {
+        await requireAuth();
 
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+        const { slug } = await params;
+        const { searchParams } = new URL(request.url);
+        const category = searchParams.get("category") || "all";
+        const search = searchParams.get("search") || "";
+        const status = searchParams.get("status") || "all";
+        const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+        const limit = Math.min(
+            50,
+            Math.max(1, parseInt(searchParams.get("limit") || "20")),
+        );
 
-    const decoded = jwt.verify(token.value, process.env.JWT_SECRET || "") as { userId: string };
-    const userId = decoded.userId;
-
-    const { slug } = await params;
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get("category") || "all";
-    const search = searchParams.get("search") || "";
-    const status = searchParams.get("status") || "all";
-
-    // Get course ID from slug
-    const course = await queryOneBuilder<{ id: string }>(
-      "courses",
-      {
-        select: "id",
-        filters: { slug, is_published: true }
-      }
-    );
-
-    if (!course) {
-      return NextResponse.json(
-        { success: false, message: "Course not found" },
-        { status: 404 }
-      );
-    }
-
-    const courseId = course.id;
-
-    // Optimize: Run independent queries in parallel
-    const [chaptersResult, lessonsResult, answersResult] = await Promise.all([
-      // Get all chapters for this course
-      supabaseAdmin!
-        .from("chapters")
-        .select("id")
-        .eq("course_id", courseId)
-        .eq("is_published", true),
-      // Get all lessons for this course's chapters
-      supabaseAdmin!
-        .from("lessons")
-        .select(`
-          id,
-          title,
-          chapter_id,
-          video_url,
-          chapters!inner(
-            id,
-            course_id
-          )
-        `)
-        .eq("is_published", true),
-      // Get all answers with user info (we'll filter after)
-      supabaseAdmin!
-        .from("lesson_answers")
-        .select(`
-          question_id,
-          users!inner(id, full_name, avatar_url, membership_type)
-        `)
-        .order("created_at", { ascending: true })
-    ]);
-
-    const { data: chapters } = chaptersResult;
-    const { data: lessons } = lessonsResult;
-    const { data: answersData } = answersResult;
-
-    if (!chapters || chapters.length === 0 || !lessons || lessons.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: { questions: [], total: 0 },
-      });
-    }
-
-    const chapterIds = chapters.map((c: any) => c.id);
-
-    // Filter lessons by chapter_ids and create lesson map
-    const lessonMap = new Map();
-    const validLessonIds: string[] = [];
-    
-    lessons.forEach((lesson: any) => {
-      const chapterId = lesson.chapters?.id;
-      if (chapterId && chapterIds.includes(chapterId)) {
-        validLessonIds.push(lesson.id);
-        lessonMap.set(lesson.id, {
-          id: lesson.id,
-          title: lesson.title,
-          chapter_id: lesson.chapter_id,
-          type: lesson.video_url ? "challenge" : "theory",
+        // Get course
+        const course = await queryOneBuilder<{ id: string }>("courses", {
+            select: "id",
+            filters: { slug, is_published: true },
         });
-      }
-    });
 
-    if (validLessonIds.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: { questions: [], total: 0 },
-      });
-    }
-
-    // Count answers per question and collect answer users (max 2 per question)
-    const answersCountMap = new Map<string, number>();
-    const answerUsersMap = new Map<string, Array<{ id: string; fullName: string; avatarUrl: string | null; membershipType: 'FREE' | 'PRO' }>>();
-    
-    (answersData || []).forEach((answer: any) => {
-      const count = answersCountMap.get(answer.question_id) || 0;
-      answersCountMap.set(answer.question_id, count + 1);
-      
-      // Collect answer users (max 2 per question)
-      if (!answerUsersMap.has(answer.question_id)) {
-        answerUsersMap.set(answer.question_id, []);
-      }
-      const users = answerUsersMap.get(answer.question_id)!;
-      if (users.length < 2 && answer.users) {
-        // Check if user already added (avoid duplicates)
-        const userExists = users.some(u => u.id === answer.users.id);
-        if (!userExists) {
-          users.push({
-            id: answer.users.id,
-            fullName: answer.users.full_name,
-            avatarUrl: answer.users.avatar_url,
-            membershipType: answer.users.membership_type || 'FREE',
-          });
+        if (!course) {
+            return NextResponse.json(
+                { success: false, message: "Course not found" },
+                { status: 404 },
+            );
         }
-      }
-    });
 
-    // Now get questions for valid lessons only
-    let questionsQuery = supabaseAdmin!
-      .from("lesson_questions")
-      .select(`
+        // Get lessons for this course, filtered by category
+        const { data: lessons } = await supabaseAdmin!
+            .from("lessons")
+            .select(
+                `
+        id,
+        title,
+        video_url,
+        chapters!inner(
+          id,
+          course_id
+        )
+      `,
+            )
+            .eq("is_published", true);
+
+        if (!lessons || lessons.length === 0) {
+            return NextResponse.json({
+                success: true,
+                data: { questions: [], total: 0, page, limit },
+            });
+        }
+
+        // Filter lessons belonging to this course + category
+        const lessonMap = new Map<
+            string,
+            { id: string; title: string; type: string }
+        >();
+        const validLessonIds: string[] = [];
+
+        for (const lesson of lessons) {
+            const chapterCourseId = (lesson.chapters as any)?.course_id;
+            if (chapterCourseId !== course.id) continue;
+
+            const lessonType = lesson.video_url ? "challenge" : "theory";
+            if (category !== "all" && category !== lessonType) continue;
+
+            validLessonIds.push(lesson.id);
+            lessonMap.set(lesson.id, {
+                id: lesson.id,
+                title: lesson.title,
+                type: lessonType,
+            });
+        }
+
+        if (validLessonIds.length === 0) {
+            return NextResponse.json({
+                success: true,
+                data: { questions: [], total: 0, page, limit },
+            });
+        }
+
+        // Query questions using DB-level status column
+        let questionsQuery = supabaseAdmin!
+            .from("lesson_questions")
+            .select(
+                `
         id,
         lesson_id,
         title,
         content,
-        is_resolved,
+        status,
+        answers_count,
         likes_count,
+        views_count,
         created_at,
         updated_at,
         users!inner(id, username, full_name, avatar_url, membership_type)
-      `)
-      .in("lesson_id", validLessonIds);
+      `,
+                { count: "exact" },
+            )
+            .in("lesson_id", validLessonIds);
 
-    // Search filter
-    if (search) {
-      questionsQuery = questionsQuery.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
-    }
-
-    // Sort by created_at descending (most recent first)
-    questionsQuery = questionsQuery.order("created_at", { ascending: false });
-
-    const { data: questionsData, error: questionsError } = await questionsQuery;
-
-    if (questionsError) {
-      throw questionsError;
-    }
-
-    if (!questionsData || questionsData.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: { questions: [], total: 0 },
-      });
-    }
-
-    // Calculate status and filter by category
-    let filteredQuestions = questionsData;
-    
-    // First, calculate status and add answers_count for each question
-    const questionsWithStatus = questionsData.map((q: any) => {
-      const answersCount = answersCountMap.get(q.id) || 0;
-      
-      // Calculate status based on is_resolved and answers_count
-      let calculatedStatus: string;
-      if (q.is_resolved) {
-        calculatedStatus = "RESOLVED";
-      } else if (answersCount > 0) {
-        calculatedStatus = "ANSWERED";
-      } else {
-        calculatedStatus = "OPEN";
-      }
-      
-      return {
-        ...q,
-        calculatedStatus,
-        answers_count: answersCount,
-      };
-    });
-
-    // Filter by status (if not "all")
-    if (status !== "all") {
-      filteredQuestions = questionsWithStatus.filter((q: any) => {
-        if (status === "open") {
-          return q.calculatedStatus === "OPEN";
-        } else if (status === "answered") {
-          return q.calculatedStatus === "ANSWERED";
-        } else if (status === "resolved") {
-          return q.calculatedStatus === "RESOLVED";
+        if (status !== "all") {
+            questionsQuery = questionsQuery.eq("status", status.toUpperCase());
         }
-        return true;
-      });
-    } else {
-      filteredQuestions = questionsWithStatus;
-    }
 
-    // Filter by category
-    if (category !== "all") {
-      filteredQuestions = filteredQuestions.filter((q: any) => {
-        const lesson = lessonMap.get(q.lesson_id);
-        if (!lesson) return false;
-
-        switch (category) {
-          case "theory":
-            return lesson.type === "theory";
-          case "challenge":
-            return lesson.type === "challenge";
-          case "off-topic":
-            // For now, we'll treat this as questions not in any specific lesson category
-            // You can extend this logic based on your needs
-            return false;
-          case "flashcards":
-            // This would need additional metadata
-            return false;
-          case "other":
-            // This would need additional metadata
-            return false;
-          default:
-            return true;
+        if (search) {
+            questionsQuery = questionsQuery.or(
+                `title.ilike.%${search}%,content.ilike.%${search}%`,
+            );
         }
-      });
+
+        const offset = (page - 1) * limit;
+        questionsQuery = questionsQuery
+            .order("created_at", { ascending: false })
+            .range(offset, offset + limit - 1);
+
+        const {
+            data: questionsData,
+            error: questionsError,
+            count,
+        } = await questionsQuery;
+        if (questionsError) throw questionsError;
+
+        if (!questionsData || questionsData.length === 0) {
+            return NextResponse.json({
+                success: true,
+                data: { questions: [], total: 0, page, limit },
+            });
+        }
+
+        // Get answer users for avatars
+        const questionIds = questionsData.map((q: any) => q.id);
+        const { data: answersData } = await supabaseAdmin!
+            .from("lesson_answers")
+            .select(
+                `question_id, users!inner(id, full_name, avatar_url, membership_type)`,
+            )
+            .in("question_id", questionIds)
+            .order("created_at", { ascending: true });
+
+        const answerUsersMap = new Map<
+            string,
+            Array<{
+                id: string;
+                fullName: string;
+                avatarUrl: string | null;
+                membershipType: "FREE" | "PRO";
+            }>
+        >();
+
+        for (const answer of answersData || []) {
+            if (!answerUsersMap.has(answer.question_id)) {
+                answerUsersMap.set(answer.question_id, []);
+            }
+            const users = answerUsersMap.get(answer.question_id)!;
+            const user = answer.users as any;
+            if (users.length < 2 && !users.some((u) => u.id === user.id)) {
+                users.push({
+                    id: user.id,
+                    fullName: user.full_name,
+                    avatarUrl: user.avatar_url,
+                    membershipType: user.membership_type || "FREE",
+                });
+            }
+        }
+
+        const questions = questionsData.map((row: any) => {
+            const lesson = lessonMap.get(row.lesson_id);
+            return {
+                id: row.id,
+                title: row.title,
+                content: row.content,
+                status: row.status || "OPEN",
+                answersCount: row.answers_count || 0,
+                likesCount: row.likes_count || 0,
+                viewsCount: row.views_count || 0,
+                createdAt: row.created_at,
+                updatedAt: row.updated_at,
+                user: {
+                    id: row.users.id,
+                    username: row.users.username,
+                    fullName: row.users.full_name,
+                    avatarUrl: row.users.avatar_url,
+                    membershipType: row.users.membership_type || "FREE",
+                },
+                answerUsers: answerUsersMap.get(row.id) || [],
+                lesson: lesson
+                    ? { id: lesson.id, title: lesson.title, type: lesson.type }
+                    : null,
+            };
+        });
+
+        return NextResponse.json({
+            success: true,
+            data: { questions, total: count || questions.length, page, limit },
+        });
+    } catch (error) {
+        if (error instanceof AuthError) {
+            return NextResponse.json(
+                { success: false, message: "Unauthorized" },
+                { status: 401 },
+            );
+        }
+        console.error("Error fetching course questions:", error);
+        return NextResponse.json(
+            { success: false, message: "Internal server error" },
+            { status: 500 },
+        );
     }
-
-    // Format questions with lesson info
-    const questions = filteredQuestions.map((row: any) => {
-      const lesson = lessonMap.get(row.lesson_id);
-      
-      return {
-        id: row.id,
-        title: row.title,
-        content: row.content,
-        status: row.calculatedStatus,
-        answersCount: row.answers_count || 0,
-        likesCount: row.likes_count || 0,
-        viewsCount: 0, // views_count column doesn't exist, default to 0
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        user: {
-          id: row.users.id,
-          username: row.users.username,
-          fullName: row.users.full_name,
-          avatarUrl: row.users.avatar_url,
-          membershipType: row.users.membership_type || 'FREE',
-        },
-        answerUsers: answerUsersMap.get(row.id) || [],
-        lesson: lesson ? {
-          id: lesson.id,
-          title: lesson.title,
-          type: lesson.type,
-        } : null,
-      };
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        questions,
-        total: questions.length,
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching course questions:", error);
-    return NextResponse.json(
-      { success: false, message: "Internal server error" },
-      { status: 500 }
-    );
-  }
 }
-
