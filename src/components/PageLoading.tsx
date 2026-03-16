@@ -5,10 +5,8 @@ import { Loader2 } from "lucide-react";
 interface PageLoadingProps {
     /** Loading message */
     message?: string;
-    /** Sub-message below the main message */
-    subMessage?: string;
     /**
-     * - `page`: Full-screen centered with logo + animated dots (for page-level loading)
+     * - `page`: Full-screen centered with spinner + text (for page-level loading)
      * - `section`: Centered in container with spinner + text (for in-page sections)
      * - `inline`: Small spinner only, for embedding in buttons/small areas
      */
@@ -23,13 +21,12 @@ interface PageLoadingProps {
  * Unified loading component for the entire platform.
  *
  * Usage:
- *   <PageLoading />                                        → full-page with logo
+ *   <PageLoading />                                        → full-page spinner
  *   <PageLoading variant="section" message="Đang tải..." /> → section spinner
  *   <PageLoading variant="inline" />                        → small inline spinner
  */
 export default function PageLoading({
     message,
-    subMessage,
     variant = "page",
     bg = "light",
     size = "md",
@@ -65,7 +62,7 @@ export default function PageLoading({
         );
     }
 
-    // ── Page variant (default): full-screen with logo + animated dots ──
+    // ── Page variant (default): full-screen centered spinner + text ──
     const bgClass =
         bg === "dark"
             ? "bg-[#0a0c10]"
@@ -73,59 +70,22 @@ export default function PageLoading({
               ? "bg-transparent"
               : "bg-gradient-to-br from-gray-50 to-white";
 
-    const textClass = bg === "dark" ? "text-gray-300" : "text-gray-700";
-    const subTextClass = bg === "dark" ? "text-gray-500" : "text-gray-400";
+    const spinnerColor = bg === "dark" ? "text-indigo-400" : "text-primary";
+    const textClass = bg === "dark" ? "text-gray-300" : "text-gray-600";
 
-    const sizeMap = {
-        sm: { spinner: "w-10 h-10", dot: "w-2 h-2", gap: "mb-4" },
-        md: { spinner: "w-16 h-16", dot: "w-2.5 h-2.5", gap: "mb-5" },
-        lg: { spinner: "w-20 h-20", dot: "w-3 h-3", gap: "mb-6" },
-    };
-
-    const s = sizeMap[size];
-    const displayMessage = message ?? "Đang tải...";
-    const displaySubMessage = subMessage ?? "Vui lòng đợi trong giây lát";
+    const spinnerSize = { sm: "w-8 h-8", md: "w-10 h-10", lg: "w-12 h-12" };
 
     return (
         <div
             className={`min-h-screen flex items-center justify-center ${bgClass}`}
         >
             <div className="text-center">
-                {/* Animated dots spinner */}
-                <div className={`relative ${s.spinner} mx-auto ${s.gap}`}>
-                    {[0, 1, 2, 3].map((i) => (
-                        <span
-                            key={i}
-                            className={`page-loading-dot ${s.dot} absolute rounded-full`}
-                            style={{
-                                animationDelay: `${i * 0.15}s`,
-                                top: i === 0 ? "0" : i === 2 ? "auto" : "50%",
-                                bottom: i === 2 ? "0" : "auto",
-                                left: i === 3 ? "0" : i === 1 ? "auto" : "50%",
-                                right: i === 1 ? "0" : "auto",
-                                transform:
-                                    i === 0 || i === 2
-                                        ? "translateX(-50%)"
-                                        : "translateY(-50%)",
-                            }}
-                        />
-                    ))}
-                    {/* Center logo */}
-                    <img
-                        src="/assets/img/logo.png"
-                        alt="Loading"
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[55%] h-[55%] rounded-md object-contain page-loading-logo"
-                    />
-                </div>
-
-                <p className={`text-base font-semibold ${textClass} mb-1`}>
-                    {displayMessage}
+                <Loader2
+                    className={`${spinnerSize[size]} animate-spin ${spinnerColor} mx-auto mb-4`}
+                />
+                <p className={`text-sm font-medium ${textClass}`}>
+                    {message ?? "Đang tải..."}
                 </p>
-                {displaySubMessage && (
-                    <p className={`text-sm ${subTextClass}`}>
-                        {displaySubMessage}
-                    </p>
-                )}
             </div>
         </div>
     );

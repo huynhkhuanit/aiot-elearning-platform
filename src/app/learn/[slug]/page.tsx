@@ -525,12 +525,7 @@ export default function LearnCoursePage() {
     };
 
     if (loading) {
-        return (
-            <PageLoading
-                message="Đang tải khóa học..."
-                subMessage="Vui lòng đợi trong giây lát"
-            />
-        );
+        return <PageLoading message="Đang tải khóa học..." />;
     }
 
     if (!course) {
