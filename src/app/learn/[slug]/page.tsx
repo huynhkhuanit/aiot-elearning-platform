@@ -41,6 +41,7 @@ import AskQuestionModal from "@/components/AskQuestionModal";
 import QuestionDetailModal from "@/components/QuestionDetailModal";
 import CodePlayground from "@/components/CodePlayground";
 import LearnCourseSidebar from "@/components/LearnCourseSidebar";
+import PageLoading from "@/components/PageLoading";
 import CertificateModal from "@/components/CertificateModal";
 import CourseReviewModal, {
     CourseReviewButton,
@@ -525,26 +526,10 @@ export default function LearnCoursePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-white">
-                <div className="text-center">
-                    <div className="relative w-20 h-20 mx-auto mb-6">
-                        <div className="absolute inset-0 border-4 border-gray-300 rounded-full"></div>
-                        <div
-                            className="absolute inset-0 border-4 rounded-full animate-spin"
-                            style={{
-                                borderTopColor: "var(--primary)",
-                                borderRightColor: "rgba(99, 102, 241, 0.5)",
-                            }}
-                        ></div>
-                    </div>
-                    <p className="text-lg font-medium text-gray-700 mb-2">
-                        Đang tải khóa học...
-                    </p>
-                    <p className="text-sm text-gray-500">
-                        Vui lòng đợi trong giây lát
-                    </p>
-                </div>
-            </div>
+            <PageLoading
+                message="Đang tải khóa học..."
+                subMessage="Vui lòng đợi trong giây lát"
+            />
         );
     }
 

@@ -1605,3 +1605,65 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         @apply font-sans;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   PageLoading - Unified loading spinner
+   ═══════════════════════════════════════════════════════════ */
+.page-loading-dot {
+    background: #6366f1;
+    animation: page-loading-pulse 1.2s ease-in-out infinite;
+}
+
+.page-loading-logo {
+    animation: page-loading-breathe 2s ease-in-out infinite;
+}
+
+@keyframes page-loading-pulse {
+    0%,
+    100% {
+        opacity: 0.25;
+        transform: translateX(-50%) scale(0.8);
+    }
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1.1);
+    }
+}
+
+/* Dots on left/right axis need translateY instead */
+.page-loading-dot:nth-child(2),
+.page-loading-dot:nth-child(4) {
+    animation-name: page-loading-pulse-y;
+}
+
+@keyframes page-loading-pulse-y {
+    0%,
+    100% {
+        opacity: 0.25;
+        transform: translateY(-50%) scale(0.8);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-50%) scale(1.1);
+    }
+}
+
+@keyframes page-loading-breathe {
+    0%,
+    100% {
+        opacity: 0.6;
+        transform: translate(-50%, -50%) scale(0.95);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .page-loading-dot,
+    .page-loading-logo {
+        animation: none !important;
+        opacity: 1 !important;
+    }
+}
