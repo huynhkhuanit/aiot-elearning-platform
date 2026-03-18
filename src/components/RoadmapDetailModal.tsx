@@ -79,17 +79,17 @@ const getStatusBadge = (status: string) => {
     },
     learning: { 
       label: 'Đang học', 
-      className: 'bg-purple-100 text-purple-700',
+      className: 'bg-blue-100 text-blue-700',
       icon: <BookMarked className="w-3.5 h-3.5" />
     },
     current: { 
       label: 'Đang học', 
-      className: 'bg-purple-100 text-purple-700',
+      className: 'bg-blue-100 text-blue-700',
       icon: <BookMarked className="w-3.5 h-3.5" />
     },
     in_progress: { 
       label: 'Đang học', 
-      className: 'bg-purple-100 text-purple-700',
+      className: 'bg-blue-100 text-blue-700',
       icon: <BookMarked className="w-3.5 h-3.5" />
     },
     skipped: { 
@@ -233,7 +233,7 @@ const RoadmapDetailModal: React.FC<RoadmapDetailModalProps> = ({
               
               {/* Progress indicator for learning */}
               {isLearning && (
-                <div className="h-1 bg-purple-500 animate-pulse" />
+                <div className="h-1 bg-blue-500 animate-pulse" />
               )}
             </div>
 
@@ -384,13 +384,13 @@ const RoadmapDetailModal: React.FC<RoadmapDetailModalProps> = ({
                   </a>
                   <a 
                     href="#" 
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-50 transition-colors group border border-transparent hover:border-purple-200"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-50 transition-colors group border border-transparent hover:border-blue-200"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-700">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-700">
                       <Play className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 group-hover:text-purple-700 transition-colors">
+                      <p className="text-sm font-medium text-gray-900 group-hover:text-blue-700 transition-colors">
                         Video hướng dẫn
                       </p>
                       <p className="text-xs text-gray-500">youtube.com</p>
@@ -408,7 +408,7 @@ const RoadmapDetailModal: React.FC<RoadmapDetailModalProps> = ({
                   disabled
                   className="w-full py-3 text-sm font-medium text-gray-400 bg-gray-100 rounded-xl cursor-not-allowed"
                 >
-                  🔒 Đã khóa - Hoàn thành các bước trước
+                  Đã khóa - Hoàn thành các bước trước
                 </button>
               ) : (
                 <div className="space-y-2">
@@ -438,7 +438,7 @@ const RoadmapDetailModal: React.FC<RoadmapDetailModalProps> = ({
                   {!isDone && !isLearning && (
                     <button
                       onClick={() => onToggleComplete && onToggleComplete(nodeData.id, false)}
-                      className="w-full py-3 text-sm font-medium rounded-xl transition-all flex items-center justify-center gap-2 text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200"
+                      className="w-full py-3 text-sm font-medium rounded-xl transition-all flex items-center justify-center gap-2 text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200"
                     >
                       <BookMarked className="w-4 h-4" />
                       <span>Bắt đầu học</span>

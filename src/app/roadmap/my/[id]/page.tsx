@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 import AIRoadmapTreeView from "@/components/AIRoadmap/AIRoadmapTreeView";
 import { Button } from "@/components/ui/button";
 import PageLoading from "@/components/PageLoading";
@@ -132,22 +132,29 @@ export default function AIRoadmapDetailPage() {
 
     if (error || !roadmap) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50">
-                <div className="text-center max-w-md">
-                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">
-                        Không thể tải lộ trình
-                    </h2>
-                    <p className="text-gray-600 mb-6">
-                        {error || "Lộ trình không tồn tại."}
-                    </p>
-                    <Button
-                        onClick={() => router.push("/roadmap/my")}
-                        variant="outline"
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Quay lại danh sách
-                    </Button>
+            <div className="roadmap-route">
+                <div className="roadmap-shell roadmap-shell__body">
+                    <div className="roadmap-surface">
+                        <div className="roadmap-empty-state">
+                            <AlertCircle className="mx-auto h-10 w-10 text-red-500" />
+                            <div className="roadmap-empty-state__title">
+                                Không thể tải lộ trình
+                            </div>
+                            <p className="roadmap-empty-state__body">
+                                {error || "Lộ trình không tồn tại."}
+                            </p>
+                            <div className="mt-5">
+                                <Button
+                                    onClick={() => router.push("/roadmap/my")}
+                                    variant="outline"
+                                    className="rounded-full border-slate-200 bg-white px-5"
+                                >
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
+                                    Quay lại danh sách
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );

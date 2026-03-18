@@ -9,31 +9,28 @@ import React, {
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    ArrowLeft,
+    AlertCircle,
     BookOpen,
-    Search,
-    X,
     CheckCircle,
-    Eye,
-    Home,
-    ChevronRight,
-    Clock,
-    Code,
-    Sparkles,
     ChevronDown,
     ChevronUp,
-    AlertCircle,
+    Eye,
+    X,
 } from "lucide-react";
 import Link from "next/link";
 import NodeDetailSidebar from "../NodeDetailSidebar";
 import type {
     AIGeneratedRoadmap,
-    RoadmapNode,
     NodeStatus,
+    RoadmapNode,
 } from "@/types/ai-roadmap";
+import {
+    RoadmapLegendCard,
+    RoadmapViewerHeader,
+    roadmapHomeBreadcrumb,
+} from "../roadmap/RoadmapViewerChrome";
 import "@/app/roadmap-tree.css";
 
-// ========== TYPES ==========
 interface TreeNode {
     id: string;
     title: string;
@@ -41,7 +38,6 @@ interface TreeNode {
     type: "core" | "optional" | "beginner" | "alternative" | "project";
     status: NodeStatus;
     subtitle?: string;
-    itemCount?: number;
     duration?: string;
     technologies?: string[];
     difficulty?: string;
@@ -62,7 +58,25 @@ interface ContextMenuState {
     node: TreeNode;
 }
 
-// ========== HELPER: Convert AI Roadmap to Tree ==========
+function matchesSearch(node: TreeNode, query: string): boolean {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return true;
+
+    const haystacks = [
+        node.title,
+        node.description,
+        node.subtitle || "",
+        node.difficulty || "",
+        node.duration || "",
+        ...(node.technologies || []),
+    ]
+        .join(" ")
+        .toLowerCase();
+
+    if (haystacks.includes(normalizedQuery)) return true;
+    return (node.children || []).some((child) => matchesSearch(child, query));
+}
+
 function convertToTree(
     roadmap: AIGeneratedRoadmap,
     progress: Record<string, NodeStatus>,
@@ -74,23 +88,13 @@ function convertToTree(
                   id: phase.id,
                   name: phase.name,
                   order: phase.order,
-                  description: `Giai doan ${phase.order}`,
-                  subsections: [
-                      {
-                          id: `${phase.id}-sub-1`,
-                          name: "Core Topics",
-                          order: 1,
-                      },
-                  ],
+                  description: `Giai đoạn ${phase.order}`,
+                  subsections: [],
               }));
+
     const nodes = roadmap.nodes || [];
-    const phases = sections.map((section) => ({
-        id: section.id,
-        name: section.name,
-        order: section.order,
-    }));
     const edges = roadmap.edges || [];
-    const nodesByPhase: Record<string, RoadmapNode[]> = {};
+    const nodesBySection: Record<string, RoadmapNode[]> = {};
     const subsectionNameMap = new Map<string, string>();
 
     sections.forEach((section) => {
@@ -100,11 +104,11 @@ function convertToTree(
     });
 
     nodes.forEach((node) => {
-        const phaseId = node.section_id || node.phase_id || "default";
-        if (!nodesByPhase[phaseId]) {
-            nodesByPhase[phaseId] = [];
+        const sectionId = node.section_id || node.phase_id || "default";
+        if (!nodesBySection[sectionId]) {
+            nodesBySection[sectionId] = [];
         }
-        nodesByPhase[phaseId].push(node);
+        nodesBySection[sectionId].push(node);
     });
 
     const edgeMap: Record<string, string[]> = {};
@@ -114,42 +118,6 @@ function convertToTree(
         }
         edgeMap[edge.source].push(edge.target);
     });
-
-    const sortNodes = (nodeList: RoadmapNode[]) =>
-        [...nodeList].sort((left, right) => {
-            const leftHubWeight = left.is_hub ? -1 : 0;
-            const rightHubWeight = right.is_hub ? -1 : 0;
-            if (leftHubWeight !== rightHubWeight) {
-                return leftHubWeight - rightHubWeight;
-            }
-
-            const difficultyRank = {
-                beginner: 0,
-                intermediate: 1,
-                advanced: 2,
-            } as const;
-            const leftDifficulty = difficultyRank[left.data.difficulty] ?? 0;
-            const rightDifficulty = difficultyRank[right.data.difficulty] ?? 0;
-            if (leftDifficulty !== rightDifficulty) {
-                return leftDifficulty - rightDifficulty;
-            }
-
-            return left.data.label.localeCompare(right.data.label);
-        });
-
-    const aggregateStatus = (statuses: NodeStatus[]): NodeStatus => {
-        if (statuses.length === 0) return "pending";
-        if (statuses.every((status) => status === "completed"))
-            return "completed";
-        if (
-            statuses.some(
-                (status) => status === "in_progress" || status === "completed",
-            )
-        ) {
-            return "in_progress";
-        }
-        return "pending";
-    };
 
     const convertNode = (
         node: RoadmapNode,
@@ -165,33 +133,28 @@ function convertToTree(
             (node.subsection_id
                 ? subsectionNameMap.get(node.subsection_id)
                 : undefined),
-        duration: `${node.data.estimated_hours}h`,
+        duration: node.data.estimated_hours
+            ? `${node.data.estimated_hours} giờ`
+            : undefined,
         difficulty: node.data.difficulty,
         technologies: node.data.learning_resources?.keywords,
     });
 
-    // Create phase nodes as top-level children
-    const phaseNodes: TreeNode[] = phases.map((phase) => {
-        const phaseNodeList = nodesByPhase[phase.id] || [];
+    const phaseNodes = sections.map((section) => {
+        const sectionNodes = nodesBySection[section.id] || [];
+        const sectionMap = new Map<string, RoadmapNode>();
+        sectionNodes.forEach((node) => sectionMap.set(node.id, node));
 
-        // Find all nodes in this phase
-        const phaseNodesMap = new Map<string, RoadmapNode>();
-        phaseNodeList.forEach((n) => phaseNodesMap.set(n.id, n));
-
-        // Find root nodes in this phase
-        const targetIdsInPhase = new Set(
+        const targetIds = new Set(
             edges
                 .filter(
-                    (e) =>
-                        phaseNodesMap.has(e.source) &&
-                        phaseNodesMap.has(e.target),
+                    (edge) =>
+                        sectionMap.has(edge.source) && sectionMap.has(edge.target),
                 )
-                .map((e) => e.target),
+                .map((edge) => edge.target),
         );
 
-        const rootNodesInPhase = phaseNodeList.filter(
-            (n) => !targetIdsInPhase.has(n.id),
-        );
+        const roots = sectionNodes.filter((node) => !targetIds.has(node.id));
 
         const buildSubtree = (
             node: RoadmapNode,
@@ -202,14 +165,13 @@ function convertToTree(
             }
             visited.add(node.id);
 
-            const childIds = edgeMap[node.id] || [];
-            const children = childIds
-                .map((id) => nodes.find((n) => n.id === id))
+            const children = (edgeMap[node.id] || [])
+                .map((childId) => nodes.find((item) => item.id === childId))
                 .filter(
-                    (n): n is RoadmapNode =>
-                        n !== undefined && phaseNodesMap.has(n.id),
+                    (item): item is RoadmapNode =>
+                        item !== undefined && sectionMap.has(item.id),
                 )
-                .map((n) => buildSubtree(n, visited));
+                .map((item) => buildSubtree(item, visited));
 
             return {
                 ...convertNode(node),
@@ -217,17 +179,13 @@ function convertToTree(
             };
         };
 
-        const phaseChildren = rootNodesInPhase.map((n) =>
-            buildSubtree(n, new Set()),
-        );
-
         return {
-            id: phase.id,
-            title: phase.name,
-            description: `Giai đoạn ${phase.order}`,
+            id: section.id,
+            title: section.name,
+            description: section.description || `Giai đoạn ${section.order}`,
             type: "core",
-            status: progress[phase.id] || "pending",
-            children: phaseChildren.length > 0 ? phaseChildren : undefined,
+            status: progress[section.id] || "pending",
+            children: roots.map((node) => buildSubtree(node, new Set())),
         };
     });
 
@@ -237,12 +195,11 @@ function convertToTree(
         description: roadmap.roadmap_description,
         type: "core",
         status: "pending",
-        duration: `${roadmap.total_estimated_hours}h tổng`,
-        children: phaseNodes.length > 0 ? phaseNodes : undefined,
+        duration: `${roadmap.total_estimated_hours} giờ tổng`,
+        children: phaseNodes,
     };
 }
 
-// ========== CONTEXT MENU ==========
 const ContextMenu: React.FC<{
     x: number;
     y: number;
@@ -268,15 +225,15 @@ const ContextMenu: React.FC<{
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -5 }}
+            initial={{ opacity: 0, scale: 0.96, y: -6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -5 }}
+            exit={{ opacity: 0, scale: 0.96, y: -6 }}
             style={{
-                left: Math.min(x, window.innerWidth - 220),
-                top: Math.min(y, window.innerHeight - 280),
+                left: Math.min(x, window.innerWidth - 228),
+                top: Math.min(y, window.innerHeight - 300),
             }}
             className="roadmap-tree__context-menu"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
         >
             <div className="roadmap-tree__context-menu-header">
                 {node.title}
@@ -293,17 +250,23 @@ const ContextMenu: React.FC<{
             <div className="roadmap-tree__context-menu-divider" />
 
             <div
-                className={`roadmap-tree__context-menu-item ${isDone ? "roadmap-tree__context-menu-item--active" : ""}`}
+                className={`roadmap-tree__context-menu-item ${
+                    isDone ? "roadmap-tree__context-menu-item--active" : ""
+                }`}
                 onClick={() => onStatusChange(isDone ? "pending" : "completed")}
             >
                 <CheckCircle className="w-4 h-4" />
                 <span>
-                    {isDone ? "Bỏ đánh dấu hoàn thành" : "Đánh dấu hoàn thành"}
+                    {isDone
+                        ? "Bỏ đánh dấu hoàn thành"
+                        : "Đánh dấu hoàn thành"}
                 </span>
             </div>
 
             <div
-                className={`roadmap-tree__context-menu-item ${isLearning ? "roadmap-tree__context-menu-item--active" : ""}`}
+                className={`roadmap-tree__context-menu-item ${
+                    isLearning ? "roadmap-tree__context-menu-item--active" : ""
+                }`}
                 onClick={() =>
                     onStatusChange(isLearning ? "pending" : "in_progress")
                 }
@@ -317,10 +280,10 @@ const ContextMenu: React.FC<{
             </div>
 
             <div
-                className={`roadmap-tree__context-menu-item ${isSkipped ? "roadmap-tree__context-menu-item--active" : ""}`}
-                onClick={() =>
-                    onStatusChange(isSkipped ? "pending" : "skipped")
-                }
+                className={`roadmap-tree__context-menu-item ${
+                    isSkipped ? "roadmap-tree__context-menu-item--active" : ""
+                }`}
+                onClick={() => onStatusChange(isSkipped ? "pending" : "skipped")}
             >
                 <X className="w-4 h-4" />
                 <span>
@@ -331,160 +294,6 @@ const ContextMenu: React.FC<{
     );
 };
 
-// ========== DETAIL MODAL ==========
-const DetailModal: React.FC<{
-    node: TreeNode | null;
-    isOpen: boolean;
-    onClose: () => void;
-    onToggleComplete: (completed: boolean) => void;
-}> = ({ node, isOpen, onClose, onToggleComplete }) => {
-    if (!node || !isOpen) return null;
-
-    const isCompleted = node.status === "completed";
-
-    return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="roadmap-tree__modal-overlay"
-            onClick={onClose}
-        >
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="roadmap-tree__modal"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="roadmap-tree__modal-header">
-                    <h2 className="roadmap-tree__modal-title">{node.title}</h2>
-                </div>
-
-                <div className="roadmap-tree__modal-body">
-                    {node.description && (
-                        <p className="roadmap-tree__modal-description">
-                            {node.description}
-                        </p>
-                    )}
-
-                    <div className="roadmap-tree__modal-meta">
-                        {node.duration && (
-                            <div className="roadmap-tree__modal-meta-item">
-                                <Clock className="w-4 h-4 text-gray-400" />
-                                <span>{node.duration}</span>
-                            </div>
-                        )}
-                        {node.difficulty && (
-                            <div className="roadmap-tree__modal-meta-item">
-                                <Code className="w-4 h-4 text-gray-400" />
-                                <span>{node.difficulty}</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {node.technologies && node.technologies.length > 0 && (
-                        <div className="roadmap-tree__modal-techs">
-                            {node.technologies.map((tech, idx) => (
-                                <span
-                                    key={idx}
-                                    className="roadmap-tree__modal-tech"
-                                >
-                                    {tech}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div className="roadmap-tree__modal-footer">
-                    <button
-                        className="roadmap-tree__modal-btn roadmap-tree__modal-btn--secondary"
-                        onClick={onClose}
-                    >
-                        Đóng
-                    </button>
-                    <button
-                        className="roadmap-tree__modal-btn roadmap-tree__modal-btn--primary"
-                        onClick={() => onToggleComplete(!isCompleted)}
-                    >
-                        {isCompleted ? "Bỏ hoàn thành" : "Đánh dấu hoàn thành"}
-                    </button>
-                </div>
-            </motion.div>
-        </motion.div>
-    );
-};
-
-// ========== LEGEND ==========
-const Legend: React.FC = () => (
-    <div className="roadmap-tree__legend">
-        <h3 className="roadmap-tree__legend-title">Chú giải</h3>
-
-        <div className="roadmap-tree__legend-section">
-            <h4 className="roadmap-tree__legend-section-title">
-                Loại nội dung
-            </h4>
-            <div className="roadmap-tree__legend-item">
-                <div className="roadmap-tree__legend-color roadmap-tree__legend-color--topic"></div>
-                <span className="roadmap-tree__legend-label">Chủ đề chính</span>
-            </div>
-            <div className="roadmap-tree__legend-item">
-                <div className="roadmap-tree__legend-color roadmap-tree__legend-color--subtopic"></div>
-                <span className="roadmap-tree__legend-label">Nội dung phụ</span>
-            </div>
-            <div className="roadmap-tree__legend-item">
-                <div className="roadmap-tree__legend-color roadmap-tree__legend-color--alternative"></div>
-                <span className="roadmap-tree__legend-label">
-                    Tùy chọn / Thay thế
-                </span>
-            </div>
-        </div>
-
-        <div
-            className="roadmap-tree__legend-section"
-            style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}
-        >
-            <h4 className="roadmap-tree__legend-section-title">Trạng thái</h4>
-            <div className="roadmap-tree__legend-item">
-                <div className="roadmap-tree__legend-color roadmap-tree__legend-color--done"></div>
-                <span className="roadmap-tree__legend-label">
-                    Đã hoàn thành
-                </span>
-            </div>
-            <div className="roadmap-tree__legend-item">
-                <div className="roadmap-tree__legend-color roadmap-tree__legend-color--learning"></div>
-                <span className="roadmap-tree__legend-label">Đang học</span>
-            </div>
-            <div className="roadmap-tree__legend-item">
-                <div className="roadmap-tree__legend-color roadmap-tree__legend-color--skipped"></div>
-                <span className="roadmap-tree__legend-label">Bỏ qua</span>
-            </div>
-        </div>
-
-        <div
-            style={{
-                borderTop: "1px solid #e2e8f0",
-                paddingTop: "12px",
-                marginTop: "12px",
-            }}
-        >
-            <h4 className="roadmap-tree__legend-section-title">Tương tác</h4>
-            <div
-                style={{ fontSize: "11px", color: "#64748b", lineHeight: 1.6 }}
-            >
-                <div>
-                    <strong>Click</strong> — Xem chi tiết
-                </div>
-                <div>
-                    <strong>Right-click</strong> — Hoàn thành
-                </div>
-            </div>
-        </div>
-    </div>
-);
-
-// ========== SUB-TOPIC NODE ==========
 const SubTopicNode: React.FC<{
     node: TreeNode;
     onNodeClick: (node: TreeNode) => void;
@@ -495,89 +304,59 @@ const SubTopicNode: React.FC<{
     const isLearning = node.status === "in_progress";
     const isSkipped = node.status === "skipped";
 
-    const getNodeClasses = () => {
-        const classes = [
-            "roadmap-subtopic-node",
-            `roadmap-subtopic-node--${node.type || "core"}`,
-        ];
-        if (isDone) classes.push("roadmap-subtopic-node--done");
-        if (isLearning) classes.push("roadmap-subtopic-node--learning");
-        if (isSkipped) classes.push("roadmap-subtopic-node--skipped");
-        return classes.join(" ");
-    };
-
-    const handleClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        onNodeClick(node);
-    };
-
-    const handleContextMenu = (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onContextMenu(node, e);
-    };
+    const className = [
+        "roadmap-subtopic-node",
+        `roadmap-subtopic-node--${node.type || "core"}`,
+        isDone ? "roadmap-subtopic-node--done" : "",
+        isLearning ? "roadmap-subtopic-node--learning" : "",
+        isSkipped ? "roadmap-subtopic-node--skipped" : "",
+    ]
+        .filter(Boolean)
+        .join(" ");
 
     return (
         <div
-            className={`roadmap-subtopic ${position === "left" ? "roadmap-subtopic--left" : "roadmap-subtopic--right"}`}
+            className={`roadmap-subtopic ${
+                position === "left"
+                    ? "roadmap-subtopic--left"
+                    : "roadmap-subtopic--right"
+            }`}
         >
-            <div className="roadmap-subtopic__connector"></div>
+            <div className="roadmap-subtopic__connector" />
             <motion.div
-                className={getNodeClasses()}
-                onClick={handleClick}
-                onContextMenu={handleContextMenu}
-                whileHover={{ scale: 1.03, y: -1 }}
-                whileTap={{ scale: 0.97 }}
+                className={className}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    onNodeClick(node);
+                }}
+                onContextMenu={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onContextMenu(node, event);
+                }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
             >
-                <div className="flex flex-col gap-0.5">
+                <div className="flex flex-col gap-1">
                     <span className="roadmap-subtopic-node__title">
                         {node.title}
                     </span>
-                    {(node.subtitle || node.difficulty || node.duration) && (
-                        <span
-                            style={{
-                                fontSize: "11px",
-                                color: "#94a3b8",
-                                fontWeight: 400,
-                            }}
-                        >
-                            {[node.difficulty, node.duration]
+                    {node.subtitle || node.duration ? (
+                        <span className="text-[11px] font-normal text-slate-500">
+                            {[node.subtitle, node.duration]
                                 .filter(Boolean)
-                                .join(" · ")}
+                                .join(" • ")}
                         </span>
-                    )}
+                    ) : null}
                 </div>
-                {isDone && (
+                {isDone ? (
                     <CheckCircle className="roadmap-subtopic-node__check" />
-                )}
-                {isLearning && (
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: -7,
-                            right: -7,
-                            width: 18,
-                            height: 18,
-                            background: "#8b5cf6",
-                            borderRadius: "50%",
-                            border: "2px solid #fff",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-                        }}
-                    >
-                        <Sparkles
-                            style={{ width: 10, height: 10, color: "#fff" }}
-                        />
-                    </div>
-                )}
+                ) : null}
             </motion.div>
         </div>
     );
 };
 
-// ========== PHASE ROW ==========
 const PhaseRow: React.FC<{
     node: TreeNode;
     onNodeClick: (node: TreeNode) => void;
@@ -588,127 +367,111 @@ const PhaseRow: React.FC<{
     const isDone = node.status === "completed";
     const isLearning = node.status === "in_progress";
     const isSkipped = node.status === "skipped";
-    const hasChildren = node.children && node.children.length > 0;
     const [isExpanded, setIsExpanded] = useState(true);
 
     const subNodes = useMemo(() => {
         const flattened: TreeNode[] = [];
-        const collect = (n: TreeNode) => {
-            if (n.id !== node.id) flattened.push(n);
-            if (n.children) n.children.forEach(collect);
+        const collect = (current: TreeNode) => {
+            if (current.id !== node.id) flattened.push(current);
+            (current.children || []).forEach(collect);
         };
-        if (node.children) node.children.forEach(collect);
+        (node.children || []).forEach(collect);
         return flattened;
     }, [node]);
 
     const leftChildren = useMemo(
-        () => subNodes.filter((_, i) => i % 2 === 0),
+        () => subNodes.filter((_, index) => index % 2 === 0),
         [subNodes],
     );
     const rightChildren = useMemo(
-        () => subNodes.filter((_, i) => i % 2 === 1),
+        () => subNodes.filter((_, index) => index % 2 === 1),
         [subNodes],
     );
 
-    const getNodeClasses = () => {
-        const classes = [
-            "roadmap-main-node",
-            `roadmap-main-node--${node.type || "core"}`,
-        ];
-        if (isDone) classes.push("roadmap-main-node--done");
-        if (isLearning) classes.push("roadmap-main-node--learning");
-        if (isSkipped) classes.push("roadmap-main-node--skipped");
-        return classes.join(" ");
-    };
-
-    const handleClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        onNodeClick(node);
-    };
-
-    const handleContextMenu = (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onContextMenu(node, e);
-    };
+    const className = [
+        "roadmap-main-node",
+        `roadmap-main-node--${node.type || "core"}`,
+        isDone ? "roadmap-main-node--done" : "",
+        isLearning ? "roadmap-main-node--learning" : "",
+        isSkipped ? "roadmap-main-node--skipped" : "",
+    ]
+        .filter(Boolean)
+        .join(" ");
 
     return (
         <div className="roadmap-row">
-            {!isFirst && <div className="roadmap-row__connector-top"></div>}
-            {!isLast && <div className="roadmap-row__connector-bottom"></div>}
+            {!isFirst ? <div className="roadmap-row__connector-top" /> : null}
+            {!isLast ? (
+                <div className="roadmap-row__connector-bottom" />
+            ) : null}
 
             <div className="roadmap-row__left">
                 <AnimatePresence>
-                    {isExpanded &&
-                        leftChildren.map((child, idx) => (
-                            <motion.div
-                                key={`${child.id}-left-${idx}`}
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 20 }}
-                                transition={{ delay: idx * 0.05 }}
-                            >
-                                <SubTopicNode
-                                    node={child}
-                                    onNodeClick={onNodeClick}
-                                    onContextMenu={onContextMenu}
-                                    position="left"
-                                />
-                            </motion.div>
-                        ))}
+                    {isExpanded
+                        ? leftChildren.map((child, index) => (
+                              <motion.div
+                                  key={`${child.id}-left`}
+                                  initial={{ opacity: 0, x: 18 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: 18 }}
+                                  transition={{ delay: index * 0.04 }}
+                              >
+                                  <SubTopicNode
+                                      node={child}
+                                      onNodeClick={onNodeClick}
+                                      onContextMenu={onContextMenu}
+                                      position="left"
+                                  />
+                              </motion.div>
+                          ))
+                        : null}
                 </AnimatePresence>
             </div>
 
             <div className="roadmap-row__center">
                 <motion.div
-                    className={getNodeClasses()}
-                    onClick={handleClick}
-                    onContextMenu={handleContextMenu}
-                    whileHover={{ scale: 1.04, y: -2 }}
-                    whileTap={{ scale: 0.97 }}
+                    className={className}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        onNodeClick(node);
+                    }}
+                    onContextMenu={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onContextMenu(node, event);
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                 >
                     <div className="flex flex-col items-center">
                         <span className="roadmap-main-node__title">
                             {node.title}
                         </span>
-                        {subNodes.length > 0 && (
-                            <span
-                                style={{
-                                    marginTop: 4,
-                                    fontSize: "11px",
-                                    color: "#666",
-                                    fontWeight: 400,
-                                }}
-                            >
-                                {subNodes.length} nội dung
+                        {subNodes.length > 0 ? (
+                            <span className="mt-1 text-[11px] font-normal text-slate-500">
+                                {subNodes.length} chủ đề chi tiết
                             </span>
-                        )}
+                        ) : null}
                     </div>
 
-                    {isDone && (
+                    {isDone ? (
                         <div className="roadmap-main-node__badge roadmap-main-node__badge--done">
-                            <CheckCircle
-                                className="w-3.5 h-3.5 text-white"
-                                strokeWidth={3}
-                            />
+                            <CheckCircle className="w-3 h-3 text-white" />
                         </div>
-                    )}
+                    ) : null}
 
-                    {isLearning && (
+                    {isLearning ? (
                         <div className="roadmap-main-node__badge roadmap-main-node__badge--learning">
-                            <Sparkles
-                                className="w-3.5 h-3.5 text-white"
-                                strokeWidth={3}
-                            />
+                            <BookOpen className="w-3 h-3 text-white" />
                         </div>
-                    )}
+                    ) : null}
 
-                    {hasChildren && (
+                    {(node.children || []).length > 0 ? (
                         <button
                             className="roadmap-main-node__toggle"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setIsExpanded(!isExpanded);
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                setIsExpanded((previous) => !previous);
                             }}
                         >
                             {isExpanded ? (
@@ -717,36 +480,36 @@ const PhaseRow: React.FC<{
                                 <ChevronDown className="w-4 h-4" />
                             )}
                         </button>
-                    )}
+                    ) : null}
                 </motion.div>
             </div>
 
             <div className="roadmap-row__right">
                 <AnimatePresence>
-                    {isExpanded &&
-                        rightChildren.map((child, idx) => (
-                            <motion.div
-                                key={`${child.id}-right-${idx}`}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                transition={{ delay: idx * 0.05 }}
-                            >
-                                <SubTopicNode
-                                    node={child}
-                                    onNodeClick={onNodeClick}
-                                    onContextMenu={onContextMenu}
-                                    position="right"
-                                />
-                            </motion.div>
-                        ))}
+                    {isExpanded
+                        ? rightChildren.map((child, index) => (
+                              <motion.div
+                                  key={`${child.id}-right`}
+                                  initial={{ opacity: 0, x: -18 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: -18 }}
+                                  transition={{ delay: index * 0.04 }}
+                              >
+                                  <SubTopicNode
+                                      node={child}
+                                      onNodeClick={onNodeClick}
+                                      onContextMenu={onContextMenu}
+                                      position="right"
+                                  />
+                              </motion.div>
+                          ))
+                        : null}
                 </AnimatePresence>
             </div>
         </div>
     );
 };
 
-// ========== MAIN COMPONENT ==========
 export default function AIRoadmapTreeView({
     roadmap,
     roadmapId,
@@ -755,7 +518,7 @@ export default function AIRoadmapTreeView({
     isTempRoadmap = false,
 }: AIRoadmapTreeViewProps) {
     const [selectedNode, setSelectedNode] = useState<TreeNode | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(
         null,
     );
@@ -768,29 +531,38 @@ export default function AIRoadmapTreeView({
         () => convertToTree(roadmap, progress),
         [roadmap, progress],
     );
-    const phases = useMemo(() => treeData.children || [], [treeData]);
+    const phases = useMemo(
+        () =>
+            (treeData.children || []).filter((phase) =>
+                matchesSearch(phase, searchQuery),
+            ),
+        [searchQuery, treeData.children],
+    );
 
     const progressStats = useMemo(() => {
         const total = roadmap.nodes?.length || 0;
         let completed = 0;
         let inProgress = 0;
+        let skipped = 0;
 
-        Object.entries(progress).forEach(([, status]) => {
-            if (status === "completed") completed++;
-            else if (status === "in_progress") inProgress++;
+        Object.values(progress).forEach((status) => {
+            if (status === "completed") completed += 1;
+            else if (status === "in_progress") inProgress += 1;
+            else if (status === "skipped") skipped += 1;
         });
 
         return {
             total,
             completed,
             inProgress,
+            skipped,
             percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
         };
     }, [progress, roadmap.nodes]);
 
     const handleStatusChange = useCallback(
         (nodeId: string, newStatus: NodeStatus) => {
-            setProgress((prev) => ({ ...prev, [nodeId]: newStatus }));
+            setProgress((previous) => ({ ...previous, [nodeId]: newStatus }));
             onProgressUpdate?.(nodeId, newStatus);
             setContextMenu(null);
         },
@@ -799,189 +571,102 @@ export default function AIRoadmapTreeView({
 
     const handleNodeClick = useCallback((node: TreeNode) => {
         setSelectedNode(node);
-        setIsModalOpen(true);
+        setIsSidebarOpen(true);
     }, []);
 
     const handleContextMenu = useCallback(
-        (node: TreeNode, e: React.MouseEvent) => {
-            setContextMenu({ x: e.clientX, y: e.clientY, node });
+        (node: TreeNode, event: React.MouseEvent) => {
+            setContextMenu({ x: event.clientX, y: event.clientY, node });
         },
         [],
     );
 
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === "f") {
-                e.preventDefault();
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if ((event.ctrlKey || event.metaKey) && event.key === "f") {
+                event.preventDefault();
                 searchRef.current?.focus();
             }
-            if (e.key === "Escape") {
-                setIsModalOpen(false);
+
+            if (event.key === "Escape") {
+                setIsSidebarOpen(false);
                 setContextMenu(null);
                 setSearchQuery("");
             }
         };
+
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
 
     return (
         <div className="roadmap-tree-page">
-            {/* Compact Header */}
-            <div className="roadmap-tree-header">
-                <div className="roadmap-tree-header__inner">
-                    {/* Row 1: Breadcrumb */}
-                    <nav className="roadmap-tree-header__breadcrumb">
-                        <Link
-                            href="/"
-                            className="roadmap-tree-header__breadcrumb-link"
-                        >
-                            <Home className="w-3 h-3" />
-                            <span>Trang chủ</span>
-                        </Link>
-                        <ChevronRight className="w-3 h-3 text-gray-300 flex-shrink-0" />
-                        <Link
-                            href="/roadmap/my"
-                            className="roadmap-tree-header__breadcrumb-link"
-                        >
-                            Lộ trình AI
-                        </Link>
-                        <ChevronRight className="w-3 h-3 text-gray-300 flex-shrink-0" />
-                        <span className="roadmap-tree-header__breadcrumb-current">
-                            {roadmap.roadmap_title}
+            <RoadmapViewerHeader
+                title={roadmap.roadmap_title}
+                description={
+                    roadmap.roadmap_description ||
+                    "Roadmap AI được sinh theo hồ sơ học tập của bạn và giữ nguyên tiến độ giữa các phiên."
+                }
+                backHref="/roadmap/my"
+                backLabel="Quay lại danh sách roadmap AI"
+                breadcrumbs={[
+                    roadmapHomeBreadcrumb,
+                    { label: "Lộ trình", href: "/roadmap" },
+                    { label: "Roadmap AI", href: "/roadmap/my" },
+                    { label: roadmap.roadmap_title },
+                ]}
+                stats={[
+                    {
+                        label: "hoàn thành",
+                        value: String(progressStats.completed),
+                        tone: "done",
+                    },
+                    {
+                        label: "đang học",
+                        value: String(progressStats.inProgress),
+                        tone: "learning",
+                    },
+                    {
+                        label: "bỏ qua",
+                        value: String(progressStats.skipped),
+                        tone: "warning",
+                    },
+                ]}
+                progressPercentage={progressStats.percentage}
+                totalLabel={`${progressStats.total} chủ đề`}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchRef={searchRef}
+                tabs={[
+                    { label: "Danh sách AI", href: "/roadmap/my" },
+                    { label: "Lộ trình AI", active: true },
+                ]}
+                statusBadge={
+                    isTempRoadmap ? (
+                        <span className="roadmap-pill roadmap-pill--warning">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            Chưa lưu
                         </span>
-                    </nav>
-
-                    {/* Row 2: Toolbar */}
-                    <div className="roadmap-tree-header__toolbar">
-                        {/* Left: Back + Title */}
-                        <div className="roadmap-tree-header__left">
-                            <Link
-                                href="/roadmap/my"
-                                className="roadmap-tree-header__back"
-                                title="Quay lại"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                            </Link>
-                            <h1 className="roadmap-tree-header__title">
-                                {roadmap.roadmap_title}
-                            </h1>
-                            <span className="roadmap-tree-header__count">
-                                {progressStats.total} topics
-                            </span>
-                            {isTempRoadmap && (
-                                <span
-                                    style={{
-                                        fontSize: 11,
-                                        fontWeight: 600,
-                                        color: "#d97706",
-                                        background: "#fef3c7",
-                                        padding: "2px 8px",
-                                        borderRadius: 10,
-                                        whiteSpace: "nowrap",
-                                        flexShrink: 0,
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        gap: 4,
-                                    }}
-                                >
-                                    <AlertCircle
-                                        style={{ width: 12, height: 12 }}
-                                    />
-                                    Chưa lưu
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Center: Progress bar */}
-                        <div className="roadmap-tree-header__progress">
-                            <div className="roadmap-tree-header__stats">
-                                <span className="roadmap-tree-header__stat roadmap-tree-header__stat--done">
-                                    {progressStats.completed} hoàn thành
-                                </span>
-                                <span className="roadmap-tree-header__stat-dot">
-                                    ·
-                                </span>
-                                <span className="roadmap-tree-header__stat roadmap-tree-header__stat--learning">
-                                    {progressStats.inProgress} đang học
-                                </span>
-                            </div>
-                            <div className="roadmap-tree-header__progress-track">
-                                <motion.div
-                                    className="roadmap-tree-header__progress-fill"
-                                    initial={{ width: 0 }}
-                                    animate={{
-                                        width: `${progressStats.percentage}%`,
-                                    }}
-                                    transition={{
-                                        duration: 0.6,
-                                        ease: "easeOut",
-                                    }}
-                                />
-                            </div>
-                            <span className="roadmap-tree-header__progress-pct">
-                                {progressStats.percentage}%
-                            </span>
-                        </div>
-
-                        {/* Right: Search */}
-                        <div className="roadmap-tree-header__right">
-                            <div className="roadmap-tree-header__search">
-                                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input
-                                    ref={searchRef}
-                                    type="text"
-                                    placeholder="Tìm kiếm (Ctrl+F)..."
-                                    value={searchQuery}
-                                    onChange={(e) =>
-                                        setSearchQuery(e.target.value)
-                                    }
-                                    className="roadmap-tree-header__search-input"
-                                />
-                                {searchQuery && (
-                                    <button
-                                        onClick={() => setSearchQuery("")}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    ) : null
+                }
+                actions={
+                    <Link href="/roadmap/generate" className="roadmap-button">
+                        Tạo roadmap mới
+                    </Link>
+                }
+            />
 
             <div className="roadmap-vertical-tree">
                 <div className="roadmap-vertical-tree__container">
                     <div className="roadmap-vertical-tree__root">
                         <motion.div
                             className="roadmap-root-node"
-                            initial={{ opacity: 0, y: -20 }}
+                            initial={{ opacity: 0, y: -18 }}
                             animate={{ opacity: 1, y: 0 }}
                         >
                             <span className="roadmap-root-node__title">
                                 {roadmap.roadmap_title}
                             </span>
-                            {roadmap.roadmap_description && (
-                                <span
-                                    style={{
-                                        display: "block",
-                                        marginTop: 6,
-                                        fontSize: 13,
-                                        fontWeight: 400,
-                                        color: "#64748b",
-                                        maxWidth: 400,
-                                    }}
-                                >
-                                    {roadmap.roadmap_description.length > 80
-                                        ? roadmap.roadmap_description.slice(
-                                              0,
-                                              80,
-                                          ) + "..."
-                                        : roadmap.roadmap_description}
-                                </span>
-                            )}
                         </motion.div>
                     </div>
 
@@ -998,18 +683,71 @@ export default function AIRoadmapTreeView({
                                 />
                             ))
                         ) : (
-                            <div className="text-center py-20 text-gray-500">
-                                <p>Không có dữ liệu lộ trình</p>
+                            <div className="roadmap-empty-state roadmap-surface">
+                                <div className="roadmap-empty-state__title">
+                                    Không có chủ đề phù hợp với từ khoá
+                                </div>
+                                <p className="roadmap-empty-state__body">
+                                    Hãy đổi cụm tìm kiếm hoặc xoá ô tìm kiếm để
+                                    xem lại toàn bộ roadmap AI.
+                                </p>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
 
-            <Legend />
+            <RoadmapLegendCard
+                groups={[
+                    {
+                        title: "Loại nội dung",
+                        items: [
+                            {
+                                label: "Giai đoạn",
+                                modifier:
+                                    "roadmap-tree__legend-color--topic",
+                            },
+                            {
+                                label: "Chủ đề chi tiết",
+                                modifier:
+                                    "roadmap-tree__legend-color--subtopic",
+                            },
+                            {
+                                label: "Tuỳ chọn / thay thế",
+                                modifier:
+                                    "roadmap-tree__legend-color--alternative",
+                            },
+                        ],
+                    },
+                    {
+                        title: "Trạng thái",
+                        items: [
+                            {
+                                label: "Đã hoàn thành",
+                                modifier: "roadmap-tree__legend-color--done",
+                            },
+                            {
+                                label: "Đang học",
+                                modifier:
+                                    "roadmap-tree__legend-color--learning",
+                            },
+                            {
+                                label: "Bỏ qua",
+                                modifier:
+                                    "roadmap-tree__legend-color--skipped",
+                            },
+                        ],
+                    },
+                ]}
+                interactions={[
+                    "Nhấp: mở chi tiết node",
+                    "Nhấp phải: đổi trạng thái nhanh",
+                    "Ctrl/Cmd + F: mở tìm kiếm",
+                ]}
+            />
 
             <AnimatePresence>
-                {contextMenu && (
+                {contextMenu ? (
                     <ContextMenu
                         x={contextMenu.x}
                         y={contextMenu.y}
@@ -1023,13 +761,12 @@ export default function AIRoadmapTreeView({
                             setContextMenu(null);
                         }}
                     />
-                )}
+                ) : null}
             </AnimatePresence>
 
-            {/* Node Detail Sidebar */}
             <NodeDetailSidebar
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
                 nodeTitle={selectedNode?.title || ""}
                 nodeDescription={selectedNode?.description}
                 nodeStatus={selectedNode?.status || "pending"}

@@ -2,7 +2,7 @@
 
 import React, { memo, useState, useCallback } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Check } from 'lucide-react';
+import { Check, Clock3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
@@ -58,7 +58,8 @@ const NodeTooltip = ({
     <div className="roadmap-tooltip__meta">
       {duration && (
         <span className="flex items-center gap-1">
-          <span>⏱</span> {duration}
+          <Clock3 className="h-3 w-3" />
+          {duration}
         </span>
       )}
       {status && (

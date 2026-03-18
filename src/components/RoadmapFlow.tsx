@@ -573,7 +573,7 @@ function RoadmapFlowInner({ roadmapId, roadmapTitle, roadmapData }: RoadmapFlowP
       </motion.div>
 
       {/* React Flow Container - Full height scrollable with max-width constraint */}
-      <div className="h-[calc(100vh-160px)] roadmap-container">
+      <div className="h-[calc(100dvh-160px)] roadmap-container">
         <div className="roadmap-canvas-wrapper h-full">
           <ReactFlow
             nodes={nodes}

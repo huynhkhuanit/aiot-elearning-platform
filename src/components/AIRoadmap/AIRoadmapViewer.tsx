@@ -148,11 +148,11 @@ export default function AIRoadmapViewer({
   }, [selectedNodeId, roadmap.nodes]);
 
   return (
-    <div className="w-full h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 to-indigo-50">
+    <div className="relative h-[100dvh] w-full overflow-hidden bg-[#f3f4f6]">
       {isTempRoadmap && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg shadow-lg">
+        <div className="absolute left-1/2 top-4 z-50 -translate-x-1/2 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-amber-800 shadow-sm">
           <p className="text-sm font-medium">
-            ⚠️ Lộ trình này chưa được lưu vào database. Vui lòng chạy migration để lưu trữ.
+            Lộ trình này chưa được lưu vào cơ sở dữ liệu.
           </p>
         </div>
       )}
@@ -180,7 +180,7 @@ export default function AIRoadmapViewer({
         panOnScroll={true}    // Enable pan on scroll - allow vertical scrolling
         panOnDrag={true}      // Enable pan on drag - allow dragging to navigate
         nodesDraggable={false}  // Nodes should not be draggable
-        className="bg-gradient-to-br from-slate-50 to-indigo-50"
+        className="bg-[#f3f4f6]"
         style={{ width: '100%', height: '100%' }}
       >
         <FitViewHelper />
@@ -191,9 +191,9 @@ export default function AIRoadmapViewer({
             // Match SimpleRoadmapNode colors
             if (node.data?.status === 'completed') return '#22c55e'; // green-500
             switch (node.data?.type) {
-              case 'core': return '#faf5ff';      // purple-50
-              case 'optional': return '#f9fafb'; // gray-50
-              case 'project': return '#fff7ed';  // orange-50
+              case 'core': return '#fef08a';
+              case 'optional': return '#fff7d6';
+              case 'project': return '#fed7aa';
               default: return '#f3f4f6';
             }
           }}
@@ -203,7 +203,7 @@ export default function AIRoadmapViewer({
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e5e7eb" />
 
         {/* Roadmap Info Panel */}
-        <Panel position="top-left" className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm max-w-sm">
+        <Panel position="top-left" className="max-w-sm rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm">
           <h1 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2">{roadmap.roadmap_title}</h1>
           {roadmap.roadmap_description && (
             <p className="text-sm text-gray-600 mb-2 line-clamp-2">{roadmap.roadmap_description}</p>
