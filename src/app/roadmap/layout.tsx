@@ -5,6 +5,7 @@ import "./roadmap-section.css";
 const roadmapFont = Balsamiq_Sans({
     subsets: ["latin"],
     weight: ["400", "700"],
+    variable: "--font-roadmap-node",
 });
 
 export default function RoadmapLayout({
@@ -13,7 +14,7 @@ export default function RoadmapLayout({
     children: ReactNode;
 }) {
     return (
-        <div className={`roadmap-section ${roadmapFont.className}`}>
+        <div className={`roadmap-section ${roadmapFont.variable}`}>
             {children}
         </div>
     );

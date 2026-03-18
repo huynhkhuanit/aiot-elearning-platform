@@ -75,6 +75,13 @@
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
     cursor: pointer;
     user-select: none;
+    font-family:
+        var(--font-roadmap-node),
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
     transition:
         transform 180ms ease,
         box-shadow 180ms ease,
@@ -546,6 +553,13 @@
 
 .simple-roadmap-node {
     border-radius: 16px;
+    font-family:
+        var(--font-roadmap-node),
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
 }
 
 @media (max-width: 768px) {

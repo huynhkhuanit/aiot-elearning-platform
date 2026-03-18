@@ -357,6 +357,13 @@
         linear-gradient(180deg, #ffffff, #f8fafc);
     box-shadow: var(--tree-shadow);
     text-align: center;
+    font-family:
+        var(--font-roadmap-node),
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
 }
 
 .roadmap-root-node__title {
@@ -452,6 +459,13 @@
     padding: 14px 42px 14px 24px;
     border-radius: 16px;
     text-align: center;
+    font-family:
+        var(--font-roadmap-node),
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
 }
 
 .roadmap-main-node__title {
@@ -575,6 +589,13 @@
     max-width: 220px;
     padding: 10px 16px;
     border-radius: 14px;
+    font-family:
+        var(--font-roadmap-node),
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
 }
 
 .roadmap-subtopic-node__title {
