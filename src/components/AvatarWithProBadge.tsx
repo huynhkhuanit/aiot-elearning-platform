@@ -6,11 +6,12 @@ interface AvatarWithProBadgeProps {
     isPro: boolean;
     /** Whether this user has a registered account on the platform */
     isRegistered?: boolean;
-    size?: "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
+    size?: "3xs" | "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
     className?: string;
 }
 
 const sizeMap = {
+    "3xs": { outer: 19, ring: 1, gap: 1, text: "text-[6px]" },
     "2xs": { outer: 22, ring: 2, gap: 1, text: "text-[8px]" },
     xs: { outer: 32, ring: 2, gap: 1, text: "text-xs" },
     sm: { outer: 40, ring: 3, gap: 2, text: "text-sm" },

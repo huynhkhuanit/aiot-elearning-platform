@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        // Step 3: Get answer users (max 2 per question) for display
+        // Step 3: Get answer users (max 5 per question) for display
         const questionIds = questionsData.map((q: any) => q.id);
         const { data: answersData } = await supabaseAdmin!
             .from("lesson_answers")
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
             .in("question_id", questionIds)
             .order("created_at", { ascending: true });
 
-        // Build answer users map (max 2 unique per question)
+        // Build answer users map (max 5 unique per question)
         const answerUsersMap = new Map<
             string,
             Array<{
@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
             }
             const users = answerUsersMap.get(answer.question_id)!;
             const user = answer.users as any;
-            if (users.length < 2 && !users.some((u) => u.id === user.id)) {
+            if (users.length < 5 && !users.some((u) => u.id === user.id)) {
                 users.push({
                     id: user.id,
                     fullName: user.full_name,

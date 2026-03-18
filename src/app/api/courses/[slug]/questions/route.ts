@@ -171,7 +171,7 @@ export async function GET(
             }
             const users = answerUsersMap.get(answer.question_id)!;
             const user = answer.users as any;
-            if (users.length < 2 && !users.some((u) => u.id === user.id)) {
+            if (users.length < 5 && !users.some((u) => u.id === user.id)) {
                 users.push({
                     id: user.id,
                     fullName: user.full_name,

@@ -677,7 +677,7 @@ function QAPageContent() {
                                                                                     className={`relative transition-all duration-200 ease-out ${
                                                                                         i >
                                                                                         0
-                                                                                            ? "-ml-1.5 group-hover/avatars:ml-0.5"
+                                                                                            ? "-ml-2 group-hover/avatars:ml-0.5"
                                                                                             : ""
                                                                                     }`}
                                                                                     style={{
@@ -698,8 +698,7 @@ function QAPageContent() {
                                                                                                 "FREE") ===
                                                                                             "PRO"
                                                                                         }
-                                                                                        size="xs"
-                                                                                        className="border-[1.5px] border-white ring-1 ring-white/80 transition-shadow duration-200 group-hover/avatars:ring-0 group-hover/avatars:shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
+                                                                                        size="3xs"
                                                                                     />
                                                                                 </div>
                                                                             ),
@@ -709,12 +708,12 @@ function QAPageContent() {
                                                                         .length >
                                                                         5 && (
                                                                         <div
-                                                                            className="-ml-1.5 group-hover/avatars:ml-0.5 transition-all duration-200 ease-out w-5 h-5 rounded-full bg-slate-100 border-[1.5px] border-white flex items-center justify-center"
+                                                                            className="-ml-2 group-hover/avatars:ml-0.5 transition-all duration-200 ease-out w-[19px] h-[19px] rounded-full bg-slate-100 flex items-center justify-center"
                                                                             style={{
                                                                                 zIndex: 0,
                                                                             }}
                                                                         >
-                                                                            <span className="text-[9px] font-semibold text-slate-500">
+                                                                            <span className="text-[7px] font-semibold text-slate-500">
                                                                                 +
                                                                                 {q
                                                                                     .answerUsers
@@ -725,6 +724,7 @@ function QAPageContent() {
                                                                     )}
                                                                 </div>
                                                             )}
+
                                                         <span
                                                             className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${
                                                                 q.answersCount >
