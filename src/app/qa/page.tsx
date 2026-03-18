@@ -8,15 +8,12 @@ import {
     BookOpenText,
     MessageCircle,
     CheckCircle,
-    ArrowRight,
     TrendingUp,
     Clock,
-    Eye,
-    ThumbsUp,
     Filter,
     MessagesSquare,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import PageContainer from "@/components/PageContainer";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import PageLoading from "@/components/PageLoading";
@@ -655,43 +652,77 @@ function QAPageContent() {
                                                     </div>
                                                 </div>
 
-                                                {/* Right: answer count + avatars */}
+                                                {/* Right: avatar group + answer count */}
                                                 <div className="shrink-0 flex flex-col items-end gap-2 mt-0.5">
-                                                    <div className="flex items-center gap-1.5">
+                                                    <div className="flex items-center gap-2">
                                                         {q.answersCount > 0 &&
                                                             q.answerUsers &&
                                                             q.answerUsers
                                                                 .length > 0 && (
-                                                                <div className="flex -space-x-1.5">
+                                                                <div className="group/avatars flex items-center">
                                                                     {q.answerUsers
                                                                         .slice(
                                                                             0,
-                                                                            3,
+                                                                            5,
                                                                         )
                                                                         .map(
                                                                             (
                                                                                 au,
+                                                                                i,
                                                                             ) => (
-                                                                                <AvatarWithProBadge
+                                                                                <div
                                                                                     key={
                                                                                         au.id
                                                                                     }
-                                                                                    avatarUrl={
-                                                                                        au.avatarUrl
-                                                                                    }
-                                                                                    fullName={
-                                                                                        au.fullName
-                                                                                    }
-                                                                                    isPro={
-                                                                                        (au.membershipType ||
-                                                                                            "FREE") ===
-                                                                                        "PRO"
-                                                                                    }
-                                                                                    size="xs"
-                                                                                    className="border-2 border-white"
-                                                                                />
+                                                                                    className={`relative transition-all duration-200 ease-out ${
+                                                                                        i >
+                                                                                        0
+                                                                                            ? "-ml-1.5 group-hover/avatars:ml-0.5"
+                                                                                            : ""
+                                                                                    }`}
+                                                                                    style={{
+                                                                                        zIndex:
+                                                                                            5 -
+                                                                                            i,
+                                                                                    }}
+                                                                                >
+                                                                                    <AvatarWithProBadge
+                                                                                        avatarUrl={
+                                                                                            au.avatarUrl
+                                                                                        }
+                                                                                        fullName={
+                                                                                            au.fullName
+                                                                                        }
+                                                                                        isPro={
+                                                                                            (au.membershipType ||
+                                                                                                "FREE") ===
+                                                                                            "PRO"
+                                                                                        }
+                                                                                        size="xs"
+                                                                                        className="border-[1.5px] border-white ring-1 ring-white/80 transition-shadow duration-200 group-hover/avatars:ring-0 group-hover/avatars:shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
+                                                                                    />
+                                                                                </div>
                                                                             ),
                                                                         )}
+                                                                    {q
+                                                                        .answerUsers
+                                                                        .length >
+                                                                        5 && (
+                                                                        <div
+                                                                            className="-ml-1.5 group-hover/avatars:ml-0.5 transition-all duration-200 ease-out w-5 h-5 rounded-full bg-slate-100 border-[1.5px] border-white flex items-center justify-center"
+                                                                            style={{
+                                                                                zIndex: 0,
+                                                                            }}
+                                                                        >
+                                                                            <span className="text-[9px] font-semibold text-slate-500">
+                                                                                +
+                                                                                {q
+                                                                                    .answerUsers
+                                                                                    .length -
+                                                                                    5}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
                                                         <span
@@ -706,8 +737,6 @@ function QAPageContent() {
                                                             {q.answersCount}
                                                         </span>
                                                     </div>
-
-                                                    <ArrowRight className="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
                                                 </div>
                                             </motion.div>
                                         );
