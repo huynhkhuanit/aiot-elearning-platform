@@ -19,7 +19,6 @@ import {
 import Link from "next/link";
 import NodeDetailSidebar from "./NodeDetailSidebar";
 import {
-    RoadmapLegendCard,
     RoadmapViewerHeader,
     roadmapHomeBreadcrumb,
 } from "./roadmap/RoadmapViewerChrome";
@@ -520,7 +519,6 @@ export default function RoadmapTreeView({
         <div className="roadmap-tree-page">
             <RoadmapViewerHeader
                 title={roadmapTitle}
-                description="Theo dõi tiến độ trực tiếp trên sơ đồ học tập. Nhấp để xem tài nguyên, nhấp phải để đổi trạng thái và dùng tìm kiếm để thu hẹp chủ đề."
                 backHref={`/roadmap/${roadmapId}`}
                 backLabel="Quay lại tổng quan"
                 breadcrumbs={[
@@ -605,60 +603,6 @@ export default function RoadmapTreeView({
                     </div>
                 </div>
             </div>
-
-            <RoadmapLegendCard
-                groups={[
-                    {
-                        title: "Loại nội dung",
-                        items: [
-                            {
-                                label: "Cốt lõi",
-                                modifier:
-                                    "roadmap-tree__legend-color--topic",
-                            },
-                            {
-                                label: "Tuỳ chọn",
-                                modifier:
-                                    "roadmap-tree__legend-color--subtopic",
-                            },
-                            {
-                                label: "Cơ bản",
-                                modifier:
-                                    "roadmap-tree__legend-color--beginner",
-                            },
-                            {
-                                label: "Thay thế",
-                                modifier:
-                                    "roadmap-tree__legend-color--alternative",
-                            },
-                        ],
-                    },
-                    {
-                        title: "Trạng thái",
-                        items: [
-                            {
-                                label: "Đã hoàn thành",
-                                modifier: "roadmap-tree__legend-color--done",
-                            },
-                            {
-                                label: "Đang học",
-                                modifier:
-                                    "roadmap-tree__legend-color--learning",
-                            },
-                            {
-                                label: "Bỏ qua",
-                                modifier:
-                                    "roadmap-tree__legend-color--skipped",
-                            },
-                        ],
-                    },
-                ]}
-                interactions={[
-                    "Nhấp: mở chi tiết chủ đề",
-                    "Nhấp phải: đổi trạng thái nhanh",
-                    "Ctrl/Cmd + F: mở ô tìm kiếm",
-                ]}
-            />
 
             <AnimatePresence>
                 {contextMenu ? (

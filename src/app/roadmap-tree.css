@@ -80,15 +80,15 @@
 
 .roadmap-tree-header__toolbar {
     display: flex;
-    align-items: flex-start;
-    gap: 18px;
-    padding: 14px 0 12px;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 0 8px;
 }
 
 .roadmap-tree-header__left {
     display: flex;
-    align-items: flex-start;
-    gap: 14px;
+    align-items: center;
+    gap: 12px;
     min-width: 0;
     flex: 1 1 auto;
 }
@@ -119,21 +119,28 @@
 
 .roadmap-tree-header__title-group {
     min-width: 0;
+    flex: 1 1 auto;
+    max-width: min(100%, 420px);
 }
 
 .roadmap-tree-header__title-row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 8px;
+    min-width: 0;
 }
 
 .roadmap-tree-header__title {
     margin: 0;
     color: var(--tree-ink);
-    font-size: 1.45rem !important;
-    line-height: 1.04;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 1.2rem !important;
+    line-height: 1.08;
     letter-spacing: -0.045em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-weight: 700;
 }
 
@@ -294,7 +301,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    padding: 0 0 12px;
+    padding: 0 0 8px;
 }
 
 .roadmap-tree-header__tab {
@@ -938,10 +945,22 @@
 
     .roadmap-tree-header__left {
         flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .roadmap-tree-header__title-group {
+        max-width: none;
+    }
+
+    .roadmap-tree-header__title-row {
+        flex-wrap: wrap;
     }
 
     .roadmap-tree-header__title {
-        font-size: 1.2rem !important;
+        overflow: visible;
+        font-size: 1.08rem !important;
+        text-overflow: initial;
+        white-space: normal;
     }
 
     .roadmap-tree-header__description {

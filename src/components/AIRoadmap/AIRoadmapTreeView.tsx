@@ -25,7 +25,6 @@ import type {
     RoadmapNode,
 } from "@/types/ai-roadmap";
 import {
-    RoadmapLegendCard,
     RoadmapViewerHeader,
     roadmapHomeBreadcrumb,
 } from "../roadmap/RoadmapViewerChrome";
@@ -603,10 +602,6 @@ export default function AIRoadmapTreeView({
         <div className="roadmap-tree-page">
             <RoadmapViewerHeader
                 title={roadmap.roadmap_title}
-                description={
-                    roadmap.roadmap_description ||
-                    "Roadmap AI được sinh theo hồ sơ học tập của bạn và giữ nguyên tiến độ giữa các phiên."
-                }
                 backHref="/roadmap/my"
                 backLabel="Quay lại danh sách roadmap AI"
                 breadcrumbs={[
@@ -696,55 +691,6 @@ export default function AIRoadmapTreeView({
                     </div>
                 </div>
             </div>
-
-            <RoadmapLegendCard
-                groups={[
-                    {
-                        title: "Loại nội dung",
-                        items: [
-                            {
-                                label: "Giai đoạn",
-                                modifier:
-                                    "roadmap-tree__legend-color--topic",
-                            },
-                            {
-                                label: "Chủ đề chi tiết",
-                                modifier:
-                                    "roadmap-tree__legend-color--subtopic",
-                            },
-                            {
-                                label: "Tuỳ chọn / thay thế",
-                                modifier:
-                                    "roadmap-tree__legend-color--alternative",
-                            },
-                        ],
-                    },
-                    {
-                        title: "Trạng thái",
-                        items: [
-                            {
-                                label: "Đã hoàn thành",
-                                modifier: "roadmap-tree__legend-color--done",
-                            },
-                            {
-                                label: "Đang học",
-                                modifier:
-                                    "roadmap-tree__legend-color--learning",
-                            },
-                            {
-                                label: "Bỏ qua",
-                                modifier:
-                                    "roadmap-tree__legend-color--skipped",
-                            },
-                        ],
-                    },
-                ]}
-                interactions={[
-                    "Nhấp: mở chi tiết node",
-                    "Nhấp phải: đổi trạng thái nhanh",
-                    "Ctrl/Cmd + F: mở tìm kiếm",
-                ]}
-            />
 
             <AnimatePresence>
                 {contextMenu ? (
