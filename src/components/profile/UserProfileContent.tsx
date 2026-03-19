@@ -261,7 +261,10 @@ export default function UserProfileContent({ username }: { username: string }) {
                     {/* Name + Verified Badge */}
                     <div>
                         <div className="flex items-center gap-1.5">
-                            <p className="text-[24px] font-bold leading-tight text-gray-900">
+                            <p
+                                className="font-bold leading-tight text-gray-900"
+                                style={{ fontSize: "24px", fontWeight: "700" }}
+                            >
                                 {publicProfile.displayName}
                             </p>
                             {badges.map((b) => (
