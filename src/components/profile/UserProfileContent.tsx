@@ -117,33 +117,38 @@ function CourseCard({
     course: UnifiedProfileResponse["courses"][number];
 }) {
     return (
-        <Link
-            href={`/learn/${course.slug}`}
-            className="group block overflow-hidden rounded-2xl border border-gray-200 bg-white transition-shadow hover:shadow-lg"
-        >
-            <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                {course.thumbnailUrl ? (
-                    <Image
-                        src={course.thumbnailUrl}
-                        alt={course.title}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-                    />
-                ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                        <BookOpen className="h-10 w-10 text-gray-300" />
-                    </div>
-                )}
-            </div>
-            <div className="p-4">
-                <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900 group-hover:text-[#f05123]">
-                    {course.title}
-                </h3>
-                {course.shortDescription && (
-                    <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-gray-500">
-                        {course.shortDescription}
-                    </p>
-                )}
+        <Link href={`/learn/${course.slug}`} className="group block pb-1">
+            <div
+                className="rounded-2xl overflow-hidden h-full flex flex-col transform transition-[transform,box-shadow] duration-200 ease-out group-hover:-translate-y-1 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+                style={{ backgroundColor: "#f7f7f7" }}
+            >
+                <div className="relative aspect-video w-full overflow-hidden flex-shrink-0">
+                    {course.thumbnailUrl ? (
+                        <Image
+                            src={course.thumbnailUrl}
+                            alt={course.title}
+                            fill
+                            className="object-cover"
+                        />
+                    ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+                            <BookOpen className="h-10 w-10 text-gray-400" />
+                        </div>
+                    )}
+                </div>
+                <div
+                    className="flex-1 flex flex-col"
+                    style={{ padding: "16px 20px" }}
+                >
+                    <h3 className="course-card-title line-clamp-2 text-gray-900 mb-2">
+                        {course.title}
+                    </h3>
+                    {course.shortDescription && (
+                        <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-gray-500">
+                            {course.shortDescription}
+                        </p>
+                    )}
+                </div>
             </div>
         </Link>
     );
@@ -449,7 +454,7 @@ export default function UserProfileContent({ username }: { username: string }) {
                     )}
 
                     {activeTab === "created" && (
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {courses.map((c) => (
                                 <CourseCard key={c.id} course={c} />
                             ))}
