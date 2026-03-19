@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -261,9 +261,9 @@ export default function UserProfileContent({ username }: { username: string }) {
                     {/* Name + Verified Badge */}
                     <div>
                         <div className="flex items-center gap-1.5">
-                            <h1 className="text-[22px] font-bold leading-tight text-gray-900">
+                            <p className="text-[24px] font-bold leading-tight text-gray-900">
                                 {publicProfile.displayName}
-                            </h1>
+                            </p>
                             {badges.map((b) => (
                                 <VerifiedBadge
                                     key={b.code}
@@ -277,12 +277,10 @@ export default function UserProfileContent({ username }: { username: string }) {
                         </p>
                     </div>
 
-                    {/* Bio */}
-                    {(publicProfile.bio || publicProfile.headline) && (
-                        <p className="text-[15px] leading-relaxed text-gray-700">
-                            {publicProfile.bio || publicProfile.headline}
-                        </p>
-                    )}
+                    {/* Bio with Read More */}
+                    <BioSection
+                        text={publicProfile.bio || publicProfile.headline || ""}
+                    />
 
                     {/* Follow Button (F8 style) */}
                     <button className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-900 transition hover:bg-gray-200 active:scale-[0.98]">
@@ -456,6 +454,42 @@ export default function UserProfileContent({ username }: { username: string }) {
                     )}
                 </main>
             </div>
+        </div>
+    );
+}
+
+/* ─────────────── Bio with Read More ─────────────── */
+
+function BioSection({ text }: { text: string }) {
+    const [expanded, setExpanded] = useState(false);
+    const [isClamped, setIsClamped] = useState(false);
+    const textRef = useRef<HTMLParagraphElement>(null);
+
+    useEffect(() => {
+        const el = textRef.current;
+        if (el) setIsClamped(el.scrollHeight > el.clientHeight + 1);
+    }, [text]);
+
+    if (!text) return null;
+
+    return (
+        <div>
+            <p
+                ref={textRef}
+                className={`text-[15px] leading-relaxed text-gray-700 ${
+                    expanded ? "" : "line-clamp-3"
+                }`}
+            >
+                {text}
+            </p>
+            {(isClamped || expanded) && (
+                <button
+                    onClick={() => setExpanded((v) => !v)}
+                    className="mt-1 text-[13px] font-semibold text-blue-600 transition hover:text-blue-700"
+                >
+                    {expanded ? "Thu gọn" : "Xem thêm"}
+                </button>
+            )}
         </div>
     );
 }
