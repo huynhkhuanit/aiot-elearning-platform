@@ -193,8 +193,16 @@ function ActivityHeatmap({ username }: { username: string }) {
         <div className="rounded-xl border border-gray-200 bg-white p-5">
             <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm text-gray-600">
-                    <strong className="text-gray-900">{totalAct}</strong> hoạt
-                    động trong 12 tháng qua
+                    {loaded ? (
+                        <>
+                            <strong className="text-gray-900">
+                                {totalAct}
+                            </strong>{" "}
+                            hoạt động trong 12 tháng qua
+                        </>
+                    ) : (
+                        <span className="inline-block h-4 w-48 animate-pulse rounded bg-gray-200" />
+                    )}
                 </p>
                 <div className="flex items-center gap-1 text-[11px] text-gray-500">
                     <span>Ít hơn</span>
@@ -231,7 +239,10 @@ function ActivityHeatmap({ username }: { username: string }) {
                         ))}
                     </div>
 
-                    <div className="flex gap-[2px]">
+                    <div
+                        className="flex gap-[2px] transition-opacity duration-500"
+                        style={{ opacity: loaded ? 1 : 0.4 }}
+                    >
                         <div
                             className="flex flex-col gap-[2px]"
                             style={{ width: 22 }}
@@ -264,6 +275,7 @@ function ActivityHeatmap({ username }: { username: string }) {
                                     return (
                                         <span
                                             key={d}
+                                            className="transition-colors duration-300"
                                             style={{
                                                 width: 11,
                                                 height: 11,
