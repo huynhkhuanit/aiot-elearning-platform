@@ -7,6 +7,42 @@ import Footer from "@/components/Footer";
 import NewsletterBulletin from "@/components/NewsletterBulletin";
 import { ReactNode, useEffect, useState } from "react";
 
+/**
+ * Known top-level route prefixes that are NOT user-profile pages.
+ * Any single-segment path not matching these is treated as a [username] profile.
+ */
+const KNOWN_ROOT_PATHS = [
+    "/roadmap",
+    "/articles",
+    "/qa",
+    "/playground",
+    "/admin",
+    "/learn",
+    "/courses",
+    "/tools",
+    "/about",
+    "/settings",
+    "/auth",
+    "/api",
+    "/contact",
+    "/discussions",
+    "/my-posts",
+    "/profile",
+    "/s",
+    "/saved",
+    "/write",
+];
+
+function isUserProfilePage(pathname: string | null): boolean {
+    if (!pathname || pathname === "/") return false;
+    // Must be a single-segment path: /something (no deeper nesting)
+    if (!/^\/[^/]+\/?$/.test(pathname)) return false;
+    // Must not match any known route prefix
+    return !KNOWN_ROOT_PATHS.some(
+        (prefix) => pathname === prefix || pathname.startsWith(prefix + "/"),
+    );
+}
+
 export default function LayoutWrapper({ children }: { children: ReactNode }) {
     const pathname = usePathname();
     const [mounted, setMounted] = useState(false);
@@ -15,29 +51,23 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
         setMounted(true);
     }, []);
 
-    // Kiểm tra nếu đang ở trang admin (chính xác: /admin hoặc /admin/*)
     const isAdminPage =
         pathname === "/admin" || pathname?.startsWith("/admin/");
-
-    // Kiểm tra nếu đang ở trang học tập (/learn/*)
     const isLearningPage = pathname?.startsWith("/learn/");
-
-    // Kiểm tra nếu đang ở trang playground (/playground)
     const isPlaygroundPage = pathname?.startsWith("/playground");
-
-    // Kiểm tra nếu đang ở trang tools (/tools/*)
     const isToolPage = pathname?.startsWith("/tools/");
-
-    // Kiểm tra nếu đang ở trang chi tiết khóa học (/courses/*)
     const isCourseLandingPage =
         pathname?.startsWith("/courses/") && pathname !== "/courses";
 
-    // Nếu là trang admin, học tập, playground, hoặc tools → không hiển thị layout
+    // Detect user profile page for hover-reveal sidebar
+    const isProfilePage = isUserProfilePage(pathname);
+
+    // Pages with no layout at all
     if (isAdminPage || isLearningPage || isPlaygroundPage || isToolPage) {
         return <>{children}</>;
     }
 
-    // Nếu là trang landing page khóa học → chỉ hiển thị Footer, không có Header/Menu
+    // Course landing page — Footer only
     if (isCourseLandingPage) {
         return (
             <div style={{ backgroundColor: "#0a0c10", minHeight: "100vh" }}>
@@ -47,16 +77,14 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
         );
     }
 
-    // Các trang khác (trang chủ, courses, etc.) hiển thị layout bình thường
+    // Standard pages — conditionally use hover-reveal on profile
     return (
         <div style={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
             <Header />
-            <Menu />
+            <Menu variant={isProfilePage ? "hover-reveal" : "default"} />
             <main
-                className="md:ml-[96px] pb-[60px] md:pb-0"
-                style={{
-                    backgroundColor: "#ffffff",
-                }}
+                className={`${isProfilePage ? "" : "md:ml-[96px]"} pb-[60px] md:pb-0`}
+                style={{ backgroundColor: "#ffffff" }}
             >
                 {children}
             </main>
