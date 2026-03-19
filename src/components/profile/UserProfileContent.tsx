@@ -110,32 +110,63 @@ function SocialIcon({
     );
 }
 
-/* ─────────────── Activity Heatmap ─────────────── */
+/* ─────────────── Activity Heatmap (real data) ─────────────── */
 
-function ActivityHeatmap() {
+interface HeatmapCell {
+    date: Date;
+    count: number;
+    level: number;
+}
+
+function ActivityHeatmap({ username }: { username: string }) {
     const WEEKS = 52;
     const DAYS = 7;
+    const COLORS = ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"];
 
-    const cells = useMemo(() => {
+    const [dailyCounts, setDailyCounts] = useState<Record<string, number>>({});
+    const [loaded, setLoaded] = useState(false);
+
+    useEffect(() => {
+        fetch(`/api/profiles/${username}/activity`)
+            .then((r) => r.json())
+            .then((json) => {
+                if (json.success) setDailyCounts(json.data);
+            })
+            .catch(() => {})
+            .finally(() => setLoaded(true));
+    }, [username]);
+
+    const { cells, totalAct } = useMemo(() => {
         const now = new Date();
-        const result: { date: Date; level: number }[] = [];
+        const result: HeatmapCell[] = [];
+        let total = 0;
+
+        // Determine max count for level scaling
+        const counts = Object.values(dailyCounts);
+        const maxCount = counts.length > 0 ? Math.max(...counts) : 0;
+
         for (let w = WEEKS - 1; w >= 0; w--) {
             for (let d = 0; d < DAYS; d++) {
                 const date = new Date(now);
                 date.setDate(now.getDate() - (w * 7 + (6 - d)));
-                const r = Math.random();
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+                const count = dailyCounts[key] || 0;
+                if (count > 0) total += count;
+
                 let level = 0;
-                if (r > 0.72) level = 1;
-                if (r > 0.84) level = 2;
-                if (r > 0.92) level = 3;
-                if (r > 0.97) level = 4;
-                result.push({ date, level });
+                if (maxCount > 0 && count > 0) {
+                    const ratio = count / maxCount;
+                    if (ratio <= 0.25) level = 1;
+                    else if (ratio <= 0.5) level = 2;
+                    else if (ratio <= 0.75) level = 3;
+                    else level = 4;
+                }
+
+                result.push({ date, count, level });
             }
         }
-        return result;
-    }, []);
-
-    const COLORS = ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"];
+        return { cells: result, totalAct: total };
+    }, [dailyCounts]);
 
     const monthLabels = useMemo(() => {
         const labels: { label: string; col: number }[] = [];
@@ -157,8 +188,6 @@ function ActivityHeatmap() {
         }
         return labels;
     }, [cells]);
-
-    const totalAct = cells.filter((c) => c.level > 0).length;
 
     return (
         <div className="rounded-xl border border-gray-200 bg-white p-5">
@@ -187,7 +216,6 @@ function ActivityHeatmap() {
 
             <div className="overflow-x-auto">
                 <div className="relative" style={{ minWidth: 700 }}>
-                    {/* Month labels */}
                     <div
                         className="relative mb-1 h-4"
                         style={{ marginLeft: 24 }}
@@ -204,7 +232,6 @@ function ActivityHeatmap() {
                     </div>
 
                     <div className="flex gap-[2px]">
-                        {/* Day labels */}
                         <div
                             className="flex flex-col gap-[2px]"
                             style={{ width: 22 }}
@@ -220,7 +247,6 @@ function ActivityHeatmap() {
                             ))}
                         </div>
 
-                        {/* Cells */}
                         {Array.from({ length: WEEKS }).map((_, w) => (
                             <div key={w} className="flex flex-col gap-[2px]">
                                 {Array.from({ length: DAYS }).map((_, d) => {
@@ -244,7 +270,7 @@ function ActivityHeatmap() {
                                                 borderRadius: 2,
                                                 background: COLORS[cell.level],
                                             }}
-                                            title={`${cell.date.toLocaleDateString("vi-VN")} — ${cell.level > 0 ? `${cell.level} hoạt động` : "Không có hoạt động"}`}
+                                            title={`${cell.date.toLocaleDateString("vi-VN")} — ${cell.count > 0 ? `${cell.count} hoạt động` : "Không có hoạt động"}`}
                                         />
                                     );
                                 })}
@@ -390,9 +416,9 @@ export default function UserProfileContent({ username }: { username: string }) {
     }
 
     return (
-        <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-6">
-            {/* ───── Two Column Grid (F8 style) ───── */}
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr] lg:gap-12">
+        <div className="px-6 py-8">
+            {/* ───── Two Column Grid (F8 style — edge-to-edge) ───── */}
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr] lg:gap-10">
                 {/* ═══════════════ LEFT SIDEBAR ═══════════════ */}
                 <aside className="space-y-5">
                     {/* Avatar */}
@@ -546,7 +572,7 @@ export default function UserProfileContent({ username }: { username: string }) {
                 {/* ═══════════════ RIGHT CONTENT ═══════════════ */}
                 <main className="min-w-0 space-y-6">
                     {/* Activity Heatmap */}
-                    <ActivityHeatmap />
+                    <ActivityHeatmap username={username} />
 
                     {/* Tab Navigation (F8 style) */}
                     <div className="border-b border-gray-200">
