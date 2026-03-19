@@ -8,26 +8,11 @@ import { supabaseAdmin, supabase } from "@/lib/supabase";
  */
 interface ActivitySource {
     table: string;
-    /** Label shown in the breakdown (Vietnamese) */
     label: string;
-    /** Column that stores the timestamp (default: "created_at") */
     timestampCol?: string;
-    /** Extra equality filters applied before date range, e.g. { status: "published" } */
     extraFilters?: Record<string, string>;
 }
 
-/**
- * ─── Activity definitions ───
- *
- * A row in any of these tables counts as **one activity** when:
- *  1. user_id matches the profile owner
- *  2. The timestamp column falls within the last 12 months
- *  3. Any extra filter conditions are satisfied
- *
- * Tables intentionally excluded:
- *  - learning_activities: generic log table, never populated by any flow
- *  - user_metadata / user_ai_profiles: profile settings, not meaningful activity
- */
 const ACTIVITY_SOURCES: ActivitySource[] = [
     // ── Learning ──
     { table: "lesson_progress", label: "Học bài" },
@@ -73,13 +58,15 @@ const ACTIVITY_SOURCES: ActivitySource[] = [
 ];
 
 /**
- * GET /api/profiles/[username]/activity
+ * GET /api/profiles/[username]/activity?year=2025
  *
- * Returns daily activity counts for the last 12 months for the heatmap,
- * along with totalActivities and a per-source breakdown.
+ * Query params:
+ *  - year (optional): filter to a specific year. If omitted, returns last 12 months.
+ *
+ * Returns: { success, data (dailyCounts), totalActivities, breakdown, joinedAt }
  */
 export async function GET(
-    _request: NextRequest,
+    request: NextRequest,
     { params }: { params: Promise<{ username: string }> },
 ) {
     try {
@@ -87,10 +74,13 @@ export async function GET(
         const username = rawUsername.replace(/^@/, "");
         const db = supabaseAdmin || supabase;
 
-        // Resolve user_id from username
+        const { searchParams } = new URL(request.url);
+        const yearParam = searchParams.get("year");
+
+        // Resolve user from username (include created_at for joinedAt)
         const { data: user, error: userErr } = await db
             .from("users")
-            .select("id")
+            .select("id, created_at")
             .eq("username", username)
             .eq("is_active", true)
             .single();
@@ -103,11 +93,23 @@ export async function GET(
         }
 
         const userId = user.id;
-        const oneYearAgo = new Date();
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-        const sinceDate = oneYearAgo.toISOString().split("T")[0];
+        const joinedAt = user.created_at as string;
 
-        // Build and run all queries in parallel (allSettled = resilient)
+        // Determine date range based on year param
+        let sinceDate: string;
+        let untilDate: string | null = null;
+
+        if (yearParam && /^\d{4}$/.test(yearParam)) {
+            const year = parseInt(yearParam, 10);
+            sinceDate = `${year}-01-01`;
+            untilDate = `${year}-12-31T23:59:59`;
+        } else {
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+            sinceDate = oneYearAgo.toISOString().split("T")[0];
+        }
+
+        // Build and run all queries in parallel
         const queries = ACTIVITY_SOURCES.map((src) => {
             const col = src.timestampCol || "created_at";
             let query = db
@@ -115,6 +117,10 @@ export async function GET(
                 .select(col)
                 .eq("user_id", userId)
                 .gte(col, sinceDate);
+
+            if (untilDate) {
+                query = query.lte(col, untilDate);
+            }
 
             if (src.extraFilters) {
                 for (const [key, value] of Object.entries(src.extraFilters)) {
@@ -127,7 +133,6 @@ export async function GET(
 
         const results = await Promise.allSettled(queries);
 
-        // Aggregate daily counts + per-source breakdown
         const dailyCounts: Record<string, number> = {};
         const breakdown: Record<string, number> = {};
         let totalActivities = 0;
@@ -161,6 +166,7 @@ export async function GET(
             data: dailyCounts,
             totalActivities,
             breakdown,
+            joinedAt,
         });
     } catch {
         return NextResponse.json(

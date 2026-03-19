@@ -1,114 +1,196 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import type { ActivityDay } from "@/types/profile";
+import { useState, useMemo, useCallback, useEffect } from "react";
 
-interface ActivityHeatmapProps {
-    activities: ActivityDay[];
-    totalCount: number;
-    currentStreak: number;
-}
+/* ─── Constants ─── */
 
-interface DayCell {
-    date: Date;
-    count: number;
-    month: number;
-    dateStr: string;
-}
-
-// GitHub's exact green contribution colors
 const LEVEL_COLORS = [
-    "#ebedf0", // 0 - no activity
-    "#9be9a8", // 1 - light
-    "#40c463", // 2 - medium
-    "#30a14e", // 3 - dark
-    "#216e39", // 4 - darkest
+    "#ebedf0", // 0 — no activity
+    "#9be9a8", // 1
+    "#40c463", // 2
+    "#30a14e", // 3
+    "#216e39", // 4
 ] as const;
 
-function getLevel(count: number): number {
-    if (count === 0) return 0;
-    if (count <= 2) return 1;
-    if (count <= 5) return 2;
-    if (count <= 9) return 3;
+const MONTH_LABELS = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+];
+
+const DAY_LABELS: [number, string][] = [
+    [1, "Mon"],
+    [3, "Wed"],
+    [5, "Fri"],
+];
+
+function getLevel(count: number, max: number): number {
+    if (count === 0 || max === 0) return 0;
+    const ratio = count / max;
+    if (ratio <= 0.25) return 1;
+    if (ratio <= 0.5) return 2;
+    if (ratio <= 0.75) return 3;
     return 4;
 }
 
-export default function ActivityHeatmap({
-    activities,
-    totalCount,
-    currentStreak,
-}: ActivityHeatmapProps) {
+/* ─── Types ─── */
+
+interface DayCell {
+    date: Date;
+    dateStr: string;
+    count: number;
+    level: number;
+}
+
+interface ActivityResponse {
+    success: boolean;
+    data: Record<string, number>;
+    totalActivities: number;
+    breakdown: Record<string, number>;
+    joinedAt: string;
+}
+
+interface Props {
+    username: string;
+}
+
+/* ─── Component ─── */
+
+export default function ActivityHeatmap({ username }: Props) {
+    const [dailyCounts, setDailyCounts] = useState<Record<string, number>>({});
+    const [totalActivities, setTotalActivities] = useState(0);
+    const [joinedYear, setJoinedYear] = useState<number | null>(null);
+    const [selectedYear, setSelectedYear] = useState<number | null>(null);
+    const [loaded, setLoaded] = useState(false);
     const [tooltip, setTooltip] = useState<{
         text: string;
-        subtext: string;
+        sub: string;
         x: number;
         y: number;
     } | null>(null);
 
-    const activityMap = useMemo(() => {
-        const map = new Map<string, number>();
-        activities.forEach((a) => map.set(a.date, a.count));
-        return map;
-    }, [activities]);
+    const currentYear = new Date().getFullYear();
 
-    // Generate 53 weeks of data (GitHub-style: columns = weeks, rows = days)
-    const { weeks, monthLabels } = useMemo(() => {
+    // Fetch activity data
+    useEffect(() => {
+        const cleanName = username.replace(/^@/, "");
+        const yearQuery = selectedYear ? `?year=${selectedYear}` : "";
+        setLoaded(false);
+
+        fetch(`/api/profiles/${cleanName}/activity${yearQuery}`)
+            .then((r) => r.json())
+            .then((json: ActivityResponse) => {
+                if (json.success) {
+                    setDailyCounts(json.data);
+                    setTotalActivities(json.totalActivities);
+                    if (json.joinedAt && !joinedYear) {
+                        setJoinedYear(new Date(json.joinedAt).getFullYear());
+                    }
+                }
+            })
+            .catch(() => {})
+            .finally(() => setLoaded(true));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [username, selectedYear]);
+
+    // Build year list from joinedYear to current year
+    const yearList = useMemo(() => {
+        const from = joinedYear ?? currentYear;
+        const years: number[] = [];
+        for (let y = currentYear; y >= from; y--) {
+            years.push(y);
+        }
+        return years;
+    }, [joinedYear, currentYear]);
+
+    // Build grid cells
+    const { weeks, monthLabels, maxCount } = useMemo(() => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Start from 52 weeks ago, adjusted to Sunday
-        const start = new Date(today);
-        start.setDate(start.getDate() - 364);
-        const dayOfWeek = start.getDay();
-        start.setDate(start.getDate() - dayOfWeek);
+        let rangeStart: Date;
+        let rangeEnd: Date;
+
+        if (selectedYear && selectedYear !== currentYear) {
+            rangeStart = new Date(selectedYear, 0, 1);
+            rangeEnd = new Date(selectedYear, 11, 31);
+        } else if (selectedYear && selectedYear === currentYear) {
+            rangeEnd = today;
+            rangeStart = new Date(today);
+            rangeStart.setFullYear(rangeStart.getFullYear() - 1);
+            rangeStart.setDate(rangeStart.getDate() + 1);
+        } else {
+            // Default: last 12 months
+            rangeEnd = today;
+            rangeStart = new Date(today);
+            rangeStart.setFullYear(rangeStart.getFullYear() - 1);
+            rangeStart.setDate(rangeStart.getDate() + 1);
+        }
+
+        // Align start to Sunday
+        const startDay = rangeStart.getDay();
+        const alignedStart = new Date(rangeStart);
+        alignedStart.setDate(alignedStart.getDate() - startDay);
+
+        // Calculate max count for level scaling
+        const counts = Object.values(dailyCounts);
+        const mc = counts.length > 0 ? Math.max(...counts) : 0;
 
         const weeks: DayCell[][] = [];
-        const monthLabels: { label: string; colIndex: number }[] = [];
+        const monthLabelsArr: { label: string; colIndex: number }[] = [];
         let lastMonth = -1;
-        const cursor = new Date(start);
+        const cursor = new Date(alignedStart);
 
-        for (let week = 0; week < 53; week++) {
+        let weekIdx = 0;
+        while (cursor <= rangeEnd || weeks.length === 0) {
             const col: DayCell[] = [];
-            for (let day = 0; day < 7; day++) {
+            for (let d = 0; d < 7; d++) {
                 const dateStr = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
-                const count = activityMap.get(dateStr) || 0;
-                const month = cursor.getMonth();
+                const count =
+                    cursor >= rangeStart && cursor <= rangeEnd
+                        ? dailyCounts[dateStr] || 0
+                        : -1; // -1 = out of range
 
-                // Track month labels at week transitions
-                if (day === 0 && month !== lastMonth) {
-                    const monthNames = [
-                        "Thg 1",
-                        "Thg 2",
-                        "Thg 3",
-                        "Thg 4",
-                        "Thg 5",
-                        "Thg 6",
-                        "Thg 7",
-                        "Thg 8",
-                        "Thg 9",
-                        "Thg 10",
-                        "Thg 11",
-                        "Thg 12",
-                    ];
-                    monthLabels.push({
-                        label: monthNames[month],
-                        colIndex: week,
+                const month = cursor.getMonth();
+                if (d === 0 && month !== lastMonth && cursor >= rangeStart) {
+                    monthLabelsArr.push({
+                        label: MONTH_LABELS[month],
+                        colIndex: weekIdx,
                     });
                     lastMonth = month;
                 }
 
-                col.push({ date: new Date(cursor), count, month, dateStr });
+                col.push({
+                    date: new Date(cursor),
+                    dateStr,
+                    count,
+                    level: count < 0 ? -1 : getLevel(count, mc),
+                });
                 cursor.setDate(cursor.getDate() + 1);
             }
             weeks.push(col);
+            weekIdx++;
+
+            // Safety limit
+            if (weeks.length > 55) break;
         }
 
-        return { weeks, monthLabels };
-    }, [activityMap]);
+        return { weeks, monthLabels: monthLabelsArr, maxCount: mc };
+    }, [dailyCounts, selectedYear, currentYear]);
 
+    // Handlers
     const handleMouseEnter = useCallback(
         (day: DayCell, e: React.MouseEvent) => {
-            if (day.date > new Date()) return;
+            if (day.count < 0) return;
             const rect = e.currentTarget.getBoundingClientRect();
             const countText =
                 day.count === 0
@@ -122,7 +204,7 @@ export default function ActivityHeatmap({
             });
             setTooltip({
                 text: countText,
-                subtext: dateText,
+                sub: dateText,
                 x: rect.left + rect.width / 2,
                 y: rect.top,
             });
@@ -137,168 +219,209 @@ export default function ActivityHeatmap({
         return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
     }, []);
 
-    // Cell size and gap (GitHub uses 11px cells, 2px gap)
+    // Layout constants
     const CELL = 11;
-    const GAP = 2;
-    const COL_WIDTH = CELL + GAP;
-    const DAY_LABEL_WIDTH = 32;
+    const GAP = 3;
+    const COL_W = CELL + GAP;
+    const LABEL_W = 36;
+
+    const headerText = selectedYear
+        ? `${totalActivities.toLocaleString("vi-VN")} hoạt động trong năm ${selectedYear}`
+        : `${totalActivities.toLocaleString("vi-VN")} hoạt động trong 12 tháng qua`;
 
     return (
-        <div className="bg-white rounded-xl border border-gray-200 p-5 w-full">
+        <div className="w-full rounded-xl border border-gray-200 bg-white p-5">
             {/* Header */}
-            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
                 <h3 className="text-sm font-medium text-gray-700">
-                    {totalCount.toLocaleString("vi-VN")} hoạt động trong năm qua
+                    {loaded ? (
+                        headerText
+                    ) : (
+                        <span className="inline-block h-4 w-56 animate-pulse rounded bg-gray-200" />
+                    )}
                 </h3>
-                {currentStreak > 0 && (
-                    <span className="text-sm text-orange-500 font-semibold">
-                        🔥 {currentStreak} ngày liên tiếp
-                    </span>
-                )}
             </div>
 
-            {/* Heatmap */}
-            <div
-                className="overflow-x-auto pb-1"
-                style={{ scrollbarWidth: "none" }}
-            >
+            {/* Body: heatmap + year sidebar */}
+            <div className="flex gap-4">
+                {/* Heatmap */}
                 <div
-                    style={{
-                        display: "inline-block",
-                        minWidth: "fit-content",
-                    }}
+                    className="flex-1 overflow-x-auto pb-1"
+                    style={{ scrollbarWidth: "none" }}
                 >
-                    {/* Month labels */}
                     <div
-                        className="relative"
                         style={{
-                            height: 15,
-                            marginLeft: DAY_LABEL_WIDTH,
-                            marginBottom: 4,
-                            width: 53 * COL_WIDTH,
+                            display: "inline-block",
+                            minWidth: "fit-content",
                         }}
                     >
-                        {monthLabels.map((m, i) => {
-                            // Don't render if too close to previous label
-                            const prevOffset =
-                                i > 0 ? monthLabels[i - 1].colIndex : -4;
-                            if (m.colIndex - prevOffset < 3) return null;
-                            return (
-                                <span
-                                    key={`${m.label}-${m.colIndex}`}
-                                    className="absolute text-[11px] text-gray-500 select-none"
-                                    style={{ left: m.colIndex * COL_WIDTH }}
-                                >
-                                    {m.label}
-                                </span>
-                            );
-                        })}
-                    </div>
-
-                    {/* Grid area */}
-                    <div className="flex">
-                        {/* Day labels */}
+                        {/* Month labels */}
                         <div
-                            className="flex flex-col shrink-0"
+                            className="relative"
                             style={{
-                                width: DAY_LABEL_WIDTH,
-                                gap: GAP,
+                                height: 16,
+                                marginLeft: LABEL_W,
+                                marginBottom: 4,
+                                width: weeks.length * COL_W,
                             }}
                         >
-                            {["", "T2", "", "T4", "", "T6", ""].map(
-                                (label, i) => (
-                                    <div
-                                        key={i}
-                                        className="text-[11px] text-gray-500 select-none flex items-center"
-                                        style={{ height: CELL }}
+                            {monthLabels.map((m, i) => {
+                                const prev =
+                                    i > 0 ? monthLabels[i - 1].colIndex : -4;
+                                if (m.colIndex - prev < 3) return null;
+                                return (
+                                    <span
+                                        key={`${m.label}-${m.colIndex}`}
+                                        className="absolute text-[11px] text-gray-500 select-none"
+                                        style={{ left: m.colIndex * COL_W }}
                                     >
-                                        {label}
-                                    </div>
-                                ),
-                            )}
+                                        {m.label}
+                                    </span>
+                                );
+                            })}
                         </div>
 
-                        {/* Cells grid */}
-                        <div className="flex" style={{ gap: GAP }}>
-                            {weeks.map((week, wi) => (
-                                <div
-                                    key={wi}
-                                    className="flex flex-col"
-                                    style={{ gap: GAP }}
-                                >
-                                    {week.map((day, di) => {
-                                        const isFuture = day.date > new Date();
-                                        const isToday =
-                                            day.dateStr === todayStr;
-                                        const level = isFuture
-                                            ? -1
-                                            : getLevel(day.count);
+                        {/* Grid */}
+                        <div className="flex">
+                            {/* Day labels */}
+                            <div
+                                className="flex flex-col shrink-0"
+                                style={{ width: LABEL_W, gap: GAP }}
+                            >
+                                {Array.from({ length: 7 }).map((_, i) => {
+                                    const label =
+                                        DAY_LABELS.find(
+                                            ([idx]) => idx === i,
+                                        )?.[1] ?? "";
+                                    return (
+                                        <div
+                                            key={i}
+                                            className="text-[11px] text-gray-500 select-none flex items-center"
+                                            style={{ height: CELL }}
+                                        >
+                                            {label}
+                                        </div>
+                                    );
+                                })}
+                            </div>
 
-                                        return (
-                                            <div
-                                                key={di}
-                                                onMouseEnter={(e) =>
-                                                    handleMouseEnter(day, e)
-                                                }
-                                                onMouseLeave={handleMouseLeave}
-                                                style={{
-                                                    width: CELL,
-                                                    height: CELL,
-                                                    borderRadius: 2,
-                                                    backgroundColor:
-                                                        level < 0
-                                                            ? "transparent"
-                                                            : LEVEL_COLORS[
-                                                                  level
-                                                              ],
-                                                    outline: isToday
-                                                        ? "2px solid #1d4ed8"
-                                                        : undefined,
-                                                    outlineOffset: isToday
-                                                        ? -1
-                                                        : undefined,
-                                                    cursor: isFuture
-                                                        ? "default"
-                                                        : "pointer",
-                                                }}
-                                                className={
-                                                    isFuture
-                                                        ? ""
-                                                        : "hover:outline hover:outline-1 hover:outline-gray-400 hover:outline-offset-[-1px] transition-[outline] duration-75"
-                                                }
-                                            />
-                                        );
-                                    })}
-                                </div>
+                            {/* Cells */}
+                            <div
+                                className="flex transition-opacity duration-500"
+                                style={{ gap: GAP, opacity: loaded ? 1 : 0.4 }}
+                            >
+                                {weeks.map((week, wi) => (
+                                    <div
+                                        key={wi}
+                                        className="flex flex-col"
+                                        style={{ gap: GAP }}
+                                    >
+                                        {week.map((day, di) => {
+                                            const outOfRange = day.count < 0;
+                                            const isToday =
+                                                day.dateStr === todayStr;
+
+                                            return (
+                                                <div
+                                                    key={di}
+                                                    onMouseEnter={(e) =>
+                                                        !outOfRange &&
+                                                        handleMouseEnter(day, e)
+                                                    }
+                                                    onMouseLeave={
+                                                        handleMouseLeave
+                                                    }
+                                                    className={
+                                                        outOfRange
+                                                            ? ""
+                                                            : "transition-colors duration-200"
+                                                    }
+                                                    style={{
+                                                        width: CELL,
+                                                        height: CELL,
+                                                        borderRadius: 2,
+                                                        backgroundColor:
+                                                            outOfRange
+                                                                ? "transparent"
+                                                                : LEVEL_COLORS[
+                                                                      day.level
+                                                                  ],
+                                                        outline:
+                                                            isToday &&
+                                                            !outOfRange
+                                                                ? "2px solid #1d4ed8"
+                                                                : undefined,
+                                                        outlineOffset: isToday
+                                                            ? -1
+                                                            : undefined,
+                                                        cursor: outOfRange
+                                                            ? "default"
+                                                            : "pointer",
+                                                    }}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer legend */}
+                    <div className="flex items-center justify-end mt-3 pt-2 border-t border-gray-100">
+                        <div className="flex items-center gap-[3px]">
+                            <span className="text-[11px] text-gray-500 mr-1">
+                                Ít hơn
+                            </span>
+                            {LEVEL_COLORS.map((color, i) => (
+                                <div
+                                    key={i}
+                                    style={{
+                                        width: CELL,
+                                        height: CELL,
+                                        borderRadius: 2,
+                                        backgroundColor: color,
+                                    }}
+                                />
                             ))}
+                            <span className="text-[11px] text-gray-500 ml-1">
+                                Nhiều hơn
+                            </span>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                <span className="text-[11px] text-gray-400 hover:text-indigo-500 cursor-pointer transition-colors">
-                    Tìm hiểu cách tính hoạt động
-                </span>
-                <div className="flex items-center gap-[3px]">
-                    <span className="text-[11px] text-gray-500 mr-1">
-                        Ít hơn
-                    </span>
-                    {LEVEL_COLORS.map((color, i) => (
-                        <div
-                            key={i}
-                            style={{
-                                width: CELL,
-                                height: CELL,
-                                borderRadius: 2,
-                                backgroundColor: color,
-                            }}
-                        />
-                    ))}
-                    <span className="text-[11px] text-gray-500 ml-1">
-                        Nhiều hơn
-                    </span>
+                {/* Year sidebar */}
+                <div className="flex flex-col items-end gap-1 shrink-0 pt-5">
+                    {yearList.map((year) => {
+                        const isActive =
+                            selectedYear === year ||
+                            (!selectedYear && year === currentYear);
+                        return (
+                            <button
+                                key={year}
+                                onClick={() =>
+                                    setSelectedYear(
+                                        year === currentYear && !selectedYear
+                                            ? null
+                                            : year === selectedYear
+                                              ? null
+                                              : year,
+                                    )
+                                }
+                                className={`
+                                    px-2 py-0.5 text-[13px] font-medium rounded transition-colors
+                                    ${
+                                        isActive
+                                            ? "text-blue-700 bg-blue-50"
+                                            : "text-gray-400 hover:text-gray-700"
+                                    }
+                                `}
+                            >
+                                {year}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -315,17 +438,17 @@ export default function ActivityHeatmap({
                     <div className="bg-gray-800 text-white text-[11px] px-3 py-2 rounded-md shadow-xl whitespace-nowrap">
                         <div className="font-semibold">{tooltip.text}</div>
                         <div className="text-gray-300 text-[10px] mt-0.5">
-                            {tooltip.subtext}
+                            {tooltip.sub}
                         </div>
                     </div>
-                    {/* Arrow */}
                     <div
-                        className="mx-auto w-0 h-0"
+                        className="mx-auto"
                         style={{
+                            width: 0,
+                            height: 0,
                             borderLeft: "5px solid transparent",
                             borderRight: "5px solid transparent",
                             borderTop: "5px solid #1f2937",
-                            width: 0,
                             margin: "0 auto",
                         }}
                     />

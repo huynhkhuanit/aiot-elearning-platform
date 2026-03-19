@@ -1,18 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
     BookOpen,
     Calendar,
     FileText,
-    Flame,
     Globe,
     GraduationCap,
     Link2,
     MapPin,
-    MessageCircle,
     Trophy,
     UserPlus,
     Users,
@@ -20,6 +18,7 @@ import {
 import PageLoading from "@/components/PageLoading";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import VerifiedBadge from "@/components/profile/VerifiedBadge";
+import ActivityHeatmap from "@/components/ActivityHeatmap";
 import { formatUsernameHandle } from "@/lib/profile-url";
 import type { UnifiedProfileResponse } from "@/types/profile";
 
@@ -107,191 +106,6 @@ function SocialIcon({
         <Comp className={className} />
     ) : (
         <Link2 className={className} />
-    );
-}
-
-/* ─────────────── Activity Heatmap (real data) ─────────────── */
-
-interface HeatmapCell {
-    date: Date;
-    count: number;
-    level: number;
-}
-
-function ActivityHeatmap({ username }: { username: string }) {
-    const WEEKS = 52;
-    const DAYS = 7;
-    const COLORS = ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"];
-
-    const [dailyCounts, setDailyCounts] = useState<Record<string, number>>({});
-    const [loaded, setLoaded] = useState(false);
-
-    useEffect(() => {
-        fetch(`/api/profiles/${username}/activity`)
-            .then((r) => r.json())
-            .then((json) => {
-                if (json.success) setDailyCounts(json.data);
-            })
-            .catch(() => {})
-            .finally(() => setLoaded(true));
-    }, [username]);
-
-    const { cells, totalAct } = useMemo(() => {
-        const now = new Date();
-        const result: HeatmapCell[] = [];
-        let total = 0;
-
-        // Determine max count for level scaling
-        const counts = Object.values(dailyCounts);
-        const maxCount = counts.length > 0 ? Math.max(...counts) : 0;
-
-        for (let w = WEEKS - 1; w >= 0; w--) {
-            for (let d = 0; d < DAYS; d++) {
-                const date = new Date(now);
-                date.setDate(now.getDate() - (w * 7 + (6 - d)));
-                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-                const count = dailyCounts[key] || 0;
-                if (count > 0) total += count;
-
-                let level = 0;
-                if (maxCount > 0 && count > 0) {
-                    const ratio = count / maxCount;
-                    if (ratio <= 0.25) level = 1;
-                    else if (ratio <= 0.5) level = 2;
-                    else if (ratio <= 0.75) level = 3;
-                    else level = 4;
-                }
-
-                result.push({ date, count, level });
-            }
-        }
-        return { cells: result, totalAct: total };
-    }, [dailyCounts]);
-
-    const monthLabels = useMemo(() => {
-        const labels: { label: string; col: number }[] = [];
-        let prev = -1;
-        for (let w = 0; w < WEEKS; w++) {
-            const idx = w * DAYS;
-            if (idx < cells.length) {
-                const m = cells[idx].date.getMonth();
-                if (m !== prev) {
-                    labels.push({
-                        label: cells[idx].date.toLocaleDateString("vi-VN", {
-                            month: "short",
-                        }),
-                        col: w,
-                    });
-                    prev = m;
-                }
-            }
-        }
-        return labels;
-    }, [cells]);
-
-    return (
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm text-gray-600">
-                    {loaded ? (
-                        <>
-                            <strong className="text-gray-900">
-                                {totalAct}
-                            </strong>{" "}
-                            hoạt động trong 12 tháng qua
-                        </>
-                    ) : (
-                        <span className="inline-block h-4 w-48 animate-pulse rounded bg-gray-200" />
-                    )}
-                </p>
-                <div className="flex items-center gap-1 text-[11px] text-gray-500">
-                    <span>Ít hơn</span>
-                    {COLORS.map((c, i) => (
-                        <span
-                            key={i}
-                            style={{
-                                background: c,
-                                width: 10,
-                                height: 10,
-                                borderRadius: 2,
-                                display: "inline-block",
-                            }}
-                        />
-                    ))}
-                    <span>Nhiều hơn</span>
-                </div>
-            </div>
-
-            <div className="overflow-x-auto">
-                <div className="relative" style={{ minWidth: 700 }}>
-                    <div
-                        className="relative mb-1 h-4"
-                        style={{ marginLeft: 24 }}
-                    >
-                        {monthLabels.map(({ label, col }, i) => (
-                            <span
-                                key={i}
-                                className="absolute text-[10px] text-gray-400"
-                                style={{ left: col * 13 }}
-                            >
-                                {label}
-                            </span>
-                        ))}
-                    </div>
-
-                    <div
-                        className="flex gap-[2px] transition-opacity duration-500"
-                        style={{ opacity: loaded ? 1 : 0.4 }}
-                    >
-                        <div
-                            className="flex flex-col gap-[2px]"
-                            style={{ width: 22 }}
-                        >
-                            {["", "T2", "", "T4", "", "T6", ""].map((l, i) => (
-                                <span
-                                    key={i}
-                                    className="flex items-center text-[10px] text-gray-400"
-                                    style={{ height: 11 }}
-                                >
-                                    {l}
-                                </span>
-                            ))}
-                        </div>
-
-                        {Array.from({ length: WEEKS }).map((_, w) => (
-                            <div key={w} className="flex flex-col gap-[2px]">
-                                {Array.from({ length: DAYS }).map((_, d) => {
-                                    const cell = cells[w * DAYS + d];
-                                    if (!cell)
-                                        return (
-                                            <span
-                                                key={d}
-                                                style={{
-                                                    width: 11,
-                                                    height: 11,
-                                                }}
-                                            />
-                                        );
-                                    return (
-                                        <span
-                                            key={d}
-                                            className="transition-colors duration-300"
-                                            style={{
-                                                width: 11,
-                                                height: 11,
-                                                borderRadius: 2,
-                                                background: COLORS[cell.level],
-                                            }}
-                                            title={`${cell.date.toLocaleDateString("vi-VN")} — ${cell.count > 0 ? `${cell.count} hoạt động` : "Không có hoạt động"}`}
-                                        />
-                                    );
-                                })}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </div>
     );
 }
 
