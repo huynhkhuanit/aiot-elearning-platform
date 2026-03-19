@@ -1,7 +1,8 @@
-import { notFound, redirect } from "next/navigation";
-import { getCanonicalProfilePath, normalizeUsername } from "@/lib/profile-url";
+import { notFound } from "next/navigation";
+import { normalizeUsername } from "@/lib/profile-url";
+import UserProfileContent from "@/components/profile/UserProfileContent";
 
-export default async function LegacyUserProfilePage({
+export default async function UserProfilePage({
     params,
 }: {
     params: Promise<{ username: string }>;
@@ -13,5 +14,5 @@ export default async function LegacyUserProfilePage({
         notFound();
     }
 
-    redirect(getCanonicalProfilePath(normalizedUsername));
+    return <UserProfileContent username={normalizedUsername} />;
 }

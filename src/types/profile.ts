@@ -16,9 +16,7 @@ export type VerificationStatus =
     | "rejected"
     | "revoked";
 
-export type ProfileBadgeCode =
-    | "verified_instructor"
-    | "verified_partner";
+export type ProfileBadgeCode = "verified_instructor" | "verified_partner";
 
 export interface ProfileBadge {
     code: ProfileBadgeCode;
@@ -81,16 +79,23 @@ export interface UnifiedProfileUser {
     role: AppRole;
 }
 
+export interface ProfileStats {
+    totalCoursesEnrolled: number;
+    totalCoursesCompleted: number;
+    totalArticlesPublished: number;
+    totalForumPosts: number;
+}
+
 export interface UnifiedProfileResponse {
     user: UnifiedProfileUser;
     publicProfile: PublicProfileRecord;
     professionalProfile: ProfessionalProfileRecord | null;
     badges: ProfileBadge[];
     courses: ProfileCourse[];
+    stats: ProfileStats;
 }
 
-export interface ProfessionalProfileEditorResponse
-    extends UnifiedProfileResponse {
+export interface ProfessionalProfileEditorResponse extends UnifiedProfileResponse {
     verifications: UserVerificationRecord[];
     capabilities: {
         canViewProfessionalProfile: boolean;

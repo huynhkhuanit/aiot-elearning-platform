@@ -17,7 +17,7 @@ export default function VerifiedBadge({
 }: VerifiedBadgeProps) {
     return (
         <span
-            className={`inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-900 text-white shadow-sm ${className}`}
+            className={`inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-white shadow-sm ${className}`}
             title={BADGE_LABELS[badge.code]}
             aria-label={BADGE_LABELS[badge.code]}
         >

@@ -40,7 +40,9 @@ export function middleware(request: NextRequest) {
 
     const publicProfileRouteMatch = pathname.match(/^\/@+([^/]+)$/);
     if (publicProfileRouteMatch) {
-        const normalizedUsername = normalizeUsername(publicProfileRouteMatch[1]);
+        const normalizedUsername = normalizeUsername(
+            publicProfileRouteMatch[1],
+        );
 
         if (!normalizedUsername) {
             return NextResponse.next();
@@ -53,9 +55,7 @@ export function middleware(request: NextRequest) {
             return NextResponse.redirect(redirectUrl);
         }
 
-        const rewriteUrl = request.nextUrl.clone();
-        rewriteUrl.pathname = `/profile/${normalizedUsername}`;
-        return NextResponse.rewrite(rewriteUrl);
+        return NextResponse.next();
     }
 
     // Handle CORS preflight requests (OPTIONS) for API routes

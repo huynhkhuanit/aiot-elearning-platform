@@ -443,8 +443,7 @@ async function fetchLegacyProfileStats(userId: string) {
     }
 
     return {
-        totalCoursesEnrolled:
-            (enrollmentsResult as DbCountResult).count ?? 0,
+        totalCoursesEnrolled: (enrollmentsResult as DbCountResult).count ?? 0,
         totalCoursesCompleted:
             (completedEnrollmentsResult as DbCountResult).count ?? 0,
         totalArticlesPublished: (blogPostsResult as DbCountResult).count ?? 0,
@@ -457,14 +456,21 @@ async function fetchLegacyProfileStats(userId: string) {
 async function buildUnifiedProfile(
     user: DbUserRow,
 ): Promise<UnifiedProfileResponse> {
-    const [publicProfileRow, roles, verifications, professionalProfile, courses] =
-        await Promise.all([
-            fetchPublicProfileByUserId(user.id),
-            fetchActiveRoles(user.id),
-            fetchVerifications(user.id),
-            fetchProfessionalProfileByUserId(user.id),
-            fetchPublicCoursesByInstructor(user.id),
-        ]);
+    const [
+        publicProfileRow,
+        roles,
+        verifications,
+        professionalProfile,
+        courses,
+        legacyStats,
+    ] = await Promise.all([
+        fetchPublicProfileByUserId(user.id),
+        fetchActiveRoles(user.id),
+        fetchVerifications(user.id),
+        fetchProfessionalProfileByUserId(user.id),
+        fetchPublicCoursesByInstructor(user.id),
+        fetchLegacyProfileStats(user.id),
+    ]);
 
     const primaryRole = getPrimaryRole(roles);
     const publicProfile = mapPublicProfile(user, publicProfileRow);
@@ -488,6 +494,7 @@ async function buildUnifiedProfile(
             : null,
         badges: buildVisibleBadges(roles, verifications),
         courses,
+        stats: legacyStats,
     };
 }
 
@@ -530,14 +537,21 @@ export async function getProfileEditorByUserId(
         return null;
     }
 
-    const [publicProfileRow, targetRoles, verifications, professionalProfile, courses] =
-        await Promise.all([
-            fetchPublicProfileByUserId(targetUserId),
-            fetchActiveRoles(targetUserId),
-            fetchVerifications(targetUserId),
-            fetchProfessionalProfileByUserId(targetUserId),
-            fetchPublicCoursesByInstructor(targetUserId),
-        ]);
+    const [
+        publicProfileRow,
+        targetRoles,
+        verifications,
+        professionalProfile,
+        courses,
+        legacyStats,
+    ] = await Promise.all([
+        fetchPublicProfileByUserId(targetUserId),
+        fetchActiveRoles(targetUserId),
+        fetchVerifications(targetUserId),
+        fetchProfessionalProfileByUserId(targetUserId),
+        fetchPublicCoursesByInstructor(targetUserId),
+        fetchLegacyProfileStats(targetUserId),
+    ]);
 
     const primaryRole = getPrimaryRole(targetRoles);
     const publicProfile = mapPublicProfile(targetUser, publicProfileRow);
@@ -562,6 +576,7 @@ export async function getProfileEditorByUserId(
         professionalProfile,
         badges: buildVisibleBadges(targetRoles, verifications),
         courses,
+        stats: legacyStats,
         verifications,
         capabilities: {
             canViewProfessionalProfile: canViewProfessionalProfile(
@@ -697,29 +712,27 @@ export async function upsertProfessionalProfileDraft(
     input: ProfessionalProfileUpdateInput,
 ): Promise<ProfessionalProfileEditorResponse | null> {
     const client = requireSupabase();
-    const { error } = await client
-        .from("professional_profiles")
-        .upsert(
-            {
-                user_id: userId,
-                profile_roles: normalizeRoles(input.profileRoles),
-                headline: input.headline?.trim() || null,
-                summary: input.summary?.trim() || null,
-                years_experience: input.yearsExperience ?? null,
-                current_title: input.currentTitle?.trim() || null,
-                current_organization: input.currentOrganization?.trim() || null,
-                location: input.location?.trim() || null,
-                skills: input.skills ?? [],
-                education_items: input.educationItems ?? [],
-                career_items: input.careerItems ?? [],
-                achievement_items: input.achievementItems ?? [],
-                featured_links: input.featuredLinks ?? [],
-                status: "draft" as ProfessionalProfileStatus,
-                submitted_at: null,
-                published_at: null,
-            },
-            { onConflict: "user_id" },
-        );
+    const { error } = await client.from("professional_profiles").upsert(
+        {
+            user_id: userId,
+            profile_roles: normalizeRoles(input.profileRoles),
+            headline: input.headline?.trim() || null,
+            summary: input.summary?.trim() || null,
+            years_experience: input.yearsExperience ?? null,
+            current_title: input.currentTitle?.trim() || null,
+            current_organization: input.currentOrganization?.trim() || null,
+            location: input.location?.trim() || null,
+            skills: input.skills ?? [],
+            education_items: input.educationItems ?? [],
+            career_items: input.careerItems ?? [],
+            achievement_items: input.achievementItems ?? [],
+            featured_links: input.featuredLinks ?? [],
+            status: "draft" as ProfessionalProfileStatus,
+            submitted_at: null,
+            published_at: null,
+        },
+        { onConflict: "user_id" },
+    );
 
     if (error) {
         throw error;
@@ -810,7 +823,10 @@ export async function approveProfessionalProfile(
     reviewNotes?: string | null,
 ): Promise<ProfessionalProfileEditorResponse | null> {
     const client = requireSupabase();
-    const editorState = await getProfileEditorByUserId(targetUserId, adminUserId);
+    const editorState = await getProfileEditorByUserId(
+        targetUserId,
+        adminUserId,
+    );
 
     if (!editorState?.professionalProfile) {
         throw new Error("Professional profile not found");
@@ -854,7 +870,8 @@ export async function rejectProfessionalProfile(
             reviewed_at: new Date().toISOString(),
             reviewed_by: adminUserId,
             published_at: null,
-            review_notes: reviewNotes?.trim() || "Profile rejected during review",
+            review_notes:
+                reviewNotes?.trim() || "Profile rejected during review",
         })
         .eq("user_id", targetUserId);
 
@@ -936,10 +953,14 @@ export async function replaceUserRoles(
 ): Promise<ProfessionalProfileEditorResponse | null> {
     const client = requireSupabase();
     const desiredRoles = normalizeRoles(
-        roles.length > 0 ? Array.from(new Set(["student", ...roles])) : ["student"],
+        roles.length > 0
+            ? Array.from(new Set(["student", ...roles]))
+            : ["student"],
     );
     const currentRoles = await fetchActiveRoles(targetUserId);
-    const rolesToAdd = desiredRoles.filter((role) => !currentRoles.includes(role));
+    const rolesToAdd = desiredRoles.filter(
+        (role) => !currentRoles.includes(role),
+    );
     const rolesToRevoke = currentRoles.filter(
         (role) => !desiredRoles.includes(role),
     );
