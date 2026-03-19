@@ -118,8 +118,11 @@ export async function GET(request: NextRequest) {
         const roleDistribution = {
             admin: users.filter((u) => u.role?.toLowerCase() === "admin")
                 .length,
-            teacher: users.filter((u) => u.role?.toLowerCase() === "teacher")
-                .length,
+            instructor: users.filter(
+                (u) =>
+                    u.role?.toLowerCase() === "instructor" ||
+                    u.role?.toLowerCase() === "teacher",
+            ).length,
             user: users.filter(
                 (u) => !u.role || u.role.toLowerCase() === "user",
             ).length,

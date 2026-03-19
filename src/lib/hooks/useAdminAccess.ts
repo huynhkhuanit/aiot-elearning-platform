@@ -47,7 +47,11 @@ export function useAdminAccess() {
     const userRole = authUser.role?.toLowerCase();
 
     // Chỉ admin hoặc teacher mới có access
-    if (userRole === 'admin' || userRole === 'teacher') {
+    if (
+      userRole === 'admin' ||
+      userRole === 'instructor' ||
+      userRole === 'teacher'
+    ) {
       setHasAccess(true);
     } else {
       // User đã đăng nhập nhưng không có quyền

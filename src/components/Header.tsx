@@ -11,6 +11,8 @@ import { useRouter } from "next/navigation";
 import LoginModal from "./LoginModal";
 import RegisterModal from "./RegisterModal";
 import AvatarWithProBadge from "./AvatarWithProBadge";
+import VerifiedBadge from "@/components/profile/VerifiedBadge";
+import { getCanonicalProfilePath, normalizeUsername } from "@/lib/profile-url";
 
 import { removeVietnameseTones } from "@/lib/string-utils";
 
@@ -26,6 +28,8 @@ export default function Header() {
 
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, logout, isLoading } = useAuth();
+  const normalizedUsername = normalizeUsername(user?.username);
+  const profileHref = getCanonicalProfilePath(normalizedUsername);
   const toast = useToast();
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -279,7 +283,12 @@ export default function Header() {
                     isPro={user?.membership_type === 'PRO'}
                     size="xs"
                   />
-                  <span className="hidden sm:inline text-sm font-medium text-gray-700">{user?.username}</span>
+                  <span className="hidden sm:inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <span>{normalizedUsername}</span>
+                    {user?.badges?.[0] ? (
+                      <VerifiedBadge badge={user.badges[0]} className="h-5 w-5" />
+                    ) : null}
+                  </span>
                 </button>
 
                 <AnimatePresence>
@@ -306,8 +315,15 @@ export default function Header() {
 
                           {/* Info Column */}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 truncate">{user?.full_name}</p>
-                            <p style={{ fontSize: '14px' }} className="text-gray-500 truncate">@{user?.username}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-gray-900 truncate">{user?.full_name}</p>
+                              {user?.badges?.[0] ? (
+                                <VerifiedBadge badge={user.badges[0]} className="h-5 w-5" />
+                              ) : null}
+                            </div>
+                            <p style={{ fontSize: '14px' }} className="text-gray-500 truncate">
+                              {normalizedUsername ? `@${normalizedUsername}` : "@"}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -315,7 +331,7 @@ export default function Header() {
                       {/* Main Menu Items */}
                       <div className="py-1">
                         <Link
-                          href={`/${user?.username}`}
+                          href={profileHref}
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                           onClick={() => setShowUserMenu(false)}
                         >

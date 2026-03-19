@@ -4,6 +4,8 @@ import { hashPassword, generateToken } from "@/lib/auth";
 import { registerSchema } from "@/lib/validations/auth";
 import { User } from "@/types/auth";
 import crypto from "crypto";
+import { getAuthUserById } from "@/lib/profile-service";
+import { normalizeUsername } from "@/lib/profile-url";
 
 export async function POST(request: NextRequest) {
     try {
@@ -24,6 +26,7 @@ export async function POST(request: NextRequest) {
         }
 
         const { email, password, username, full_name } = validation.data;
+        const normalizedUsername = normalizeUsername(username);
 
         // Check if email already exists
         const existingEmail = await queryOneBuilder<{ id: string }>("users", {
@@ -46,7 +49,7 @@ export async function POST(request: NextRequest) {
             "users",
             {
                 select: "id",
-                filters: { username },
+                filters: { username: normalizedUsername },
             },
         );
 
@@ -81,7 +84,7 @@ export async function POST(request: NextRequest) {
         }>("users", {
             email,
             password_hash,
-            username,
+            username: normalizedUsername,
             full_name,
             membership_type: "FREE",
             is_active: true,
@@ -130,7 +133,7 @@ export async function POST(request: NextRequest) {
         const token = generateToken({
             userId: newUser.id,
             email: newUser.email,
-            username: newUser.username,
+            username: normalizeUsername(newUser.username),
             membership_type: newUser.membership_type as "FREE" | "PRO",
         });
 
@@ -139,19 +142,24 @@ export async function POST(request: NextRequest) {
                 success: true,
                 message: "Đăng ký thành công!",
                 data: {
-                    user: {
-                        id: newUser.id,
-                        email: newUser.email,
-                        username: newUser.username,
-                        full_name: newUser.full_name,
-                        avatar_url: newUser.avatar_url,
-                        bio: newUser.bio,
-                        membership_type: newUser.membership_type,
-                        learning_streak: newUser.learning_streak,
-                        total_study_time: newUser.total_study_time,
-                        is_verified: newUser.is_verified,
-                        created_at: newUser.created_at,
-                    },
+                    user:
+                        (await getAuthUserById(newUser.id)) ?? {
+                            id: newUser.id,
+                            email: newUser.email,
+                            username: normalizeUsername(newUser.username),
+                            full_name: newUser.full_name,
+                            avatar_url: newUser.avatar_url,
+                            bio: newUser.bio,
+                            role: "student" as const,
+                            roles: ["student"] as const,
+                            primaryRole: "student" as const,
+                            membership_type:
+                                newUser.membership_type as "FREE" | "PRO",
+                            learning_streak: newUser.learning_streak,
+                            total_study_time: newUser.total_study_time,
+                            is_verified: newUser.is_verified,
+                            created_at: new Date(newUser.created_at),
+                        },
                     token,
                     recoveryKeys, // Return recovery keys for immediate display
                 },

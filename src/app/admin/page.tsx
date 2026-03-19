@@ -37,6 +37,7 @@ import {
     Cell,
 } from "recharts";
 import { supabase } from "@/lib/supabase";
+import ProfileReviewQueue from "@/components/admin/ProfileReviewQueue";
 
 // ============================================================
 // Types
@@ -48,7 +49,7 @@ interface DashboardStats {
     newUsersThisMonth: number;
     roleDistribution: {
         admin: number;
-        teacher: number;
+        instructor: number;
         user: number;
     };
     totalCourses: number;
@@ -903,6 +904,8 @@ export default function AdminDashboard() {
                     </div>
                 </div>
             </div>
+
+            <ProfileReviewQueue />
 
             {/* ================================================
           INFO TIP

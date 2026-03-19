@@ -3,6 +3,8 @@ import { queryOneBuilder, update } from "@/lib/db";
 import { comparePassword, generateToken } from "@/lib/auth";
 import { loginSchema } from "@/lib/validations/auth";
 import { checkRateLimit, getClientIP, RATE_LIMITS } from "@/lib/rateLimit";
+import { getAuthUserById } from "@/lib/profile-service";
+import { normalizeUsername } from "@/lib/profile-url";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -160,27 +162,31 @@ export async function POST(request: NextRequest) {
         );
 
         // Generate JWT token
+        const normalizedUsername = normalizeUsername(user.username);
         const token = generateToken({
             userId: user.id,
             email: user.email,
-            username: user.username,
+            username: normalizedUsername,
             membership_type: user.membership_type as "FREE" | "PRO",
         });
 
-        // Prepare public user data
-        const publicUser = {
-            id: user.id,
-            email: user.email,
-            username: user.username,
-            full_name: user.full_name,
-            avatar_url: user.avatar_url,
-            bio: user.bio,
-            membership_type: user.membership_type,
-            learning_streak: user.learning_streak,
-            total_study_time: user.total_study_time,
-            is_verified: user.is_verified,
-            created_at: user.created_at,
-        };
+        const publicUser =
+            (await getAuthUserById(user.id)) ?? {
+                id: user.id,
+                email: user.email,
+                username: normalizedUsername,
+                full_name: user.full_name,
+                avatar_url: user.avatar_url,
+                bio: user.bio,
+                role: "student" as const,
+                roles: ["student"] as const,
+                primaryRole: "student" as const,
+                membership_type: user.membership_type as "FREE" | "PRO",
+                learning_streak: user.learning_streak,
+                total_study_time: user.total_study_time,
+                is_verified: user.is_verified,
+                created_at: new Date(user.created_at),
+            };
 
         // Create response with token in cookie
         const response = NextResponse.json(

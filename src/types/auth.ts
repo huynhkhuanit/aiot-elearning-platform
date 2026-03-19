@@ -1,3 +1,5 @@
+import type { AppRole, ProfileBadge } from "@/types/profile";
+
 // User types matching MySQL schema
 export interface User {
   id: string;
@@ -27,12 +29,15 @@ export interface PublicUser {
   full_name: string;
   avatar_url: string | null;
   bio: string | null;
-  role?: string;
+  role?: AppRole;
+  roles: AppRole[];
+  primaryRole: AppRole;
   membership_type: 'FREE' | 'PRO';
   learning_streak: number;
   total_study_time: number;
   is_verified: boolean;
   created_at: Date;
+  badges?: ProfileBadge[];
   // Social media links
   website?: string | null;
   linkedin?: string | null;

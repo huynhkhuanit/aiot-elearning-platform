@@ -57,7 +57,10 @@ export default function Menu() {
 
     // Get user role from AuthContext
     const userRole = user?.role?.toLowerCase();
-    const isAdmin = userRole === "admin" || userRole === "teacher";
+    const isAdmin =
+        userRole === "admin" ||
+        userRole === "instructor" ||
+        userRole === "teacher";
 
     // Mobile bottom navigation - chỉ hiển thị 3 items chính (không có Hỏi Đáp)
     const mobileMenuItems = publicMenuItems.filter((item) => item.id !== "qa");

@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import PageLoading from "@/components/PageLoading";
+import { formatUsernameHandle } from "@/lib/profile-url";
 
 interface Category {
     id: number;
@@ -96,7 +97,9 @@ export default function WriteBlogPage() {
     );
     const editorMode = showPreview ? "preview" : "editor";
     const authorName = user?.full_name || user?.username || "Bạn";
-    const authorHandle = user?.username ? `@${user.username}` : "Tác giả";
+    const authorHandle = user?.username
+        ? formatUsernameHandle(user.username)
+        : "Tác giả";
     const isAuthorPro = user?.membership_type === "PRO";
 
     // Redirect if not authenticated

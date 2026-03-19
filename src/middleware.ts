@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCanonicalProfilePath, normalizeUsername } from "@/lib/profile-url";
 
 /**
  * Middleware để bảo vệ các routes cần xác thực
@@ -27,6 +28,35 @@ function setCorsHeaders(response: NextResponse, request: NextRequest) {
 
 export function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
+
+    const directProfileRouteMatch = pathname.match(/^\/profile\/([^/]+)$/);
+    if (directProfileRouteMatch) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = getCanonicalProfilePath(
+            directProfileRouteMatch[1],
+        );
+        return NextResponse.redirect(redirectUrl);
+    }
+
+    const publicProfileRouteMatch = pathname.match(/^\/@+([^/]+)$/);
+    if (publicProfileRouteMatch) {
+        const normalizedUsername = normalizeUsername(publicProfileRouteMatch[1]);
+
+        if (!normalizedUsername) {
+            return NextResponse.next();
+        }
+
+        const canonicalPath = getCanonicalProfilePath(normalizedUsername);
+        if (pathname !== canonicalPath) {
+            const redirectUrl = request.nextUrl.clone();
+            redirectUrl.pathname = canonicalPath;
+            return NextResponse.redirect(redirectUrl);
+        }
+
+        const rewriteUrl = request.nextUrl.clone();
+        rewriteUrl.pathname = `/profile/${normalizedUsername}`;
+        return NextResponse.rewrite(rewriteUrl);
+    }
 
     // Handle CORS preflight requests (OPTIONS) for API routes
     if (request.method === "OPTIONS" && pathname.startsWith("/api")) {

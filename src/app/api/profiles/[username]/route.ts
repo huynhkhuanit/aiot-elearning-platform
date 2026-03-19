@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLegacyProfileByUsername } from "@/lib/profile-service";
+import { getPublicProfileByUsername } from "@/lib/profile-service";
+import { normalizeUsername } from "@/lib/profile-url";
 
 export async function GET(
     _request: NextRequest,
@@ -7,13 +8,14 @@ export async function GET(
 ) {
     try {
         const { username } = await params;
-        const profile = await getLegacyProfileByUsername(username);
+        const normalizedUsername = normalizeUsername(username);
+        const profile = await getPublicProfileByUsername(normalizedUsername);
 
         if (!profile) {
             return NextResponse.json(
                 {
                     success: false,
-                    message: "User not found",
+                    message: "User profile not found",
                 },
                 { status: 404 },
             );
@@ -24,11 +26,11 @@ export async function GET(
             data: profile,
         });
     } catch (error) {
-        console.error("Get user profile error:", error);
+        console.error("Error loading public profile:", error);
         return NextResponse.json(
             {
                 success: false,
-                message: "Failed to load user profile",
+                message: "Failed to load public profile",
             },
             { status: 500 },
         );

@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
+import { getCanonicalProfilePath } from "@/lib/profile-url";
 
 interface Article {
     id: number;
@@ -296,7 +297,7 @@ export default function ArticlesPage() {
                 {/* ── Card Header: Author + Actions ── */}
                 <div className="mb-2.5 flex items-center justify-between">
                     <Link
-                        href={`/profile/${article.username}`}
+                        href={getCanonicalProfilePath(article.username)}
                         className="flex items-center gap-2.5"
                         onClick={(e) => e.stopPropagation()}
                     >

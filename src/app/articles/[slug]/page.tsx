@@ -37,6 +37,7 @@ import {
 import type { BlogPost } from "@/types/BlogPost";
 import { fetchPost as fetchPostApi } from "@/api/posts";
 import { formatDate, formatReadingTime } from "@/utils/date";
+import { getCanonicalProfilePath } from "@/lib/profile-url";
 
 interface TableOfContentsItem {
     id: string;
@@ -480,7 +481,12 @@ export default function ArticlePage() {
 
                     <div className="flex flex-wrap items-center justify-center gap-3 py-4 border-y border-slate-200 text-sm">
                         <div className="flex items-center gap-2 min-w-0">
-                            <Link href={`/${post.author.username}`} className="shrink-0">
+                            <Link
+                                href={getCanonicalProfilePath(
+                                    post.author.username,
+                                )}
+                                className="shrink-0"
+                            >
                                 {post.author.avatar_url ? (
                                     <Image src={post.author.avatar_url} alt={post.author.full_name} width={24} height={24} className="rounded-full" />
                                 ) : (

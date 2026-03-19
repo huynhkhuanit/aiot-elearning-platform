@@ -50,7 +50,10 @@ export default function AdminLayout({
     }
 
     const userRole = user?.role?.toLowerCase();
-    const hasAccess = userRole === "admin" || userRole === "teacher";
+    const hasAccess =
+        userRole === "admin" ||
+        userRole === "instructor" ||
+        userRole === "teacher";
 
     if (!hasAccess) {
         return (
@@ -78,7 +81,7 @@ export default function AdminLayout({
                     </h2>
                     <p className="text-slate-400 mb-6">
                         Bạn không có quyền truy cập trang admin. Chỉ admin và
-                        teacher mới có thể sử dụng chức năng này.
+                        instructor mới có thể sử dụng chức năng này.
                     </p>
                     <button
                         onClick={() => router.push("/")}

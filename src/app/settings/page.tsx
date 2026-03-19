@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import PageContainer from "@/components/PageContainer";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import PageLoading from "@/components/PageLoading";
+import ProfessionalProfileTab from "@/components/settings/ProfessionalProfileTab";
+import { normalizeUsername } from "@/lib/profile-url";
 
 import {
     User,
@@ -34,9 +36,15 @@ import {
     AlertTriangle,
     CheckCircle2,
     ExternalLink,
+    BriefcaseBusiness,
 } from "lucide-react";
 
-type SettingsTab = "profile" | "password" | "notifications" | "ai";
+type SettingsTab =
+    | "profile"
+    | "professional"
+    | "password"
+    | "notifications"
+    | "ai";
 
 // Toggle Switch Component
 function ToggleSwitch({
@@ -416,7 +424,9 @@ export default function SettingsPage() {
             if (!user?.username) return;
             try {
                 setInitialLoading(true);
-                const response = await fetch(`/api/users/${user.username}`);
+                const response = await fetch(
+                    `/api/users/${normalizeUsername(user.username)}`,
+                );
                 const data = await response.json();
                 if (data.success && data.data) {
                     const profile = data.data;
@@ -571,6 +581,12 @@ export default function SettingsPage() {
             label: "Thông tin cá nhân",
             icon: User,
             description: "Tên, avatar, bio, mạng xã hội",
+        },
+        {
+            id: "professional" as SettingsTab,
+            label: "Professional Profile",
+            icon: BriefcaseBusiness,
+            description: "Roles, verification, professional draft",
         },
         {
             id: "password" as SettingsTab,
@@ -942,6 +958,18 @@ export default function SettingsPage() {
                                                 </div>
                                             </form>
                                         )}
+                                    </motion.div>
+                                )}
+
+                                {activeTab === "professional" && (
+                                    <motion.div
+                                        key="professional"
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <ProfessionalProfileTab />
                                     </motion.div>
                                 )}
 
