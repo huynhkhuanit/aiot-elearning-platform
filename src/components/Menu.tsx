@@ -204,8 +204,13 @@ export default function Menu({ variant = "default" }: MenuProps) {
                 <>
                     {/* Invisible trigger strip at left edge — always present */}
                     <div
-                        className="hidden md:block fixed left-0 top-0 h-screen"
-                        style={{ width: "14px", zIndex: 51 }}
+                        className="hidden md:block fixed left-0"
+                        style={{
+                            width: "14px",
+                            zIndex: 51,
+                            top: "80px",
+                            height: "calc(100vh - 80px)",
+                        }}
                         onMouseEnter={handleReveal}
                         onMouseLeave={handleHide}
                     />
@@ -225,10 +230,16 @@ export default function Menu({ variant = "default" }: MenuProps) {
 
                     {/* Sliding sidebar overlay */}
                     <aside
-                        className="hidden md:flex fixed left-0 top-0 h-screen flex-col items-center justify-start pt-20 px-2 border-r border-gray-200"
+                        className="hidden md:flex fixed left-0 flex-col items-center justify-start px-2"
                         style={{
                             backgroundColor: "#ffffff",
+                            top: "88px",
                             width: "96px",
+                            borderRadius: "0 12px 12px 0",
+                            border: "1px solid rgba(0,0,0,0.06)",
+                            borderLeft: "none",
+                            paddingTop: "12px",
+                            paddingBottom: "12px",
                             zIndex: 50,
                             transform: isRevealed
                                 ? "translateX(0)"

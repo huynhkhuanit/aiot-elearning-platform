@@ -242,7 +242,7 @@ export default function UserProfileContent({ username }: { username: string }) {
     }
 
     return (
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-10">
+        <div className="px-14 py-8 sm:px-6 lg:px-10">
             {/* ───── Two Column Grid — full-width profile layout ───── */}
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-[300px_1fr] lg:gap-12">
                 {/* ═══════════════ LEFT SIDEBAR ═══════════════ */}
