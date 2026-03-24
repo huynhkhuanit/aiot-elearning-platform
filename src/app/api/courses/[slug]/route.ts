@@ -127,18 +127,49 @@ export async function GET(
             0,
         );
 
-        // Check if user is enrolled (if authenticated) — run in parallel with formatting
-        let isEnrolled = false;
-        if (userId) {
-            const enrollment = await queryOneBuilder<{ id: string }>(
-                "enrollments",
-                {
-                    select: "id",
-                    filters: { user_id: userId, course_id: course.id },
-                },
-            );
-            isEnrolled = !!enrollment;
-        }
+        // Run enrollment check + instructor stats in parallel
+        const instructorId = instructor?.id;
+
+        const [enrollmentResult, instructorStatsResult] = await Promise.all([
+            userId
+                ? queryOneBuilder<{ id: string }>("enrollments", {
+                      select: "id",
+                      filters: { user_id: userId, course_id: course.id },
+                  })
+                : Promise.resolve(null),
+            instructorId
+                ? supabaseAdmin!
+                      .from("courses")
+                      .select("id, total_students, rating")
+                      .eq("instructor_id", instructorId)
+                      .eq("is_published", true)
+                : Promise.resolve({ data: null }),
+        ]);
+
+        const isEnrolled = !!enrollmentResult;
+
+        // Compute instructor aggregate stats
+        const instructorCourses = (instructorStatsResult as any)?.data || [];
+        const instructorTotalCourses = instructorCourses.length;
+        const instructorTotalStudents = instructorCourses.reduce(
+            (sum: number, c: any) => sum + (c.total_students || 0),
+            0,
+        );
+        const validRatings = instructorCourses.filter(
+            (c: any) => c.rating && parseFloat(c.rating) > 0,
+        );
+        const instructorAvgRating =
+            validRatings.length > 0
+                ? parseFloat(
+                      (
+                          validRatings.reduce(
+                              (sum: number, c: any) =>
+                                  sum + parseFloat(c.rating),
+                              0,
+                          ) / validRatings.length
+                      ).toFixed(1),
+                  )
+                : 0;
 
         // Format response
         const formattedCourse = {
@@ -176,6 +207,9 @@ export async function GET(
                 username: instructor?.username || null,
                 avatar: instructor?.avatar_url || null,
                 bio: instructor?.bio || null,
+                totalCourses: instructorTotalCourses,
+                totalStudents: instructorTotalStudents,
+                avgRating: instructorAvgRating,
             },
             sections: sections,
             createdAt: course.created_at,

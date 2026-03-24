@@ -68,6 +68,20 @@ const calculatePricing = (currentPrice: number) => {
     };
 };
 
+interface PlatformStats {
+    totalStudents: number;
+    totalInstructors: number;
+    totalCourses: number;
+    avgRating: number;
+}
+
+const formatStatNumber = (num: number): string => {
+    if (num >= 1000000)
+        return `${(num / 1000000).toFixed(1).replace(/\.0$/, "")}M+`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1).replace(/\.0$/, "")}k+`;
+    return num.toString();
+};
+
 export default function HeroSection() {
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
@@ -77,6 +91,9 @@ export default function HeroSection() {
     const [slideKey, setSlideKey] = useState(0);
     const [enrollingCourse, setEnrollingCourse] = useState<string | null>(null);
     const [isPaused, setIsPaused] = useState(false);
+    const [platformStats, setPlatformStats] = useState<PlatformStats | null>(
+        null,
+    );
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const router = useRouter();
@@ -103,7 +120,9 @@ export default function HeroSection() {
     const fetchCourses = async () => {
         try {
             setLoading(true);
-            const response = await fetch("/api/courses?limit=5");
+            const response = await fetch(
+                "/api/courses?limit=5&include_stats=1",
+            );
             const data = await response.json();
 
             if (data.success) {
@@ -114,6 +133,10 @@ export default function HeroSection() {
                     }),
                 );
                 setCourses(fetchedCourses);
+
+                if (data.data.platformStats) {
+                    setPlatformStats(data.data.platformStats);
+                }
             }
         } catch (error) {
             console.error("Error fetching courses:", error);
@@ -441,7 +464,11 @@ export default function HeroSection() {
                             </div>
                             <div>
                                 <p className="text-lg font-bold text-gray-900 leading-tight">
-                                    10k+
+                                    {platformStats
+                                        ? formatStatNumber(
+                                              platformStats.totalStudents,
+                                          )
+                                        : "—"}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                     Học viên
@@ -457,10 +484,12 @@ export default function HeroSection() {
                             </div>
                             <div>
                                 <p className="text-lg font-bold text-gray-900 leading-tight">
-                                    50+
+                                    {platformStats
+                                        ? platformStats.totalCourses
+                                        : "—"}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                    Giảng viên
+                                    Khóa học
                                 </p>
                             </div>
                         </div>
@@ -473,7 +502,9 @@ export default function HeroSection() {
                             </div>
                             <div>
                                 <p className="text-lg font-bold text-gray-900 leading-tight">
-                                    4.8
+                                    {platformStats
+                                        ? platformStats.avgRating || "—"
+                                        : "—"}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                     Đánh giá

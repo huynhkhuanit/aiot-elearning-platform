@@ -97,6 +97,47 @@ export async function GET(request: NextRequest) {
             };
         });
 
+        // Fetch platform stats in parallel (for HeroSection)
+        const includeStats = searchParams.get("include_stats") === "1";
+        let platformStats = null;
+
+        if (includeStats) {
+            const { supabaseAdmin } = await import("@/lib/supabase");
+            if (supabaseAdmin) {
+                const [studentsRes, ratingRes] = await Promise.all([
+                    supabaseAdmin
+                        .from("enrollments")
+                        .select("user_id", { count: "exact", head: true }),
+                    supabaseAdmin
+                        .from("courses")
+                        .select("rating")
+                        .eq("is_published", true)
+                        .gt("rating", 0),
+                ]);
+
+                const ratings = (ratingRes.data || []).map((c: any) =>
+                    parseFloat(c.rating),
+                );
+                const avgRating =
+                    ratings.length > 0
+                        ? parseFloat(
+                              (
+                                  ratings.reduce(
+                                      (s: number, r: number) => s + r,
+                                      0,
+                                  ) / ratings.length
+                              ).toFixed(1),
+                          )
+                        : 0;
+
+                platformStats = {
+                    totalStudents: studentsRes.count ?? 0,
+                    totalCourses: total || 0,
+                    avgRating,
+                };
+            }
+        }
+
         return NextResponse.json(
             {
                 success: true,
@@ -109,6 +150,7 @@ export async function GET(request: NextRequest) {
                         totalPages: Math.ceil((total || 0) / limit),
                         hasMore: page * limit < (total || 0),
                     },
+                    ...(platformStats && { platformStats }),
                 },
             },
             {

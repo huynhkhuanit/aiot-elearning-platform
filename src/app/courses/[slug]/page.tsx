@@ -78,6 +78,9 @@ interface CourseDetail {
         avatar: string;
         bio?: string;
         username?: string;
+        totalCourses?: number;
+        totalStudents?: number;
+        avgRating?: number;
     };
     category: {
         id: string;
@@ -934,18 +937,28 @@ export default function CourseDetailPage() {
                             <div className="flex items-center justify-center gap-6 text-sm text-gray-400">
                                 <div className="flex items-center gap-1.5">
                                     <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                                    <span>{course.rating} Xếp hạng</span>
+                                    <span>
+                                        {course.instructor.avgRating ||
+                                            course.rating}{" "}
+                                        Xếp hạng
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <Users className="w-4 h-4 text-indigo-400" />
                                     <span>
-                                        {course.students.toLocaleString()} Học
-                                        viên
+                                        {(
+                                            course.instructor.totalStudents ||
+                                            course.students
+                                        ).toLocaleString()}{" "}
+                                        Học viên
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <PlayCircle className="w-4 h-4 text-indigo-400" />
-                                    <span>10+ Khóa học</span>
+                                    <span>
+                                        {course.instructor.totalCourses || 0}{" "}
+                                        Khóa học
+                                    </span>
                                 </div>
                             </div>
                         </div>

@@ -14,12 +14,13 @@ export async function GET() {
             throw new Error("Supabase admin client not initialized");
         }
 
-        const [coursesResult, studentsResult, instructorsResult] =
+        const [coursesResult, studentsResult, instructorsResult, ratingResult] =
             await Promise.all([
                 // Total published courses
                 supabaseAdmin
                     .from("courses")
-                    .select("*", { count: "exact", head: true }),
+                    .select("*", { count: "exact", head: true })
+                    .eq("is_published", true),
 
                 // Total unique enrolled students
                 supabaseAdmin
@@ -31,7 +32,29 @@ export async function GET() {
                     .from("users")
                     .select("*", { count: "exact", head: true })
                     .eq("role", "instructor"),
+
+                // Average rating across all published courses
+                supabaseAdmin
+                    .from("courses")
+                    .select("rating")
+                    .eq("is_published", true)
+                    .gt("rating", 0),
             ]);
+
+        const ratings = (ratingResult.data || []).map((c: any) =>
+            parseFloat(c.rating),
+        );
+        const avgRating =
+            ratings.length > 0
+                ? parseFloat(
+                      (
+                          ratings.reduce(
+                              (sum: number, r: number) => sum + r,
+                              0,
+                          ) / ratings.length
+                      ).toFixed(1),
+                  )
+                : 0;
 
         return NextResponse.json({
             success: true,
@@ -39,6 +62,7 @@ export async function GET() {
                 totalCourses: coursesResult.count ?? 0,
                 totalStudents: studentsResult.count ?? 0,
                 totalInstructors: instructorsResult.count ?? 0,
+                avgRating,
             },
         });
     } catch (error: any) {
