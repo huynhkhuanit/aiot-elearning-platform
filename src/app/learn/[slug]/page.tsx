@@ -46,7 +46,8 @@ import CertificateModal from "@/components/CertificateModal";
 import CourseReviewModal, {
     CourseReviewButton,
 } from "@/components/CourseReviewModal";
-import "@/app/markdown.css";
+import { useAITutor } from "@/contexts/AITutorContext";
+import { AITutorFAB } from "@/components/AIAssistant";
 import "@/app/markdown.css";
 
 interface Lesson {
@@ -125,6 +126,7 @@ export default function LearnCoursePage() {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const { isAuthenticated, user, isLoading: authLoading } = useAuth();
     const toast = useToast();
+    const { setLearningContext, updateLessonContent } = useAITutor();
 
     // Update page title when course changes
     usePageTitle(
@@ -133,6 +135,52 @@ export default function LearnCoursePage() {
 
     // Load markdown content when current lesson changes
     const markdownContent = useLessonContent(currentLesson?.id || "");
+
+    // Sync learning context to AI Tutor
+    useEffect(() => {
+        if (!course || !currentLesson) return;
+
+        const allLessons = course.sections.flatMap((s: Section) => s.lessons);
+        const currentSection = course.sections.find((s: Section) =>
+            s.lessons.some((l: Lesson) => l.id === currentLesson.id),
+        );
+        const recentCompleted = allLessons
+            .filter((l: Lesson) => l.isCompleted)
+            .slice(-3)
+            .map((l: Lesson) => l.title);
+
+        // Build course outline for AI context
+        const outline = course.sections
+            .map(
+                (s: Section) =>
+                    `## ${s.title}\n${s.lessons.map((l: Lesson) => `  - ${l.isCompleted ? "[✓]" : "[ ]"} ${l.title} (${l.type})`).join("\n")}`,
+            )
+            .join("\n");
+
+        setLearningContext({
+            courseTitle: course.title,
+            courseSlug: course.slug,
+            currentLessonTitle: currentLesson.title,
+            currentLessonId: currentLesson.id,
+            lessonType: currentLesson.type || "reading",
+            lessonContent: "",
+            videoUrl:
+                currentLesson.videoUrl || currentLesson.youtubeBackupUrl || "",
+            progress: course.progress || 0,
+            completedLessons: course.completedLessons || 0,
+            totalLessons: course.totalLessons || 0,
+            currentSection: currentSection?.title || "",
+            recentCompletedTopics: recentCompleted,
+            courseOutline: outline,
+        });
+    }, [course, currentLesson, setLearningContext]);
+
+    // Sync markdown content to AI Tutor context
+    useEffect(() => {
+        if (markdownContent) {
+            updateLessonContent(markdownContent);
+        }
+    }, [markdownContent, updateLessonContent]);
 
     // Handle hash changes for question navigation
     useEffect(() => {
@@ -998,6 +1046,9 @@ export default function LearnCoursePage() {
                     courseTitle={course.title}
                 />
             )}
+
+            {/* AI Tutor FAB - Fixed on bottom right */}
+            <AITutorFAB />
 
             {/* Q&A Button - Fixed on bottom left */}
             {currentLesson && (
