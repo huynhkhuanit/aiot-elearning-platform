@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Sparkles, Maximize2, Minimize2, X } from "lucide-react";
+import { Sparkles, Maximize2, Minimize2, X, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import AITutorPanel from "./AITutorPanel";
@@ -14,18 +20,13 @@ export default function AITutorFAB() {
     const [isExpanded, setIsExpanded] = useState(false);
     const [showPulse, setShowPulse] = useState(true);
 
-    // Stop pulse after first open
     useEffect(() => {
-        if (isOpen && showPulse) {
-            setShowPulse(false);
-        }
+        if (isOpen && showPulse) setShowPulse(false);
     }, [isOpen, showPulse]);
 
     useEffect(() => {
         const handleEsc = (event: KeyboardEvent) => {
-            if (event.key === "Escape" && isOpen) {
-                setIsOpen(false);
-            }
+            if (event.key === "Escape" && isOpen) setIsOpen(false);
         };
         window.addEventListener("keydown", handleEsc);
         return () => window.removeEventListener("keydown", handleEsc);
@@ -54,40 +55,47 @@ export default function AITutorFAB() {
     if (authLoading || !isAuthenticated) return null;
 
     return (
-        <>
-            {/* FAB Button */}
-            <button
-                type="button"
-                onClick={togglePanel}
-                className={cn(
-                    "group fixed bottom-6 right-6 z-[9998] flex size-12 items-center justify-center rounded-full shadow-lg transition-all duration-200 hover:scale-105",
-                    isOpen
-                        ? "bg-zinc-900 border border-zinc-700 text-zinc-300"
-                        : "bg-emerald-600 text-white hover:bg-emerald-500",
-                    showPulse && !isOpen && "animate-pulse",
-                )}
-                title={
-                    isOpen
-                        ? "Đóng AI Tutor (Ctrl+Shift+T)"
-                        : "AI Tutor (Ctrl+Shift+T)"
-                }
-                aria-label="AI Tutor"
-            >
-                {isOpen ? (
-                    <X className="size-5" />
-                ) : (
-                    <Sparkles className="size-5" />
-                )}
-            </button>
+        <TooltipProvider>
+            {/* ═══ FAB Button ═══ */}
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <button
+                        type="button"
+                        onClick={togglePanel}
+                        className={cn(
+                            "group fixed bottom-6 right-6 z-[9998] flex size-12 items-center justify-center rounded-full shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95",
+                            isOpen
+                                ? "bg-zinc-900 border border-zinc-700/80 text-zinc-300 hover:border-zinc-600"
+                                : "bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-600/25",
+                            showPulse &&
+                                !isOpen &&
+                                "animate-pulse shadow-emerald-500/40",
+                        )}
+                        aria-label="AI Tutor"
+                    >
+                        {isOpen ? (
+                            <X className="size-5 transition-transform duration-200 group-hover:rotate-90" />
+                        ) : (
+                            <Sparkles className="size-5 transition-transform duration-200 group-hover:scale-110" />
+                        )}
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                    {isOpen ? "Đóng" : "AI Tutor"}{" "}
+                    <kbd className="ml-1 rounded bg-zinc-700 px-1 py-0.5 text-[9px] text-zinc-300">
+                        Ctrl+Shift+T
+                    </kbd>
+                </TooltipContent>
+            </Tooltip>
 
-            {/* Panel */}
+            {/* ═══ Panel ═══ */}
             {isOpen && (
                 <div
                     className={cn(
                         "fixed right-6 z-[9997] overflow-hidden rounded-2xl border shadow-2xl transition-all duration-300",
-                        "bg-zinc-950 border-zinc-800",
+                        "bg-zinc-950 border-zinc-800/80",
                         isMinimized
-                            ? "bottom-22 h-16 w-80"
+                            ? "bottom-22 h-14 w-80"
                             : isExpanded
                               ? "bottom-22 h-[calc(100vh-7rem)] w-[30rem]"
                               : "bottom-22 h-[40rem] w-[26rem]",
@@ -97,61 +105,81 @@ export default function AITutorFAB() {
                         <button
                             type="button"
                             onClick={() => setIsMinimized(false)}
-                            className="flex h-full w-full items-center justify-between px-4 text-left"
+                            className="flex h-full w-full items-center justify-between px-4 text-left transition-colors hover:bg-zinc-900"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="flex size-9 items-center justify-center rounded-full bg-emerald-600 text-white">
-                                    <Sparkles className="size-4" />
+                                <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/15">
+                                    <Sparkles className="size-4 text-emerald-400" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-zinc-100">
                                         AI Tutor
                                     </p>
-                                    <p className="text-xs text-zinc-500">
+                                    <p className="text-[11px] text-zinc-500">
                                         Nhấn để tiếp tục
                                     </p>
                                 </div>
                             </div>
-                            <Maximize2 className="size-4 text-zinc-500" />
+                            <Maximize2 className="size-3.5 text-zinc-600" />
                         </button>
                     ) : (
                         <div className="flex h-full flex-col">
-                            {/* Window controls */}
-                            <div className="flex items-center justify-end gap-1 border-b border-zinc-800 px-3 py-2">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setIsExpanded((v) => !v)}
-                                    className="size-7 rounded-lg text-zinc-500"
-                                    title={isExpanded ? "Thu gọn" : "Mở rộng"}
-                                >
-                                    {isExpanded ? (
-                                        <Minimize2 className="size-3.5" />
-                                    ) : (
-                                        <Maximize2 className="size-3.5" />
-                                    )}
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setIsMinimized(true)}
-                                    className="size-7 rounded-lg text-zinc-500"
-                                    title="Thu nhỏ"
-                                >
-                                    <Minimize2 className="size-3.5" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setIsOpen(false)}
-                                    className="size-7 rounded-lg text-zinc-500"
-                                    title="Đóng"
-                                >
-                                    <X className="size-3.5" />
-                                </Button>
+                            {/* Window Controls */}
+                            <div className="flex items-center justify-end gap-0.5 px-2 py-1.5">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() =>
+                                                setIsExpanded((v) => !v)
+                                            }
+                                            className="size-6 rounded-md text-zinc-600 hover:text-zinc-300"
+                                        >
+                                            {isExpanded ? (
+                                                <Minimize2 className="size-3" />
+                                            ) : (
+                                                <Maximize2 className="size-3" />
+                                            )}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom">
+                                        {isExpanded ? "Thu gọn" : "Mở rộng"}
+                                    </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setIsMinimized(true)}
+                                            className="size-6 rounded-md text-zinc-600 hover:text-zinc-300"
+                                        >
+                                            <Minus className="size-3" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom">
+                                        Thu nhỏ
+                                    </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setIsOpen(false)}
+                                            className="size-6 rounded-md text-zinc-600 hover:text-zinc-300"
+                                        >
+                                            <X className="size-3" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom">
+                                        Đóng
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
 
                             <div className="min-h-0 flex-1">
@@ -164,6 +192,6 @@ export default function AITutorFAB() {
                     )}
                 </div>
             )}
-        </>
+        </TooltipProvider>
     );
 }
