@@ -36,42 +36,37 @@ export default function QuizMultipleChoice({
     onWrong,
 }: QuizMultipleChoiceProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [result, setResult] = useState<{
         correct: boolean;
         correctAnswer: string;
     } | null>(null);
     const [showAnswer, setShowAnswer] = useState(false);
 
-    const handleSubmit = async () => {
-        if (!selectedId || isSubmitting) return;
-        setIsSubmitting(true);
+    const handleSubmit = () => {
+        if (!selectedId) return;
 
-        try {
-            const res = await fetch(`/api/exercises/${exerciseId}/submit`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ answer: selectedId }),
-            });
+        const selectedOption = options.find((o) => o.id === selectedId);
+        const correctOption = options.find((o) => o.is_correct);
+        const isCorrect = selectedOption?.is_correct === true;
 
-            const data = await res.json();
-            if (data.success) {
-                setResult({
-                    correct: data.data.correct,
-                    correctAnswer: data.data.correctAnswer,
-                });
-                if (data.data.correct) {
-                    onCorrect(data.data.xpEarned);
-                } else {
-                    onWrong();
-                }
-            }
-        } catch (error) {
-            console.error("Error submitting quiz:", error);
-        } finally {
-            setIsSubmitting(false);
+        setResult({
+            correct: isCorrect,
+            correctAnswer: correctOption?.content || "",
+        });
+
+        if (isCorrect) {
+            onCorrect(10);
+        } else {
+            onWrong();
         }
+
+        // Fire API in background for XP tracking
+        fetch(`/api/exercises/${exerciseId}/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ answer: selectedId }),
+        }).catch(() => {});
     };
 
     const handleShowAnswer = () => {
@@ -84,6 +79,15 @@ export default function QuizMultipleChoice({
 
     const isAnswered = result !== null || showAnswer;
     const correctOptionId = options.find((o) => o.is_correct)?.id;
+
+    const handleSelect = (optionId: string) => {
+        setSelectedId(optionId);
+        // Reset result when user picks a new option
+        if (result) {
+            setResult(null);
+            setShowAnswer(false);
+        }
+    };
 
     const getOptionStyle = (optionId: string) => {
         if (!isAnswered) {
@@ -125,11 +129,8 @@ export default function QuizMultipleChoice({
                 {options.map((option) => (
                     <button
                         key={option.id}
-                        onClick={() => !isAnswered && setSelectedId(option.id)}
-                        disabled={isAnswered}
-                        className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all duration-200 text-left ${getOptionStyle(option.id)} ${
-                            isAnswered ? "cursor-default" : "cursor-pointer"
-                        }`}
+                        onClick={() => handleSelect(option.id)}
+                        className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all duration-200 text-left cursor-pointer ${getOptionStyle(option.id)}`}
                     >
                         {/* Radio / Status indicator */}
                         <div className="flex-shrink-0">
@@ -194,8 +195,6 @@ export default function QuizMultipleChoice({
             <ExerciseActions
                 onShowAnswer={handleShowAnswer}
                 onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                isAnswered={isAnswered}
                 hasSelected={!!selectedId}
                 isDarkTheme={isDarkTheme}
             />

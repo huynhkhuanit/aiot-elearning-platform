@@ -47,7 +47,6 @@ export default function QuizCodeFill({
     onWrong,
 }: QuizCodeFillProps) {
     const [answers, setAnswers] = useState<Record<string, string>>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [result, setResult] = useState<{
         correct: boolean;
         correctAnswer: Record<string, string>;
@@ -72,37 +71,39 @@ export default function QuizCodeFill({
 
     const handleAnswerChange = (blankId: string, value: string) => {
         setAnswers((prev) => ({ ...prev, [blankId]: value }));
+        // Reset result when user edits any blank
+        if (result) {
+            setResult(null);
+            setShowAnswer(false);
+        }
     };
 
-    const handleSubmit = async () => {
-        if (isSubmitting) return;
-        setIsSubmitting(true);
+    const handleSubmit = () => {
+        // Client-side instant check
+        const correctAnswers: Record<string, string> = {};
+        blanks.forEach((b) => (correctAnswers[b.id] = b.answer));
 
-        try {
-            const res = await fetch(`/api/exercises/${exerciseId}/submit`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ answer: answers }),
-            });
+        const allCorrect = blanks.every(
+            (b) =>
+                answers[b.id]?.trim().toLowerCase() ===
+                b.answer.trim().toLowerCase(),
+        );
 
-            const data = await res.json();
-            if (data.success) {
-                setResult({
-                    correct: data.data.correct,
-                    correctAnswer: data.data.correctAnswer,
-                });
-                if (data.data.correct) {
-                    onCorrect(data.data.xpEarned);
-                } else {
-                    onWrong();
-                }
-            }
-        } catch (error) {
-            console.error("Error submitting code fill:", error);
-        } finally {
-            setIsSubmitting(false);
+        setResult({ correct: allCorrect, correctAnswer: correctAnswers });
+
+        if (allCorrect) {
+            onCorrect(15);
+        } else {
+            onWrong();
         }
+
+        // Fire API in background for XP tracking
+        fetch(`/api/exercises/${exerciseId}/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ answer: answers }),
+        }).catch(() => {});
     };
 
     const handleShowAnswer = () => {
@@ -110,7 +111,6 @@ export default function QuizCodeFill({
         const correctAnswers: Record<string, string> = {};
         blanks.forEach((b) => (correctAnswers[b.id] = b.answer));
         setResult({ correct: false, correctAnswer: correctAnswers });
-        // Auto-fill correct answers
         setAnswers(correctAnswers);
     };
 
@@ -180,7 +180,7 @@ export default function QuizCodeFill({
                                                         e.target.value,
                                                     )
                                                 }
-                                                disabled={isAnswered}
+                                                disabled={false}
                                                 placeholder="Nhập câu trả lời"
                                                 className={`inline-block px-3 py-1 rounded-md border text-sm font-mono min-w-[140px] max-w-[220px] outline-none transition-all duration-200 ${getInputStyle(blankId)}`}
                                                 style={{
@@ -258,8 +258,6 @@ export default function QuizCodeFill({
             <ExerciseActions
                 onShowAnswer={handleShowAnswer}
                 onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                isAnswered={isAnswered}
                 hasSelected={hasFilledAll}
                 isDarkTheme={isDarkTheme}
             />
