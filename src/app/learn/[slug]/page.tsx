@@ -48,7 +48,37 @@ import CourseReviewModal, {
 } from "@/components/CourseReviewModal";
 import { useAITutor } from "@/contexts/AITutorContext";
 import { AITutorFAB } from "@/components/AIAssistant";
+import {
+    QuizMultipleChoice,
+    QuizCodeFill,
+    ChapterSummary,
+    XPRewardToast,
+    StreakIndicator,
+} from "@/components/gamification";
 import "@/app/markdown.css";
+
+interface Exercise {
+    id: string;
+    type: "multiple_choice" | "code_fill";
+    title: string;
+    description?: string;
+    sort_order: number;
+    difficulty: "easy" | "medium" | "hard";
+    xp_reward: number;
+    updated_at?: string;
+    exercise_options?: Array<{
+        id: string;
+        content: string;
+        is_correct: boolean;
+        sort_order: number;
+    }>;
+    exercise_code_blocks?: Array<{
+        id: string;
+        language: string;
+        code_template: string;
+        blanks: Array<{ id: string; answer: string; hints?: string[] }>;
+    }>;
+}
 
 interface Lesson {
     id: string;
@@ -124,6 +154,16 @@ export default function LearnCoursePage() {
     );
     const [showCertificateModal, setShowCertificateModal] = useState(false);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    // Gamification state
+    const [exercises, setExercises] = useState<Exercise[]>([]);
+    const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+    const [xpToast, setXpToast] = useState<{ show: boolean; xp: number }>({
+        show: false,
+        xp: 0,
+    });
+    const [chapterSummaryId, setChapterSummaryId] = useState<string | null>(
+        null,
+    );
     const { isAuthenticated, user, isLoading: authLoading } = useAuth();
     const toast = useToast();
     const { setLearningContext, updateLessonContent } = useAITutor();
@@ -181,6 +221,45 @@ export default function LearnCoursePage() {
             updateLessonContent(markdownContent);
         }
     }, [markdownContent, updateLessonContent]);
+
+    // Fetch exercises when current lesson is a quiz
+    useEffect(() => {
+        if (!currentLesson) return;
+        setExercises([]);
+        setCurrentExerciseIndex(0);
+        setChapterSummaryId(null);
+
+        if (currentLesson.type === "quiz") {
+            const fetchExercises = async () => {
+                try {
+                    const res = await fetch(
+                        `/api/lessons/${currentLesson.id}/exercises`,
+                        { credentials: "include" },
+                    );
+                    const data = await res.json();
+                    if (data.success) {
+                        setExercises(data.data);
+                    }
+                } catch (error) {
+                    console.error("Error fetching exercises:", error);
+                }
+            };
+            fetchExercises();
+        }
+
+        // Check if this is the last lesson in a chapter — show chapter summary
+        if (course) {
+            const section = course.sections.find((s: Section) =>
+                s.lessons.some((l: Lesson) => l.id === currentLesson.id),
+            );
+            if (section) {
+                const lastLesson = section.lessons[section.lessons.length - 1];
+                if (lastLesson?.id === currentLesson.id) {
+                    setChapterSummaryId(section.id);
+                }
+            }
+        }
+    }, [currentLesson, course]);
 
     // Handle hash changes for question navigation
     useEffect(() => {
@@ -672,6 +751,8 @@ export default function LearnCoursePage() {
                             </span>
                         </div>
                     </div>
+                    {/* Streak Indicator */}
+                    <StreakIndicator isDarkTheme={isDarkTheme} />
                 </div>
 
                 <div className="flex items-center space-x-4 flex-shrink-0">
@@ -876,6 +957,125 @@ export default function LearnCoursePage() {
                                 )}
                             </div>
                         </div>
+
+                        {/* Gamification Exercises */}
+                        {currentLesson?.type === "quiz" &&
+                            exercises.length > 0 && (
+                                <div className="max-w-4xl mx-auto px-4 py-8">
+                                    {exercises.map((exercise) => {
+                                        if (
+                                            exercise.type ===
+                                                "multiple_choice" &&
+                                            exercise.exercise_options
+                                        ) {
+                                            return (
+                                                <QuizMultipleChoice
+                                                    key={exercise.id}
+                                                    exerciseId={exercise.id}
+                                                    title={exercise.title}
+                                                    description={
+                                                        exercise.description
+                                                    }
+                                                    options={
+                                                        exercise.exercise_options
+                                                    }
+                                                    difficulty={
+                                                        exercise.difficulty
+                                                    }
+                                                    updatedAt={
+                                                        exercise.updated_at
+                                                    }
+                                                    isDarkTheme={isDarkTheme}
+                                                    onCorrect={(xpEarned) => {
+                                                        setXpToast({
+                                                            show: true,
+                                                            xp: xpEarned,
+                                                        });
+                                                        if (
+                                                            typeof window !==
+                                                                "undefined" &&
+                                                            (window as any)
+                                                                .triggerFireworks
+                                                        ) {
+                                                            (
+                                                                window as any
+                                                            ).triggerFireworks();
+                                                        }
+                                                    }}
+                                                    onWrong={() => {}}
+                                                />
+                                            );
+                                        }
+                                        if (
+                                            exercise.type === "code_fill" &&
+                                            exercise.exercise_code_blocks?.[0]
+                                        ) {
+                                            const codeBlock =
+                                                exercise
+                                                    .exercise_code_blocks[0];
+                                            return (
+                                                <QuizCodeFill
+                                                    key={exercise.id}
+                                                    exerciseId={exercise.id}
+                                                    title={exercise.title}
+                                                    description={
+                                                        exercise.description
+                                                    }
+                                                    language={
+                                                        codeBlock.language
+                                                    }
+                                                    codeTemplate={
+                                                        codeBlock.code_template
+                                                    }
+                                                    blanks={codeBlock.blanks}
+                                                    difficulty={
+                                                        exercise.difficulty
+                                                    }
+                                                    updatedAt={
+                                                        exercise.updated_at
+                                                    }
+                                                    isDarkTheme={isDarkTheme}
+                                                    onCorrect={(xpEarned) => {
+                                                        setXpToast({
+                                                            show: true,
+                                                            xp: xpEarned,
+                                                        });
+                                                        if (
+                                                            typeof window !==
+                                                                "undefined" &&
+                                                            (window as any)
+                                                                .triggerFireworks
+                                                        ) {
+                                                            (
+                                                                window as any
+                                                            ).triggerFireworks();
+                                                        }
+                                                    }}
+                                                    onWrong={() => {}}
+                                                />
+                                            );
+                                        }
+                                        return null;
+                                    })}
+                                </div>
+                            )}
+
+                        {/* Chapter Summary */}
+                        {chapterSummaryId && (
+                            <div className="max-w-4xl mx-auto px-4 py-6">
+                                <ChapterSummary
+                                    chapterId={chapterSummaryId}
+                                    isDarkTheme={isDarkTheme}
+                                />
+                            </div>
+                        )}
+
+                        {/* XP Reward Toast (global) */}
+                        <XPRewardToast
+                            xp={xpToast.xp}
+                            show={xpToast.show}
+                            onDone={() => setXpToast({ show: false, xp: 0 })}
+                        />
 
                         {/* Lesson Content Section */}
                         <div>
