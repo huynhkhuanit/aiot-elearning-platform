@@ -71,6 +71,7 @@ interface Exercise {
         content: string;
         is_correct: boolean;
         sort_order: number;
+        explanation?: string;
     }>;
     exercise_code_blocks?: Array<{
         id: string;

@@ -14,7 +14,7 @@ export async function GET(
                 `
         id, lesson_id, type, title, description, sort_order,
         difficulty, xp_reward, is_published, created_at, updated_at,
-        exercise_options(id, content, is_correct, sort_order),
+        exercise_options(id, content, is_correct, sort_order, explanation),
         exercise_code_blocks(id, language, code_template, blanks)
       `,
             )

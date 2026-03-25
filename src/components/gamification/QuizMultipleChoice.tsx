@@ -10,6 +10,7 @@ interface Option {
     content: string;
     is_correct: boolean;
     sort_order: number;
+    explanation?: string;
 }
 
 interface QuizMultipleChoiceProps {
@@ -39,8 +40,10 @@ export default function QuizMultipleChoice({
     const [result, setResult] = useState<{
         correct: boolean;
         correctAnswer: string;
+        explanation: string;
     } | null>(null);
     const [showAnswer, setShowAnswer] = useState(false);
+    const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
 
     const handleSubmit = () => {
         if (!selectedId) return;
@@ -52,7 +55,9 @@ export default function QuizMultipleChoice({
         setResult({
             correct: isCorrect,
             correctAnswer: correctOption?.content || "",
+            explanation: selectedOption?.explanation || "",
         });
+        setHasSubmittedOnce(true);
 
         if (isCorrect) {
             onCorrect(10);
@@ -71,10 +76,13 @@ export default function QuizMultipleChoice({
 
     const handleShowAnswer = () => {
         setShowAnswer(true);
+        const correctOption = options.find((o) => o.is_correct);
         setResult({
             correct: false,
-            correctAnswer: options.find((o) => o.is_correct)?.content || "",
+            correctAnswer: correctOption?.content || "",
+            explanation: correctOption?.explanation || "",
         });
+        setHasSubmittedOnce(true);
     };
 
     const isAnswered = result !== null || showAnswer;
@@ -82,7 +90,6 @@ export default function QuizMultipleChoice({
 
     const handleSelect = (optionId: string) => {
         setSelectedId(optionId);
-        // Reset result when user picks a new option
         if (result) {
             setResult(null);
             setShowAnswer(false);
@@ -101,7 +108,6 @@ export default function QuizMultipleChoice({
                 : "border-gray-200 hover:border-gray-400 bg-white";
         }
 
-        // After answering
         if (optionId === correctOptionId) {
             return isDarkTheme
                 ? "border-emerald-500 bg-emerald-500/10"
@@ -132,7 +138,6 @@ export default function QuizMultipleChoice({
                         onClick={() => handleSelect(option.id)}
                         className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all duration-200 text-left cursor-pointer ${getOptionStyle(option.id)}`}
                     >
-                        {/* Radio / Status indicator */}
                         <div className="flex-shrink-0">
                             {isAnswered && option.id === correctOptionId ? (
                                 <CheckCircle className="w-5 h-5 text-emerald-500" />
@@ -151,7 +156,6 @@ export default function QuizMultipleChoice({
                             )}
                         </div>
 
-                        {/* Option text */}
                         <span
                             className={`text-sm font-medium ${
                                 isDarkTheme ? "text-gray-200" : "text-gray-800"
@@ -163,41 +167,73 @@ export default function QuizMultipleChoice({
                 ))}
             </div>
 
-            {/* Feedback message */}
+            {/* Explanation block */}
             {result && (
                 <div
-                    className={`mt-4 px-4 py-3 rounded-lg text-sm font-medium ${
-                        result.correct
-                            ? isDarkTheme
-                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : isDarkTheme
-                              ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                              : "bg-red-50 text-red-700 border border-red-200"
+                    className={`mt-5 rounded-xl p-4 ${
+                        isDarkTheme
+                            ? "bg-gray-800/80 border border-gray-700/50"
+                            : "bg-gray-50 border border-gray-200"
                     }`}
                 >
-                    {result.correct ? (
-                        "🎉 Chính xác! Tuyệt vời!"
-                    ) : (
-                        <span>
-                            ❌ Chưa đúng.{" "}
-                            {result.correctAnswer && (
-                                <span>
-                                    Đáp án đúng là:{" "}
-                                    <strong>{result.correctAnswer}</strong>
-                                </span>
-                            )}
+                    <h4
+                        className={`text-sm font-bold mb-2 ${
+                            isDarkTheme ? "text-gray-200" : "text-gray-800"
+                        }`}
+                    >
+                        Giải thích
+                    </h4>
+                    <p
+                        className={`text-sm leading-relaxed ${
+                            isDarkTheme ? "text-gray-400" : "text-gray-600"
+                        }`}
+                    >
+                        <span
+                            className={`font-semibold ${
+                                result.correct
+                                    ? isDarkTheme
+                                        ? "text-emerald-400"
+                                        : "text-emerald-600"
+                                    : isDarkTheme
+                                      ? "text-red-400"
+                                      : "text-red-600"
+                            }`}
+                        >
+                            {result.correct
+                                ? "Chính xác! "
+                                : "Chưa chính xác! "}
                         </span>
-                    )}
+                        {result.explanation ||
+                            (result.correct
+                                ? "Bạn đã chọn đúng đáp án."
+                                : "Hãy xem xét lại các đáp án và thử lại.")}
+                    </p>
                 </div>
             )}
 
-            <ExerciseActions
-                onShowAnswer={handleShowAnswer}
-                onSubmit={handleSubmit}
-                hasSelected={!!selectedId}
-                isDarkTheme={isDarkTheme}
-            />
+            {/* Only show "Xem đáp án" before first submit */}
+            {!hasSubmittedOnce ? (
+                <ExerciseActions
+                    onShowAnswer={handleShowAnswer}
+                    onSubmit={handleSubmit}
+                    hasSelected={!!selectedId}
+                    isDarkTheme={isDarkTheme}
+                />
+            ) : (
+                <div className="flex items-center justify-end mt-6">
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!selectedId}
+                        className="px-5 py-2.5 rounded-lg text-sm font-semibold uppercase tracking-wide text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{
+                            background:
+                                "linear-gradient(135deg, #6366f1, #9333ea)",
+                        }}
+                    >
+                        Trả lời
+                    </button>
+                </div>
+            )}
         </ExerciseWrapper>
     );
 }
