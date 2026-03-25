@@ -60,8 +60,9 @@ export async function GET(
             sort_order: number;
             is_preview: boolean;
             is_published: boolean;
+            lesson_type: string | null;
         }>("lessons", {
-            select: "id, chapter_id, title, content, video_url, youtube_backup_url, video_duration, sort_order, is_preview, is_published",
+            select: "id, chapter_id, title, content, video_url, youtube_backup_url, video_duration, sort_order, is_preview, is_published, lesson_type",
             filters: { is_published: true },
             orderBy: { column: "sort_order", ascending: true },
         });
@@ -109,12 +110,15 @@ export async function GET(
                     id: lesson.id,
                     title: lesson.title,
                     duration: formatDuration(lesson.video_duration),
-                    type: lesson.video_url ? "video" : "reading",
+                    type:
+                        lesson.lesson_type ||
+                        (lesson.video_url ? "video" : "reading"),
                     isFree: lesson.is_preview === true,
                     isPreview: lesson.is_preview === true,
                     order: lesson.sort_order,
                     videoUrl: lesson.video_url,
                     youtubeBackupUrl: lesson.youtube_backup_url,
+                    videoDuration: lesson.video_duration,
                     content: lesson.content,
                 })),
             };

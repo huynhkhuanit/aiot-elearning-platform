@@ -84,7 +84,7 @@ interface Lesson {
     id: string;
     title: string;
     duration: string;
-    type: "video" | "reading" | "quiz";
+    type: "video" | "reading" | "quiz" | "code_exercise" | "chapter_summary";
     isCompleted: boolean;
     isFree: boolean;
     order: number;
@@ -229,34 +229,29 @@ export default function LearnCoursePage() {
         setCurrentExerciseIndex(0);
         setChapterSummaryId(null);
 
-        if (currentLesson.type === "quiz") {
-            const fetchExercises = async () => {
-                try {
-                    const res = await fetch(
-                        `/api/lessons/${currentLesson.id}/exercises`,
-                        { credentials: "include" },
-                    );
-                    const data = await res.json();
-                    if (data.success) {
-                        setExercises(data.data);
-                    }
-                } catch (error) {
-                    console.error("Error fetching exercises:", error);
+        const fetchExercises = async () => {
+            try {
+                const res = await fetch(
+                    `/api/lessons/${currentLesson.id}/exercises`,
+                    { credentials: "include" },
+                );
+                const data = await res.json();
+                if (data.success) {
+                    setExercises(data.data);
                 }
-            };
-            fetchExercises();
-        }
+            } catch (error) {
+                console.error("Error fetching exercises:", error);
+            }
+        };
+        fetchExercises();
 
-        // Check if this is the last lesson in a chapter — show chapter summary
-        if (course) {
+        // Set chapterSummaryId for chapter_summary type lessons
+        if (currentLesson.type === "chapter_summary" && course) {
             const section = course.sections.find((s: Section) =>
                 s.lessons.some((l: Lesson) => l.id === currentLesson.id),
             );
             if (section) {
-                const lastLesson = section.lessons[section.lessons.length - 1];
-                if (lastLesson?.id === currentLesson.id) {
-                    setChapterSummaryId(section.id);
-                }
+                setChapterSummaryId(section.id);
             }
         }
     }, [currentLesson, course]);
@@ -685,6 +680,10 @@ export default function LearnCoursePage() {
                 return <FileText className="w-4 h-4" />;
             case "quiz":
                 return <Flag className="w-4 h-4" />;
+            case "code_exercise":
+                return <Code className="w-4 h-4" />;
+            case "chapter_summary":
+                return <BookOpen className="w-4 h-4" />;
             default:
                 return <PlayCircle className="w-4 h-4" />;
         }
@@ -871,97 +870,124 @@ export default function LearnCoursePage() {
                     <div
                         className={`w-full flex-1 overflow-y-auto ${isDarkTheme ? "bg-gray-900" : "bg-gradient-to-br from-gray-50 to-white"} flex flex-col`}
                     >
-                        {/* Video Player Area */}
-                        <div
-                            className={isDarkTheme ? "bg-black" : "bg-gray-100"}
-                        >
-                            <div className="max-w-6xl mx-auto px-4 py-4">
-                                {currentLesson?.videoUrl ? (
-                                    <VideoPlayer
-                                        videoUrl={currentLesson.videoUrl}
-                                        lessonId={currentLesson.id}
-                                        duration={currentLesson.videoDuration}
-                                        title={currentLesson.title}
-                                        onComplete={() => {
-                                            toast.success(
-                                                "Bài học đã hoàn thành! Tiếp tục với bài học tiếp theo",
-                                            );
-                                            goToNextLesson();
-                                        }}
-                                        onProgress={(data) => {
-                                            console.log(
-                                                `Progress: ${data.currentTime}s / ${data.duration}s`,
-                                            );
-                                        }}
-                                        autoSave={true}
-                                    />
-                                ) : (
-                                    // Show message for non-video lessons (reading materials, quizzes)
+                        {/* Video Player Area — only for video/reading lessons */}
+                        {(currentLesson?.type === "video" ||
+                            currentLesson?.type === "reading" ||
+                            !currentLesson?.type) && (
+                            <div
+                                className={
+                                    isDarkTheme ? "bg-black" : "bg-gray-100"
+                                }
+                            >
+                                <div className="max-w-6xl mx-auto px-4 py-4">
+                                    {currentLesson?.videoUrl ? (
+                                        <VideoPlayer
+                                            videoUrl={currentLesson.videoUrl}
+                                            lessonId={currentLesson.id}
+                                            duration={
+                                                currentLesson.videoDuration
+                                            }
+                                            title={currentLesson.title}
+                                            onComplete={() => {
+                                                toast.success(
+                                                    "Bài học đã hoàn thành! Tiếp tục với bài học tiếp theo",
+                                                );
+                                                goToNextLesson();
+                                            }}
+                                            onProgress={(data) => {
+                                                console.log(
+                                                    `Progress: ${data.currentTime}s / ${data.duration}s`,
+                                                );
+                                            }}
+                                            autoSave={true}
+                                        />
+                                    ) : (
+                                        // Show message for non-video lessons (reading materials, quizzes)
+                                        <div
+                                            className={`w-full aspect-video ${isDarkTheme ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700" : "bg-gradient-to-br from-gray-200 to-gray-100 border-gray-300"} rounded-lg flex items-center justify-center border`}
+                                        >
+                                            <div className="text-center">
+                                                {currentLesson?.type ===
+                                                "reading" ? (
+                                                    <>
+                                                        <FileText
+                                                            className={`w-16 h-16 mx-auto mb-4 ${isDarkTheme ? "text-gray-600" : "text-gray-400"}`}
+                                                        />
+                                                        <p
+                                                            className={`text-lg font-medium ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}
+                                                        >
+                                                            Bài học dạng đọc
+                                                        </p>
+                                                        <p
+                                                            className={`text-sm mt-2 ${isDarkTheme ? "text-gray-500" : "text-gray-500"}`}
+                                                        >
+                                                            Xem nội dung bên
+                                                            dưới
+                                                        </p>
+                                                    </>
+                                                ) : currentLesson?.type ===
+                                                  "quiz" ? (
+                                                    <>
+                                                        <Flag
+                                                            className={`w-16 h-16 mx-auto mb-4 ${isDarkTheme ? "text-gray-600" : "text-gray-400"}`}
+                                                        />
+                                                        <p
+                                                            className={`text-lg font-medium ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}
+                                                        >
+                                                            Bài kiểm tra
+                                                        </p>
+                                                        <p
+                                                            className={`text-sm mt-2 ${isDarkTheme ? "text-gray-500" : "text-gray-500"}`}
+                                                        >
+                                                            Xem câu hỏi bên dưới
+                                                        </p>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <PlayCircle
+                                                            className={`w-16 h-16 mx-auto mb-4 ${isDarkTheme ? "text-gray-600" : "text-gray-400"}`}
+                                                        />
+                                                        <p
+                                                            className={`text-lg font-medium ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}
+                                                        >
+                                                            Đang cập nhật video
+                                                        </p>
+                                                        <p
+                                                            className={`text-sm mt-2 ${isDarkTheme ? "text-gray-500" : "text-gray-500"}`}
+                                                        >
+                                                            Video sẽ được thêm
+                                                            sớm
+                                                        </p>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Standalone Exercise Screen — for quiz/code_exercise lessons */}
+                        {(currentLesson?.type === "quiz" ||
+                            currentLesson?.type === "code_exercise") &&
+                            exercises.length > 0 && (
+                                <div className="max-w-4xl mx-auto px-4 py-8 w-full">
                                     <div
-                                        className={`w-full aspect-video ${isDarkTheme ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700" : "bg-gradient-to-br from-gray-200 to-gray-100 border-gray-300"} rounded-lg flex items-center justify-center border`}
+                                        className={`mb-6 text-center ${isDarkTheme ? "text-gray-300" : "text-gray-700"}`}
                                     >
-                                        <div className="text-center">
-                                            {currentLesson?.type ===
-                                            "reading" ? (
-                                                <>
-                                                    <FileText
-                                                        className={`w-16 h-16 mx-auto mb-4 ${isDarkTheme ? "text-gray-600" : "text-gray-400"}`}
-                                                    />
-                                                    <p
-                                                        className={`text-lg font-medium ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}
-                                                    >
-                                                        Bài học dạng đọc
-                                                    </p>
-                                                    <p
-                                                        className={`text-sm mt-2 ${isDarkTheme ? "text-gray-500" : "text-gray-500"}`}
-                                                    >
-                                                        Xem nội dung bên dưới
-                                                    </p>
-                                                </>
-                                            ) : currentLesson?.type ===
-                                              "quiz" ? (
-                                                <>
-                                                    <Flag
-                                                        className={`w-16 h-16 mx-auto mb-4 ${isDarkTheme ? "text-gray-600" : "text-gray-400"}`}
-                                                    />
-                                                    <p
-                                                        className={`text-lg font-medium ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}
-                                                    >
-                                                        Bài kiểm tra
-                                                    </p>
-                                                    <p
-                                                        className={`text-sm mt-2 ${isDarkTheme ? "text-gray-500" : "text-gray-500"}`}
-                                                    >
-                                                        Xem câu hỏi bên dưới
-                                                    </p>
-                                                </>
+                                        <div
+                                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4 ${currentLesson.type === "quiz" ? (isDarkTheme ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700/50" : "bg-emerald-50 text-emerald-700 border border-emerald-200") : isDarkTheme ? "bg-blue-900/30 text-blue-400 border border-blue-700/50" : "bg-blue-50 text-blue-700 border border-blue-200"}`}
+                                        >
+                                            {currentLesson.type === "quiz" ? (
+                                                <Flag className="w-4 h-4" />
                                             ) : (
-                                                <>
-                                                    <PlayCircle
-                                                        className={`w-16 h-16 mx-auto mb-4 ${isDarkTheme ? "text-gray-600" : "text-gray-400"}`}
-                                                    />
-                                                    <p
-                                                        className={`text-lg font-medium ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}
-                                                    >
-                                                        Đang cập nhật video
-                                                    </p>
-                                                    <p
-                                                        className={`text-sm mt-2 ${isDarkTheme ? "text-gray-500" : "text-gray-500"}`}
-                                                    >
-                                                        Video sẽ được thêm sớm
-                                                    </p>
-                                                </>
+                                                <Code className="w-4 h-4" />
                                             )}
+                                            {currentLesson.type === "quiz"
+                                                ? "Bài tập trắc nghiệm"
+                                                : "Bài thực hành code"}
                                         </div>
                                     </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Gamification Exercises */}
-                        {currentLesson?.type === "quiz" &&
-                            exercises.length > 0 && (
-                                <div className="max-w-4xl mx-auto px-4 py-8">
                                     {exercises.map((exercise) => {
                                         if (
                                             exercise.type ===
@@ -991,16 +1017,6 @@ export default function LearnCoursePage() {
                                                             show: true,
                                                             xp: xpEarned,
                                                         });
-                                                        if (
-                                                            typeof window !==
-                                                                "undefined" &&
-                                                            (window as any)
-                                                                .triggerFireworks
-                                                        ) {
-                                                            (
-                                                                window as any
-                                                            ).triggerFireworks();
-                                                        }
                                                     }}
                                                     onWrong={() => {}}
                                                 />
@@ -1040,16 +1056,6 @@ export default function LearnCoursePage() {
                                                             show: true,
                                                             xp: xpEarned,
                                                         });
-                                                        if (
-                                                            typeof window !==
-                                                                "undefined" &&
-                                                            (window as any)
-                                                                .triggerFireworks
-                                                        ) {
-                                                            (
-                                                                window as any
-                                                            ).triggerFireworks();
-                                                        }
                                                     }}
                                                     onWrong={() => {}}
                                                 />
@@ -1060,13 +1066,25 @@ export default function LearnCoursePage() {
                                 </div>
                             )}
 
-                        {/* Chapter Summary */}
-                        {chapterSummaryId && (
-                            <div className="max-w-4xl mx-auto px-4 py-6">
-                                <ChapterSummary
-                                    chapterId={chapterSummaryId}
-                                    isDarkTheme={isDarkTheme}
-                                />
+                        {/* Standalone Chapter Summary Screen */}
+                        {currentLesson?.type === "chapter_summary" && (
+                            <div className="max-w-4xl mx-auto px-4 py-8 w-full">
+                                <div
+                                    className={`mb-6 text-center ${isDarkTheme ? "text-gray-300" : "text-gray-700"}`}
+                                >
+                                    <div
+                                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4 ${isDarkTheme ? "bg-amber-900/30 text-amber-400 border border-amber-700/50" : "bg-amber-50 text-amber-700 border border-amber-200"}`}
+                                    >
+                                        <BookOpen className="w-4 h-4" />
+                                        Tóm tắt chương
+                                    </div>
+                                </div>
+                                {chapterSummaryId && (
+                                    <ChapterSummary
+                                        chapterId={chapterSummaryId}
+                                        isDarkTheme={isDarkTheme}
+                                    />
+                                )}
                             </div>
                         )}
 
@@ -1077,48 +1095,52 @@ export default function LearnCoursePage() {
                             onDone={() => setXpToast({ show: false, xp: 0 })}
                         />
 
-                        {/* Lesson Content Section */}
-                        <div>
-                            <div className="max-w-4xl mx-auto p-6">
-                                {/* Markdown Content */}
-                                <div
-                                    className={`prose ${isDarkTheme ? "prose-invert" : ""} max-w-none text-sm`}
-                                >
-                                    {markdownContent ? (
-                                        <ReactMarkdown
-                                            remarkPlugins={[remarkGfm]}
-                                        >
-                                            {markdownContent}
-                                        </ReactMarkdown>
-                                    ) : (
-                                        <div
-                                            className={`rounded-lg p-6 border ${isDarkTheme ? "bg-gray-700/30 border-gray-600 text-gray-300" : "border-gray-200 text-gray-600"}`}
-                                            style={
-                                                isDarkTheme
-                                                    ? {}
-                                                    : {
-                                                          backgroundColor:
-                                                              "rgba(99, 102, 241, 0.05)",
-                                                          borderColor:
-                                                              "rgba(99, 102, 241, 0.2)",
-                                                      }
-                                            }
-                                        >
-                                            <p
-                                                className={
+                        {/* Lesson Content Section — only for video/reading lessons */}
+                        {(!currentLesson?.type ||
+                            currentLesson.type === "video" ||
+                            currentLesson.type === "reading") && (
+                            <div>
+                                <div className="max-w-4xl mx-auto p-6">
+                                    {/* Markdown Content */}
+                                    <div
+                                        className={`prose ${isDarkTheme ? "prose-invert" : ""} max-w-none text-sm`}
+                                    >
+                                        {markdownContent ? (
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkGfm]}
+                                            >
+                                                {markdownContent}
+                                            </ReactMarkdown>
+                                        ) : (
+                                            <div
+                                                className={`rounded-lg p-6 border ${isDarkTheme ? "bg-gray-700/30 border-gray-600 text-gray-300" : "border-gray-200 text-gray-600"}`}
+                                                style={
                                                     isDarkTheme
-                                                        ? "text-gray-400 italic"
-                                                        : "text-gray-600 italic"
+                                                        ? {}
+                                                        : {
+                                                              backgroundColor:
+                                                                  "rgba(99, 102, 241, 0.05)",
+                                                              borderColor:
+                                                                  "rgba(99, 102, 241, 0.2)",
+                                                          }
                                                 }
                                             >
-                                                Chọn một bài học để xem nội dung
-                                                chi tiết.
-                                            </p>
-                                        </div>
-                                    )}
+                                                <p
+                                                    className={
+                                                        isDarkTheme
+                                                            ? "text-gray-400 italic"
+                                                            : "text-gray-600 italic"
+                                                    }
+                                                >
+                                                    Chọn một bài học để xem nội
+                                                    dung chi tiết.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     {/* Bottom Control Bar */}
