@@ -198,7 +198,7 @@ export async function getChatCompletion(
             temperature: options?.temperature ?? 0.3,
             num_predict: options?.maxTokens ?? 1024,
             top_p: 0.9,
-            num_ctx: 2048,
+            num_ctx: 8192,
         },
     };
 
@@ -233,7 +233,10 @@ export interface ChatWithToolsResult {
 function parseToolCallsFromText(content: string): OllamaToolCall[] {
     if (!content || typeof content !== "string") return [];
 
-    const toToolCall = (parsed: { name?: string; arguments?: Record<string, unknown> }) => {
+    const toToolCall = (parsed: {
+        name?: string;
+        arguments?: Record<string, unknown>;
+    }) => {
         if (parsed?.name && typeof parsed.name === "string") {
             return {
                 type: "function" as const,
@@ -310,7 +313,8 @@ function parseToolCallsFromText(content: string): OllamaToolCall[] {
                     };
                     if (
                         parsed &&
-                        (parsed.name === "read_code" || parsed.name === "edit_code")
+                        (parsed.name === "read_code" ||
+                            parsed.name === "edit_code")
                     ) {
                         const tc = toToolCall(parsed);
                         if (tc) results.push(tc);
@@ -491,7 +495,8 @@ export async function getChatCompletionWithToolsStream(
                                 totalContent &&
                                 parseToolCallsFromText(totalContent).length > 0
                             ) {
-                                toolCalls = parseToolCallsFromText(totalContent);
+                                toolCalls =
+                                    parseToolCallsFromText(totalContent);
                             }
                             streamController.enqueue({
                                 type: "done",
@@ -525,7 +530,9 @@ export async function getChatCompletionWithToolsStream(
                     const trimmed = line.trim();
                     if (!trimmed) continue;
                     try {
-                        const data = JSON.parse(trimmed) as OllamaChatResponse & {
+                        const data = JSON.parse(
+                            trimmed,
+                        ) as OllamaChatResponse & {
                             message?: {
                                 content?: string;
                                 tool_calls?: OllamaToolCall[];
@@ -553,8 +560,8 @@ export async function getChatCompletionWithToolsStream(
                         }
 
                         if (hasToolCalls) {
-                            let toolCalls =
-                                data.message!.tool_calls as OllamaToolCall[];
+                            let toolCalls = data.message!
+                                .tool_calls as OllamaToolCall[];
                             if (toolCalls.length === 0 && totalContent) {
                                 const parsed =
                                     parseToolCallsFromText(totalContent);
@@ -619,7 +626,7 @@ export async function getChatCompletionStream(
             temperature: options?.temperature ?? 0.3,
             num_predict: options?.maxTokens ?? 1024,
             top_p: 0.9,
-            num_ctx: 2048,
+            num_ctx: 8192,
         },
     };
 

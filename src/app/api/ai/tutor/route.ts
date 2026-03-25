@@ -65,7 +65,7 @@ QUY TẮC:
     let contentBlock = "";
 
     if (ctx.lessonContent) {
-        contentBlock += `\n\n📄 NỘI DUNG BÀI HỌC (dùng làm kiến thức chính để trả lời câu hỏi):\n\`\`\`\n${ctx.lessonContent.slice(0, 3000)}\n\`\`\``;
+        contentBlock += `\n\n📄 NỘI DUNG BÀI HỌC (dùng làm kiến thức chính để trả lời câu hỏi):\n\`\`\`\n${ctx.lessonContent.slice(0, 4000)}\n\`\`\``;
     }
 
     if (ctx.videoUrl) {
@@ -102,7 +102,22 @@ QUAN TRỌNG: Khi học viên hỏi về nội dung bài học, hãy trả lời
 
 function isSmallModel(modelId?: string): boolean {
     if (!modelId) return false;
-    return /[:\-](0\.5|1|1\.3|1\.5|3)b/i.test(modelId);
+    return /[:\-](0\.5|1|1\.3|1\.5)b/i.test(modelId);
+}
+
+function isMediumModel(modelId?: string): boolean {
+    if (!modelId) return false;
+    return /[:\-](3|4)b/i.test(modelId);
+}
+
+function buildCompactSystemPrompt(ctx: LearningContext | null): string {
+    const base = `You are a coding tutor on CodeSense AIoT platform. Answer in Vietnamese. Use markdown.`;
+    if (!ctx) return base;
+    return `${base}\n\nBài học hiện tại: "${ctx.currentLessonTitle}" (${ctx.courseTitle})\nChương: ${ctx.currentSection}\nLoại: ${ctx.lessonType === "video" ? "Video" : ctx.lessonType === "reading" ? "Bài đọc" : "Quiz"}\nTiến độ: ${ctx.progress}%${
+        ctx.lessonContent
+            ? `\n\nNội dung bài:\n${ctx.lessonContent.slice(0, 1500)}`
+            : ""
+    }`;
 }
 
 export async function POST(request: NextRequest) {
@@ -119,12 +134,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const smallModel = isSmallModel(modelId);
-        const systemPrompt = smallModel
-            ? "You are a coding tutor. Answer in Vietnamese. Be concise. Use markdown."
-            : buildTutorSystemPrompt(learningContext || null);
+        const small = isSmallModel(modelId);
+        const medium = isMediumModel(modelId);
 
-        const maxTokens = smallModel ? 512 : 4096;
+        const systemPrompt = small
+            ? "You are a coding tutor. Answer in Vietnamese. Be concise. Use markdown."
+            : medium
+              ? buildCompactSystemPrompt(learningContext || null)
+              : buildTutorSystemPrompt(learningContext || null);
+
+        const maxTokens = small ? 512 : medium ? 2048 : 4096;
 
         const ollamaMessages: Array<{
             role: "user" | "assistant" | "system";
@@ -147,7 +166,7 @@ export async function POST(request: NextRequest) {
         let effectiveModelId = modelId;
         const opts = {
             maxTokens,
-            temperature: smallModel ? 0.2 : 0.3,
+            temperature: small ? 0.2 : 0.3,
             modelId: effectiveModelId,
         };
 

@@ -13,32 +13,32 @@ export interface AIModel {
 
 export const AI_MODELS: AIModel[] = [
     {
-        id: "deepseek-coder:1.3b",
-        name: "DeepSeek Coder 1.3B",
+        id: "qwen2.5:7b-instruct",
+        name: "Qwen 2.5 7B",
         provider: "Ollama",
-        providerSlug: "deepseek",
-        description: "Mô hình nhỏ, phản hồi nhanh",
+        providerSlug: "alibaba",
+        description: "Tối ưu cho hỗ trợ học tập, hiểu ngữ cảnh tốt",
     },
     {
         id: "qwen2.5-coder:7b-instruct",
         name: "Qwen 2.5 Coder 7B",
         provider: "Ollama",
         providerSlug: "alibaba",
-        description: "Hỗ trợ tool calling, phù hợp Agent mode",
+        description: "Chuyên biệt cho code, phù hợp bài lập trình",
     },
     {
-        id: "llama3.2:3b",
-        name: "Llama 3.2 3B",
+        id: "qwen3-vl:4b",
+        name: "Qwen3 VL 4B",
         provider: "Ollama",
-        providerSlug: "llama",
-        description: "Mô hình đa năng từ Meta",
+        providerSlug: "alibaba",
+        description: "Mô hình nhỏ gọn, phản hồi nhanh",
     },
     {
-        id: "gemma3:4b",
-        name: "Gemma 3 4B",
+        id: "deepseek-coder:1.3b",
+        name: "DeepSeek Coder 1.3B",
         provider: "Ollama",
-        providerSlug: "google",
-        description: "Mô hình của Google, hiệu suất tốt",
+        providerSlug: "deepseek",
+        description: "Siêu nhẹ, autocomplete nhanh",
     },
 ];
 

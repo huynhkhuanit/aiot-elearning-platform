@@ -1,7 +1,13 @@
 "use client";
 
 import { useRef, useEffect, useCallback, useState } from "react";
-import { AlertCircle, ArrowDown, BookOpen, Sparkles } from "lucide-react";
+import {
+    AlertCircle,
+    ArrowDown,
+    BookOpen,
+    ChevronDown,
+    Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAITutor } from "@/contexts/AITutorContext";
@@ -42,8 +48,46 @@ export default function AITutorPanel({
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [showScrollBottom, setShowScrollBottom] = useState(false);
-    const [selectedModel] = useState<AIModel>(() => AI_MODELS[0]);
+    const [showModelMenu, setShowModelMenu] = useState(false);
+    const modelMenuRef = useRef<HTMLDivElement>(null);
+    const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
+        if (typeof window === "undefined") return AI_MODELS[0];
+        try {
+            const saved = localStorage.getItem("ai_tutor_model");
+            if (saved) {
+                const found = AI_MODELS.find((m) => m.id === saved);
+                if (found) return found;
+            }
+        } catch {
+            /* ignore */
+        }
+        return AI_MODELS[0];
+    });
     const [inputValue, setInputValue] = useState("");
+
+    const handleModelSelect = useCallback((model: AIModel) => {
+        setSelectedModel(model);
+        setShowModelMenu(false);
+        try {
+            localStorage.setItem("ai_tutor_model", model.id);
+        } catch {
+            /* ignore */
+        }
+    }, []);
+
+    // Close model menu on outside click
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (
+                modelMenuRef.current &&
+                !modelMenuRef.current.contains(e.target as Node)
+            ) {
+                setShowModelMenu(false);
+            }
+        };
+        if (showModelMenu) document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, [showModelMenu]);
 
     const {
         messages,
@@ -144,6 +188,75 @@ export default function AITutorPanel({
                 >
                     Xóa lịch sử
                 </Button>
+            </div>
+
+            {/* Model Selector */}
+            <div
+                className={cn("relative border-b px-4 py-1.5", border)}
+                ref={modelMenuRef}
+            >
+                <button
+                    type="button"
+                    onClick={() => setShowModelMenu((v) => !v)}
+                    className={cn(
+                        "flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium transition-colors w-full",
+                        isDark
+                            ? "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300"
+                            : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700",
+                    )}
+                >
+                    <span className="truncate">🤖 {selectedModel.name}</span>
+                    <ChevronDown
+                        className={cn(
+                            "size-3 shrink-0 transition-transform",
+                            showModelMenu && "rotate-180",
+                        )}
+                    />
+                </button>
+                {showModelMenu && (
+                    <div
+                        className={cn(
+                            "absolute left-2 right-2 top-full z-20 mt-1 rounded-xl border py-1 shadow-xl",
+                            isDark
+                                ? "bg-zinc-900 border-zinc-700"
+                                : "bg-white border-zinc-200",
+                        )}
+                    >
+                        {AI_MODELS.map((model) => (
+                            <button
+                                key={model.id}
+                                type="button"
+                                onClick={() => handleModelSelect(model)}
+                                className={cn(
+                                    "flex w-full flex-col px-3 py-1.5 text-left transition-colors",
+                                    selectedModel.id === model.id
+                                        ? isDark
+                                            ? "bg-emerald-500/10 text-emerald-400"
+                                            : "bg-emerald-50 text-emerald-700"
+                                        : isDark
+                                          ? "text-zinc-300 hover:bg-zinc-800"
+                                          : "text-zinc-700 hover:bg-zinc-50",
+                                )}
+                            >
+                                <span className="text-[11px] font-medium">
+                                    {model.name}
+                                </span>
+                                {model.description && (
+                                    <span
+                                        className={cn(
+                                            "text-[10px]",
+                                            isDark
+                                                ? "text-zinc-500"
+                                                : "text-zinc-400",
+                                        )}
+                                    >
+                                        {model.description}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Progress bar */}
