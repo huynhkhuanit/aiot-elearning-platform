@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Star } from "lucide-react";
 
 interface XPRewardToastProps {
     xp: number;
@@ -22,7 +21,7 @@ export default function XPRewardToast({
             const timer = setTimeout(() => {
                 setVisible(false);
                 setTimeout(onDone, 300);
-            }, 2000);
+            }, 1800);
             return () => clearTimeout(timer);
         }
     }, [show, xp, onDone]);
@@ -33,12 +32,17 @@ export default function XPRewardToast({
         <div
             className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 ${
                 visible
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 -translate-y-4"
+                    ? "opacity-100 translate-y-0 scale-100"
+                    : "opacity-0 -translate-y-2 scale-95"
             }`}
         >
-            <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg shadow-2xl shadow-amber-500/30">
-                <Star className="w-5 h-5 fill-white" />
+            <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white font-semibold text-sm shadow-lg backdrop-blur-sm"
+                style={{
+                    background: "linear-gradient(135deg, #6366f1, #9333ea)",
+                }}
+            >
+                <span>⭐</span>
                 <span>+{xp} XP</span>
             </div>
         </div>

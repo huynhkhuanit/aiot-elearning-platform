@@ -1018,6 +1018,7 @@ export default function LearnCoursePage() {
                                                             show: true,
                                                             xp: xpEarned,
                                                         });
+                                                        triggerFireworks();
                                                     }}
                                                     onWrong={() => {}}
                                                 />
@@ -1057,6 +1058,7 @@ export default function LearnCoursePage() {
                                                             show: true,
                                                             xp: xpEarned,
                                                         });
+                                                        triggerFireworks();
                                                     }}
                                                     onWrong={() => {}}
                                                 />
