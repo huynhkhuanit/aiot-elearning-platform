@@ -1190,35 +1190,39 @@ export default function LearnCoursePage() {
                     >
                         <div className="flex-1"></div>
 
-                        <div className="flex items-center gap-6">
-                            {/* Button "Bài trước" */}
-                            <div className="nav-button-wrapper-prev">
-                                <button
-                                    onClick={goToPreviousLesson}
-                                    disabled={
-                                        !course ||
-                                        !currentLesson ||
-                                        course.sections.flatMap(
-                                            (s: Section) => s.lessons,
-                                        )[0]?.id === currentLesson.id
-                                    }
-                                    className="px-6 py-2 rounded-md transition-all duration-300 font-bold text-sm flex items-center space-x-2 disabled:opacity-40 disabled:cursor-not-allowed text-white uppercase relative z-10"
-                                >
-                                    <ChevronRight className="w-4 h-4 rotate-180" />
-                                    <span>BÀI TRƯỚC</span>
-                                </button>
-                            </div>
+                        <div className="flex items-center gap-4">
+                            {/* Button "Bài trước" — filled by default, outline on hover */}
+                            <button
+                                onClick={goToPreviousLesson}
+                                disabled={
+                                    !course ||
+                                    !currentLesson ||
+                                    course.sections.flatMap(
+                                        (s: Section) => s.lessons,
+                                    )[0]?.id === currentLesson.id
+                                }
+                                className={`group px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 uppercase transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed border-2 ${
+                                    isDarkTheme
+                                        ? "border-indigo-500 bg-indigo-500 text-white hover:bg-transparent hover:text-indigo-400"
+                                        : "border-indigo-500 bg-indigo-500 text-white hover:bg-transparent hover:text-indigo-600"
+                                }`}
+                            >
+                                <ChevronRight className="w-4 h-4 rotate-180 transition-transform duration-200 group-hover:-translate-x-0.5" />
+                                <span>Bài trước</span>
+                            </button>
 
-                            {/* Button "Bài tiếp theo" */}
-                            <div className="nav-button-wrapper-next">
-                                <button
-                                    onClick={goToNextLesson}
-                                    className="px-6 py-2 rounded-md transition-all duration-300 font-bold text-sm flex items-center space-x-2 text-white uppercase relative z-10"
-                                >
-                                    <span>BÀI TIẾP THEO</span>
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
+                            {/* Button "Bài tiếp theo" — outline by default, filled on hover */}
+                            <button
+                                onClick={goToNextLesson}
+                                className={`group px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 uppercase transition-all duration-300 border-2 ${
+                                    isDarkTheme
+                                        ? "border-indigo-500 bg-transparent text-indigo-400 hover:bg-indigo-500 hover:text-white"
+                                        : "border-indigo-500 bg-transparent text-indigo-600 hover:bg-indigo-500 hover:text-white"
+                                }`}
+                            >
+                                <span>Bài tiếp theo</span>
+                                <ChevronRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                            </button>
                         </div>
 
                         <div className="flex-1 flex items-center justify-end gap-3">
