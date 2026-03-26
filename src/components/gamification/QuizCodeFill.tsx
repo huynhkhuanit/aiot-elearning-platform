@@ -160,7 +160,7 @@ export default function QuizCodeFill({
                     style={{ background: "#282a36" }}
                 >
                     <pre className="!bg-transparent !p-0 !m-0">
-                        <code>
+                        <code className="prism-code">
                             {segments.map((segment, index) => {
                                 const blankMatch =
                                     segment.match(/^{{([A-Z_0-9]+)}}$/);
