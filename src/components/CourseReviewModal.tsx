@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Star, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CourseReviews from "@/components/CourseReviews";
@@ -81,19 +82,29 @@ export default function CourseReviewModal({
 // Floating Review Button (like Q&A Button)
 // ═══════════════════════════════════════════
 export function CourseReviewButton({ onClick }: { onClick: () => void }) {
+    const [isHovered, setIsHovered] = useState(false);
+
     return (
-        <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+        <button
             onClick={onClick}
-            className="fixed bottom-6 left-20 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-white shadow-lg shadow-amber-500/20 transition-all"
-            style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}
-            title="Đánh giá khóa học"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="fixed left-20 bottom-6 z-50 bg-amber-500 hover:bg-amber-400 text-white rounded-full p-3 shadow-lg shadow-amber-500/25 transition-all duration-300 transform hover:scale-105 group"
+            aria-label="Đánh giá khóa học"
         >
-            <Star className="w-4 h-4 fill-white" />
-            <span>Đánh giá</span>
-        </motion.button>
+            <div className="relative">
+                <Star className="w-5 h-5" />
+            </div>
+
+            {/* Tooltip */}
+            <div
+                className={`absolute left-full ml-3 top-1/2 -translate-y-1/2 whitespace-nowrap bg-zinc-900 text-zinc-100 text-sm px-3 py-2 rounded-lg shadow-xl transition-all duration-200 border border-zinc-800 ${
+                    isHovered ? "opacity-100 visible" : "opacity-0 invisible"
+                }`}
+            >
+                Đánh giá khóa học
+                <div className="absolute right-full top-1/2 -translate-y-1/2 border-8 border-transparent border-r-zinc-900"></div>
+            </div>
+        </button>
     );
 }
