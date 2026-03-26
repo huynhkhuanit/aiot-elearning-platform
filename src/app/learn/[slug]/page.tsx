@@ -223,7 +223,7 @@ export default function LearnCoursePage() {
         }
     }, [markdownContent, updateLessonContent]);
 
-    // Fetch exercises when current lesson is a quiz
+    // Fetch exercises when current lesson changes
     useEffect(() => {
         if (!currentLesson) return;
         setExercises([]);
@@ -245,17 +245,24 @@ export default function LearnCoursePage() {
             }
         };
         fetchExercises();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentLesson?.id]);
 
-        // Set chapterSummaryId for chapter_summary type lessons
-        if (currentLesson.type === "chapter_summary" && course) {
-            const section = course.sections.find((s: Section) =>
-                s.lessons.some((l: Lesson) => l.id === currentLesson.id),
-            );
-            if (section) {
-                setChapterSummaryId(section.id);
-            }
+    // Set chapterSummaryId for chapter_summary type lessons
+    useEffect(() => {
+        if (
+            !currentLesson ||
+            currentLesson.type !== "chapter_summary" ||
+            !course
+        )
+            return;
+        const section = course.sections.find((s: Section) =>
+            s.lessons.some((l: Lesson) => l.id === currentLesson.id),
+        );
+        if (section) {
+            setChapterSummaryId(section.id);
         }
-    }, [currentLesson, course]);
+    }, [currentLesson?.id, course]);
 
     // Handle hash changes for question navigation
     useEffect(() => {
@@ -505,6 +512,35 @@ export default function LearnCoursePage() {
             console.error("Error marking lesson as completed:", error);
             toast.error("Đã có lỗi xảy ra");
         }
+    };
+
+    const markCurrentLessonComplete = () => {
+        if (!currentLesson) return;
+        setCourse((prev: CourseData | null) => {
+            if (!prev) return prev;
+            const updatedSections = prev.sections.map((section: Section) => ({
+                ...section,
+                lessons: section.lessons.map((lesson: Lesson) =>
+                    lesson.id === currentLesson.id
+                        ? { ...lesson, isCompleted: true }
+                        : lesson,
+                ),
+            }));
+            const completedLessons = updatedSections.reduce(
+                (acc: number, section: Section) =>
+                    acc +
+                    section.lessons.filter((l: Lesson) => l.isCompleted).length,
+                0,
+            );
+            return {
+                ...prev,
+                sections: updatedSections,
+                completedLessons,
+                progress: Math.round(
+                    (completedLessons / prev.totalLessons) * 100,
+                ),
+            };
+        });
     };
 
     const triggerFireworks = () => {
@@ -1019,6 +1055,7 @@ export default function LearnCoursePage() {
                                                             xp: xpEarned,
                                                         });
                                                         triggerFireworks();
+                                                        markCurrentLessonComplete();
                                                     }}
                                                     onWrong={() => {}}
                                                 />
@@ -1059,6 +1096,7 @@ export default function LearnCoursePage() {
                                                             xp: xpEarned,
                                                         });
                                                         triggerFireworks();
+                                                        markCurrentLessonComplete();
                                                     }}
                                                     onWrong={() => {}}
                                                 />

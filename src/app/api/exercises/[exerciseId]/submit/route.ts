@@ -66,7 +66,7 @@ export async function POST(
                 .from("exercise_code_blocks")
                 .select("blanks")
                 .eq("exercise_id", exerciseId)
-                .single();
+                .maybeSingle();
 
             if (codeBlocks) {
                 const blanks = codeBlocks.blanks as Array<{
@@ -96,7 +96,7 @@ export async function POST(
             .select("id, attempts, is_completed")
             .eq("user_id", userId)
             .eq("exercise_id", exerciseId)
-            .single();
+            .maybeSingle();
 
         const attempts = (existingProgress?.attempts || 0) + 1;
         const wasAlreadyCompleted = existingProgress?.is_completed || false;
@@ -148,7 +148,7 @@ export async function POST(
                 .from("user_gamification")
                 .select("*")
                 .eq("user_id", userId)
-                .single();
+                .maybeSingle();
 
             if (gamification) {
                 totalXp = gamification.total_xp + xpEarned;
@@ -177,10 +177,136 @@ export async function POST(
                 .from("user_gamification")
                 .select("total_xp, current_streak, level")
                 .eq("user_id", userId)
-                .single();
+                .maybeSingle();
             totalXp = gamification?.total_xp || 0;
             currentStreak = gamification?.current_streak || 0;
             level = gamification?.level || 1;
+        }
+
+        // Mark parent lesson as completed when exercise answered correctly for the first time
+        if (isCorrect && !wasAlreadyCompleted && exercise.lesson_id) {
+            try {
+                // Check if lesson_progress already exists
+                const { data: existingLessonProgress } = await supabaseAdmin!
+                    .from("lesson_progress")
+                    .select("id, is_completed")
+                    .eq("user_id", userId)
+                    .eq("lesson_id", exercise.lesson_id)
+                    .maybeSingle();
+
+                if (existingLessonProgress) {
+                    if (!existingLessonProgress.is_completed) {
+                        const { error: updateErr } = await supabaseAdmin!
+                            .from("lesson_progress")
+                            .update({
+                                is_completed: true,
+                                completed_at: new Date().toISOString(),
+                            })
+                            .eq("id", existingLessonProgress.id);
+                        if (updateErr)
+                            console.error(
+                                "lesson_progress update error:",
+                                updateErr,
+                            );
+                    }
+                } else {
+                    // Need enrollment_id — look up via lesson → chapter → course → enrollment
+                    const { data: lessonData } = await supabaseAdmin!
+                        .from("lessons")
+                        .select("chapter_id")
+                        .eq("id", exercise.lesson_id)
+                        .maybeSingle();
+
+                    if (lessonData) {
+                        const { data: chapterData } = await supabaseAdmin!
+                            .from("chapters")
+                            .select("course_id")
+                            .eq("id", lessonData.chapter_id)
+                            .maybeSingle();
+
+                        if (chapterData) {
+                            const { data: enrollment } = await supabaseAdmin!
+                                .from("enrollments")
+                                .select("id")
+                                .eq("user_id", userId)
+                                .eq("course_id", chapterData.course_id)
+                                .maybeSingle();
+
+                            if (enrollment) {
+                                const { error: insertErr } =
+                                    await supabaseAdmin!
+                                        .from("lesson_progress")
+                                        .insert({
+                                            user_id: userId,
+                                            lesson_id: exercise.lesson_id,
+                                            enrollment_id: enrollment.id,
+                                            is_completed: true,
+                                            completed_at:
+                                                new Date().toISOString(),
+                                        });
+                                if (insertErr)
+                                    console.error(
+                                        "lesson_progress insert error:",
+                                        insertErr,
+                                    );
+
+                                // Update enrollment progress percentage
+                                const { data: courseLessons } =
+                                    await supabaseAdmin!
+                                        .from("lessons")
+                                        .select("id, chapters!inner(course_id)")
+                                        .eq(
+                                            "chapters.course_id",
+                                            chapterData.course_id,
+                                        );
+
+                                const { data: completedLessons } =
+                                    await supabaseAdmin!
+                                        .from("lesson_progress")
+                                        .select(
+                                            "lesson_id, lessons!inner(chapters!inner(course_id))",
+                                        )
+                                        .eq(
+                                            "lessons.chapters.course_id",
+                                            chapterData.course_id,
+                                        )
+                                        .eq("user_id", userId)
+                                        .eq("is_completed", true);
+
+                                const total = courseLessons?.length || 0;
+                                const done = completedLessons?.length || 0;
+                                const progress =
+                                    total > 0
+                                        ? parseFloat(
+                                              ((done / total) * 100).toFixed(2),
+                                          )
+                                        : 0;
+
+                                await supabaseAdmin!
+                                    .from("enrollments")
+                                    .update({
+                                        progress_percentage: progress,
+                                        last_lesson_id: exercise.lesson_id,
+                                    })
+                                    .eq("user_id", userId)
+                                    .eq("course_id", chapterData.course_id);
+                            } else {
+                                console.warn(
+                                    "No enrollment found for user",
+                                    userId,
+                                    "course",
+                                    chapterData.course_id,
+                                );
+                            }
+                        }
+                    }
+                }
+            } catch (lessonCompleteError) {
+                console.error(
+                    "Failed to mark lesson as completed:",
+                    lessonCompleteError,
+                );
+            }
         }
 
         return NextResponse.json({
@@ -193,6 +319,7 @@ export async function POST(
                 currentStreak,
                 level,
                 attempts,
+                lessonCompleted: isCorrect && !wasAlreadyCompleted,
             },
         });
     } catch (error) {
