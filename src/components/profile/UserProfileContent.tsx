@@ -22,6 +22,7 @@ import VerifiedBadge from "@/components/profile/VerifiedBadge";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import { formatUsernameHandle } from "@/lib/profile-url";
 import type { EnrolledCourse, UnifiedProfileResponse } from "@/types/profile";
+import { Progress } from "@/components/ui/progress";
 
 /* ─────────────────── Helpers ─────────────────── */
 
@@ -196,17 +197,16 @@ function EnrolledCourseCard({ course }: { course: EnrolledCourse }) {
 
                     {/* Progress bar */}
                     <div className="mt-auto flex items-center gap-2.5">
-                        <div className="h-1.5 flex-1 rounded-full bg-gray-200">
-                            <div
-                                className="h-full rounded-full transition-all duration-300"
-                                style={{
-                                    width: `${progress}%`,
-                                    backgroundColor: course.is_completed
-                                        ? "#22c55e"
-                                        : "#3b82f6",
-                                }}
-                            />
-                        </div>
+                        <Progress
+                            value={progress}
+                            className="h-1.5 flex-1 bg-gray-200 [&>[data-slot=progress-indicator]]:rounded-full"
+                            style={{
+                                // @ts-expect-error CSS custom property for indicator color
+                                "--progress-color": course.is_completed
+                                    ? "#22c55e"
+                                    : "#3b82f6",
+                            }}
+                        />
                         <span className="shrink-0 text-xs font-medium text-gray-500">
                             {progress}%
                         </span>
