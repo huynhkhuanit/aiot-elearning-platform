@@ -6,6 +6,7 @@ import Image from "next/image";
 import {
     BookOpen,
     Calendar,
+    CheckCircle2,
     FileText,
     Globe,
     GraduationCap,
@@ -20,7 +21,7 @@ import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import VerifiedBadge from "@/components/profile/VerifiedBadge";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import { formatUsernameHandle } from "@/lib/profile-url";
-import type { UnifiedProfileResponse } from "@/types/profile";
+import type { EnrolledCourse, UnifiedProfileResponse } from "@/types/profile";
 
 /* ─────────────────── Helpers ─────────────────── */
 
@@ -154,6 +155,68 @@ function CourseCard({
     );
 }
 
+/* ─────────────── Enrolled Course Card (grid style) ─────────────── */
+
+function EnrolledCourseCard({ course }: { course: EnrolledCourse }) {
+    const progress = Math.min(Math.round(course.progress_percentage), 100);
+
+    return (
+        <Link href={`/learn/${course.slug}`} className="group block pb-1">
+            <div
+                className="rounded-2xl overflow-hidden h-full flex flex-col transform transition-[transform,box-shadow] duration-200 ease-out group-hover:-translate-y-1 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+                style={{ backgroundColor: "#f7f7f7" }}
+            >
+                <div className="relative aspect-video w-full overflow-hidden flex-shrink-0">
+                    {course.thumbnail_url ? (
+                        <Image
+                            src={course.thumbnail_url}
+                            alt={course.title}
+                            fill
+                            className="object-cover"
+                        />
+                    ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+                            <BookOpen className="h-10 w-10 text-gray-400" />
+                        </div>
+                    )}
+                    {course.is_completed && (
+                        <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-green-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Hoàn thành
+                        </div>
+                    )}
+                </div>
+                <div
+                    className="flex-1 flex flex-col"
+                    style={{ padding: "16px 20px" }}
+                >
+                    <h3 className="course-card-title line-clamp-2 text-gray-900 mb-3">
+                        {course.title}
+                    </h3>
+
+                    {/* Progress bar */}
+                    <div className="mt-auto flex items-center gap-2.5">
+                        <div className="h-1.5 flex-1 rounded-full bg-gray-200">
+                            <div
+                                className="h-full rounded-full transition-all duration-300"
+                                style={{
+                                    width: `${progress}%`,
+                                    backgroundColor: course.is_completed
+                                        ? "#22c55e"
+                                        : "#3b82f6",
+                                }}
+                            />
+                        </div>
+                        <span className="shrink-0 text-xs font-medium text-gray-500">
+                            {progress}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </Link>
+    );
+}
+
 /* ─────────────── Main Component ─────────────── */
 
 export default function UserProfileContent({ username }: { username: string }) {
@@ -210,7 +273,8 @@ export default function UserProfileContent({ username }: { username: string }) {
         );
     }
 
-    const { user, publicProfile, badges, courses, stats } = profile;
+    const { user, publicProfile, badges, courses, enrolledCourses, stats } =
+        profile;
 
     const isInstructor =
         user.roles.includes("instructor") || user.roles.includes("partner");
@@ -428,16 +492,25 @@ export default function UserProfileContent({ username }: { username: string }) {
 
                     {/* Tab Content */}
                     {activeTab === "enrolled" && (
-                        <EmptyState
-                            icon={
-                                <BookOpen className="h-10 w-10 text-gray-300" />
-                            }
-                            message={
-                                stats.totalCoursesEnrolled > 0
-                                    ? "Thông tin khóa học đã đăng ký hiện được bảo mật."
-                                    : "Chưa đăng ký khóa học nào."
-                            }
-                        />
+                        <>
+                            {enrolledCourses.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                                    {enrolledCourses.map((c) => (
+                                        <EnrolledCourseCard
+                                            key={c.id}
+                                            course={c}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <EmptyState
+                                    icon={
+                                        <BookOpen className="h-10 w-10 text-gray-300" />
+                                    }
+                                    message="Chưa đăng ký khóa học nào."
+                                />
+                            )}
+                        </>
                     )}
 
                     {activeTab === "articles" && (

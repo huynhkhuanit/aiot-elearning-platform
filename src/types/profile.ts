@@ -92,6 +92,7 @@ export interface UnifiedProfileResponse {
     professionalProfile: ProfessionalProfileRecord | null;
     badges: ProfileBadge[];
     courses: ProfileCourse[];
+    enrolledCourses: EnrolledCourse[];
     stats: ProfileStats;
 }
 

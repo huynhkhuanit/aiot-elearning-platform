@@ -10,6 +10,7 @@ import {
 import type { PublicUser } from "@/types/auth";
 import type {
     AppRole,
+    EnrolledCourse,
     ProfessionalProfileEditorResponse,
     ProfessionalProfileRecord,
     ProfessionalProfileStatus,
@@ -397,6 +398,37 @@ async function fetchPublicCoursesByInstructor(
     return ((data ?? []) as DbCourseRow[]).map(mapCourseRow);
 }
 
+async function fetchEnrolledCourses(userId: string): Promise<EnrolledCourse[]> {
+    const client = requireSupabase();
+    const { data, error } = await client
+        .from("enrollments")
+        .select(
+            "id, course_id, progress_percentage, enrolled_at, completed_at, courses(id, title, slug, thumbnail_url)",
+        )
+        .eq("user_id", userId)
+        .order("enrolled_at", { ascending: false });
+
+    if (error) {
+        throw error;
+    }
+
+    return ((data ?? []) as any[]).map((row) => {
+        const course = row.courses;
+        return {
+            id: course?.id ?? row.course_id,
+            title: course?.title ?? "Untitled",
+            slug: course?.slug ?? "",
+            thumbnail_url: course?.thumbnail_url ?? null,
+            progress_percentage: row.progress_percentage ?? 0,
+            enrolled_at: row.enrolled_at,
+            is_completed:
+                row.completed_at !== null ||
+                (row.progress_percentage ?? 0) >= 100,
+            completed_at: row.completed_at ?? null,
+        };
+    });
+}
+
 async function fetchLegacyProfileStats(userId: string) {
     const client = requireSupabase();
     const [
@@ -462,6 +494,7 @@ async function buildUnifiedProfile(
         verifications,
         professionalProfile,
         courses,
+        enrolledCourses,
         legacyStats,
     ] = await Promise.all([
         fetchPublicProfileByUserId(user.id),
@@ -469,6 +502,7 @@ async function buildUnifiedProfile(
         fetchVerifications(user.id),
         fetchProfessionalProfileByUserId(user.id),
         fetchPublicCoursesByInstructor(user.id),
+        fetchEnrolledCourses(user.id),
         fetchLegacyProfileStats(user.id),
     ]);
 
@@ -494,6 +528,7 @@ async function buildUnifiedProfile(
             : null,
         badges: buildVisibleBadges(roles, verifications),
         courses,
+        enrolledCourses,
         stats: legacyStats,
     };
 }
@@ -543,6 +578,7 @@ export async function getProfileEditorByUserId(
         verifications,
         professionalProfile,
         courses,
+        enrolledCourses,
         legacyStats,
     ] = await Promise.all([
         fetchPublicProfileByUserId(targetUserId),
@@ -550,6 +586,7 @@ export async function getProfileEditorByUserId(
         fetchVerifications(targetUserId),
         fetchProfessionalProfileByUserId(targetUserId),
         fetchPublicCoursesByInstructor(targetUserId),
+        fetchEnrolledCourses(targetUserId),
         fetchLegacyProfileStats(targetUserId),
     ]);
 
@@ -576,6 +613,7 @@ export async function getProfileEditorByUserId(
         professionalProfile,
         badges: buildVisibleBadges(targetRoles, verifications),
         courses,
+        enrolledCourses,
         stats: legacyStats,
         verifications,
         capabilities: {
