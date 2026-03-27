@@ -317,13 +317,13 @@ export default function UserProfileContent({ username }: { username: string }) {
                 {/* ═══════════════ LEFT SIDEBAR ═══════════════ */}
                 <aside className="space-y-5">
                     {/* Avatar */}
-                    <div className="flex justify-center lg:justify-start">
+                    <div className="flex justify-center">
                         <AvatarWithProBadge
                             avatarUrl={publicProfile.avatarUrl}
                             fullName={publicProfile.displayName}
-                            isPro={isInstructor}
+                            isPro={user.isPro || isInstructor}
                             isRegistered
-                            size="2xl"
+                            size="3xl"
                         />
                     </div>
 

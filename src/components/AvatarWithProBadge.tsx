@@ -6,7 +6,7 @@ interface AvatarWithProBadgeProps {
     isPro: boolean;
     /** Whether this user has a registered account on the platform */
     isRegistered?: boolean;
-    size?: "3xs" | "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
+    size?: "3xs" | "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
     className?: string;
 }
 
@@ -19,6 +19,7 @@ const sizeMap = {
     lg: { outer: 64, ring: 3, gap: 2, text: "text-lg" },
     xl: { outer: 80, ring: 4, gap: 2, text: "text-xl" },
     "2xl": { outer: 128, ring: 5, gap: 3, text: "text-3xl" },
+    "3xl": { outer: 216, ring: 8, gap: 4, text: "text-5xl" },
 };
 
 // Google 4-color ring for PRO users
@@ -30,19 +31,21 @@ function AvatarContent({
     fullName,
     initials,
     textClass,
+    outerSize,
 }: {
     avatarUrl?: string | null;
     fullName: string;
     initials: string;
     textClass: string;
+    outerSize: number;
 }) {
     if (avatarUrl) {
         return (
             <Image
                 src={avatarUrl}
                 alt={fullName}
-                width={128}
-                height={128}
+                width={outerSize >= 128 ? outerSize * 2 : 128}
+                height={outerSize >= 128 ? outerSize * 2 : 128}
                 className="w-full h-full object-cover"
             />
         );
@@ -86,6 +89,7 @@ export default function AvatarWithProBadge({
                     fullName={fullName || "User"}
                     initials={initials}
                     textClass={s.text}
+                    outerSize={s.outer}
                 />
             </div>
         );
@@ -116,6 +120,7 @@ export default function AvatarWithProBadge({
                         fullName={fullName || "User"}
                         initials={initials}
                         textClass={s.text}
+                        outerSize={s.outer}
                     />
                 </div>
             </div>
@@ -152,6 +157,7 @@ export default function AvatarWithProBadge({
                     fullName={fullName || "User"}
                     initials={initials}
                     textClass={s.text}
+                    outerSize={s.outer}
                 />
             </div>
         </div>

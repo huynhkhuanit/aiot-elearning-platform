@@ -517,6 +517,7 @@ async function buildUnifiedProfile(
             roles,
             primaryRole,
             role: primaryRole,
+            isPro: user.membership_type === "PRO",
         },
         publicProfile,
         professionalProfile: canViewProfessionalProfile(
@@ -608,6 +609,7 @@ export async function getProfileEditorByUserId(
             roles: targetRoles,
             primaryRole,
             role: primaryRole,
+            isPro: targetUser.membership_type === "PRO",
         },
         publicProfile,
         professionalProfile,

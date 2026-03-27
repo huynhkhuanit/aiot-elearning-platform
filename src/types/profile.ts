@@ -77,6 +77,7 @@ export interface UnifiedProfileUser {
     roles: AppRole[];
     primaryRole: AppRole;
     role: AppRole;
+    isPro: boolean;
 }
 
 export interface ProfileStats {
