@@ -35,7 +35,6 @@ import { useToast } from "@/contexts/ToastContext";
 import { useLearnCourse } from "@/contexts/LearnCourseContext";
 import { usePageTitle, useLessonContent } from "@/lib/hooks";
 import VideoPlayer from "@/components/VideoPlayer";
-import LessonQAButton from "@/components/LessonQAButton";
 import LessonQAModal from "@/components/LessonQAModal";
 import AskQuestionModal from "@/components/AskQuestionModal";
 import QuestionDetailModal from "@/components/QuestionDetailModal";
@@ -43,9 +42,8 @@ import CodePlayground from "@/components/CodePlayground";
 import LearnCourseSidebar from "@/components/LearnCourseSidebar";
 import PageLoading from "@/components/PageLoading";
 import CertificateModal from "@/components/CertificateModal";
-import CourseReviewModal, {
-    CourseReviewButton,
-} from "@/components/CourseReviewModal";
+import CourseReviewModal from "@/components/CourseReviewModal";
+import FloatingActionGroup from "@/components/FloatingActionGroup";
 import { useAITutor } from "@/contexts/AITutorContext";
 import { AITutorFAB } from "@/components/AIAssistant";
 import {
@@ -1297,12 +1295,13 @@ export default function LearnCoursePage() {
                 )}
             </div>
 
-            {/* Review Button - Fixed on bottom left (next to Q&A) */}
-            {course && (
-                <CourseReviewButton
-                    onClick={() => setIsReviewModalOpen(true)}
-                />
-            )}
+            {/* Floating Action Group — Q&A + Review */}
+            <FloatingActionGroup
+                onQAClick={() => setIsQAModalOpen(true)}
+                onReviewClick={() => setIsReviewModalOpen(true)}
+                showQA={!!currentLesson}
+                showReview={!!course}
+            />
 
             {/* Review Modal */}
             {course && (
@@ -1316,11 +1315,6 @@ export default function LearnCoursePage() {
 
             {/* AI Tutor FAB - Fixed on bottom right */}
             <AITutorFAB />
-
-            {/* Q&A Button - Fixed on bottom left */}
-            {currentLesson && (
-                <LessonQAButton onClick={() => setIsQAModalOpen(true)} />
-            )}
 
             {/* Q&A Modal */}
             {currentLesson && (
