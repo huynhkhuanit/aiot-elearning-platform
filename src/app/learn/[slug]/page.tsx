@@ -53,6 +53,8 @@ import {
     XPRewardToast,
     StreakIndicator,
 } from "@/components/gamification";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import "@/app/markdown.css";
 
 interface Exercise {
@@ -1188,9 +1190,10 @@ export default function LearnCoursePage() {
                     >
                         <div className="flex-1"></div>
 
-                        <div className="flex items-center gap-4">
-                            {/* Button "Bài trước" — filled by default, outline on hover */}
-                            <button
+                        <ButtonGroup className="rounded-lg bg-primary shadow-md shadow-primary/20 border-0">
+                            <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={goToPreviousLesson}
                                 disabled={
                                     !course ||
@@ -1199,29 +1202,24 @@ export default function LearnCoursePage() {
                                         (s: Section) => s.lessons,
                                     )[0]?.id === currentLesson.id
                                 }
-                                className={`group px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 uppercase transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed border-2 ${
-                                    isDarkTheme
-                                        ? "border-indigo-500 bg-indigo-500 text-white hover:bg-transparent hover:text-indigo-400"
-                                        : "border-indigo-500 bg-indigo-500 text-white hover:bg-transparent hover:text-indigo-600"
-                                }`}
+                                className="group text-primary-foreground hover:bg-white/15 hover:text-primary-foreground border-0 uppercase font-semibold text-xs gap-1.5"
                             >
-                                <ChevronRight className="w-4 h-4 rotate-180 transition-transform duration-200 group-hover:-translate-x-0.5" />
+                                <ChevronRight className="size-3.5 rotate-180 transition-transform duration-200 group-hover:-translate-x-0.5" />
                                 <span>Bài trước</span>
-                            </button>
+                            </Button>
 
-                            {/* Button "Bài tiếp theo" — outline by default, filled on hover */}
-                            <button
+                            <div className="w-px self-stretch bg-primary-foreground/20" />
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={goToNextLesson}
-                                className={`group px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 uppercase transition-all duration-300 border-2 ${
-                                    isDarkTheme
-                                        ? "border-indigo-500 bg-transparent text-indigo-400 hover:bg-indigo-500 hover:text-white"
-                                        : "border-indigo-500 bg-transparent text-indigo-600 hover:bg-indigo-500 hover:text-white"
-                                }`}
+                                className="group text-primary-foreground hover:bg-white/15 hover:text-primary-foreground border-0 uppercase font-semibold text-xs gap-1.5"
                             >
                                 <span>Bài tiếp theo</span>
-                                <ChevronRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-                            </button>
-                        </div>
+                                <ChevronRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+                            </Button>
+                        </ButtonGroup>
 
                         <div className="flex-1 flex items-center justify-end gap-3">
                             <div className="text-right">
