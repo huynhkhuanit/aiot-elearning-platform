@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Sparkles, Maximize2, Minimize2, X, Minus } from "lucide-react";
+import { BotMessageSquare, Maximize2, Minimize2, X, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Tooltip,
@@ -18,11 +18,6 @@ export default function AITutorFAB() {
     const [isOpen, setIsOpen] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [showPulse, setShowPulse] = useState(true);
-
-    useEffect(() => {
-        if (isOpen && showPulse) setShowPulse(false);
-    }, [isOpen, showPulse]);
 
     useEffect(() => {
         const handleEsc = (event: KeyboardEvent) => {
@@ -59,26 +54,20 @@ export default function AITutorFAB() {
             {/* ═══ FAB Button ═══ */}
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <button
+                    <Button
                         type="button"
+                        variant={isOpen ? "ghost" : "default"}
+                        size="icon-lg"
                         onClick={togglePanel}
-                        className={cn(
-                            "group fixed bottom-6 right-6 z-[9998] flex size-12 items-center justify-center rounded-full shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95",
-                            isOpen
-                                ? "bg-zinc-900 border border-zinc-700/80 text-zinc-300 hover:border-zinc-600"
-                                : "bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-600/25",
-                            showPulse &&
-                                !isOpen &&
-                                "animate-pulse shadow-emerald-500/40",
-                        )}
+                        className="fixed bottom-20 right-6 z-[9998] rounded-full shadow-md border-0"
                         aria-label="AI Tutor"
                     >
                         {isOpen ? (
-                            <X className="size-5 transition-transform duration-200 group-hover:rotate-90" />
+                            <X className="size-5" />
                         ) : (
-                            <Sparkles className="size-5 transition-transform duration-200 group-hover:scale-110" />
+                            <BotMessageSquare className="size-5" />
                         )}
-                    </button>
+                    </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
                     {isOpen ? "Đóng" : "AI Tutor"}{" "}
@@ -92,13 +81,13 @@ export default function AITutorFAB() {
             {isOpen && (
                 <div
                     className={cn(
-                        "fixed right-6 z-[9997] overflow-hidden rounded-2xl border shadow-2xl transition-all duration-300",
-                        "bg-zinc-950 border-zinc-800/80",
+                        "fixed right-6 z-[9997] overflow-hidden rounded-2xl border-0 shadow-2xl transition-all duration-300",
+                        "bg-zinc-950",
                         isMinimized
-                            ? "bottom-22 h-14 w-80"
+                            ? "bottom-[7.5rem] h-14 w-80"
                             : isExpanded
-                              ? "bottom-22 h-[calc(100vh-7rem)] w-[30rem]"
-                              : "bottom-22 h-[40rem] w-[26rem]",
+                              ? "bottom-[7.5rem] h-[calc(100vh-7rem)] w-[30rem]"
+                              : "bottom-[7.5rem] h-[40rem] w-[26rem]",
                     )}
                 >
                     {isMinimized ? (
@@ -109,7 +98,7 @@ export default function AITutorFAB() {
                         >
                             <div className="flex items-center gap-3">
                                 <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/15">
-                                    <Sparkles className="size-4 text-emerald-400" />
+                                    <BotMessageSquare className="size-4 text-emerald-400" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-zinc-100">
