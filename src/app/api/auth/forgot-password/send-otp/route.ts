@@ -95,16 +95,16 @@ export async function POST(request: NextRequest) {
     // Generate 6-digit OTP
     const otp = crypto.randomInt(100000, 999999).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    
-    console.log('[SEND OTP] Generated OTP:', {
-      otp,
-      expiresAt: expiresAt.toISOString(),
-      expiresIn: '10 minutes',
-      now: new Date().toISOString(),
-    });
 
     // Hash OTP for storage
-    const secret = process.env.JWT_SECRET || 'fallback-secret';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('[SEND OTP] JWT_SECRET not set');
+      return NextResponse.json(
+        { success: false, message: 'L\u1ed7i c\u1ea5u h\u00ecnh m\u00e1y ch\u1ee7' },
+        { status: 500 }
+      );
+    }
     const otpHash = crypto
       .createHash('sha256')
       .update(otp + secret)
@@ -138,8 +138,6 @@ export async function POST(request: NextRequest) {
         const oldExpiresAt = new Date(oldOtpData.expiresAt);
         const now = new Date();
         console.log('[SEND OTP] Replacing existing OTP:', {
-          oldExpiresAt: oldExpiresAt.toISOString(),
-          now: now.toISOString(),
           oldExpired: now.getTime() > oldExpiresAt.getTime(),
         });
       } catch (e) {
@@ -152,11 +150,7 @@ export async function POST(request: NextRequest) {
         { user_id: user.id, meta_key: metaKey },
         { meta_value: metaValue, updated_at: new Date().toISOString() }
       );
-      console.log('[SEND OTP] Updated existing OTP record:', {
-        rowsUpdated: updateResult.length,
-        newExpiresAt: expiresAt.toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      console.log('[SEND OTP] Updated existing OTP record');
     } else {
       // Insert new OTP
       await insert('user_metadata', {
@@ -196,7 +190,7 @@ export async function POST(request: NextRequest) {
         // Don't fail the request if email fails (for development)
         // In production, you might want to throw or log to monitoring service
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[DEV] Email failed, OTP: ${otp}`);
+          console.log(`[DEV] Email failed — check SMTP config`);
         }
       }
     } else if (method === 'phone') {
@@ -214,8 +208,7 @@ export async function POST(request: NextRequest) {
         
         // In development, log OTP even if SMS fails
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[DEV] SMS failed, OTP for ${phone}: ${otp}`);
-          console.log(`[DEV] OTP expires at: ${expiresAt.toISOString()}`);
+          console.log(`[DEV] SMS failed — check Twilio config`);
           // In development, continue even if SMS fails
         } else {
           // In production, return error response

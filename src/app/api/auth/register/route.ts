@@ -6,11 +6,33 @@ import { User } from "@/types/auth";
 import crypto from "crypto";
 import { getAuthUserById } from "@/lib/profile-service";
 import { normalizeUsername } from "@/lib/profile-url";
+import { checkRateLimit, getClientIP, RATE_LIMITS } from "@/lib/rateLimit";
+import { logAuditEvent, extractRequestMeta } from "@/lib/audit-log";
+import { getJWTSecret } from "@/lib/env-validation";
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
+        // Rate limit check
+        const clientIP = getClientIP(request);
+        const rateCheck = checkRateLimit(
+            `register:${clientIP}`,
+            RATE_LIMITS.register,
+        );
+        if (!rateCheck.allowed) {
+            const retryAfterSec = Math.ceil(rateCheck.resetInMs / 1000);
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: `Quá nhiều lần thử đăng ký. Vui lòng đợi ${retryAfterSec} giây.`,
+                },
+                {
+                    status: 429,
+                    headers: { "Retry-After": String(retryAfterSec) },
+                },
+            );
+        }
 
+        const body = await request.json();
         // Validate input
         const validation = registerSchema.safeParse(body);
         if (!validation.success) {
@@ -104,7 +126,7 @@ export async function POST(request: NextRequest) {
             const key = crypto.randomBytes(8).toString("hex").toUpperCase();
             const hash = crypto
                 .createHash("sha256")
-                .update(key + (process.env.JWT_SECRET || "fallback-secret"))
+                .update(key + getJWTSecret())
                 .digest("hex");
 
             recoveryKeys.push(key);
@@ -137,6 +159,16 @@ export async function POST(request: NextRequest) {
             membership_type: newUser.membership_type as "FREE" | "PRO",
         });
 
+        // Audit: registration success
+        const { ipAddress, userAgent } = extractRequestMeta(request);
+        logAuditEvent({
+            userId: newUser.id,
+            action: "REGISTER",
+            ipAddress,
+            userAgent,
+            metadata: { email: newUser.email, username: normalizeUsername(newUser.username) },
+        });
+
         const response = NextResponse.json(
             {
                 success: true,
@@ -160,7 +192,6 @@ export async function POST(request: NextRequest) {
                             is_verified: newUser.is_verified,
                             created_at: new Date(newUser.created_at),
                         },
-                    token,
                     recoveryKeys, // Return recovery keys for immediate display
                 },
             },

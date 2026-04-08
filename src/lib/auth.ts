@@ -1,9 +1,8 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { AuthPayload } from "@/types/auth";
+import { getJWTSecret } from "@/lib/env-validation";
 
-const JWT_SECRET =
-    process.env.JWT_SECRET || "fallback-secret-change-in-production";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 
 /**
@@ -28,7 +27,7 @@ export async function comparePassword(
  * Generate JWT token
  */
 export function generateToken(payload: AuthPayload): string {
-    return jwt.sign(payload, JWT_SECRET, {
+    return jwt.sign(payload, getJWTSecret(), {
         expiresIn: JWT_EXPIRES_IN,
     } as jwt.SignOptions);
 }
@@ -38,7 +37,7 @@ export function generateToken(payload: AuthPayload): string {
  */
 export function verifyToken(token: string): AuthPayload | null {
     try {
-        return jwt.verify(token, JWT_SECRET) as AuthPayload;
+        return jwt.verify(token, getJWTSecret()) as AuthPayload;
     } catch (error) {
         console.error("Token verification failed:", error);
         return null;

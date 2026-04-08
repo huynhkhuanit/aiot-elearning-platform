@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import { getJWTSecret } from "@/lib/env-validation";
 
 /**
  * Extract and verify auth token from cookies.
@@ -13,7 +14,7 @@ export async function getAuthUserId(): Promise<string | null> {
 
     const decoded = jwt.verify(
       token.value,
-      process.env.JWT_SECRET || ""
+      getJWTSecret(),
     ) as { userId: string };
 
     return decoded.userId;

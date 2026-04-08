@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCanonicalProfilePath, normalizeUsername } from "@/lib/profile-url";
+import {
+    generateCSRFToken,
+    setCSRFCookie,
+    validateCSRFToken,
+    requiresCSRFCheck,
+    isCSRFExempt,
+} from "@/lib/csrf";
 
 /**
  * Middleware để bảo vệ các routes cần xác thực
@@ -7,19 +14,80 @@ import { getCanonicalProfilePath, normalizeUsername } from "@/lib/profile-url";
  * - Cho phép unauthenticated users đến /auth/login, /auth/register, /, /courses, etc
  * - Chuyển hướng unauthenticated users khỏi protected routes như /learn
  * - Hỗ trợ CORS cho mobile app (React Native)
+ * - Security headers cho mọi response
+ * - CSRF protection cho mutating requests
  */
 
-// CORS headers cho mobile app
+// ─── CORS whitelist ───
+const ALLOWED_ORIGINS = [
+    "https://dhvlearnx.page",
+    "https://www.dhvlearnx.page",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    process.env.NEXT_PUBLIC_MOBILE_APP_ORIGIN,
+].filter(Boolean) as string[];
+
+function isAllowedOrigin(origin: string | null): boolean {
+    if (!origin) return false;
+    // In development, allow all origins
+    if (process.env.NODE_ENV === "development") return true;
+    return ALLOWED_ORIGINS.includes(origin);
+}
+
+// ─── Security Headers ───
+function setSecurityHeaders(response: NextResponse): NextResponse {
+    // Chống clickjacking
+    response.headers.set("X-Frame-Options", "DENY");
+    // Chống MIME sniffing
+    response.headers.set("X-Content-Type-Options", "nosniff");
+    // XSS filter (legacy browsers)
+    response.headers.set("X-XSS-Protection", "1; mode=block");
+    // HTTPS enforcement (1 year)
+    response.headers.set(
+        "Strict-Transport-Security",
+        "max-age=31536000; includeSubDomains",
+    );
+    // Referrer control
+    response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    // Permissions Policy
+    response.headers.set(
+        "Permissions-Policy",
+        "camera=(), microphone=(), geolocation=()",
+    );
+    // Content Security Policy
+    response.headers.set(
+        "Content-Security-Policy",
+        [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "font-src 'self' https://fonts.gstatic.com data:",
+            "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://i.ytimg.com https://cdn2.fptshop.com.vn https://caodangvietmyhanoi.edu.vn",
+            "connect-src 'self' https://*.supabase.co https://api.cloudinary.com wss://*.supabase.co",
+            "frame-src 'self' https://www.youtube.com https://youtube.com",
+            "media-src 'self' https://res.cloudinary.com blob:",
+            "worker-src 'self' blob:",
+        ].join("; "),
+    );
+    return response;
+}
+
+// ─── CORS headers ───
 function setCorsHeaders(response: NextResponse, request: NextRequest) {
-    const origin = request.headers.get("origin") || "*";
-    response.headers.set("Access-Control-Allow-Origin", origin);
+    const origin = request.headers.get("origin");
+
+    if (origin && isAllowedOrigin(origin)) {
+        response.headers.set("Access-Control-Allow-Origin", origin);
+    }
+    // If origin is not allowed, omit the header — browser will block the request
+
     response.headers.set(
         "Access-Control-Allow-Methods",
         "GET, POST, PUT, DELETE, OPTIONS, PATCH",
     );
     response.headers.set(
         "Access-Control-Allow-Headers",
-        "Content-Type, Authorization, Cookie",
+        "Content-Type, Authorization, Cookie, X-CSRF-Token",
     );
     response.headers.set("Access-Control-Allow-Credentials", "true");
     response.headers.set("Access-Control-Max-Age", "86400");
@@ -29,42 +97,48 @@ function setCorsHeaders(response: NextResponse, request: NextRequest) {
 export function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
 
+    // ─── Profile routing redirects ───
     const directProfileRouteMatch = pathname.match(/^\/profile\/([^/]+)$/);
     if (directProfileRouteMatch) {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = getCanonicalProfilePath(
             directProfileRouteMatch[1],
         );
-        return NextResponse.redirect(redirectUrl);
+        const response = NextResponse.redirect(redirectUrl);
+        return setSecurityHeaders(response);
     }
 
-    const publicProfileRouteMatch = pathname.match(/^\/@+([^/]+)$/);
+    const publicProfileRouteMatch = pathname.match(/^\/@@?([^/]+)$/);
     if (publicProfileRouteMatch) {
         const normalizedUsername = normalizeUsername(
             publicProfileRouteMatch[1],
         );
 
         if (!normalizedUsername) {
-            return NextResponse.next();
+            const response = NextResponse.next();
+            return setSecurityHeaders(response);
         }
 
         const canonicalPath = getCanonicalProfilePath(normalizedUsername);
         if (pathname !== canonicalPath) {
             const redirectUrl = request.nextUrl.clone();
             redirectUrl.pathname = canonicalPath;
-            return NextResponse.redirect(redirectUrl);
+            const response = NextResponse.redirect(redirectUrl);
+            return setSecurityHeaders(response);
         }
 
-        return NextResponse.next();
+        const response = NextResponse.next();
+        return setSecurityHeaders(response);
     }
 
-    // Handle CORS preflight requests (OPTIONS) for API routes
+    // ─── CORS preflight (OPTIONS) ───
     if (request.method === "OPTIONS" && pathname.startsWith("/api")) {
         const preflightResponse = new NextResponse(null, { status: 204 });
-        return setCorsHeaders(preflightResponse, request);
+        setCorsHeaders(preflightResponse, request);
+        return setSecurityHeaders(preflightResponse);
     }
 
-    // Danh sách các public routes (không cần xác thực)
+    // ─── Public routes (no auth required) ───
     const publicRoutes = [
         "/",
         "/auth/login",
@@ -75,7 +149,6 @@ export function middleware(request: NextRequest) {
         "/qa",
     ];
 
-    // Kiểm tra nếu đây là public route (bao gồm /api/auth/*)
     const isPublicRoute = publicRoutes.some(
         (route) =>
             pathname === route ||
@@ -84,15 +157,10 @@ export function middleware(request: NextRequest) {
             pathname.startsWith("/api/auth"),
     );
 
-    // ✅ Allow /api/auth/me để check authentication status
     const isAuthCheckEndpoint = pathname === "/api/auth/me";
-
-    // ✅ Allow /api/courses endpoints (authentication sẽ được handle ở route handler)
     const isCoursesApiEndpoint = pathname.startsWith("/api/courses");
 
-    // Danh sách các protected routes (cần xác thực)
-    // ⚠️ NOTE: /api/courses routes sẽ tự handle auth tại route handler
-    // Middleware chỉ protect page routes (/learn, /admin) và API routes khác (/api/lessons, /api/users/me)
+    // ─── Protected routes (auth required) ───
     const protectedRoutes = [
         "/learn",
         "/admin",
@@ -111,17 +179,27 @@ export function middleware(request: NextRequest) {
         (isPublicRoute || isAuthCheckEndpoint || isCoursesApiEndpoint) &&
         !isProtectedRoute
     ) {
-        const response = NextResponse.next();
+        let response = NextResponse.next();
+        setSecurityHeaders(response);
+
         // Add CORS headers for API routes
         if (pathname.startsWith("/api")) {
-            return setCorsHeaders(response, request);
+            setCorsHeaders(response, request);
         }
+
+        // Set CSRF cookie if not present (for page requests)
+        if (!pathname.startsWith("/api")) {
+            const existingCSRF = request.cookies.get("csrf_token")?.value;
+            if (!existingCSRF) {
+                response = setCSRFCookie(response, generateCSRFToken());
+            }
+        }
+
         return response;
     }
 
-    // Nếu là protected route, kiểm tra xác thực
+    // ─── Protected route: verify authentication ───
     if (isProtectedRoute) {
-        // Check token from cookie OR Authorization header (for mobile app)
         const cookieToken = request.cookies.get("auth_token")?.value;
         const authHeader = request.headers.get("Authorization");
         const headerToken = authHeader?.startsWith("Bearer ")
@@ -129,30 +207,79 @@ export function middleware(request: NextRequest) {
             : null;
         const token = cookieToken || headerToken;
 
-        // Nếu không có token, chuyển hướng đến login
         if (!token) {
-            // Nếu là API request, return 401
             if (pathname.startsWith("/api")) {
                 const errorResponse = new NextResponse(
-                    JSON.stringify({ success: false, message: "Unauthorized" }),
+                    JSON.stringify({
+                        success: false,
+                        message: "Unauthorized",
+                    }),
                     {
                         status: 401,
                         headers: { "content-type": "application/json" },
                     },
                 );
-                return setCorsHeaders(errorResponse, request);
+                setCorsHeaders(errorResponse, request);
+                return setSecurityHeaders(errorResponse);
             }
 
-            // Nếu là page request, chuyển hướng đến login
-            return NextResponse.redirect(new URL("/auth/login", request.url));
+            const response = NextResponse.redirect(
+                new URL("/auth/login", request.url),
+            );
+            return setSecurityHeaders(response);
         }
     }
 
-    const response = NextResponse.next();
-    // Add CORS headers for API routes
-    if (pathname.startsWith("/api")) {
-        return setCorsHeaders(response, request);
+    // ─── CSRF validation for mutating API requests ───
+    if (
+        pathname.startsWith("/api") &&
+        requiresCSRFCheck(request.method) &&
+        !isCSRFExempt(pathname)
+    ) {
+        // Only enforce CSRF for requests from web browsers (have origin/cookie)
+        const origin = request.headers.get("origin");
+        const hasCookie = request.cookies.get("auth_token")?.value;
+        const isWebRequest = origin || hasCookie;
+        const isMobileRequest = request.headers
+            .get("Authorization")
+            ?.startsWith("Bearer ");
+
+        // Skip CSRF for mobile/API clients using Bearer auth (no cookies)
+        if (isWebRequest && !isMobileRequest) {
+            if (!validateCSRFToken(request)) {
+                const csrfError = new NextResponse(
+                    JSON.stringify({
+                        success: false,
+                        message:
+                            "CSRF token không hợp lệ. Vui lòng tải lại trang.",
+                    }),
+                    {
+                        status: 403,
+                        headers: { "content-type": "application/json" },
+                    },
+                );
+                setCorsHeaders(csrfError, request);
+                return setSecurityHeaders(csrfError);
+            }
+        }
     }
+
+    // ─── Default: allow with security headers ───
+    let response = NextResponse.next();
+    setSecurityHeaders(response);
+
+    if (pathname.startsWith("/api")) {
+        setCorsHeaders(response, request);
+    }
+
+    // Ensure CSRF cookie exists for page requests
+    if (!pathname.startsWith("/api")) {
+        const existingCSRF = request.cookies.get("csrf_token")?.value;
+        if (!existingCSRF) {
+            response = setCSRFCookie(response, generateCSRFToken());
+        }
+    }
+
     return response;
 }
 

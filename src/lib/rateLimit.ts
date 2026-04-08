@@ -1,6 +1,13 @@
 /**
- * In-memory rate limiter for auth routes.
- * Production: replace with Redis-based solution.
+ * In-memory rate limiter for auth and API routes.
+ *
+ * ⚠️ LIMITATION: This uses process-level Map storage.
+ * On Vercel serverless, each function invocation may run in a different
+ * instance — rate limiting is best-effort, not guaranteed.
+ *
+ * For production scale, migrate to Redis-based solution (e.g. Upstash Redis):
+ *   import { Ratelimit } from "@upstash/ratelimit";
+ *   import { Redis } from "@upstash/redis";
  */
 
 interface RateLimitEntry {
@@ -31,12 +38,25 @@ interface RateLimitConfig {
 }
 
 export const RATE_LIMITS = {
-    login: { maxAttempts: 5, windowMs: 60 * 1000 } as RateLimitConfig, // 5/min
-    register: { maxAttempts: 3, windowMs: 10 * 60 * 1000 } as RateLimitConfig, // 3/10min
+    /** Login: 5 attempts per minute */
+    login: { maxAttempts: 5, windowMs: 60 * 1000 } as RateLimitConfig,
+    /** Register: 3 attempts per 10 minutes */
+    register: { maxAttempts: 3, windowMs: 10 * 60 * 1000 } as RateLimitConfig,
+    /** Forgot password: 3 attempts per 15 minutes */
     forgotPassword: {
         maxAttempts: 3,
         windowMs: 15 * 60 * 1000,
-    } as RateLimitConfig, // 3/15min
+    } as RateLimitConfig,
+    /** Password change: 5 attempts per minute */
+    changePassword: { maxAttempts: 5, windowMs: 60 * 1000 } as RateLimitConfig,
+    /** General API: 60 requests per minute */
+    general: { maxAttempts: 60, windowMs: 60 * 1000 } as RateLimitConfig,
+    /** File upload: 10 uploads per minute */
+    upload: { maxAttempts: 10, windowMs: 60 * 1000 } as RateLimitConfig,
+    /** AI endpoints: 20 requests per minute (expensive operations) */
+    ai: { maxAttempts: 20, windowMs: 60 * 1000 } as RateLimitConfig,
+    /** Blog/content creation: 5 creates per minute */
+    contentCreate: { maxAttempts: 5, windowMs: 60 * 1000 } as RateLimitConfig,
 };
 
 export interface RateLimitResult {
@@ -86,3 +106,5 @@ export function getClientIP(request: Request): string {
     if (realIp) return realIp;
     return "unknown";
 }
+
+export type { RateLimitConfig };

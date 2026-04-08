@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import TipTapEditor from "@/components/TipTapEditor";
+import { sanitizeHTML } from "@/lib/sanitize";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -736,9 +737,10 @@ export default function WriteBlogPage() {
                                                         <div
                                                             className="article-markdown prose prose-lg max-w-none"
                                                             dangerouslySetInnerHTML={{
-                                                                __html:
+                                                                __html: sanitizeHTML(
                                                                     content ||
                                                                     "<p>Nội dung bài viết...</p>",
+                                                                ),
                                                             }}
                                                         />
                                                     </CardContent>

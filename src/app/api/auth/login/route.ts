@@ -5,6 +5,7 @@ import { loginSchema } from "@/lib/validations/auth";
 import { checkRateLimit, getClientIP, RATE_LIMITS } from "@/lib/rateLimit";
 import { getAuthUserById } from "@/lib/profile-service";
 import { normalizeUsername } from "@/lib/profile-url";
+import { logAuditEvent, extractRequestMeta } from "@/lib/audit-log";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -188,14 +189,23 @@ export async function POST(request: NextRequest) {
                 created_at: new Date(user.created_at),
             };
 
-        // Create response with token in cookie
+        // Audit: login success
+        const { ipAddress, userAgent } = extractRequestMeta(request);
+        logAuditEvent({
+            userId: user.id,
+            action: "LOGIN_SUCCESS",
+            ipAddress,
+            userAgent,
+            metadata: { email: user.email },
+        });
+
+        // Create response — token ONLY in HTTP-only cookie, NOT in body
         const response = NextResponse.json(
             {
                 success: true,
                 message: "Đăng nhập thành công",
                 data: {
                     user: publicUser,
-                    token,
                 },
             },
             { status: 200 },
