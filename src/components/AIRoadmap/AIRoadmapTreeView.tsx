@@ -182,7 +182,7 @@ function convertToTree(
             id: section.id,
             title: section.name,
             description: section.description || `Giai đoạn ${section.order}`,
-            type: "core",
+            type: "core" as const,
             status: progress[section.id] || "pending",
             children: roots.map((node) => buildSubtree(node, new Set())),
         };
