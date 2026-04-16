@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 const CSRF_COOKIE_NAME = "csrf_token";
@@ -9,7 +8,11 @@ const CSRF_TOKEN_LENGTH = 32;
  * Generate a cryptographically secure CSRF token.
  */
 export function generateCSRFToken(): string {
-    return crypto.randomBytes(CSRF_TOKEN_LENGTH).toString("hex");
+    const buffer = new Uint8Array(CSRF_TOKEN_LENGTH);
+    crypto.getRandomValues(buffer);
+    return Array.from(buffer)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
 }
 
 /**
@@ -52,14 +55,12 @@ export function validateCSRFToken(request: NextRequest): boolean {
         return false;
     }
 
-    try {
-        return crypto.timingSafeEqual(
-            Buffer.from(cookieToken),
-            Buffer.from(headerToken),
-        );
-    } catch {
-        return false;
+    let mismatch = 0;
+    for (let i = 0; i < cookieToken.length; i++) {
+        mismatch |= cookieToken.charCodeAt(i) ^ headerToken.charCodeAt(i);
     }
+    
+    return mismatch === 0;
 }
 
 /**

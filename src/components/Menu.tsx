@@ -1,13 +1,22 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+    Home,
+    Route,
+    Newspaper,
+    MessageCircle,
+    Laptop,
+    Wrench,
+    LucideIcon
+} from "lucide-react";
 
 interface MenuItem {
     id: string;
-    iconClass: string;
+    icon: LucideIcon;
     label: string;
     href: string;
 }
@@ -15,31 +24,31 @@ interface MenuItem {
 const publicMenuItems: MenuItem[] = [
     {
         id: "home",
-        iconClass: "fa-solid fa-house",
+        icon: Home,
         label: "Trang chủ",
         href: "/",
     },
     {
         id: "roadmap",
-        iconClass: "fa-solid fa-road",
+        icon: Route,
         label: "Lộ trình",
         href: "/roadmap",
     },
     {
         id: "articles",
-        iconClass: "fa-solid fa-newspaper",
+        icon: Newspaper,
         label: "Bài viết",
         href: "/articles",
     },
     {
         id: "qa",
-        iconClass: "fa-solid fa-comment-dots",
+        icon: MessageCircle,
         label: "Hỏi Đáp",
         href: "/qa",
     },
     {
         id: "playground",
-        iconClass: "fa-solid fa-laptop-code",
+        icon: Laptop,
         label: "Playground",
         href: "/playground",
     },
@@ -47,7 +56,7 @@ const publicMenuItems: MenuItem[] = [
 
 const adminMenuItem: MenuItem = {
     id: "admin",
-    iconClass: "fa-solid fa-screwdriver-wrench",
+    icon: Wrench,
     label: "Admin",
     href: "/admin/lessons",
 };
@@ -116,10 +125,10 @@ export default function Menu({ variant = "default" }: MenuProps) {
                     `}
                     title={item.label}
                 >
-                    <i
+                    <item.icon
                         aria-hidden="true"
                         className={`
-                            ${item.iconClass} h-5 w-5 mb-1 text-[18px] leading-none transition-colors duration-200 flex-shrink-0
+                            h-5 w-5 mb-1 transition-colors duration-200 flex-shrink-0
                             ${
                                 isActive
                                     ? "text-primary"
@@ -177,10 +186,10 @@ export default function Menu({ variant = "default" }: MenuProps) {
                             }}
                             title={item.label}
                         >
-                            <i
+                            <item.icon
                                 aria-hidden="true"
                                 className={`
-                                    ${item.iconClass} h-5 w-5 mb-1 text-[18px] leading-none transition-colors duration-200 flex-shrink-0
+                                    h-5 w-5 mb-1 transition-colors duration-200 flex-shrink-0
                                     ${isActive ? "text-primary" : "text-[#9ca3af]"}
                                 `}
                             />
