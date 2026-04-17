@@ -83,6 +83,13 @@ const CSRF_EXEMPT_ROUTES = [
     "/api/auth/register",
     "/api/auth/csrf",
     "/api/auth/logout",
+    "/api/ai/chat",
+    "/api/ai/agent",
+    "/api/ai/tutor",
+    "/api/ai/complete",
+    "/api/ai/review",
+    "/api/ai/generate-code",
+    "/api/ai/explain-error",
 ];
 
 /**

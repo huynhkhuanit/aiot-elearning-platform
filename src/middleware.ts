@@ -60,7 +60,7 @@ function setSecurityHeaders(response: NextResponse): NextResponse {
         [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
             "font-src 'self' https://fonts.gstatic.com data:",
             "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://i.ytimg.com https://cdn2.fptshop.com.vn https://caodangvietmyhanoi.edu.vn",
             "connect-src 'self' https://*.supabase.co https://api.cloudinary.com wss://*.supabase.co",

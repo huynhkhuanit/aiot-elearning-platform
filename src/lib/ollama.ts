@@ -32,7 +32,7 @@ const OLLAMA_TUTOR_MODEL =
 // Timeout for different operations
 const COMPLETION_TIMEOUT_MS = 120000; // 120s for autocomplete (cold start can take a while)
 const CHAT_TIMEOUT_MS = 300000; // 300s (5m) for chat, models take time to load/think
-const CHAT_INITIAL_TIMEOUT_MS = 120000; // 120s for first chunk from streaming
+const CHAT_INITIAL_TIMEOUT_MS = 180000; // 180s for first chunk from streaming (cold start for 7B models)
 const CHAT_ACTIVITY_TIMEOUT_MS = 30000; // 30s inactivity timeout between chunks
 const HEALTH_TIMEOUT_MS = 10000; // 10s for health check
 
@@ -445,12 +445,23 @@ export async function getChatCompletionWithToolsStream(
     const { controller: fetchController, clear: clearInitial } =
         createTimeoutController(CHAT_INITIAL_TIMEOUT_MS);
 
-    const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
-        method: "POST",
-        headers: NGROK_HEADERS,
-        body: JSON.stringify(request),
-        signal: fetchController.signal,
-    });
+    let response: Response;
+    try {
+        response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+            method: "POST",
+            headers: NGROK_HEADERS,
+            body: JSON.stringify(request),
+            signal: fetchController.signal,
+        });
+    } catch (fetchErr) {
+        clearInitial();
+        if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
+            throw new Error(
+                `Ollama request timed out after ${CHAT_INITIAL_TIMEOUT_MS}ms waiting for model response. Try again.`,
+            );
+        }
+        throw fetchErr;
+    }
 
     clearInitial();
 
@@ -641,12 +652,23 @@ export async function getChatCompletionStream(
     const { controller: fetchController, clear: clearInitial } =
         createTimeoutController(CHAT_INITIAL_TIMEOUT_MS);
 
-    const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
-        method: "POST",
-        headers: NGROK_HEADERS,
-        body: JSON.stringify(request),
-        signal: fetchController.signal,
-    });
+    let response: Response;
+    try {
+        response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+            method: "POST",
+            headers: NGROK_HEADERS,
+            body: JSON.stringify(request),
+            signal: fetchController.signal,
+        });
+    } catch (fetchErr) {
+        clearInitial();
+        if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
+            throw new Error(
+                `Ollama request timed out after ${CHAT_INITIAL_TIMEOUT_MS}ms waiting for model response. Try again.`,
+            );
+        }
+        throw fetchErr;
+    }
 
     clearInitial();
 
