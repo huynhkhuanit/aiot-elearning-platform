@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
-from app.routers import roadmap, ollama, face_touch, cv
+from app.routers import roadmap, ollama, ollama_proxy, face_touch, cv
 
 # Configure logging
 logging.basicConfig(
@@ -46,6 +46,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,6 +54,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(roadmap.router)
+app.include_router(ollama_proxy.router)  # Transparent proxy: /api/tags, /api/chat, /api/generate
 app.include_router(ollama.router)
 app.include_router(face_touch.router)
 app.include_router(cv.router)

@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     OLLAMA_CHAT_MODEL: str = "qwen2.5-coder:7b-instruct"
     OLLAMA_COMPLETION_MODEL: str = "deepseek-coder:1.3b"
     
+    # Internal Ollama URL (used by transparent proxy - Ollama on same VPS)
+    OLLAMA_INTERNAL_URL: str = "http://localhost:11434"
+    
     # Available model aliases for easy switching via .env
     # Set GROQ_MODEL to one of these values:
     # - llama-3.3-70b-versatile (best for Vietnamese + complex JSON)
@@ -32,7 +35,12 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_KEY: str = ""
     
     # CORS Configuration
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://13.214.189.155:3000",
+    ]
+    CORS_ORIGIN_REGEX: str = r"https://.*\.vercel\.app"
     
     # Application Settings
     DEBUG: bool = True
