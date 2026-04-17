@@ -201,9 +201,15 @@ ${String(code.javascript || "").slice(0, 3000)}
         const message =
             error instanceof Error ? error.message : "Unknown error";
 
-        if (message.includes("timed out")) {
+        const isAbort =
+            error instanceof Error && error.name === "AbortError";
+
+        if (message.includes("timed out") || isAbort) {
             return Response.json(
-                { error: "AI server timed out", details: message },
+                {
+                    error: "AI model đang tải, vui lòng thử lại sau vài giây",
+                    details: message,
+                },
                 { status: 504 },
             );
         }
