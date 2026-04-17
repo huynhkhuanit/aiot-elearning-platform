@@ -10,6 +10,11 @@ import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import PageLoading from "@/components/PageLoading";
 import ProfessionalProfileTab from "@/components/settings/ProfessionalProfileTab";
 import { normalizeUsername } from "@/lib/profile-url";
+import {
+    DEFAULT_OLLAMA_CHAT_MODEL,
+    DEFAULT_OLLAMA_COMPLETION_MODEL,
+    DEFAULT_OLLAMA_TUTOR_MODEL,
+} from "@/lib/ai-models";
 
 import {
     User,
@@ -83,8 +88,9 @@ function AIAssistantSettings() {
         autocompleteEnabled: true,
         autocompleteDelay: 300,
         serverUrl: "",
-        completionModel: "deepseek-coder:1.3b",
-        chatModel: "qwen2.5-coder:7b-instruct",
+        completionModel: DEFAULT_OLLAMA_COMPLETION_MODEL,
+        chatModel: DEFAULT_OLLAMA_CHAT_MODEL,
+        tutorModel: DEFAULT_OLLAMA_TUTOR_MODEL,
     });
     const [serverStatus, setServerStatus] = useState<
         "connected" | "disconnected" | "checking"
@@ -290,7 +296,7 @@ function AIAssistantSettings() {
                         AI Models
                     </span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1.5">
                             Completion Model
@@ -305,7 +311,7 @@ function AIAssistantSettings() {
                                 }))
                             }
                             className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all"
-                            placeholder="deepseek-coder:1.3b"
+                            placeholder={DEFAULT_OLLAMA_COMPLETION_MODEL}
                         />
                     </div>
                     <div>
@@ -322,7 +328,24 @@ function AIAssistantSettings() {
                                 }))
                             }
                             className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all"
-                            placeholder="qwen2.5-coder:7b-instruct"
+                            placeholder={DEFAULT_OLLAMA_CHAT_MODEL}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                            Tutor Model
+                        </label>
+                        <input
+                            type="text"
+                            value={settings.tutorModel}
+                            onChange={(e) =>
+                                setSettings((p) => ({
+                                    ...p,
+                                    tutorModel: e.target.value,
+                                }))
+                            }
+                            className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all"
+                            placeholder={DEFAULT_OLLAMA_TUTOR_MODEL}
                         />
                     </div>
                 </div>

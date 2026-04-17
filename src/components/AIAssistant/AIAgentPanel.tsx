@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { AlertCircle, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { DEFAULT_OLLAMA_CHAT_MODEL } from "@/lib/ai-models";
 import { useAIChat } from "./useAIChat";
 import { useAIAgentChat } from "./useAIAgentChat";
 import { useAIAgent } from "./useAIAgent";
@@ -75,39 +76,36 @@ export default function AIAgentPanel({
     const [showScrollBottom, setShowScrollBottom] = useState(false);
 
     const hasAgentContext = !!(code && onEditCode);
-    const qwenModel = useMemo(
+    const chatModel = useMemo(
         () =>
-            AI_MODELS.find((model) => model.id.includes("qwen")) ||
-            AI_MODELS[0],
+            AI_MODELS.find(
+                (model) => model.id === DEFAULT_OLLAMA_CHAT_MODEL,
+            ) || AI_MODELS[0],
         [],
     );
     const [mode, setMode] = useState<AIAgentMode>(
         hasAgentContext ? "agent" : "ask",
     );
-    const [selectedModel, setSelectedModel] = useState<AIModel>(() =>
-        hasAgentContext ? qwenModel : AI_MODELS[0],
-    );
+    const [selectedModel, setSelectedModel] = useState<AIModel>(() => chatModel);
 
     useEffect(() => {
-        if (hasAgentContext && selectedModel.id.includes("deepseek-coder")) {
-            setSelectedModel(qwenModel);
+        if (
+            hasAgentContext &&
+            mode === "agent" &&
+            selectedModel.id !== chatModel.id
+        ) {
+            setSelectedModel(chatModel);
         }
-    }, [hasAgentContext, selectedModel.id, qwenModel]);
+    }, [chatModel, hasAgentContext, mode, selectedModel.id]);
 
     const handleModeChange = useCallback(
         (newMode: AIAgentMode) => {
             setMode(newMode);
-            if (
-                newMode === "agent" &&
-                selectedModel.id.includes("deepseek-coder")
-            ) {
-                const qwen = AI_MODELS.find((model) =>
-                    model.id.includes("qwen"),
-                );
-                if (qwen) setSelectedModel(qwen);
+            if (newMode === "agent" && selectedModel.id !== chatModel.id) {
+                setSelectedModel(chatModel);
             }
         },
-        [selectedModel.id],
+        [chatModel, selectedModel.id],
     );
 
     const {

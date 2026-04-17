@@ -21,6 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useAITutor } from "@/contexts/AITutorContext";
+import { DEFAULT_OLLAMA_TUTOR_MODEL } from "@/lib/ai-models";
 import { useAITutorChat } from "./useAITutorChat";
 import AIAgentCodeBlock from "./AIAgentCodeBlock";
 import AIModelSelector from "./AIModelSelector";
@@ -31,6 +32,10 @@ interface AITutorPanelProps {
     className?: string;
     theme?: "light" | "dark";
 }
+
+const DEFAULT_TUTOR_MODEL =
+    AI_MODELS.find((model) => model.id === DEFAULT_OLLAMA_TUTOR_MODEL) ||
+    AI_MODELS[0];
 
 function localizeAIError(error: string): string {
     const normalized = error.toLowerCase();
@@ -311,7 +316,7 @@ export default function AITutorPanel({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [showScrollBottom, setShowScrollBottom] = useState(false);
     const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
-        if (typeof window === "undefined") return AI_MODELS[0];
+        if (typeof window === "undefined") return DEFAULT_TUTOR_MODEL;
         try {
             const saved = localStorage.getItem("ai_tutor_model");
             if (saved) {
@@ -321,7 +326,7 @@ export default function AITutorPanel({
         } catch {
             /* ignore */
         }
-        return AI_MODELS[0];
+        return DEFAULT_TUTOR_MODEL;
     });
     const [inputValue, setInputValue] = useState("");
 

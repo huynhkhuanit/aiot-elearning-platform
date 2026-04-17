@@ -10,6 +10,11 @@ import type {
     OllamaToolDefinition,
     OllamaToolCall,
 } from "@/types/ai";
+import {
+    DEFAULT_OLLAMA_CHAT_MODEL,
+    DEFAULT_OLLAMA_COMPLETION_MODEL,
+    DEFAULT_OLLAMA_TUTOR_MODEL,
+} from "@/lib/ai-models";
 
 // ===== Configuration =====
 
@@ -18,9 +23,11 @@ const OLLAMA_BASE_URL = (
     process.env.OLLAMA_BASE_URL || "http://localhost:11434"
 ).replace(/\/+$/, "");
 const OLLAMA_COMPLETION_MODEL =
-    process.env.OLLAMA_COMPLETION_MODEL || "deepseek-coder:1.3b";
+    process.env.OLLAMA_COMPLETION_MODEL || DEFAULT_OLLAMA_COMPLETION_MODEL;
 const OLLAMA_CHAT_MODEL =
-    process.env.OLLAMA_CHAT_MODEL || "qwen2.5-coder:7b-instruct";
+    process.env.OLLAMA_CHAT_MODEL || DEFAULT_OLLAMA_CHAT_MODEL;
+const OLLAMA_TUTOR_MODEL =
+    process.env.OLLAMA_TUTOR_MODEL || DEFAULT_OLLAMA_TUTOR_MODEL;
 
 // Timeout for different operations
 const COMPLETION_TIMEOUT_MS = 120000; // 120s for autocomplete (cold start can take a while)
@@ -184,7 +191,7 @@ export async function getCodeCompletion(
 
 /**
  * Chat completion (non-streaming)
- * Uses codellama:13b-instruct for chat/generation/review
+ * Uses the configured chat model for chat/generation/review
  */
 export async function getChatCompletion(
     messages: Array<{ role: "user" | "assistant" | "system"; content: string }>,
@@ -765,5 +772,6 @@ export function getOllamaConfig() {
         baseUrl: OLLAMA_BASE_URL,
         completionModel: OLLAMA_COMPLETION_MODEL,
         chatModel: OLLAMA_CHAT_MODEL,
+        tutorModel: OLLAMA_TUTOR_MODEL,
     };
 }

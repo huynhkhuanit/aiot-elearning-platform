@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import {
-    getChatCompletionStream,
     getChatCompletion,
+    getChatCompletionStream,
     getOllamaConfig,
 } from "@/lib/ollama";
 
@@ -21,83 +21,92 @@ interface LearningContext {
     courseOutline: string;
 }
 
+interface TutorMessage {
+    role: string;
+    content: string;
+}
+
 function buildTutorSystemPrompt(ctx: LearningContext | null): string {
-    const base = `Bạn là AI Tutor cá nhân trên nền tảng học tập CodeSense AIoT — một trợ lý thông minh hiểu rõ ngữ cảnh bài học mà học viên đang theo dõi.
+    const base = [
+        "You are the AI Tutor for the CodeSense AIoT learning platform.",
+        "Always answer in Vietnamese.",
+        "Use markdown with headings, bullet lists, and code blocks when helpful.",
+        "Explain concepts clearly, accurately, and step by step.",
+        "Encourage the learner to think instead of giving away full solutions too early.",
+        "If you include code, add short comments that explain the important steps.",
+    ].join("\n");
 
-VAI TRÒ:
-- Giải thích nội dung bài học hiện tại một cách chi tiết và chính xác
-- Đưa ví dụ thực tế và bài tập thực hành liên quan đến bài đang học
-- Liên kết kiến thức mới với các bài đã hoàn thành trước đó
-- Động viên và hướng dẫn dựa trên tiến độ học tập
-- Trả lời câu hỏi liên quan đến lập trình và công nghệ
-
-QUY TẮC:
-- Trả lời bằng TIẾNG VIỆT, rõ ràng, có cấu trúc
-- Sử dụng markdown (## tiêu đề, - bullet, code blocks)
-- Khi đưa code, kèm comment giải thích
-- Khuyến khích học viên tự suy nghĩ, gợi ý từng bước thay vì đưa đáp án hoàn chỉnh
-- Nếu câu hỏi nằm ngoài phạm vi bài học, vẫn trả lời nhưng gợi ý quay lại nội dung khóa học`;
-
-    if (!ctx) return base;
+    if (!ctx) {
+        return base;
+    }
 
     const lessonTypeLabel =
         ctx.lessonType === "video"
-            ? "Video bài giảng"
+            ? "Video lesson"
             : ctx.lessonType === "reading"
-              ? "Bài đọc lý thuyết"
-              : "Bài kiểm tra";
-
-    const progressComment =
-        ctx.progress < 20
-            ? "Học viên mới bắt đầu — giải thích kỹ hơn, dùng ngôn ngữ đơn giản."
-            : ctx.progress < 50
-              ? "Học viên đang tiến bộ — có thể dùng thuật ngữ chuyên môn vừa phải."
-              : ctx.progress < 80
-                ? "Học viên đã vững nền tảng — có thể đưa ví dụ nâng cao."
-                : "Học viên gần hoàn thành — có thể đưa bài tập thử thách và kiến thức mở rộng.";
+              ? "Reading lesson"
+              : "Quiz";
 
     const recentTopics =
         ctx.recentCompletedTopics.length > 0
-            ? `\nBÀI ĐÃ HOÀN THÀNH GẦN ĐÂY: ${ctx.recentCompletedTopics.join(", ")}`
-            : "";
+            ? ctx.recentCompletedTopics.join(", ")
+            : "None";
 
-    // Build content sections based on available data
-    let contentBlock = "";
+    const lessonContent = ctx.lessonContent
+        ? `Lesson content:\n${ctx.lessonContent.slice(0, 4000)}`
+        : "Lesson content is not available.";
 
-    if (ctx.lessonContent) {
-        contentBlock += `\n\n📄 NỘI DUNG BÀI HỌC (dùng làm kiến thức chính để trả lời câu hỏi):\n\`\`\`\n${ctx.lessonContent.slice(0, 4000)}\n\`\`\``;
+    const videoContext = ctx.videoUrl
+        ? [
+              `Video URL: ${ctx.videoUrl}`,
+              "Important: you cannot watch the video directly.",
+              "Infer the likely lesson content from the lesson title, section, course outline, and any available lesson text.",
+          ].join("\n")
+        : "No video URL provided.";
+
+    const outline = ctx.courseOutline
+        ? `Course outline:\n${ctx.courseOutline.slice(0, 2000)}`
+        : "Course outline is not available.";
+
+    return [
+        base,
+        "",
+        "Current learning context:",
+        `Course: ${ctx.courseTitle}`,
+        `Current lesson: ${ctx.currentLessonTitle}`,
+        `Lesson type: ${lessonTypeLabel}`,
+        `Section: ${ctx.currentSection}`,
+        `Progress: ${ctx.progress}% (${ctx.completedLessons}/${ctx.totalLessons})`,
+        `Recent completed topics: ${recentTopics}`,
+        "",
+        lessonContent,
+        "",
+        videoContext,
+        "",
+        outline,
+        "",
+        "When the learner asks about the current lesson, answer based on this context first.",
+    ].join("\n");
+}
+
+function buildCompactSystemPrompt(ctx: LearningContext | null): string {
+    if (!ctx) {
+        return "You are a coding tutor. Answer in Vietnamese. Be concise. Use markdown.";
     }
 
-    if (ctx.videoUrl) {
-        contentBlock += `\n\n🎬 VIDEO BÀI GIẢNG: ${ctx.videoUrl}`;
-        if (!ctx.lessonContent) {
-            contentBlock += `\nLƯU Ý: Bài này chủ yếu là video. Bạn KHÔNG xem được video nhưng hãy DỰA VÀO tên bài học "${ctx.currentLessonTitle}", chương "${ctx.currentSection}", và cấu trúc khóa học bên dưới để suy luận nội dung bài học và trả lời câu hỏi của học viên. Hãy dùng kiến thức chuyên môn của bạn về chủ đề này để giải thích chi tiết.`;
-        }
-    }
-
-    if (!ctx.lessonContent && !ctx.videoUrl) {
-        contentBlock += `\n\nLƯU Ý: Nội dung chi tiết của bài chưa có sẵn. Hãy DỰA VÀO tên bài "${ctx.currentLessonTitle}", chương "${ctx.currentSection}", và cấu trúc khóa học để suy luận chủ đề và trả lời bằng kiến thức chuyên môn của bạn.`;
-    }
-
-    // Course outline for curriculum awareness
-    const outlineBlock = ctx.courseOutline
-        ? `\n\n📋 CẤU TRÚC KHÓA HỌC (giúp bạn hiểu vị trí bài học trong chương trình):\n${ctx.courseOutline.slice(0, 2000)}`
-        : "";
-
-    return `${base}
-
-═══════════════════════════════
-NGỮ CẢNH HỌC TẬP HIỆN TẠI:
-═══════════════════════════════
-📚 Khóa học: ${ctx.courseTitle}
-📖 Bài học hiện tại: ${ctx.currentLessonTitle}
-📝 Loại bài: ${lessonTypeLabel}
-📊 Tiến độ: ${ctx.progress}% (${ctx.completedLessons}/${ctx.totalLessons} bài)
-📂 Chương hiện tại: ${ctx.currentSection}${recentTopics}
-
-🎯 GHI CHÚ GIẢNG DẠY: ${progressComment}${contentBlock}${outlineBlock}
-
-QUAN TRỌNG: Khi học viên hỏi về nội dung bài học, hãy trả lời DỰA TRÊN ngữ cảnh ở trên. Nếu bài là video, hãy suy luận nội dung từ tên bài và cấu trúc khóa học, rồi giải thích chi tiết bằng kiến thức chuyên môn.`;
+    return [
+        "You are a coding tutor on CodeSense AIoT.",
+        "Answer in Vietnamese.",
+        "Use markdown.",
+        `Current lesson: ${ctx.currentLessonTitle}`,
+        `Course: ${ctx.courseTitle}`,
+        `Section: ${ctx.currentSection}`,
+        `Type: ${ctx.lessonType}`,
+        `Progress: ${ctx.progress}%`,
+        ctx.lessonContent
+            ? `Lesson content:\n${ctx.lessonContent.slice(0, 1500)}`
+            : "Lesson content is not available.",
+    ].join("\n");
 }
 
 function isSmallModel(modelId?: string): boolean {
@@ -110,19 +119,64 @@ function isMediumModel(modelId?: string): boolean {
     return /[:\-](3|4)b/i.test(modelId);
 }
 
-function buildCompactSystemPrompt(ctx: LearningContext | null): string {
-    const base = `You are a coding tutor on CodeSense AIoT platform. Answer in Vietnamese. Use markdown.`;
-    if (!ctx) return base;
-    return `${base}\n\nBài học hiện tại: "${ctx.currentLessonTitle}" (${ctx.courseTitle})\nChương: ${ctx.currentSection}\nLoại: ${ctx.lessonType === "video" ? "Video" : ctx.lessonType === "reading" ? "Bài đọc" : "Quiz"}\nTiến độ: ${ctx.progress}%${
-        ctx.lessonContent
-            ? `\n\nNội dung bài:\n${ctx.lessonContent.slice(0, 1500)}`
-            : ""
-    }`;
+function buildTutorRequest(
+    modelId: string | undefined,
+    learningContext: LearningContext | null,
+    messages: TutorMessage[],
+) {
+    const small = isSmallModel(modelId);
+    const medium = isMediumModel(modelId);
+
+    const systemPrompt = small
+        ? "You are a coding tutor. Answer in Vietnamese. Be concise. Use markdown."
+        : medium
+          ? buildCompactSystemPrompt(learningContext)
+          : buildTutorSystemPrompt(learningContext);
+
+    const ollamaMessages: Array<{
+        role: "user" | "assistant" | "system";
+        content: string;
+    }> = [{ role: "system", content: systemPrompt }];
+
+    for (const message of messages) {
+        if (message.role === "user" || message.role === "assistant") {
+            ollamaMessages.push({
+                role: message.role,
+                content: message.content,
+            });
+        }
+    }
+
+    return {
+        ollamaMessages,
+        options: {
+            maxTokens: small ? 512 : medium ? 2048 : 4096,
+            temperature: small ? 0.2 : 0.3,
+            modelId,
+        },
+    };
+}
+
+function createStaticStream(content: string): ReadableStream<string> {
+    return new ReadableStream({
+        start(controller) {
+            if (content) controller.enqueue(content);
+            controller.close();
+        },
+    });
 }
 
 export async function POST(request: NextRequest) {
     try {
-        const { messages, learningContext, modelId } = await request.json();
+        const {
+            messages,
+            learningContext,
+            modelId,
+        }: {
+            messages: TutorMessage[];
+            learningContext: LearningContext | null;
+            modelId?: string;
+        } = await request.json();
 
         if (!Array.isArray(messages) || messages.length === 0) {
             return new Response(
@@ -134,27 +188,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const small = isSmallModel(modelId);
-        const medium = isMediumModel(modelId);
-
-        const systemPrompt = small
-            ? "You are a coding tutor. Answer in Vietnamese. Be concise. Use markdown."
-            : medium
-              ? buildCompactSystemPrompt(learningContext || null)
-              : buildTutorSystemPrompt(learningContext || null);
-
-        const maxTokens = small ? 512 : medium ? 2048 : 4096;
-
-        const ollamaMessages: Array<{
-            role: "user" | "assistant" | "system";
-            content: string;
-        }> = [{ role: "system", content: systemPrompt }];
-
-        for (const msg of messages) {
-            if (msg.role === "user" || msg.role === "assistant") {
-                ollamaMessages.push({ role: msg.role, content: msg.content });
-            }
-        }
+        const { tutorModel, chatModel } = getOllamaConfig();
+        let effectiveModelId = modelId || tutorModel;
+        let requestConfig = buildTutorRequest(
+            effectiveModelId,
+            learningContext || null,
+            messages,
+        );
 
         const encoder = new TextEncoder();
         const toSSE = (content: string, done: boolean, error?: string) =>
@@ -163,69 +203,90 @@ export async function POST(request: NextRequest) {
             );
 
         let stream: ReadableStream<string>;
-        let effectiveModelId = modelId;
-        const opts = {
-            maxTokens,
-            temperature: small ? 0.2 : 0.3,
-            modelId: effectiveModelId,
-        };
 
         try {
-            stream = await getChatCompletionStream(ollamaMessages, opts);
+            stream = await getChatCompletionStream(
+                requestConfig.ollamaMessages,
+                requestConfig.options,
+            );
         } catch (streamErr) {
             const errMsg =
                 streamErr instanceof Error
                     ? streamErr.message
                     : String(streamErr);
 
-            if (errMsg.includes("404") && errMsg.includes("not found")) {
-                const { chatModel } = getOllamaConfig();
-                effectiveModelId = chatModel;
-                try {
-                    stream = await getChatCompletionStream(ollamaMessages, {
-                        ...opts,
-                        modelId: effectiveModelId,
-                    });
-                } catch (retryErr) {
-                    const retryMsg =
-                        retryErr instanceof Error
-                            ? retryErr.message
-                            : String(retryErr);
-                    if (
-                        retryMsg.includes("405") ||
-                        retryMsg.includes("method not allowed")
-                    ) {
-                        const { content } = await getChatCompletion(
-                            ollamaMessages,
-                            {
-                                ...opts,
-                                modelId: effectiveModelId,
-                            },
-                        );
-                        stream = new ReadableStream({
-                            start(controller) {
-                                if (content) controller.enqueue(content);
-                                controller.close();
-                            },
-                        });
-                    } else {
-                        throw retryErr;
-                    }
-                }
-            } else if (
+            if (
                 errMsg.includes("405") ||
                 errMsg.includes("method not allowed")
             ) {
                 const { content } = await getChatCompletion(
-                    ollamaMessages,
-                    opts,
+                    requestConfig.ollamaMessages,
+                    requestConfig.options,
                 );
-                stream = new ReadableStream({
-                    start(controller) {
-                        if (content) controller.enqueue(content);
-                        controller.close();
-                    },
-                });
+                stream = createStaticStream(content);
+            } else if (
+                errMsg.includes("404") &&
+                errMsg.includes("not found")
+            ) {
+                const fallbackModelIds = [tutorModel, chatModel].filter(
+                    (candidate, index, modelIds) =>
+                        Boolean(candidate) &&
+                        candidate !== effectiveModelId &&
+                        modelIds.indexOf(candidate) === index,
+                );
+
+                let recovered = false;
+                let lastRetryError: unknown = streamErr;
+
+                for (const fallbackModelId of fallbackModelIds) {
+                    effectiveModelId = fallbackModelId;
+                    requestConfig = buildTutorRequest(
+                        effectiveModelId,
+                        learningContext || null,
+                        messages,
+                    );
+
+                    try {
+                        stream = await getChatCompletionStream(
+                            requestConfig.ollamaMessages,
+                            requestConfig.options,
+                        );
+                        recovered = true;
+                        break;
+                    } catch (retryErr) {
+                        lastRetryError = retryErr;
+                        const retryMsg =
+                            retryErr instanceof Error
+                                ? retryErr.message
+                                : String(retryErr);
+
+                        if (
+                            retryMsg.includes("405") ||
+                            retryMsg.includes("method not allowed")
+                        ) {
+                            const { content } = await getChatCompletion(
+                                requestConfig.ollamaMessages,
+                                requestConfig.options,
+                            );
+                            stream = createStaticStream(content);
+                            recovered = true;
+                            break;
+                        }
+
+                        if (
+                            !(
+                                retryMsg.includes("404") &&
+                                retryMsg.includes("not found")
+                            )
+                        ) {
+                            throw retryErr;
+                        }
+                    }
+                }
+
+                if (!recovered) {
+                    throw lastRetryError;
+                }
             } else {
                 throw streamErr;
             }

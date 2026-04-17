@@ -1,4 +1,6 @@
-// AI Agent Assistant — Local Types
+import { APPROVED_OLLAMA_MODELS } from "@/lib/ai-models";
+
+// AI Agent Assistant local types
 
 export type AIAgentMode = "agent" | "ask";
 
@@ -6,41 +8,12 @@ export interface AIModel {
     id: string;
     name: string;
     provider: string;
-    /** Slug for models.dev logo — see https://models.dev/logos */
+    /** Slug for models.dev logo */
     providerSlug: string;
     description?: string;
 }
 
-export const AI_MODELS: AIModel[] = [
-    {
-        id: "qwen2.5:7b-instruct",
-        name: "Qwen 2.5 7B",
-        provider: "Ollama",
-        providerSlug: "alibaba",
-        description: "Tối ưu cho hỗ trợ học tập, hiểu ngữ cảnh tốt",
-    },
-    {
-        id: "qwen2.5-coder:7b-instruct",
-        name: "Qwen 2.5 Coder 7B",
-        provider: "Ollama",
-        providerSlug: "alibaba",
-        description: "Chuyên biệt cho code, phù hợp bài lập trình",
-    },
-    {
-        id: "qwen3-vl:4b",
-        name: "Qwen3 VL 4B",
-        provider: "Ollama",
-        providerSlug: "alibaba",
-        description: "Mô hình nhỏ gọn, phản hồi nhanh",
-    },
-    {
-        id: "deepseek-coder:1.3b",
-        name: "DeepSeek Coder 1.3B",
-        provider: "Ollama",
-        providerSlug: "deepseek",
-        description: "Siêu nhẹ, autocomplete nhanh",
-    },
-];
+export const AI_MODELS: AIModel[] = APPROVED_OLLAMA_MODELS;
 
 export const AI_MODE_CONFIG: Record<
     AIAgentMode,
@@ -91,9 +64,7 @@ export interface AIAgentPanelProps {
     codeContext?: string;
     language?: string;
     onInsertCode?: (code: string) => void;
-    /** Full code state for Agent mode tools (read_code, edit_code) */
     code?: CodeState;
-    /** Edit code by tab for Agent mode edit_code tool */
     onEditCode?: (tab: "html" | "css" | "javascript", content: string) => void;
     className?: string;
     theme?: "light" | "dark";

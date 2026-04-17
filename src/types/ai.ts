@@ -88,6 +88,7 @@ export interface AIAssistantSettings {
     serverUrl: string;
     completionModel: string;
     chatModel: string;
+    tutorModel: string;
 }
 
 export const DEFAULT_AI_SETTINGS: AIAssistantSettings = {
@@ -97,6 +98,7 @@ export const DEFAULT_AI_SETTINGS: AIAssistantSettings = {
     serverUrl: "",
     completionModel: "deepseek-coder:1.3b",
     chatModel: "qwen2.5-coder:7b-instruct",
+    tutorModel: "qwen2.5:7b-instruct",
 };
 
 // ===== Ollama API Types (internal) =====
