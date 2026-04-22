@@ -174,6 +174,8 @@ class _MediaPipeRuntime:
 
     def __init__(self) -> None:
         self._face_mesh = None
+        self._face_mesh_static = None
+        self._face_detection = None
         self._hands = None
 
     def face_mesh(self):
@@ -197,17 +199,45 @@ class _MediaPipeRuntime:
             )
         return self._hands
 
+    def face_mesh_static(self):
+        if self._face_mesh_static is None:
+            self._face_mesh_static = mp.solutions.face_mesh.FaceMesh(
+                static_image_mode=True,
+                max_num_faces=1,
+                refine_landmarks=True,
+                min_detection_confidence=settings.FACE_TOUCH_FACE_DETECT_CONFIDENCE,
+            )
+        return self._face_mesh_static
+
+    def face_detection(self):
+        if self._face_detection is None:
+            self._face_detection = mp.solutions.face_detection.FaceDetection(
+                model_selection=1,
+                min_detection_confidence=max(
+                    settings.FACE_TOUCH_FACE_DETECT_CONFIDENCE - 0.15,
+                    0.35,
+                ),
+            )
+        return self._face_detection
+
     def reset(self) -> None:
         """Reset models khi cần re-initialize."""
         if self._face_mesh is not None:
             self._face_mesh.close()
             self._face_mesh = None
+        if self._face_mesh_static is not None:
+            self._face_mesh_static.close()
+            self._face_mesh_static = None
+        if self._face_detection is not None:
+            self._face_detection.close()
+            self._face_detection = None
         if self._hands is not None:
             self._hands.close()
             self._hands = None
 
 
 _runtime = _MediaPipeRuntime()
+_face_cascade = None
 
 
 def _landmarks_to_points(landmarks: Sequence, width: int, height: int) -> List[Point]:
@@ -219,6 +249,194 @@ def _landmarks_to_points(landmarks: Sequence, width: int, height: int) -> List[P
         )
         for landmark in landmarks
     ]
+
+
+def _roi_landmarks_to_points(landmarks: Sequence, crop_box: Box) -> List[Point]:
+    return [
+        Point(
+            x=min(max(crop_box.x + landmark.x * crop_box.width, 0), crop_box.x + crop_box.width),
+            y=min(max(crop_box.y + landmark.y * crop_box.height, 0), crop_box.y + crop_box.height),
+            z=float(getattr(landmark, "z", 0.0)),
+        )
+        for landmark in landmarks
+    ]
+
+
+def _relative_box_to_box(relative_box, width: int, height: int) -> Box | None:
+    x = max(float(relative_box.xmin) * width, 0.0)
+    y = max(float(relative_box.ymin) * height, 0.0)
+    max_x = min(float(relative_box.xmin + relative_box.width) * width, float(width))
+    max_y = min(float(relative_box.ymin + relative_box.height) * height, float(height))
+    if max_x <= x or max_y <= y:
+        return None
+    return Box(x=x, y=y, width=max_x - x, height=max_y - y)
+
+
+def _box_bounds(box: Box, width: int, height: int) -> Tuple[int, int, int, int]:
+    left = max(int(math.floor(box.x)), 0)
+    top = max(int(math.floor(box.y)), 0)
+    right = min(int(math.ceil(box.x + box.width)), width)
+    bottom = min(int(math.ceil(box.y + box.height)), height)
+    return left, top, right, bottom
+
+
+def _opencv_face_cascade():
+    global _face_cascade
+
+    if _face_cascade is not None:
+        return _face_cascade
+
+    cascade_root = getattr(getattr(cv2, "data", None), "haarcascades", None)
+    if not cascade_root:
+        return None
+
+    cascade = cv2.CascadeClassifier(
+        f"{cascade_root}haarcascade_frontalface_default.xml",
+    )
+    if cascade.empty():
+        return None
+
+    _face_cascade = cascade
+    return _face_cascade
+
+
+def _opencv_face_box(frame: np.ndarray) -> Box | None:
+    cascade = _opencv_face_cascade()
+    if cascade is None:
+        return None
+
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    min_edge = max(24, int(round(min(frame.shape[:2]) * 0.05)))
+    detections = cascade.detectMultiScale(
+        gray_frame,
+        scaleFactor=1.05,
+        minNeighbors=3,
+        minSize=(min_edge, min_edge),
+    )
+    if len(detections) == 0:
+        return None
+
+    x, y, width, height = max(detections, key=lambda item: item[2] * item[3])
+    return Box(
+        x=float(x),
+        y=float(y),
+        width=float(width),
+        height=float(height),
+    )
+
+
+def _prepare_face_roi(frame: np.ndarray, face_box: Box) -> Tuple[np.ndarray, Box] | None:
+    frame_height, frame_width = frame.shape[:2]
+    roi_box = _expand_box(
+        face_box,
+        frame_width,
+        frame_height,
+        max(
+            settings.FACE_TOUCH_FACE_ROI_MARGIN_RATIO,
+            _adaptive_face_margin(face_box, frame_width, frame_height),
+        ),
+    )
+    left, top, right, bottom = _box_bounds(roi_box, frame_width, frame_height)
+    if right <= left or bottom <= top:
+        return None
+
+    roi_frame = frame[top:bottom, left:right]
+    if roi_frame.size == 0:
+        return None
+
+    crop_box = Box(
+        x=float(left),
+        y=float(top),
+        width=float(right - left),
+        height=float(bottom - top),
+    )
+    longest_edge = max(roi_frame.shape[0], roi_frame.shape[1])
+    min_size = settings.FACE_TOUCH_FACE_ROI_MIN_SIZE
+    if longest_edge < min_size:
+        scale = min_size / max(longest_edge, 1)
+        roi_frame = cv2.resize(
+            roi_frame,
+            (
+                max(1, int(round(roi_frame.shape[1] * scale))),
+                max(1, int(round(roi_frame.shape[0] * scale))),
+            ),
+            interpolation=cv2.INTER_CUBIC,
+        )
+
+    return roi_frame, crop_box
+
+
+def _approximate_face_points(face_box: Box) -> List[Point]:
+    points: List[Point] = []
+    center_x, center_y = face_box.center
+    radius_x = max(face_box.width * 0.5, 1.0)
+    radius_y = max(face_box.height * 0.5, 1.0)
+    count = max(len(FACE_OVERLAY_INDICES), 24)
+
+    for index in range(count):
+        angle = (2 * math.pi * index / count) - (math.pi / 2)
+        points.append(
+            Point(
+                x=center_x + math.cos(angle) * radius_x,
+                y=center_y + math.sin(angle) * radius_y,
+            )
+        )
+
+    return points
+
+
+def _fallback_face_points(processed_frame: np.ndarray, rgb_frame: np.ndarray) -> Tuple[List[Point], Box] | None:
+    proc_h, proc_w = processed_frame.shape[:2]
+    detection_results = _runtime.face_detection().process(rgb_frame)
+    detections = detection_results.detections or []
+    best_face_box = None
+    best_score = -1.0
+
+    for detection in detections:
+        relative_box = getattr(getattr(detection, "location_data", None), "relative_bounding_box", None)
+        if relative_box is None:
+            continue
+        face_box = _relative_box_to_box(relative_box, proc_w, proc_h)
+        if face_box is None:
+            continue
+        score = float(detection.score[0]) if getattr(detection, "score", None) else 0.0
+        if score > best_score:
+            best_face_box = face_box
+            best_score = score
+
+    if best_face_box is None:
+        best_face_box = _opencv_face_box(processed_frame)
+    if best_face_box is None:
+        return None
+
+    roi = _prepare_face_roi(processed_frame, best_face_box)
+    if roi is not None:
+        roi_frame, crop_box = roi
+        roi_rgb = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2RGB)
+        roi_results = _runtime.face_mesh_static().process(roi_rgb)
+        if roi_results.multi_face_landmarks:
+            roi_points = _roi_landmarks_to_points(
+                roi_results.multi_face_landmarks[0].landmark,
+                crop_box,
+            )
+            face_box = _points_box(_face_landmark_subset(roi_points))
+            if face_box is not None:
+                return roi_points, face_box
+
+    return _approximate_face_points(best_face_box), best_face_box
+
+
+def _extract_face_points(processed_frame: np.ndarray, rgb_frame: np.ndarray) -> Tuple[List[Point], Box] | None:
+    proc_h, proc_w = processed_frame.shape[:2]
+    face_results = _runtime.face_mesh().process(rgb_frame)
+    if face_results.multi_face_landmarks:
+        face_landmarks = face_results.multi_face_landmarks[0].landmark
+        face_points = _landmarks_to_points(face_landmarks, proc_w, proc_h)
+        face_box = _points_box(_face_landmark_subset(face_points))
+        if face_box is not None:
+            return face_points, face_box
+
+    return _fallback_face_points(processed_frame, rgb_frame)
 
 
 def _points_box(points: Iterable[Point]) -> Box | None:
@@ -554,6 +772,25 @@ def _hand_bounding_points(hand_points: Sequence[Point]) -> List[Point]:
     return [hand_points[i] for i in sorted(indices) if i < len(hand_points)]
 
 
+def get_face_touch_runtime_status() -> dict[str, object]:
+    try:
+        _require_dependencies()
+        _runtime.face_mesh()
+        _runtime.face_mesh_static()
+        _runtime.face_detection()
+        _runtime.hands()
+    except Exception as error:
+        return {
+            "available": False,
+            "message": str(error),
+        }
+
+    return {
+        "available": True,
+        "message": "Face-touch runtime is ready.",
+    }
+
+
 def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnalyzeResponse:
     _require_dependencies()
 
@@ -566,10 +803,10 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
     proc_h, proc_w = processed_frame.shape[:2]
     rgb_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
 
-    face_results = _runtime.face_mesh().process(rgb_frame)
     hand_results = _runtime.hands().process(rgb_frame)
+    face_data = _extract_face_points(processed_frame, rgb_frame)
 
-    if not face_results.multi_face_landmarks:
+    if face_data is None:
         latency_ms = int((time.perf_counter() - started_at) * 1000)
         return FaceTouchAnalyzeResponse(
             state="safe",
@@ -589,11 +826,7 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
             },
         )
 
-    face_landmarks = face_results.multi_face_landmarks[0].landmark
-    face_points = _landmarks_to_points(face_landmarks, proc_w, proc_h)
-    face_box = _points_box(_face_landmark_subset(face_points))
-    if face_box is None:
-        raise RuntimeError("Không thể dựng face box từ landmarks.")
+    face_points, face_box = face_data
 
     # Adaptive margin: mặt xa → margin lớn, mặt gần → margin nhỏ
     margin_ratio = _adaptive_face_margin(face_box, proc_w, proc_h)

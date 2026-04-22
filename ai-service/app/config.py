@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     FACE_TOUCH_DEFAULT_HEIGHT: int = 480
     FACE_TOUCH_PROCESS_WIDTH: int = 640  # Giữ nguyên độ phân giải để MediaPipe detect tay tốt hơn
     FACE_TOUCH_FACE_MARGIN_RATIO: float = 0.18
+    FACE_TOUCH_FACE_ROI_MARGIN_RATIO: float = 0.45
+    FACE_TOUCH_FACE_ROI_MIN_SIZE: int = 320
     FACE_TOUCH_NEAR_THRESHOLD: float = 0.30
     FACE_TOUCH_TOUCH_THRESHOLD: float = 0.58
     FACE_TOUCH_REGION_TOUCH_THRESHOLD: float = 0.25

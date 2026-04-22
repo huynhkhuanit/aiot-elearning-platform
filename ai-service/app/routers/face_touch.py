@@ -4,14 +4,28 @@ Face touch alert API router
 
 import logging
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 
 from app.models import FaceTouchAnalyzeRequest, FaceTouchAnalyzeResponse
-from app.services.face_touch_service import analyze_face_touch_frame, FaceTouchServiceError
+from app.services.face_touch_service import (
+    FaceTouchServiceError,
+    analyze_face_touch_frame,
+    get_face_touch_runtime_status,
+)
 
 logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/api/face-touch", tags=["face-touch"])
+
+
+@router.get("/health")
+async def face_touch_health():
+    status = get_face_touch_runtime_status()
+    return JSONResponse(
+        status_code=200 if status["available"] else 503,
+        content=status,
+    )
 
 
 @router.post("/analyze-frame", response_model=FaceTouchAnalyzeResponse)

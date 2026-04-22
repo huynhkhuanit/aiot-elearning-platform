@@ -357,6 +357,45 @@ function drawOverlay(
     context.restore();
 }
 
+function getCameraAccessErrorMessage(error: unknown) {
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+        return "Trang hiện không chạy trong secure context. Hãy mở bằng HTTPS hoặc localhost để dùng camera.";
+    }
+
+    if (
+        typeof navigator === "undefined" ||
+        !navigator.mediaDevices ||
+        typeof navigator.mediaDevices.getUserMedia !== "function"
+    ) {
+        return "Trình duyệt hoặc ngữ cảnh hiện tại không hỗ trợ truy cập camera. Kiểm tra HTTPS, localhost và quyền site.";
+    }
+
+    if (error instanceof DOMException) {
+        switch (error.name) {
+            case "NotAllowedError":
+            case "PermissionDeniedError":
+                return "Trình duyệt đã chặn quyền camera. Kiểm tra quyền camera của site, HTTPS và Permissions-Policy.";
+            case "NotFoundError":
+            case "DevicesNotFoundError":
+                return "Không tìm thấy camera trên thiết bị này.";
+            case "NotReadableError":
+            case "TrackStartError":
+                return "Camera đang bị ứng dụng khác sử dụng hoặc hệ điều hành đang chặn thiết bị.";
+            case "OverconstrainedError":
+            case "ConstraintNotSatisfiedError":
+                return "Thiết bị không đáp ứng được cấu hình camera yêu cầu.";
+            default:
+                return error.message || "Không thể truy cập webcam.";
+        }
+    }
+
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    return "Không thể truy cập webcam.";
+}
+
 export function FaceTouchAlertTool() {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const overlayRef = useRef<HTMLCanvasElement | null>(null);
@@ -370,16 +409,27 @@ export function FaceTouchAlertTool() {
     const smoothedScoreRef = useRef(0);
     const audioContextRef = useRef<AudioContext | null>(null);
     const lastHealthCheckAtRef = useRef(0);
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const serviceStateRef = useRef<ServiceState>("unknown");
+    const sampleRateRef = useRef([15]);
 
     const [cameraActive, setCameraActive] = useState(false);
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [detectorState, setDetectorState] = useState<DetectorState>("idle");
-    const [serviceState, setServiceState] = useState<ServiceState>("unknown");
+    const [serviceState, setServiceStateRaw] = useState<ServiceState>("unknown");
+    const setServiceState = (next: ServiceState) => {
+        serviceStateRef.current = next;
+        setServiceStateRaw(next);
+    };
     const [detection, setDetection] =
         useState<DetectionResponse>(defaultDetection);
     const [displayScore, setDisplayScore] = useState(0);
     const [alertCount, setAlertCount] = useState(0);
-    const [sampleRate, setSampleRate] = useState([15]);
+    const [sampleRate, setSampleRateRaw] = useState([15]);
+    const setSampleRate = (next: number[]) => {
+        sampleRateRef.current = next;
+        setSampleRateRaw(next);
+    };
     const [cameraError, setCameraError] = useState<string | null>(null);
     const [serviceStatus, setServiceStatus] = useState<string>(
         "Camera chưa khởi động. Công cụ sẽ gửi frame về Python service khi bắt đầu.",
@@ -411,14 +461,17 @@ export function FaceTouchAlertTool() {
         }
     };
 
-    const isServiceConnectivityError = (message: string) => {
+    const isServiceAvailabilityError = (message: string) => {
         const normalized = message.toLowerCase();
         return (
             normalized.includes("python face-touch service") ||
             normalized.includes("không kết nối được") ||
             normalized.includes("phản hồi quá chậm") ||
             normalized.includes("localhost:8000") ||
-            normalized.includes("start-all-ai.ps1")
+            normalized.includes("start-all-ai.ps1") ||
+            normalized.includes("mediapipe") ||
+            normalized.includes("opencv-python") ||
+            normalized.includes("face-touch detection")
         );
     };
 
@@ -555,13 +608,14 @@ export function FaceTouchAlertTool() {
             return;
         }
 
-        if (serviceState !== "ready") {
+        const currentServiceState = serviceStateRef.current;
+        if (currentServiceState !== "ready") {
             const now = Date.now();
             const shouldRetryHealthCheck =
                 now - lastHealthCheckAtRef.current > 4000;
 
-            if (serviceState === "unknown" || shouldRetryHealthCheck) {
-                void checkServiceHealth({ silent: serviceState === "offline" });
+            if (currentServiceState === "unknown" || shouldRetryHealthCheck) {
+                void checkServiceHealth({ silent: currentServiceState === "offline" });
             }
 
             return;
@@ -571,8 +625,10 @@ export function FaceTouchAlertTool() {
         const height = Math.round(
             (video.videoHeight / video.videoWidth) * width,
         );
-        captureCanvas.width = width;
-        captureCanvas.height = height;
+        if (captureCanvas.width !== width || captureCanvas.height !== height) {
+            captureCanvas.width = width;
+            captureCanvas.height = height;
+        }
 
         const context = captureCanvas.getContext("2d");
         if (!context) {
@@ -581,6 +637,10 @@ export function FaceTouchAlertTool() {
 
         context.drawImage(video, 0, 0, width, height);
         const dataUrl = captureCanvas.toDataURL("image/jpeg", 0.55);
+
+        abortControllerRef.current?.abort();
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
 
         pendingRequestRef.current = true;
         setDetectorState((current) =>
@@ -596,19 +656,28 @@ export function FaceTouchAlertTool() {
                 body: JSON.stringify({
                     image: dataUrl,
                     timestamp: Date.now(),
-                    sampleRateFps: sampleRate[0],
+                    sampleRateFps: sampleRateRef.current[0],
                 }),
+                signal: controller.signal,
             });
+
+            if (controller.signal.aborted) {
+                return;
+            }
 
             const payload = (await response.json()) as
                 | { success: true; data: DetectionResponse }
-                | { success: false; error: string };
+                | { success: false; error?: string; message?: string };
+
+            if (controller.signal.aborted) {
+                return;
+            }
 
             if (!response.ok || !payload.success) {
                 throw new Error(
                     payload.success
                         ? "Face touch service error"
-                        : payload.error,
+                        : (payload.error || payload.message || `HTTP ${response.status}: Không thể phân tích frame.`),
                 );
             }
 
@@ -643,11 +712,14 @@ export function FaceTouchAlertTool() {
                 consecutiveTouchFramesRef.current = 0;
             }
         } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") {
+                return;
+            }
             const message =
                 error instanceof Error
                     ? error.message
                     : "Không thể phân tích frame.";
-            if (isServiceConnectivityError(message)) {
+            if (isServiceAvailabilityError(message)) {
                 setServiceState("offline");
                 setDetectorState((current) =>
                     current === "loading" ? "safe" : current,
@@ -729,9 +801,11 @@ export function FaceTouchAlertTool() {
         }
 
         let cancelled = false;
+        pendingRequestRef.current = false;
+        lastSampleTimeRef.current = 0;
 
         const tick = (now: number) => {
-            const fps = sampleRate[0];
+            const fps = sampleRateRef.current[0];
             const frameInterval = 1000 / fps;
 
             if (
@@ -756,8 +830,11 @@ export function FaceTouchAlertTool() {
                 window.cancelAnimationFrame(animationFrameRef.current);
                 animationFrameRef.current = null;
             }
+            abortControllerRef.current?.abort();
+            abortControllerRef.current = null;
+            pendingRequestRef.current = false;
         };
-    }, [cameraActive, sampleRate]);
+    }, [cameraActive]);
 
     useEffect(() => {
         void checkServiceHealth({ silent: true });
@@ -770,6 +847,30 @@ export function FaceTouchAlertTool() {
 
     async function startCamera() {
         if (cameraActive) {
+            return;
+        }
+
+        if (typeof window !== "undefined" && !window.isSecureContext) {
+            const message =
+                "Trang hiện không chạy trong secure context. Hãy mở bằng HTTPS hoặc localhost để dùng camera.";
+            setCameraError(message);
+            setDetectorState("error");
+            setServiceStatus(message);
+            addLog("ERR", message);
+            return;
+        }
+
+        if (
+            typeof navigator === "undefined" ||
+            !navigator.mediaDevices ||
+            typeof navigator.mediaDevices.getUserMedia !== "function"
+        ) {
+            const message =
+                "Trình duyệt hoặc ngữ cảnh hiện tại không hỗ trợ truy cập camera. Kiểm tra HTTPS, localhost và quyền site.";
+            setCameraError(message);
+            setDetectorState("error");
+            setServiceStatus(message);
+            addLog("ERR", message);
             return;
         }
 
@@ -809,10 +910,7 @@ export function FaceTouchAlertTool() {
             addLog("SYS", `Processing at ${sampleRate[0]} FPS.`);
             void checkServiceHealth();
         } catch (error) {
-            const message =
-                error instanceof Error
-                    ? error.message
-                    : "Không lấy được quyền truy cập webcam.";
+            const message = getCameraAccessErrorMessage(error);
             setCameraError(message);
             setDetectorState("error");
             setServiceStatus(message);

@@ -17,6 +17,11 @@ type ServiceHealthPayload = {
     message: string;
 };
 
+type FaceTouchHealthResponse = {
+    available?: boolean;
+    message?: string;
+};
+
 function getServiceUnavailableMessage(reason?: "timeout" | "offline") {
     if (reason === "timeout") {
         return `Python face-touch service phản hồi quá chậm tại ${FASTAPI_BASE_URL}. ${SERVICE_BOOT_HINT}`;
@@ -27,6 +32,45 @@ function getServiceUnavailableMessage(reason?: "timeout" | "offline") {
 
 async function getServiceHealth(): Promise<ServiceHealthPayload> {
     try {
+        const faceTouchResponse = await fetch(
+            `${FASTAPI_BASE_URL}/api/face-touch/health`,
+            {
+                method: "GET",
+                cache: "no-store",
+                signal: AbortSignal.timeout(5000),
+            },
+        );
+
+        if (faceTouchResponse.ok) {
+            const payload =
+                (await faceTouchResponse.json().catch(() => null)) as
+                    | FaceTouchHealthResponse
+                    | null;
+
+            return {
+                available: payload?.available !== false,
+                baseUrl: FASTAPI_BASE_URL,
+                message:
+                    payload?.message ||
+                    `Python face-touch service Ä‘ang sáºµn sÃ ng táº¡i ${FASTAPI_BASE_URL}.`,
+            };
+        }
+
+        if (faceTouchResponse.status !== 404) {
+            const payload =
+                (await faceTouchResponse.json().catch(() => null)) as
+                    | FaceTouchHealthResponse
+                    | null;
+
+            return {
+                available: false,
+                baseUrl: FASTAPI_BASE_URL,
+                message:
+                    payload?.message ||
+                    getServiceUnavailableMessage(),
+            };
+        }
+
         const response = await fetch(`${FASTAPI_BASE_URL}/health`, {
             method: "GET",
             cache: "no-store",

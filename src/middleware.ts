@@ -35,7 +35,18 @@ function isAllowedOrigin(origin: string | null): boolean {
 }
 
 // ─── Security Headers ───
-function setSecurityHeaders(response: NextResponse): NextResponse {
+function getPermissionsPolicy(pathname: string) {
+    if (pathname.startsWith("/tools/face-touch-alert")) {
+        return "camera=(self), microphone=(), geolocation=()";
+    }
+
+    return "camera=(), microphone=(), geolocation=()";
+}
+
+function setSecurityHeaders(
+    response: NextResponse,
+    pathname: string,
+): NextResponse {
     // Chống clickjacking
     response.headers.set("X-Frame-Options", "DENY");
     // Chống MIME sniffing
@@ -52,7 +63,7 @@ function setSecurityHeaders(response: NextResponse): NextResponse {
     // Permissions Policy
     response.headers.set(
         "Permissions-Policy",
-        "camera=(), microphone=(), geolocation=()",
+        getPermissionsPolicy(pathname),
     );
     // Content Security Policy
     response.headers.set(
@@ -105,7 +116,7 @@ export function middleware(request: NextRequest) {
             directProfileRouteMatch[1],
         );
         const response = NextResponse.redirect(redirectUrl);
-        return setSecurityHeaders(response);
+        return setSecurityHeaders(response, redirectUrl.pathname);
     }
 
     const publicProfileRouteMatch = pathname.match(/^\/@@?([^/]+)$/);
@@ -116,7 +127,7 @@ export function middleware(request: NextRequest) {
 
         if (!normalizedUsername) {
             const response = NextResponse.next();
-            return setSecurityHeaders(response);
+            return setSecurityHeaders(response, pathname);
         }
 
         const canonicalPath = getCanonicalProfilePath(normalizedUsername);
@@ -124,18 +135,18 @@ export function middleware(request: NextRequest) {
             const redirectUrl = request.nextUrl.clone();
             redirectUrl.pathname = canonicalPath;
             const response = NextResponse.redirect(redirectUrl);
-            return setSecurityHeaders(response);
+            return setSecurityHeaders(response, redirectUrl.pathname);
         }
 
         const response = NextResponse.next();
-        return setSecurityHeaders(response);
+        return setSecurityHeaders(response, pathname);
     }
 
     // ─── CORS preflight (OPTIONS) ───
     if (request.method === "OPTIONS" && pathname.startsWith("/api")) {
         const preflightResponse = new NextResponse(null, { status: 204 });
         setCorsHeaders(preflightResponse, request);
-        return setSecurityHeaders(preflightResponse);
+        return setSecurityHeaders(preflightResponse, pathname);
     }
 
     // ─── Public routes (no auth required) ───
@@ -180,7 +191,7 @@ export function middleware(request: NextRequest) {
         !isProtectedRoute
     ) {
         let response = NextResponse.next();
-        setSecurityHeaders(response);
+        setSecurityHeaders(response, pathname);
 
         // Add CORS headers for API routes
         if (pathname.startsWith("/api")) {
@@ -220,13 +231,13 @@ export function middleware(request: NextRequest) {
                     },
                 );
                 setCorsHeaders(errorResponse, request);
-                return setSecurityHeaders(errorResponse);
+                return setSecurityHeaders(errorResponse, pathname);
             }
 
             const response = NextResponse.redirect(
                 new URL("/auth/login", request.url),
             );
-            return setSecurityHeaders(response);
+            return setSecurityHeaders(response, pathname);
         }
     }
 
@@ -259,14 +270,14 @@ export function middleware(request: NextRequest) {
                     },
                 );
                 setCorsHeaders(csrfError, request);
-                return setSecurityHeaders(csrfError);
+                return setSecurityHeaders(csrfError, pathname);
             }
         }
     }
 
     // ─── Default: allow with security headers ───
     let response = NextResponse.next();
-    setSecurityHeaders(response);
+    setSecurityHeaders(response, pathname);
 
     if (pathname.startsWith("/api")) {
         setCorsHeaders(response, request);
