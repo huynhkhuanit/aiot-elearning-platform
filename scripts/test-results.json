@@ -1,0 +1,441 @@
+{
+  "summary": {
+    "total": 43,
+    "passed": 38,
+    "failed": 5,
+    "rate": "88.4%",
+    "timestamp": "2026-04-22T14:16:44.441Z"
+  },
+  "results": [
+    {
+      "id": "TC01",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "Đăng ký tài khoản hợp lệ",
+      "input": "email=testuser_1776867354429@test.com",
+      "expected": "HTTP 201",
+      "actual": "201 - {\"success\":true,\"message\":\"Đăng ký thành công!\",\"data\":{\"user\":{\"id\":\"74e66408-b972-47a2-b0b5-41a508",
+      "status": 201,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC02",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "Đăng ký trùng email",
+      "input": "email=testuser_1776867354429@test.com",
+      "expected": "HTTP 409",
+      "actual": "409 - {\"success\":false,\"message\":\"Email đã được sử dụng\"}",
+      "status": 409,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC03",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "Đăng ký trùng username",
+      "input": "username=testuser_1776867354429",
+      "expected": "HTTP 409|429",
+      "actual": "409",
+      "status": 409,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC04",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "Đăng ký thiếu trường bắt buộc",
+      "input": "email=empty",
+      "expected": "HTTP 400|429",
+      "actual": "429",
+      "status": 429,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC05",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "Đăng ký mật khẩu yếu (<8 ký tự)",
+      "input": "password=123",
+      "expected": "HTTP 400|429",
+      "actual": "429",
+      "status": 429,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC06",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "Đăng nhập hợp lệ",
+      "input": "email=testuser_1776867354429@test.com",
+      "expected": "HTTP 200",
+      "actual": "200 - {\"success\":true,\"message\":\"Đăng nhập thành công\",\"data\":{\"user\":{\"id\":\"74e66408-b972-47a2-b0b5-41a50",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC07",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "Đăng nhập sai mật khẩu",
+      "input": "password=wrong",
+      "expected": "HTTP 401",
+      "actual": "401 - {\"success\":false,\"message\":\"Email hoặc mật khẩu không đúng. Còn 4 lần thử.\"}",
+      "status": 401,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC08",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "Đăng nhập email không tồn tại",
+      "input": "email=noexist",
+      "expected": "HTTP 401",
+      "actual": "401 - {\"success\":false,\"message\":\"Email hoặc mật khẩu không đúng\"}",
+      "status": 401,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC09",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "GET /api/auth/me (có token)",
+      "input": "auth_token=valid",
+      "expected": "HTTP 200",
+      "actual": "200 - {\"success\":true,\"data\":{\"user\":{\"id\":\"74e66408-b972-47a2-b0b5-41a5082d2c6c\",\"email\":\"testuser_177686",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC10",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "GET /api/auth/me (không token)",
+      "input": "no cookie",
+      "expected": "HTTP 401",
+      "actual": "401 - {\"success\":false,\"message\":\"Authentication token not found\"}",
+      "status": 401,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC11",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "Đổi mật khẩu hợp lệ",
+      "input": "currentPwd→newPwd",
+      "expected": "HTTP 200",
+      "actual": "200 - {\"success\":true,\"message\":\"Đổi mật khẩu thành công\"}",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC12",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "Đổi mật khẩu sai mật khẩu cũ",
+      "input": "wrongCurrent",
+      "expected": "HTTP 401",
+      "actual": "401 - {\"success\":false,\"message\":\"Mật khẩu hiện tại không đúng\"}",
+      "status": 401,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC13",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "Đổi mật khẩu trùng mật khẩu cũ",
+      "input": "same password",
+      "expected": "HTTP 400",
+      "actual": "400 - {\"success\":false,\"message\":\"Mật khẩu mới phải khác mật khẩu hiện tại\"}",
+      "status": 400,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC14",
+      "group": "6.2.1 Xác thực & Quản lý tài khoản",
+      "name": "Đăng xuất",
+      "input": "POST /logout",
+      "expected": "HTTP 200",
+      "actual": "200 - {\"success\":true,\"message\":\"Đăng xuất thành công\"}",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC15",
+      "group": "6.2.2 Khóa học, bài học, ghi danh & tiến độ",
+      "name": "GET /api/courses",
+      "input": "no filter",
+      "expected": "HTTP 200",
+      "actual": "200 - {\"success\":true,\"data\":{\"courses\":[{\"id\":\"c1111111-1111-1111-1111-111111111111\",\"title\":\"Lập trình J",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC16",
+      "group": "6.2.2 Khóa học, bài học, ghi danh & tiến độ",
+      "name": "Lọc khóa học level=BEGINNER",
+      "input": "level=BEGINNER",
+      "expected": "HTTP 200",
+      "actual": "200 - {\"success\":true,\"data\":{\"courses\":[{\"id\":\"c3333333-3333-3333-3333-333333333333\",\"title\":\"HTML CSS Cơ",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC17",
+      "group": "6.2.2 Khóa học, bài học, ghi danh & tiến độ",
+      "name": "Lọc khóa học miễn phí",
+      "input": "is_free=1",
+      "expected": "HTTP 200",
+      "actual": "200 - {\"success\":true,\"data\":{\"courses\":[{\"id\":\"c3333333-3333-3333-3333-333333333333\",\"title\":\"HTML CSS Cơ",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC18",
+      "group": "6.2.2 Khóa học, bài học, ghi danh & tiến độ",
+      "name": "Tìm kiếm khóa học",
+      "input": "search=javascript",
+      "expected": "HTTP 200",
+      "actual": "200 - {\"success\":true,\"data\":{\"courses\":[{\"id\":\"c1111111-1111-1111-1111-111111111111\",\"title\":\"Lập trình J",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC19",
+      "group": "6.2.2 Khóa học, bài học, ghi danh & tiến độ",
+      "name": "Phân trang khóa học",
+      "input": "page=1&limit=2",
+      "expected": "HTTP 200",
+      "actual": "200 - {\"success\":true,\"data\":{\"courses\":[{\"id\":\"c1111111-1111-1111-1111-111111111111\",\"title\":\"Lập trình J",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC20",
+      "group": "6.2.2 Khóa học, bài học, ghi danh & tiến độ",
+      "name": "GET /api/courses/:slug",
+      "input": "slug=lap-trinh-javascript-nang-cao",
+      "expected": "HTTP 200",
+      "actual": "200 - {\"success\":true,\"data\":{\"id\":\"c1111111-1111-1111-1111-111111111111\",\"title\":\"Lập trình JavaScript Nâ",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC21",
+      "group": "6.2.2 Khóa học, bài học, ghi danh & tiến độ",
+      "name": "Khóa học không tồn tại",
+      "input": "slug=invalid",
+      "expected": "HTTP 404",
+      "actual": "404 - {\"success\":false,\"message\":\"Course not found\"}",
+      "status": 404,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC22",
+      "group": "6.2.2 Khóa học, bài học, ghi danh & tiến độ",
+      "name": "Ghi danh khóa học",
+      "input": "slug=html-css-co-ban-den-nang-cao",
+      "expected": "HTTP 200|400(trùng)",
+      "actual": "200 - {\"success\":true,\"message\":\"Đăng ký khóa học thành công!\",\"data\":{\"courseId\":\"c33",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC23",
+      "group": "6.2.2 Khóa học, bài học, ghi danh & tiến độ",
+      "name": "Ghi danh trùng khóa học",
+      "input": "slug=html-css-co-ban-den-nang-cao",
+      "expected": "HTTP 400",
+      "actual": "400 - {\"success\":false,\"message\":\"Bạn đã đăng ký khóa học này rồi!\"}",
+      "status": 400,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC24",
+      "group": "6.2.2 Khóa học, bài học, ghi danh & tiến độ",
+      "name": "Ghi danh không đăng nhập",
+      "input": "no token",
+      "expected": "HTTP 401",
+      "actual": "401 - {\"success\":false,\"message\":\"Unauthorized\"}",
+      "status": 401,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC25",
+      "group": "6.2.2 Khóa học, bài học, ghi danh & tiến độ",
+      "name": "Xem tiến độ khóa học",
+      "input": "slug=html-css-co-ban-den-nang-cao",
+      "expected": "HTTP 200",
+      "actual": "200 - {\"success\":true,\"data\":{\"completedLessons\":[],\"progressMap\":{},\"progress\":0,\"totalLessons\":40,\"compl",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC26",
+      "group": "6.2.2 Khóa học, bài học, ghi danh & tiến độ",
+      "name": "Tiến độ khóa chưa ghi danh",
+      "input": "slug=invalid",
+      "expected": "401|403|404",
+      "actual": "404",
+      "status": 404,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC27",
+      "group": "6.2.3 AI Assistant, AI Tutor, AI Roadmap",
+      "name": "AI Chat thiếu messages",
+      "input": "messages=[]",
+      "expected": "HTTP 400",
+      "actual": "400 - {\"error\":\"messages array is required\"}",
+      "status": 400,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC28",
+      "group": "6.2.3 AI Assistant, AI Tutor, AI Roadmap",
+      "name": "AI Chat gửi tin nhắn hợp lệ",
+      "input": "messages=[Hello]",
+      "expected": "200|503|504",
+      "actual": "200",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC29",
+      "group": "6.2.3 AI Assistant, AI Tutor, AI Roadmap",
+      "name": "AI Tutor thiếu messages",
+      "input": "messages=[]",
+      "expected": "HTTP 400",
+      "actual": "400 - {\"error\":\"messages array is required\"}",
+      "status": 400,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC30",
+      "group": "6.2.3 AI Assistant, AI Tutor, AI Roadmap",
+      "name": "AI Tutor với learning context",
+      "input": "messages+context",
+      "expected": "200|503|504",
+      "actual": "200",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC31",
+      "group": "6.2.3 AI Assistant, AI Tutor, AI Roadmap",
+      "name": "AI Health check",
+      "input": "GET /ai/health",
+      "expected": "200|503|404",
+      "actual": "200",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC32",
+      "group": "6.2.3 AI Assistant, AI Tutor, AI Roadmap",
+      "name": "AI Roadmap không xác thực",
+      "input": "no token",
+      "expected": "HTTP 401",
+      "actual": "401 - {\"success\":false,\"error\":\"Unauthorized - No token\"}",
+      "status": 401,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC33",
+      "group": "6.2.3 AI Assistant, AI Tutor, AI Roadmap",
+      "name": "AI Roadmap thiếu profile",
+      "input": "profile=null",
+      "expected": "HTTP 400",
+      "actual": "403 - {\"success\":false,\"message\":\"CSRF token không hợp lệ. Vui lòng tải lại trang.\"}",
+      "status": 403,
+      "pass": "FAIL"
+    },
+    {
+      "id": "TC34",
+      "group": "6.2.3 AI Assistant, AI Tutor, AI Roadmap",
+      "name": "AI Roadmap tạo lộ trình hợp lệ",
+      "input": "profile=valid",
+      "expected": "200|503|504|429",
+      "actual": "403",
+      "status": 403,
+      "pass": "FAIL"
+    },
+    {
+      "id": "TC35",
+      "group": "6.2.3 AI Assistant, AI Tutor, AI Roadmap",
+      "name": "Lấy danh sách roadmap cá nhân",
+      "input": "GET /my",
+      "expected": "200|401|404",
+      "actual": "200",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC36",
+      "group": "6.2.4 Upload media, quản trị & phân quyền",
+      "name": "Upload không có file",
+      "input": "body={}",
+      "expected": "400|500",
+      "actual": "403",
+      "status": 403,
+      "pass": "FAIL"
+    },
+    {
+      "id": "TC37",
+      "group": "6.2.4 Upload media, quản trị & phân quyền",
+      "name": "Upload avatar không xác thực",
+      "input": "no token",
+      "expected": "HTTP 401",
+      "actual": "401 - {\"success\":false,\"message\":\"Unauthorized\"}",
+      "status": 401,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC38",
+      "group": "6.2.4 Upload media, quản trị & phân quyền",
+      "name": "Upload avatar > 5MB",
+      "input": "file=6MB",
+      "expected": "HTTP 400",
+      "actual": "403 - {\"success\":false,\"message\":\"CSRF token không hợp lệ. Vui lòng tải lại trang.\"}",
+      "status": 403,
+      "pass": "FAIL"
+    },
+    {
+      "id": "TC39",
+      "group": "6.2.4 Upload media, quản trị & phân quyền",
+      "name": "Upload avatar file PDF (không hợp lệ)",
+      "input": "type=pdf",
+      "expected": "HTTP 400",
+      "actual": "403 - {\"success\":false,\"message\":\"CSRF token không hợp lệ. Vui lòng tải lại trang.\"}",
+      "status": 403,
+      "pass": "FAIL"
+    },
+    {
+      "id": "TC40",
+      "group": "6.2.4 Upload media, quản trị & phân quyền",
+      "name": "Admin stats (có xác thực)",
+      "input": "token=student",
+      "expected": "200|401|403",
+      "actual": "200",
+      "status": 200,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC41",
+      "group": "6.2.4 Upload media, quản trị & phân quyền",
+      "name": "Cập nhật role (không phải admin)",
+      "input": "roles=[admin]",
+      "expected": "401|403",
+      "actual": "403",
+      "status": 403,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC42",
+      "group": "6.2.4 Upload media, quản trị & phân quyền",
+      "name": "Cập nhật role không xác thực",
+      "input": "no token",
+      "expected": "HTTP 401",
+      "actual": "401 - {\"success\":false,\"message\":\"Unauthorized\"}",
+      "status": 401,
+      "pass": "PASS"
+    },
+    {
+      "id": "TC43",
+      "group": "6.2.4 Upload media, quản trị & phân quyền",
+      "name": "Lấy CSRF token",
+      "input": "GET /auth/csrf",
+      "expected": "200|404",
+      "actual": "200",
+      "status": 200,
+      "pass": "PASS"
+    }
+  ]
+}
