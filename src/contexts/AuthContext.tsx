@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { PublicUser } from '@/types/auth';
+import { secureFetch, getCSRFToken } from '@/lib/secure-fetch';
 
 interface RegisterResponse {
   success: boolean;
@@ -31,40 +32,6 @@ interface RegisterData {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Read CSRF token from cookie for inclusion in mutating requests.
- */
-function getCSRFToken(): string | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-/**
- * Fetch wrapper that automatically includes CSRF token
- * in the `x-csrf-token` header for mutating requests.
- */
-async function secureFetch(
-  url: string,
-  options: RequestInit = {},
-): Promise<Response> {
-  const method = (options.method || 'GET').toUpperCase();
-  const headers = new Headers(options.headers);
-
-  // Include CSRF token for mutating methods
-  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-    const csrfToken = getCSRFToken();
-    if (csrfToken) {
-      headers.set('X-CSRF-Token', csrfToken);
-    }
-  }
-
-  return fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<PublicUser | null>(null);

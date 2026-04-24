@@ -4,11 +4,12 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import LayoutWrapper from "@/components/LayoutWrapper";
+import { CSRFInterceptor } from "@/components/CSRFInterceptor";
 import { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
     title: "Nền tảng học tập thông minh AIoT | Hệ thống E-Learning cho giáo dục Việt Nam",
@@ -35,13 +36,9 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="vi" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
-            <head>
-                <link
-                    rel="stylesheet"
-                    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-                />
-            </head>
+            <head />
             <body className="antialiased">
+                <CSRFInterceptor />
                 <ToastProvider>
                     <AuthProvider>
                         <ThemeProvider

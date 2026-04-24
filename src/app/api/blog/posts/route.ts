@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rpc, queryBuilder, insert, queryOneBuilder } from "@/lib/db";
-import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { withAuth } from "@/lib/api-middleware";
+import type { AuthenticatedContext } from "@/lib/api-middleware";
+import { RATE_LIMITS } from "@/lib/rateLimit";
 
 function generateSlug(title: string): string {
     return title
@@ -261,22 +261,8 @@ export async function GET(request: NextRequest) {
 }
 
 // POST - Create new blog post
-export async function POST(request: NextRequest) {
-    try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("auth_token");
-
-        if (!token) {
-            return NextResponse.json(
-                { success: false, message: "Unauthorized" },
-                { status: 401 },
-            );
-        }
-
-        const decoded = jwt.verify(
-            token.value,
-            process.env.JWT_SECRET || "",
-        ) as { userId: string };
+export const POST = withAuth(
+    async (request: NextRequest, { user }: AuthenticatedContext) => {
         const body = await request.json();
         const {
             title,
@@ -335,7 +321,7 @@ export async function POST(request: NextRequest) {
             status: string;
             published_at: string | null;
         }>("blog_posts", {
-            user_id: decoded.userId,
+            user_id: user.userId,
             title,
             slug,
             content,
@@ -412,18 +398,6 @@ export async function POST(request: NextRequest) {
             },
             message: "Bài viết đã được tạo thành công",
         });
-    } catch (error: any) {
-        console.error("Create blog post error:", error);
-        return NextResponse.json(
-            {
-                success: false,
-                message: "Không thể tạo bài viết",
-                error:
-                    process.env.NODE_ENV === "development"
-                        ? error.message
-                        : undefined,
-            },
-            { status: 500 },
-        );
-    }
-}
+    },
+    { rateLimit: RATE_LIMITS.contentCreate },
+);

@@ -1,27 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db as supabaseAdmin } from "@/lib/db";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { withAuth } from "@/lib/api-middleware";
+import type { AuthenticatedContext } from "@/lib/api-middleware";
+import { RATE_LIMITS } from "@/lib/rateLimit";
+import { logXPEvent } from "@/lib/event-logger";
 
-export async function GET() {
-    try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("auth_token");
-
-        if (!token) {
-            return NextResponse.json(
-                { success: false, message: "Unauthorized" },
-                { status: 401 },
-            );
-        }
-
-        const decoded = jwt.verify(
-            token.value,
-            process.env.JWT_SECRET || "",
-        ) as {
-            userId: string;
-        };
-        const userId = decoded.userId;
+export const GET = withAuth(
+    async (_request: NextRequest, { user }: AuthenticatedContext) => {
+        const userId = user.userId;
 
         const { data, error } = await supabaseAdmin!
             .from("user_gamification")
@@ -52,35 +38,13 @@ export async function GET() {
                 level: data.level,
             },
         });
-    } catch (error) {
-        console.error("Error fetching gamification stats:", error);
-        return NextResponse.json(
-            { success: false, message: "Internal server error" },
-            { status: 500 },
-        );
-    }
-}
+    },
+    { rateLimit: RATE_LIMITS.general },
+);
 
-export async function POST() {
-    try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("auth_token");
-
-        if (!token) {
-            return NextResponse.json(
-                { success: false, message: "Unauthorized" },
-                { status: 401 },
-            );
-        }
-
-        const decoded = jwt.verify(
-            token.value,
-            process.env.JWT_SECRET || "",
-        ) as {
-            userId: string;
-        };
-        const userId = decoded.userId;
-
+export const POST = withAuth(
+    async (_request: NextRequest, { user }: AuthenticatedContext) => {
+        const userId = user.userId;
         const today = new Date().toISOString().split("T")[0];
 
         const { data: gamification } = await supabaseAdmin!
@@ -129,24 +93,43 @@ export async function POST() {
 
         const longestStreak = Math.max(gamification.longest_streak, newStreak);
 
+        // Award streak bonus XP for 3+ day streaks
+        let streakBonusXp = 0;
+        if (newStreak >= 3) {
+            streakBonusXp = 5; // 5 XP per day for maintaining 3+ streak
+            logXPEvent({
+                userId,
+                eventType: "STREAK_BONUS",
+                xpAmount: streakBonusXp,
+                sourceType: "streak",
+                metadata: { streak: newStreak },
+            });
+        }
+
+        const updateData: Record<string, any> = {
+            current_streak: newStreak,
+            longest_streak: longestStreak,
+            last_activity_date: today,
+        };
+
+        // Add bonus XP to total
+        if (streakBonusXp > 0) {
+            updateData.total_xp = gamification.total_xp + streakBonusXp;
+        }
+
         await supabaseAdmin!
             .from("user_gamification")
-            .update({
-                current_streak: newStreak,
-                longest_streak: longestStreak,
-                last_activity_date: today,
-            })
+            .update(updateData)
             .eq("user_id", userId);
 
         return NextResponse.json({
             success: true,
-            data: { currentStreak: newStreak, longestStreak },
+            data: {
+                currentStreak: newStreak,
+                longestStreak,
+                streakBonusXp: streakBonusXp > 0 ? streakBonusXp : undefined,
+            },
         });
-    } catch (error) {
-        console.error("Error updating streak:", error);
-        return NextResponse.json(
-            { success: false, message: "Internal server error" },
-            { status: 500 },
-        );
-    }
-}
+    },
+    { rateLimit: RATE_LIMITS.general },
+);

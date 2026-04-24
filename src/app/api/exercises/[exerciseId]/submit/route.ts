@@ -1,31 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db as supabaseAdmin, queryOneBuilder } from "@/lib/db";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { withAuth } from "@/lib/api-middleware";
+import type { AuthenticatedContext } from "@/lib/api-middleware";
+import { logXPEvent } from "@/lib/event-logger";
 
-export async function POST(
-    request: NextRequest,
-    { params }: { params: Promise<{ exerciseId: string }> },
-) {
-    try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("auth_token");
+function calculateLevel(xp: number): number {
+    // Level thresholds: Lv1=0, Lv2=100, Lv3=300, Lv4=600, Lv5=1000, ...
+    const thresholds = [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500];
+    for (let i = thresholds.length - 1; i >= 0; i--) {
+        if (xp >= thresholds[i]) return i + 1;
+    }
+    return 1;
+}
 
-        if (!token) {
-            return NextResponse.json(
-                { success: false, message: "Unauthorized" },
-                { status: 401 },
-            );
-        }
-
-        const decoded = jwt.verify(
-            token.value,
-            process.env.JWT_SECRET || "",
-        ) as {
-            userId: string;
-        };
-        const userId = decoded.userId;
-        const { exerciseId } = await params;
+export const POST = withAuth(
+    async (
+        request: NextRequest,
+        { user }: AuthenticatedContext,
+        routeContext: unknown,
+    ) => {
+        const userId = user.userId;
+        const { exerciseId } = await (
+            routeContext as { params: Promise<{ exerciseId: string }> }
+        ).params;
         const body = await request.json();
         const { answer } = body;
 
@@ -57,9 +54,13 @@ export async function POST(
                 .select("id, content, is_correct")
                 .eq("exercise_id", exerciseId);
 
-            const selectedOption = options?.find((o: any) => o.id === answer);
+            const selectedOption = options?.find(
+                (o: any) => o.id === answer,
+            );
             isCorrect = selectedOption?.is_correct || false;
-            correctAnswer = options?.find((o: any) => o.is_correct)?.content;
+            correctAnswer = options?.find(
+                (o: any) => o.is_correct,
+            )?.content;
         } else if (exercise.type === "code_fill") {
             // answer = { blank_id: user_input, ... }
             const { data: codeBlocks } = await supabaseAdmin!
@@ -99,7 +100,8 @@ export async function POST(
             .maybeSingle();
 
         const attempts = (existingProgress?.attempts || 0) + 1;
-        const wasAlreadyCompleted = existingProgress?.is_completed || false;
+        const wasAlreadyCompleted =
+            existingProgress?.is_completed || false;
 
         // Calculate XP: first try = full, second = 70%, third+ = 50%
         let xpEarned = 0;
@@ -123,19 +125,25 @@ export async function POST(
                           : 0,
                     attempts,
                     last_answer: answer,
-                    completed_at: isCorrect ? new Date().toISOString() : null,
+                    completed_at: isCorrect
+                        ? new Date().toISOString()
+                        : null,
                 })
                 .eq("id", existingProgress.id);
         } else {
-            await supabaseAdmin!.from("user_exercise_progress").insert({
-                user_id: userId,
-                exercise_id: exerciseId,
-                is_completed: isCorrect,
-                score: isCorrect ? exercise.xp_reward : 0,
-                attempts,
-                last_answer: answer,
-                completed_at: isCorrect ? new Date().toISOString() : null,
-            });
+            await supabaseAdmin!
+                .from("user_exercise_progress")
+                .insert({
+                    user_id: userId,
+                    exercise_id: exerciseId,
+                    is_completed: isCorrect,
+                    score: isCorrect ? exercise.xp_reward : 0,
+                    attempts,
+                    last_answer: answer,
+                    completed_at: isCorrect
+                        ? new Date().toISOString()
+                        : null,
+                });
         }
 
         // Update gamification XP if earned
@@ -159,17 +167,31 @@ export async function POST(
                     .from("user_gamification")
                     .update({ total_xp: totalXp, level })
                     .eq("user_id", userId);
+
+                // Log XP event for audit trail
+                logXPEvent({
+                    userId,
+                    eventType: "EXERCISE_COMPLETE",
+                    xpAmount: xpEarned,
+                    sourceId: exerciseId,
+                    sourceType: "exercise",
+                    metadata: { attempts, score: exercise.xp_reward },
+                });
             } else {
                 totalXp = xpEarned;
                 level = calculateLevel(totalXp);
-                await supabaseAdmin!.from("user_gamification").insert({
-                    user_id: userId,
-                    total_xp: totalXp,
-                    level,
-                    current_streak: 1,
-                    longest_streak: 1,
-                    last_activity_date: new Date().toISOString().split("T")[0],
-                });
+                await supabaseAdmin!
+                    .from("user_gamification")
+                    .insert({
+                        user_id: userId,
+                        total_xp: totalXp,
+                        level,
+                        current_streak: 1,
+                        longest_streak: 1,
+                        last_activity_date: new Date()
+                            .toISOString()
+                            .split("T")[0],
+                    });
                 currentStreak = 1;
             }
         } else {
@@ -187,12 +209,13 @@ export async function POST(
         if (isCorrect && !wasAlreadyCompleted && exercise.lesson_id) {
             try {
                 // Check if lesson_progress already exists
-                const { data: existingLessonProgress } = await supabaseAdmin!
-                    .from("lesson_progress")
-                    .select("id, is_completed")
-                    .eq("user_id", userId)
-                    .eq("lesson_id", exercise.lesson_id)
-                    .maybeSingle();
+                const { data: existingLessonProgress } =
+                    await supabaseAdmin!
+                        .from("lesson_progress")
+                        .select("id, is_completed")
+                        .eq("user_id", userId)
+                        .eq("lesson_id", exercise.lesson_id)
+                        .maybeSingle();
 
                 if (existingLessonProgress) {
                     if (!existingLessonProgress.is_completed) {
@@ -218,19 +241,24 @@ export async function POST(
                         .maybeSingle();
 
                     if (lessonData) {
-                        const { data: chapterData } = await supabaseAdmin!
-                            .from("chapters")
-                            .select("course_id")
-                            .eq("id", lessonData.chapter_id)
-                            .maybeSingle();
+                        const { data: chapterData } =
+                            await supabaseAdmin!
+                                .from("chapters")
+                                .select("course_id")
+                                .eq("id", lessonData.chapter_id)
+                                .maybeSingle();
 
                         if (chapterData) {
-                            const { data: enrollment } = await supabaseAdmin!
-                                .from("enrollments")
-                                .select("id")
-                                .eq("user_id", userId)
-                                .eq("course_id", chapterData.course_id)
-                                .maybeSingle();
+                            const { data: enrollment } =
+                                await supabaseAdmin!
+                                    .from("enrollments")
+                                    .select("id")
+                                    .eq("user_id", userId)
+                                    .eq(
+                                        "course_id",
+                                        chapterData.course_id,
+                                    )
+                                    .maybeSingle();
 
                             if (enrollment) {
                                 const { error: insertErr } =
@@ -238,7 +266,8 @@ export async function POST(
                                         .from("lesson_progress")
                                         .insert({
                                             user_id: userId,
-                                            lesson_id: exercise.lesson_id,
+                                            lesson_id:
+                                                exercise.lesson_id,
                                             enrollment_id: enrollment.id,
                                             is_completed: true,
                                             completed_at:
@@ -254,7 +283,9 @@ export async function POST(
                                 const { data: courseLessons } =
                                     await supabaseAdmin!
                                         .from("lessons")
-                                        .select("id, chapters!inner(course_id)")
+                                        .select(
+                                            "id, chapters!inner(course_id)",
+                                        )
                                         .eq(
                                             "chapters.course_id",
                                             chapterData.course_id,
@@ -273,12 +304,17 @@ export async function POST(
                                         .eq("user_id", userId)
                                         .eq("is_completed", true);
 
-                                const total = courseLessons?.length || 0;
-                                const done = completedLessons?.length || 0;
+                                const total =
+                                    courseLessons?.length || 0;
+                                const done =
+                                    completedLessons?.length || 0;
                                 const progress =
                                     total > 0
                                         ? parseFloat(
-                                              ((done / total) * 100).toFixed(2),
+                                              (
+                                                  (done / total) *
+                                                  100
+                                              ).toFixed(2),
                                           )
                                         : 0;
 
@@ -286,10 +322,14 @@ export async function POST(
                                     .from("enrollments")
                                     .update({
                                         progress_percentage: progress,
-                                        last_lesson_id: exercise.lesson_id,
+                                        last_lesson_id:
+                                            exercise.lesson_id,
                                     })
                                     .eq("user_id", userId)
-                                    .eq("course_id", chapterData.course_id);
+                                    .eq(
+                                        "course_id",
+                                        chapterData.course_id,
+                                    );
                             } else {
                                 console.warn(
                                     "No enrollment found for user",
@@ -322,20 +362,5 @@ export async function POST(
                 lessonCompleted: isCorrect && !wasAlreadyCompleted,
             },
         });
-    } catch (error) {
-        console.error("Error submitting exercise:", error);
-        return NextResponse.json(
-            { success: false, message: "Internal server error" },
-            { status: 500 },
-        );
-    }
-}
-
-function calculateLevel(xp: number): number {
-    // Level thresholds: Lv1=0, Lv2=100, Lv3=300, Lv4=600, Lv5=1000, ...
-    const thresholds = [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500];
-    for (let i = thresholds.length - 1; i >= 0; i--) {
-        if (xp >= thresholds[i]) return i + 1;
-    }
-    return 1;
-}
+    },
+);
