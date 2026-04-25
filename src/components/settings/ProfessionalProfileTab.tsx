@@ -1,17 +1,19 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     AlertTriangle,
     BriefcaseBusiness,
     CheckCircle2,
+    Clock,
     GraduationCap,
-    Link2,
+    Info,
     Loader2,
     Save,
     Send,
     ShieldCheck,
     Sparkles,
+    XCircle,
 } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
 import VerifiedBadge from "@/components/profile/VerifiedBadge";
@@ -19,9 +21,76 @@ import type {
     AppRole,
     ProfessionalProfileEditorResponse,
     ProfessionalProfileRecord,
+    ProfessionalProfileStatus,
+    VerificationStatus,
 } from "@/types/profile";
 
 type ProfessionalRole = Extract<AppRole, "instructor" | "partner">;
+
+const STATUS_CONFIG: Record<
+    ProfessionalProfileStatus,
+    {
+        label: string;
+        description: string;
+        icon: typeof CheckCircle2;
+        color: string;
+        bg: string;
+        border: string;
+    }
+> = {
+    draft: {
+        label: "Bản nháp",
+        description: "Hồ sơ chỉ được lưu cục bộ, chưa gửi duyệt.",
+        icon: Save,
+        color: "text-amber-700",
+        bg: "bg-amber-50",
+        border: "border-amber-200",
+    },
+    pending_review: {
+        label: "Đang chờ duyệt",
+        description: "Hồ sơ đang được quản trị viên xem xét.",
+        icon: Clock,
+        color: "text-blue-700",
+        bg: "bg-blue-50",
+        border: "border-blue-200",
+    },
+    published: {
+        label: "Đã xuất bản",
+        description: "Hồ sơ đã được duyệt và hiển thị công khai.",
+        icon: CheckCircle2,
+        color: "text-emerald-700",
+        bg: "bg-emerald-50",
+        border: "border-emerald-200",
+    },
+    rejected: {
+        label: "Bị từ chối",
+        description: "Hồ sơ chưa đạt yêu cầu duyệt. Xem ghi chú bên dưới.",
+        icon: XCircle,
+        color: "text-red-700",
+        bg: "bg-red-50",
+        border: "border-red-200",
+    },
+};
+
+const VERIFICATION_STATUS_LABELS: Record<
+    VerificationStatus,
+    { label: string; color: string }
+> = {
+    pending: { label: "Đang chờ", color: "text-amber-600" },
+    verified: { label: "Đã xác thực", color: "text-emerald-600" },
+    rejected: { label: "Bị từ chối", color: "text-red-600" },
+    revoked: { label: "Đã thu hồi", color: "text-gray-500" },
+};
+
+const BADGE_LABELS: Record<string, string> = {
+    verified_instructor: "Giảng viên xác thực",
+    verified_partner: "Đối tác xác thực",
+};
+
+const VERIFICATION_TYPE_LABELS: Record<string, string> = {
+    instructor_verification: "Xác thực giảng viên",
+    partner_verification: "Xác thực đối tác",
+};
 
 interface ProfessionalProfileFormState {
     profileRoles: ProfessionalRole[];
@@ -147,7 +216,9 @@ export default function ProfessionalProfileTab() {
             const result = await response.json();
 
             if (!response.ok || !result.success) {
-                throw new Error(result.message || "Unable to load profile");
+                throw new Error(
+                    result.message || "Không thể tải hồ sơ chuyên môn",
+                );
             }
 
             setData(result.data);
@@ -156,7 +227,7 @@ export default function ProfessionalProfileTab() {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : "Unable to load professional profile",
+                    : "Không thể tải hồ sơ chuyên môn",
             );
         } finally {
             setLoading(false);
@@ -171,9 +242,8 @@ export default function ProfessionalProfileTab() {
         return (data?.verifications ?? []).map((verification) => ({
             ...verification,
             label:
-                verification.verificationType === "instructor_verification"
-                    ? "Instructor verification"
-                    : "Partner verification",
+                VERIFICATION_TYPE_LABELS[verification.verificationType] ??
+                verification.verificationType,
         }));
     }, [data?.verifications]);
 
@@ -217,17 +287,19 @@ export default function ProfessionalProfileTab() {
             const result = await response.json();
 
             if (!response.ok || !result.success) {
-                throw new Error(result.message || "Unable to save draft");
+                throw new Error(
+                    result.message || "Không thể lưu bản nháp",
+                );
             }
 
             setData(result.data);
             setForm(createInitialFormState(result.data.professionalProfile));
-            toast.success("Professional profile draft saved");
+            toast.success("Đã lưu bản nháp hồ sơ chuyên môn");
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : "Unable to save draft",
+                    : "Không thể lưu bản nháp",
             );
         } finally {
             setSaving(false);
@@ -247,17 +319,17 @@ export default function ProfessionalProfileTab() {
 
             if (!response.ok || !result.success) {
                 throw new Error(
-                    result.message || "Unable to submit professional profile",
+                    result.message || "Không thể gửi hồ sơ chuyên môn",
                 );
             }
 
             setData(result.data);
-            toast.success("Professional profile submitted for review");
+            toast.success("Đã gửi hồ sơ chuyên môn để duyệt");
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
-                    : "Unable to submit professional profile",
+                    : "Không thể gửi hồ sơ chuyên môn",
             );
         } finally {
             setSubmitting(false);
@@ -266,376 +338,428 @@ export default function ProfessionalProfileTab() {
 
     if (loading) {
         return (
-            <div className="flex min-h-[320px] items-center justify-center">
+            <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
                 <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+                <p className="text-xs text-gray-500">
+                    Đang tải hồ sơ chuyên môn...
+                </p>
             </div>
         );
     }
 
+    const currentStatus: ProfessionalProfileStatus =
+        data?.professionalProfile?.status ?? "draft";
+    const statusInfo = STATUS_CONFIG[currentStatus];
+    const StatusIcon = statusInfo.icon;
+    const canPublish =
+        data?.capabilities.canPublishProfessionalProfile ?? false;
+
     return (
         <div className="space-y-6">
+            {/* Heading */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h2 className="text-xl font-bold text-gray-900">
-                        Professional Profile
+                        Hồ sơ chuyên môn
                     </h2>
-                    <p className="mt-1 text-sm text-gray-500">
-                        Save a draft, then submit it for admin review once the
-                        matching role and verification are active.
+                    <p className="text-sm text-gray-500 mt-1">
+                        Lưu bản nháp, sau đó gửi cho quản trị viên duyệt khi
+                        vai trò và xác thực phù hợp đã được kích hoạt.
                     </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                    {(data?.badges ?? []).map((badge) => (
-                        <div
-                            key={badge.code}
-                            className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700"
-                        >
-                            <VerifiedBadge badge={badge} className="h-5 w-5" />
-                            <span>{badge.code.replace(/_/g, " ")}</span>
+                {(data?.badges ?? []).length > 0 && (
+                    <div className="flex flex-wrap gap-2 shrink-0">
+                        {(data?.badges ?? []).map((badge) => (
+                            <div
+                                key={badge.code}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700"
+                            >
+                                <VerifiedBadge
+                                    badge={badge}
+                                    className="h-4 w-4"
+                                />
+                                <span>
+                                    {BADGE_LABELS[badge.code] ?? badge.code}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Status Banner */}
+            <div
+                className={`p-4 rounded-xl border ${statusInfo.border} ${statusInfo.bg}`}
+            >
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <StatusIcon
+                            className={`w-5 h-5 ${statusInfo.color} mt-0.5 shrink-0`}
+                        />
+                        <div className="min-w-0">
+                            <p
+                                className={`font-semibold text-sm ${statusInfo.color}`}
+                            >
+                                {statusInfo.label}
+                            </p>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                {statusInfo.description}
+                            </p>
                         </div>
-                    ))}
+                    </div>
+                    <span
+                        className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${
+                            canPublish
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-amber-100 text-amber-700"
+                        }`}
+                    >
+                        {canPublish ? (
+                            <>
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Đủ điều kiện duyệt
+                            </>
+                        ) : (
+                            <>
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                Chưa đủ điều kiện
+                            </>
+                        )}
+                    </span>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[0.72fr_0.28fr]">
-                <div className="space-y-6">
-                    <section className="rounded-3xl border border-gray-200 bg-white p-6">
-                        <div className="mb-4 flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-900 text-white">
-                                <ShieldCheck className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <h3 className="text-base font-semibold text-gray-900">
-                                    Roles and publishing
-                                </h3>
-                                <p className="text-sm text-gray-500">
-                                    The backend decides whether the profile can be
-                                    published.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                            {(["instructor", "partner"] as ProfessionalRole[]).map(
-                                (role) => (
-                                    <label
-                                        key={role}
-                                        className={`rounded-2xl border px-4 py-3 transition ${
-                                            form.profileRoles.includes(role)
-                                                ? "border-gray-900 bg-gray-900 text-white"
-                                                : "border-gray-200 bg-gray-50 text-gray-700"
-                                        }`}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            className="sr-only"
-                                            checked={form.profileRoles.includes(
-                                                role,
-                                            )}
-                                            onChange={() => handleRoleToggle(role)}
-                                        />
-                                        <p className="text-sm font-semibold uppercase tracking-[0.2em]">
-                                            {role}
-                                        </p>
-                                        <p className="mt-1 text-sm opacity-80">
-                                            {role === "instructor"
-                                                ? "Education, teaching history, and courses."
-                                                : "Organization, collaborations, and featured work."}
-                                        </p>
-                                    </label>
-                                ),
-                            )}
-                        </div>
-                    </section>
-
-                    <section className="rounded-3xl border border-gray-200 bg-white p-6">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <InputField
-                                label="Headline"
-                                value={form.headline}
-                                onChange={(value) =>
-                                    setForm((current) => ({
-                                        ...current,
-                                        headline: value,
-                                    }))
-                                }
-                                placeholder="Senior embedded systems instructor"
-                            />
-                            <InputField
-                                label="Years of experience"
-                                value={form.yearsExperience}
-                                onChange={(value) =>
-                                    setForm((current) => ({
-                                        ...current,
-                                        yearsExperience: value,
-                                    }))
-                                }
-                                placeholder="8"
-                            />
-                            <InputField
-                                label="Current title"
-                                value={form.currentTitle}
-                                onChange={(value) =>
-                                    setForm((current) => ({
-                                        ...current,
-                                        currentTitle: value,
-                                    }))
-                                }
-                                placeholder="Lead AIoT Instructor"
-                            />
-                            <InputField
-                                label="Current organization"
-                                value={form.currentOrganization}
-                                onChange={(value) =>
-                                    setForm((current) => ({
-                                        ...current,
-                                        currentOrganization: value,
-                                    }))
-                                }
-                                placeholder="Nexa Labs"
-                            />
-                            <InputField
-                                label="Location"
-                                value={form.location}
-                                onChange={(value) =>
-                                    setForm((current) => ({
-                                        ...current,
-                                        location: value,
-                                    }))
-                                }
-                                placeholder="Ho Chi Minh City"
-                            />
-                            <InputField
-                                label="Skills"
-                                value={form.skills}
-                                onChange={(value) =>
-                                    setForm((current) => ({
-                                        ...current,
-                                        skills: value,
-                                    }))
-                                }
-                                placeholder="C, ESP32, Edge AI, Computer Vision"
-                            />
-                        </div>
-
-                        <div className="mt-4">
-                            <TextAreaField
-                                label="Summary"
-                                value={form.summary}
-                                onChange={(value) =>
-                                    setForm((current) => ({
-                                        ...current,
-                                        summary: value,
-                                    }))
-                                }
-                                placeholder="Describe your expertise, focus, and credibility."
-                                rows={5}
-                            />
-                        </div>
-                    </section>
-
-                    <section className="rounded-3xl border border-gray-200 bg-white p-6">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <TextAreaField
-                                label="Education"
-                                value={form.educationItems}
-                                onChange={(value) =>
-                                    setForm((current) => ({
-                                        ...current,
-                                        educationItems: value,
-                                    }))
-                                }
-                                placeholder="Degree | School or short note"
-                                rows={5}
-                            />
-                            <TextAreaField
-                                label="Career"
-                                value={form.careerItems}
-                                onChange={(value) =>
-                                    setForm((current) => ({
-                                        ...current,
-                                        careerItems: value,
-                                    }))
-                                }
-                                placeholder="Role | Company or short note"
-                                rows={5}
-                            />
-                            <TextAreaField
-                                label="Achievements"
-                                value={form.achievementItems}
-                                onChange={(value) =>
-                                    setForm((current) => ({
-                                        ...current,
-                                        achievementItems: value,
-                                    }))
-                                }
-                                placeholder="Achievement | Context"
-                                rows={5}
-                            />
-                            <TextAreaField
-                                label="Featured links"
-                                value={form.featuredLinks}
-                                onChange={(value) =>
-                                    setForm((current) => ({
-                                        ...current,
-                                        featuredLinks: value,
-                                    }))
-                                }
-                                placeholder="Portfolio | https://example.com"
-                                rows={5}
-                            />
-                        </div>
-                    </section>
-
-                    <div className="flex flex-wrap gap-3">
-                        <button
-                            type="button"
-                            onClick={handleSaveDraft}
-                            disabled={saving}
-                            className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            {saving ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <Save className="h-4 w-4" />
-                            )}
-                            Save draft
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleSubmitForReview}
-                            disabled={
-                                submitting ||
-                                !data?.capabilities.canPublishProfessionalProfile
-                            }
-                            className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            {submitting ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <Send className="h-4 w-4" />
-                            )}
-                            Submit for review
-                        </button>
-                    </div>
+            {/* Roles Section */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-indigo-500" />
+                    <span className="text-sm font-semibold text-gray-900">
+                        Vai trò chuyên môn
+                    </span>
                 </div>
-
-                <aside className="space-y-4">
-                    <StatusCard
-                        title="Workflow"
-                        icon={<Sparkles className="h-5 w-5" />}
-                        content={
-                            <>
-                                <p className="text-2xl font-semibold capitalize text-gray-900">
-                                    {data?.professionalProfile?.status?.replace(
-                                        /_/g,
-                                        " ",
-                                    ) || "draft"}
-                                </p>
-                                <p className="mt-2 text-sm leading-6 text-gray-600">
-                                    Only published profiles are visible publicly.
-                                </p>
-                            </>
-                        }
-                    />
-
-                    <StatusCard
-                        title="Publishing readiness"
-                        icon={<CheckCircle2 className="h-5 w-5" />}
-                        content={
-                            <p
-                                className={`text-sm font-semibold ${
-                                    data?.capabilities.canPublishProfessionalProfile
-                                        ? "text-emerald-600"
-                                        : "text-amber-600"
-                                }`}
-                            >
-                                {data?.capabilities.canPublishProfessionalProfile
-                                    ? "Eligible for review and publish"
-                                    : "Missing a matching verified role or verification"}
-                            </p>
-                        }
-                    />
-
-                    <StatusCard
-                        title="Verifications"
-                        icon={<ShieldCheck className="h-5 w-5" />}
-                        content={
-                            <div className="space-y-3">
-                                {verificationSummary.length > 0 ? (
-                                    verificationSummary.map((verification) => (
+                <p className="text-xs text-gray-500 ml-6 -mt-1.5">
+                    Hệ thống sẽ kiểm tra vai trò xác thực phù hợp trước khi
+                    cho phép xuất bản.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(["instructor", "partner"] as ProfessionalRole[]).map(
+                        (role) => {
+                            const isActive =
+                                form.profileRoles.includes(role);
+                            const RoleIcon =
+                                role === "instructor"
+                                    ? GraduationCap
+                                    : BriefcaseBusiness;
+                            return (
+                                <label
+                                    key={role}
+                                    className={`block cursor-pointer rounded-xl border-2 px-4 py-3 transition-all ${
+                                        isActive
+                                            ? "border-indigo-500 bg-indigo-50/50 shadow-sm"
+                                            : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                                    }`}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={isActive}
+                                        onChange={() =>
+                                            handleRoleToggle(role)
+                                        }
+                                    />
+                                    <div className="flex items-start gap-3">
                                         <div
-                                            key={verification.verificationType}
-                                            className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3"
+                                            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                                                isActive
+                                                    ? "bg-indigo-600 text-white"
+                                                    : "bg-gray-100 text-gray-500"
+                                            }`}
                                         >
-                                            <p className="text-sm font-semibold text-gray-900">
-                                                {verification.label}
+                                            <RoleIcon className="w-4 h-4" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p
+                                                className={`text-sm font-semibold ${
+                                                    isActive
+                                                        ? "text-indigo-700"
+                                                        : "text-gray-900"
+                                                }`}
+                                            >
+                                                {role === "instructor"
+                                                    ? "Giảng viên"
+                                                    : "Đối tác"}
                                             </p>
-                                            <p className="mt-1 text-sm capitalize text-gray-600">
-                                                {verification.status.replace(
-                                                    /_/g,
-                                                    " ",
-                                                )}
+                                            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                                                {role === "instructor"
+                                                    ? "Học vấn, lịch sử giảng dạy và các khóa học."
+                                                    : "Tổ chức, hợp tác và các dự án nổi bật."}
                                             </p>
                                         </div>
-                                    ))
-                                ) : (
-                                    <p className="text-sm text-gray-600">
-                                        No verification records yet.
-                                    </p>
-                                )}
-                            </div>
+                                        {isActive && (
+                                            <CheckCircle2 className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+                                        )}
+                                    </div>
+                                </label>
+                            );
+                        },
+                    )}
+                </div>
+            </div>
+
+            {/* Profile Info Section */}
+            <div className="border-t border-gray-100 pt-6 space-y-4">
+                <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                    <span className="text-sm font-semibold text-gray-900">
+                        Thông tin chuyên môn
+                    </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <InputField
+                        label="Tiêu đề (headline)"
+                        value={form.headline}
+                        onChange={(value) =>
+                            setForm((current) => ({
+                                ...current,
+                                headline: value,
+                            }))
                         }
+                        placeholder="Giảng viên hệ thống nhúng cấp cao"
                     />
+                    <InputField
+                        label="Số năm kinh nghiệm"
+                        value={form.yearsExperience}
+                        onChange={(value) =>
+                            setForm((current) => ({
+                                ...current,
+                                yearsExperience: value,
+                            }))
+                        }
+                        placeholder="8"
+                    />
+                    <InputField
+                        label="Chức danh hiện tại"
+                        value={form.currentTitle}
+                        onChange={(value) =>
+                            setForm((current) => ({
+                                ...current,
+                                currentTitle: value,
+                            }))
+                        }
+                        placeholder="Giảng viên AIoT chính"
+                    />
+                    <InputField
+                        label="Tổ chức hiện tại"
+                        value={form.currentOrganization}
+                        onChange={(value) =>
+                            setForm((current) => ({
+                                ...current,
+                                currentOrganization: value,
+                            }))
+                        }
+                        placeholder="Nexa Labs"
+                    />
+                    <InputField
+                        label="Địa điểm"
+                        value={form.location}
+                        onChange={(value) =>
+                            setForm((current) => ({
+                                ...current,
+                                location: value,
+                            }))
+                        }
+                        placeholder="Hồ Chí Minh"
+                    />
+                    <InputField
+                        label="Kỹ năng"
+                        value={form.skills}
+                        onChange={(value) =>
+                            setForm((current) => ({
+                                ...current,
+                                skills: value,
+                            }))
+                        }
+                        placeholder="C, ESP32, Edge AI, Computer Vision"
+                        hint="Phân tách bằng dấu phẩy"
+                    />
+                </div>
+                <TextAreaField
+                    label="Tóm tắt"
+                    value={form.summary}
+                    onChange={(value) =>
+                        setForm((current) => ({
+                            ...current,
+                            summary: value,
+                        }))
+                    }
+                    placeholder="Mô tả chuyên môn, lĩnh vực tập trung và uy tín của bạn."
+                    rows={4}
+                />
+            </div>
 
-                    {data?.professionalProfile?.reviewNotes ? (
-                        <StatusCard
-                            title="Admin notes"
-                            icon={<AlertTriangle className="h-5 w-5" />}
-                            content={
-                                <p className="text-sm leading-6 text-gray-600">
-                                    {data.professionalProfile.reviewNotes}
-                                </p>
-                            }
-                        />
-                    ) : null}
+            {/* Detailed Entries Section */}
+            <div className="border-t border-gray-100 pt-6 space-y-4">
+                <div className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-indigo-500" />
+                    <span className="text-sm font-semibold text-gray-900">
+                        Học vấn, sự nghiệp & thành tựu
+                    </span>
+                </div>
+                <div className="flex items-start gap-3 p-3.5 bg-blue-50 border border-blue-100 rounded-xl">
+                    <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                    <p className="text-xs text-blue-800 leading-relaxed">
+                        Mỗi mục viết trên một dòng. Định dạng:{" "}
+                        <code className="px-1 py-0.5 bg-white rounded border border-blue-200 font-mono text-[11px]">
+                            Tiêu đề | Mô tả
+                        </code>
+                        . Liên kết nổi bật dùng{" "}
+                        <code className="px-1 py-0.5 bg-white rounded border border-blue-200 font-mono text-[11px]">
+                            Tên | URL
+                        </code>
+                        .
+                    </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <TextAreaField
+                        label="Học vấn"
+                        value={form.educationItems}
+                        onChange={(value) =>
+                            setForm((current) => ({
+                                ...current,
+                                educationItems: value,
+                            }))
+                        }
+                        placeholder="Bằng cấp | Trường hoặc ghi chú ngắn"
+                        rows={5}
+                    />
+                    <TextAreaField
+                        label="Sự nghiệp"
+                        value={form.careerItems}
+                        onChange={(value) =>
+                            setForm((current) => ({
+                                ...current,
+                                careerItems: value,
+                            }))
+                        }
+                        placeholder="Vị trí | Công ty hoặc ghi chú ngắn"
+                        rows={5}
+                    />
+                    <TextAreaField
+                        label="Thành tựu"
+                        value={form.achievementItems}
+                        onChange={(value) =>
+                            setForm((current) => ({
+                                ...current,
+                                achievementItems: value,
+                            }))
+                        }
+                        placeholder="Thành tựu | Bối cảnh"
+                        rows={5}
+                    />
+                    <TextAreaField
+                        label="Liên kết nổi bật"
+                        value={form.featuredLinks}
+                        onChange={(value) =>
+                            setForm((current) => ({
+                                ...current,
+                                featuredLinks: value,
+                            }))
+                        }
+                        placeholder="Portfolio | https://example.com"
+                        rows={5}
+                    />
+                </div>
+            </div>
 
-                    <div className="rounded-3xl border border-dashed border-gray-300 bg-gray-50 p-5 text-sm leading-6 text-gray-600">
-                        <p className="font-semibold text-gray-900">
-                            Input format
+            {/* Verifications Section */}
+            {verificationSummary.length > 0 && (
+                <div className="border-t border-gray-100 pt-6 space-y-3">
+                    <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-indigo-500" />
+                        <span className="text-sm font-semibold text-gray-900">
+                            Trạng thái xác thực
+                        </span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {verificationSummary.map((verification) => {
+                            const vstatus =
+                                VERIFICATION_STATUS_LABELS[
+                                    verification.status
+                                ] ?? {
+                                    label: verification.status,
+                                    color: "text-gray-600",
+                                };
+                            return (
+                                <div
+                                    key={verification.verificationType}
+                                    className="flex items-start gap-3 p-3.5 bg-gray-50 rounded-xl border border-gray-100"
+                                >
+                                    <div className="w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
+                                        <ShieldCheck className="w-4 h-4 text-gray-500" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-xs font-semibold text-gray-900">
+                                            {verification.label}
+                                        </p>
+                                        <p
+                                            className={`text-xs font-medium mt-0.5 ${vstatus.color}`}
+                                        >
+                                            {vstatus.label}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Admin Notes */}
+            {data?.professionalProfile?.reviewNotes ? (
+                <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-amber-900 mb-1">
+                            Ghi chú từ quản trị viên
                         </p>
-                        <p className="mt-2">
-                            Use one line per item. For structured entries, write
-                            `Title | Description`. Featured links use
-                            `Label | URL`.
+                        <p className="text-xs text-amber-800 leading-relaxed whitespace-pre-line">
+                            {data.professionalProfile.reviewNotes}
                         </p>
                     </div>
-                </aside>
+                </div>
+            ) : null}
+
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-3 justify-end pt-4 border-t border-gray-100">
+                <button
+                    type="button"
+                    onClick={handleSaveDraft}
+                    disabled={saving}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {saving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <Save className="h-4 w-4" />
+                    )}
+                    {saving ? "Đang lưu..." : "Lưu bản nháp"}
+                </button>
+                <button
+                    type="button"
+                    onClick={handleSubmitForReview}
+                    disabled={submitting || !canPublish}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-medium text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-sm shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {submitting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <Send className="h-4 w-4" />
+                    )}
+                    {submitting ? "Đang gửi..." : "Gửi duyệt"}
+                </button>
             </div>
         </div>
-    );
-}
-
-function StatusCard({
-    title,
-    icon,
-    content,
-}: {
-    title: string;
-    icon: ReactNode;
-    content: ReactNode;
-}) {
-    return (
-        <section className="rounded-3xl border border-gray-200 bg-white p-5">
-            <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-900 text-white">
-                    {icon}
-                </div>
-                <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-            </div>
-            {content}
-        </section>
     );
 }
 
@@ -644,23 +768,29 @@ function InputField({
     value,
     onChange,
     placeholder,
+    hint,
 }: {
     label: string;
     value: string;
     onChange: (value: string) => void;
     placeholder: string;
+    hint?: string;
 }) {
     return (
         <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-900">
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
                 {label}
             </label>
             <input
+                type="text"
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 placeholder={placeholder}
-                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all"
             />
+            {hint && (
+                <p className="text-[11px] text-gray-400 mt-1.5">{hint}</p>
+            )}
         </div>
     );
 }
@@ -680,7 +810,7 @@ function TextAreaField({
 }) {
     return (
         <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-900">
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
                 {label}
             </label>
             <textarea
@@ -688,7 +818,7 @@ function TextAreaField({
                 onChange={(event) => onChange(event.target.value)}
                 placeholder={placeholder}
                 rows={rows}
-                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none"
             />
         </div>
     );

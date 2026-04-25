@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import PageContainer from "@/components/PageContainer";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import PageLoading from "@/components/PageLoading";
 import ProfessionalProfileTab from "@/components/settings/ProfessionalProfileTab";
@@ -42,6 +42,10 @@ import {
     CheckCircle2,
     ExternalLink,
     BriefcaseBusiness,
+    HelpCircle,
+    Mail,
+    MessageSquare,
+    Sparkles,
 } from "lucide-react";
 
 type SettingsTab =
@@ -437,6 +441,13 @@ export default function SettingsPage() {
 
     const [avatarPreview, setAvatarPreview] = useState("");
 
+    const [notifPrefs, setNotifPrefs] = useState({
+        email: true,
+        inApp: true,
+        comments: true,
+        marketing: false,
+    });
+
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
             router.push("/auth/login");
@@ -671,31 +682,53 @@ export default function SettingsPage() {
     ];
 
     return (
-        <PageContainer>
-            <div className="max-w-6xl mx-auto py-8 px-4">
-                {/* Header */}
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30">
+            <div className="px-4 sm:px-6 md:px-10 lg:px-16 xl:px-[90px] 2xl:px-16 py-8 md:py-12">
+                {/* Page Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="mb-8"
                 >
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
                         Cài đặt tài khoản
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1.5">
-                        Quản lý thông tin cá nhân, bảo mật và cài đặt tài khoản
-                        của bạn.
+                    <p className="text-sm text-gray-500 mt-1">
+                        Quản lý thông tin cá nhân, bảo mật và tùy chỉnh trải
+                        nghiệm học tập của bạn.
                     </p>
                 </motion.div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
                     {/* Sidebar */}
-                    <motion.div
+                    <motion.aside
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.05 }}
+                        className="lg:sticky lg:top-24 space-y-4"
                     >
-                        <nav className="bg-white rounded-2xl border border-gray-200 p-2 sticky top-24">
+                        {/* User Mini-Card */}
+                        <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3 shadow-sm">
+                            <AvatarWithProBadge
+                                avatarUrl={avatarPreview || user?.avatar_url}
+                                fullName={user?.full_name}
+                                isPro={user?.membership_type === "PRO"}
+                                size="md"
+                            />
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm font-bold text-gray-900 truncate">
+                                    {user?.full_name || "User"}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate mt-0.5">
+                                    @
+                                    {normalizeUsername(user?.username) ||
+                                        "username"}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Tabs Nav */}
+                        <nav className="bg-white rounded-2xl border border-gray-200 p-2 shadow-sm">
                             {tabs.map((tab) => {
                                 const Icon = tab.icon;
                                 const isActive = activeTab === tab.id;
@@ -703,21 +736,29 @@ export default function SettingsPage() {
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-left transition-all duration-200 mb-1 last:mb-0 ${
+                                        className={`group w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-left transition-all duration-200 mb-1 last:mb-0 ${
                                             isActive
-                                                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                                                ? "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-600/25"
                                                 : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-700"
                                         }`}
                                     >
                                         <Icon
-                                            className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-white" : "text-gray-400 group-hover:text-indigo-500"}`}
+                                            className={`w-[18px] h-[18px] shrink-0 transition-colors ${
+                                                isActive
+                                                    ? "text-white"
+                                                    : "text-gray-400 group-hover:text-indigo-500"
+                                            }`}
                                         />
                                         <div className="min-w-0 flex-1">
                                             <p className="text-sm font-medium truncate">
                                                 {tab.label}
                                             </p>
                                             <p
-                                                className={`text-[11px] truncate mt-0.5 ${isActive ? "text-indigo-200" : "text-gray-400"}`}
+                                                className={`text-[11px] truncate mt-0.5 ${
+                                                    isActive
+                                                        ? "text-indigo-200"
+                                                        : "text-gray-400"
+                                                }`}
                                             >
                                                 {tab.description}
                                             </p>
@@ -729,7 +770,32 @@ export default function SettingsPage() {
                                 );
                             })}
                         </nav>
-                    </motion.div>
+
+                        {/* Help Card */}
+                        <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-4">
+                            <div className="flex items-start gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center shrink-0">
+                                    <HelpCircle className="w-4 h-4 text-indigo-600" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-semibold text-gray-900">
+                                        Cần hỗ trợ?
+                                    </p>
+                                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                                        Liên hệ với đội ngũ nếu bạn gặp khó
+                                        khăn khi sử dụng cài đặt.
+                                    </p>
+                                    <Link
+                                        href="/contact"
+                                        className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 mt-2 group"
+                                    >
+                                        Liên hệ ngay
+                                        <ChevronRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.aside>
 
                     {/* Content */}
                     <motion.div
@@ -737,7 +803,7 @@ export default function SettingsPage() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.1 }}
                     >
-                        <div className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8">
+                        <div className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8 shadow-sm min-h-[640px]">
                             <AnimatePresence mode="wait">
                                 {/* Profile Tab */}
                                 {activeTab === "profile" && (
@@ -1229,26 +1295,126 @@ export default function SettingsPage() {
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -8 }}
                                         transition={{ duration: 0.2 }}
+                                        className="space-y-6"
                                     >
-                                        <div className="mb-6">
+                                        <div>
                                             <h2 className="text-xl font-bold text-gray-900">
                                                 Tùy chọn thông báo
                                             </h2>
                                             <p className="text-sm text-gray-500 mt-1">
-                                                Tùy chỉnh các thông báo bạn muốn
-                                                nhận.
+                                                Tùy chỉnh các loại thông báo
+                                                bạn muốn nhận để không bỏ lỡ
+                                                thông tin quan trọng.
                                             </p>
                                         </div>
-                                        <div className="flex flex-col items-center justify-center py-16">
-                                            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
-                                                <Bell className="w-7 h-7 text-gray-300" />
-                                            </div>
-                                            <p className="text-sm font-medium text-gray-400">
-                                                Chức năng đang được phát triển
-                                            </p>
-                                            <p className="text-xs text-gray-300 mt-1">
-                                                Bạn sẽ được thông báo khi tính
-                                                năng sẵn sàng.
+
+                                        {/* Notification Channels */}
+                                        <div className="space-y-1">
+                                            <SettingRow
+                                                icon={
+                                                    <Mail className="w-5 h-5 text-blue-500" />
+                                                }
+                                                title="Email thông báo"
+                                                description="Nhận email về bài học mới, cập nhật khóa học và sự kiện"
+                                                action={
+                                                    <ToggleSwitch
+                                                        checked={
+                                                            notifPrefs.email
+                                                        }
+                                                        onChange={(v) =>
+                                                            setNotifPrefs(
+                                                                (p) => ({
+                                                                    ...p,
+                                                                    email: v,
+                                                                }),
+                                                            )
+                                                        }
+                                                    />
+                                                }
+                                            />
+                                            <SettingRow
+                                                icon={
+                                                    <Bell className="w-5 h-5 text-amber-500" />
+                                                }
+                                                title="Thông báo trên hệ thống"
+                                                description="Hiển thị thông báo trực tiếp trong nền tảng"
+                                                action={
+                                                    <ToggleSwitch
+                                                        checked={
+                                                            notifPrefs.inApp
+                                                        }
+                                                        onChange={(v) =>
+                                                            setNotifPrefs(
+                                                                (p) => ({
+                                                                    ...p,
+                                                                    inApp: v,
+                                                                }),
+                                                            )
+                                                        }
+                                                        color="yellow"
+                                                    />
+                                                }
+                                            />
+                                            <SettingRow
+                                                icon={
+                                                    <MessageSquare className="w-5 h-5 text-emerald-500" />
+                                                }
+                                                title="Bình luận & trả lời"
+                                                description="Khi có người tương tác với bài viết hoặc câu hỏi của bạn"
+                                                action={
+                                                    <ToggleSwitch
+                                                        checked={
+                                                            notifPrefs.comments
+                                                        }
+                                                        onChange={(v) =>
+                                                            setNotifPrefs(
+                                                                (p) => ({
+                                                                    ...p,
+                                                                    comments:
+                                                                        v,
+                                                                }),
+                                                            )
+                                                        }
+                                                        color="green"
+                                                    />
+                                                }
+                                            />
+                                            <SettingRow
+                                                icon={
+                                                    <Sparkles className="w-5 h-5 text-purple-500" />
+                                                }
+                                                title="Tin tức & ưu đãi"
+                                                description="Nhận thông báo về tính năng mới và chương trình khuyến mãi"
+                                                action={
+                                                    <ToggleSwitch
+                                                        checked={
+                                                            notifPrefs.marketing
+                                                        }
+                                                        onChange={(v) =>
+                                                            setNotifPrefs(
+                                                                (p) => ({
+                                                                    ...p,
+                                                                    marketing:
+                                                                        v,
+                                                                }),
+                                                            )
+                                                        }
+                                                    />
+                                                }
+                                            />
+                                        </div>
+
+                                        {/* Coming Soon Notice */}
+                                        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                                            <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                                            <p className="text-xs text-amber-800 leading-relaxed">
+                                                <span className="font-semibold">
+                                                    Sắp ra mắt:
+                                                </span>{" "}
+                                                Tùy chọn thông báo hiện chỉ
+                                                hiển thị giao diện. Tính năng
+                                                đồng bộ giữa các thiết bị sẽ
+                                                sớm khả dụng.
                                             </p>
                                         </div>
                                     </motion.div>
@@ -1271,7 +1437,7 @@ export default function SettingsPage() {
                     </motion.div>
                 </div>
             </div>
-        </PageContainer>
+        </div>
     );
 }
 
