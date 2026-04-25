@@ -1,8 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, Check, ChevronsUpDown, Code2, Cpu } from "lucide-react";
+import {
+    BotIcon,
+    BrainCircuitIcon,
+    ChevronsUpDownIcon,
+    Code2Icon,
+    CpuIcon,
+    type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
     ModelSelector,
     ModelSelectorContent,
@@ -14,7 +22,6 @@ import {
     ModelSelectorName,
     ModelSelectorTrigger,
 } from "@/components/ai/model-selector";
-import { cn } from "@/lib/utils";
 import type { AIModel } from "./types";
 import { AI_MODELS } from "./types";
 
@@ -27,41 +34,28 @@ function groupByProvider(models: AIModel[]) {
     return groups;
 }
 
-function getModelIcon(model: AIModel) {
+function getModelIcon(model: AIModel): LucideIcon {
     const modelId = model.id.toLowerCase();
+    const modelName = model.name.toLowerCase();
+    const providerSlug = model.providerSlug.toLowerCase();
 
-    if (modelId.includes("coder")) return Code2;
-    if (model.providerSlug === "deepseek") return Cpu;
+    if (providerSlug === "deepseek" || modelId.includes("deepseek")) {
+        return CpuIcon;
+    }
 
-    return Bot;
-}
+    if (modelId.includes("coder")) {
+        return Code2Icon;
+    }
 
-function ModelIcon({
-    model,
-    theme,
-    className,
-}: {
-    model: AIModel;
-    theme: "light" | "dark";
-    className?: string;
-}) {
-    const Icon = getModelIcon(model);
-    const isDark = theme === "dark";
+    if (
+        providerSlug === "alibaba" ||
+        modelId.includes("qwen") ||
+        modelName.includes("qwen")
+    ) {
+        return BrainCircuitIcon;
+    }
 
-    return (
-        <span
-            className={cn(
-                "flex size-5 shrink-0 items-center justify-center rounded-md",
-                isDark
-                    ? "bg-emerald-500/10 text-emerald-300"
-                    : "bg-emerald-50 text-emerald-700",
-                className,
-            )}
-            aria-hidden="true"
-        >
-            <Icon className="size-3.5" />
-        </span>
-    );
+    return BotIcon;
 }
 
 interface AIModelSelectorProps {
@@ -73,12 +67,11 @@ interface AIModelSelectorProps {
 export default function AIModelSelector({
     selectedModel,
     onModelChange,
-    theme = "dark",
 }: AIModelSelectorProps) {
     const [open, setOpen] = useState(false);
     const grouped = groupByProvider(AI_MODELS);
     const providers = Object.keys(grouped);
-    const isDark = theme === "dark";
+    const SelectedModelIcon = getModelIcon(selectedModel);
 
     return (
         <ModelSelector open={open} onOpenChange={setOpen}>
@@ -86,31 +79,22 @@ export default function AIModelSelector({
                 <Button
                     variant="ghost"
                     size="sm"
-                    className={cn(
-                        "h-7 gap-1.5 rounded-lg px-2 text-xs font-normal",
-                        isDark
-                            ? "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    )}
+                    className="h-7 gap-1.5 rounded-lg px-2 text-xs font-normal text-muted-foreground hover:text-foreground"
                     aria-label="Chọn mô hình AI"
                     aria-expanded={open}
                 >
-                    <ModelIcon
-                        model={selectedModel}
-                        theme={theme}
-                        className="size-4"
-                    />
+                    <SelectedModelIcon data-icon="inline-start" />
                     <ModelSelectorName className="max-w-[120px]">
                         {selectedModel.name}
                     </ModelSelectorName>
-                    <ChevronsUpDown className="size-3 shrink-0 opacity-50" />
+                    <ChevronsUpDownIcon
+                        data-icon="inline-end"
+                        className="opacity-50"
+                    />
                 </Button>
             </ModelSelectorTrigger>
 
-            <ModelSelectorContent
-                title="Chọn mô hình AI"
-                className={cn(isDark && "dark")}
-            >
+            <ModelSelectorContent title="Chọn mô hình AI">
                 <ModelSelectorInput placeholder="Tìm mô hình..." />
 
                 <ModelSelectorList>
@@ -122,6 +106,7 @@ export default function AIModelSelector({
                         <ModelSelectorGroup key={provider} heading={provider}>
                             {grouped[provider].map((model) => {
                                 const isActive = model.id === selectedModel.id;
+                                const ModelIcon = getModelIcon(model);
 
                                 return (
                                     <ModelSelectorItem
@@ -131,9 +116,12 @@ export default function AIModelSelector({
                                             onModelChange(model);
                                             setOpen(false);
                                         }}
-                                        className="gap-2"
+                                        data-checked={isActive}
                                     >
-                                        <ModelIcon model={model} theme={theme} />
+                                        <ModelIcon
+                                            aria-hidden="true"
+                                            className="text-muted-foreground group-data-selected/command-item:text-foreground"
+                                        />
 
                                         <div className="min-w-0 flex-1">
                                             <ModelSelectorName className="block">
@@ -146,22 +134,12 @@ export default function AIModelSelector({
                                             )}
                                         </div>
 
-                                        <span
-                                            className={cn(
-                                                "hidden shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium sm:inline-flex",
-                                                isDark
-                                                    ? "bg-zinc-800 text-zinc-400"
-                                                    : "bg-muted text-muted-foreground",
-                                            )}
+                                        <Badge
+                                            variant="secondary"
+                                            className="hidden sm:inline-flex"
                                         >
                                             {model.provider}
-                                        </span>
-
-                                        {isActive ? (
-                                            <Check className="ml-auto size-4 shrink-0 text-emerald-500" />
-                                        ) : (
-                                            <span className="ml-auto size-4 shrink-0" />
-                                        )}
+                                        </Badge>
                                     </ModelSelectorItem>
                                 );
                             })}
