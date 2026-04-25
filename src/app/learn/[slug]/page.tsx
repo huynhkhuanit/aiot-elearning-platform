@@ -687,7 +687,9 @@ export default function LearnCoursePage() {
     };
 
     if (loading) {
-        return <PageLoading message="Đang tải khóa học..." />;
+        // Dùng dark bg để match `loading.tsx` (Next.js Suspense fallback).
+        // Nếu mismatch, user sẽ thấy skeleton/spinner đảo màu khi hydrate.
+        return <PageLoading message="Đang tải khóa học..." bg="dark" />;
     }
 
     if (!course) {
