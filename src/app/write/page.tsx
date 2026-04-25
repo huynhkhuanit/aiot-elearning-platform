@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
-import TipTapEditor from "@/components/TipTapEditor";
 import { sanitizeHTML } from "@/lib/sanitize";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,15 @@ import {
 import { motion } from "framer-motion";
 import PageLoading from "@/components/PageLoading";
 import { formatUsernameHandle } from "@/lib/profile-url";
+
+// TipTap (~300KB với extensions) — chỉ tải khi user vào trang viết bài.
+// SSR off vì TipTap dùng DOM API.
+const TipTapEditor = dynamic(() => import("@/components/TipTapEditor"), {
+    ssr: false,
+    loading: () => (
+        <div className="w-full min-h-[400px] bg-slate-100 rounded-lg animate-pulse" />
+    ),
+});
 
 interface Category {
     id: number;

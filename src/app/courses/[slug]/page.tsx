@@ -443,9 +443,11 @@ export default function CourseDetailPage() {
                         href="/"
                         className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                     >
-                        <img
+                        <Image
                             src="/assets/img/logo.png"
                             alt="DHV LearnX Logo"
+                            width={48}
+                            height={48}
                             className="w-[48px] h-[48px] rounded-lg object-contain"
                         />
                         <span className="font-bold text-white text-sm hidden sm:inline uppercase tracking-wide">

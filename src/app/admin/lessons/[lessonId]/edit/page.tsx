@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import MDEditor from "@uiw/react-md-editor";
+import dynamic from "next/dynamic";
 import {
     Save,
     ArrowLeft,
@@ -22,6 +22,15 @@ import PageLoading from "@/components/PageLoading";
 import VideoUpload from "@/components/VideoUpload";
 import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
+
+// MD Editor (~150KB) — chỉ admin mới dùng, lazy load để không kéo theo
+// vào shared chunk của các trang khác. SSR off vì dùng `window`.
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), {
+    ssr: false,
+    loading: () => (
+        <div className="w-full h-96 bg-slate-800/50 rounded-lg animate-pulse" />
+    ),
+});
 
 interface LessonData {
     id: string;

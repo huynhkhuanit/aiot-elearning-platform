@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { Trophy, Medal, Flame, TrendingUp, Crown } from "lucide-react";
 import LevelBadge from "./LevelBadge";
 
@@ -166,9 +167,11 @@ export default function Leaderboard() {
                                 {/* Avatar */}
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden flex-shrink-0">
                                     {entry.avatarUrl ? (
-                                        <img
+                                        <Image
                                             src={entry.avatarUrl}
                                             alt={entry.username}
+                                            width={32}
+                                            height={32}
                                             className="w-full h-full object-cover"
                                         />
                                     ) : (

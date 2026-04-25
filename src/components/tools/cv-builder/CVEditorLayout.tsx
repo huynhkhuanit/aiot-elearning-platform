@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import html2canvas from "html2canvas-pro";
-import jsPDF from "jspdf";
 import type { CVData, CVAction, CVSectionType } from "@/types/cv";
 import { CVToolbar } from "./CVToolbar";
 import { CVDocument } from "./CVDocument";
@@ -33,6 +31,13 @@ export function CVEditorLayout({
         setActiveSection(null);
 
         try {
+            // Lazy load PDF deps (~500KB) only when user actually exports.
+            const [{ default: html2canvas }, { default: jsPDF }] =
+                await Promise.all([
+                    import("html2canvas-pro"),
+                    import("jspdf"),
+                ]);
+
             // Add a delay to ensure React state updates have painted and fonts are loaded
             await new Promise((r) => setTimeout(r, 200));
 

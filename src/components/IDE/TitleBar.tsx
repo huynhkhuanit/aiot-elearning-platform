@@ -1,6 +1,7 @@
 "use client";
 
 import { Sun, Moon, Share2, ArrowLeft, Settings } from "lucide-react";
+import Image from "next/image";
 import type { LanguageType } from "./useIDEState";
 
 const FILE_NAMES: Record<LanguageType, string> = {
@@ -45,9 +46,11 @@ export default function TitleBar({
                     <ArrowLeft className="w-4 h-4" />
                 </button>
                 <div className="flex items-center gap-2">
-                    <img
+                    <Image
                         src="/assets/img/logo.png"
                         alt="Logo"
+                        width={20}
+                        height={20}
                         className="w-5 h-5 rounded"
                     />
                     <span className="text-[13px] font-medium text-[var(--ide-text-muted)]">

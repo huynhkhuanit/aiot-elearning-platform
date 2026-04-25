@@ -15,6 +15,7 @@ import {
     Home,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import PageLoading from "@/components/PageLoading";
 
 export default function AdminLayout({
@@ -136,9 +137,11 @@ export default function AdminLayout({
                                 href="/"
                                 className="flex items-center gap-2 flex-1"
                             >
-                                <img
+                                <Image
                                     src="/assets/img/logo.png"
                                     alt="Logo"
+                                    width={32}
+                                    height={32}
                                     className="w-8 h-8 rounded"
                                 />
                                 <span className="text-lg font-bold text-slate-100">

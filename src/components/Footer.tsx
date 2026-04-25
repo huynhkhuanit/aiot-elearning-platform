@@ -10,6 +10,7 @@ import {
     Github,
     Volume2,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { toolLinks } from "@/lib/tool-catalog";
 
@@ -70,7 +71,7 @@ export default function Footer() {
                                 className="flex items-center justify-center cursor-pointer"
                                 style={{ transition: "all .2s ease" }}
                             >
-                                <img
+                                <Image
                                     src="/assets/img/logo.png"
                                     alt="CodeSense AIoT Logo"
                                     width={38}
@@ -215,7 +216,7 @@ export default function Footer() {
                                 className="flex items-center justify-center cursor-pointer"
                                 style={{ transition: "all .2s ease" }}
                             >
-                                <img
+                                <Image
                                     src="/assets/img/logo.png"
                                     alt="CodeSense AIoT Logo"
                                     width={38}

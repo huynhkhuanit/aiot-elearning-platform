@@ -4,7 +4,31 @@ const nextConfig: NextConfig = {
     reactStrictMode: true,
     poweredByHeader: false,
     compress: true,
+    productionBrowserSourceMaps: false,
+    experimental: {
+        // Tree-shake & optimize imports for heavy libraries with many exports.
+        // Reduces initial bundle by only including used symbols.
+        optimizePackageImports: [
+            "lucide-react",
+            "framer-motion",
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-popover",
+            "@radix-ui/react-select",
+            "@radix-ui/react-checkbox",
+            "@radix-ui/react-radio-group",
+            "@radix-ui/react-progress",
+            "@radix-ui/react-slider",
+            "@radix-ui/react-label",
+            "@radix-ui/react-slot",
+            "radix-ui",
+            "recharts",
+            "date-fns",
+            "lowlight",
+        ],
+        scrollRestoration: true,
+    },
     images: {
+        formats: ["image/avif", "image/webp"],
         remotePatterns: [
             {
                 protocol: "https",
@@ -32,6 +56,29 @@ const nextConfig: NextConfig = {
                 pathname: "/**",
             },
         ],
+    },
+    // Long-term caching for hashed static assets
+    async headers() {
+        return [
+            {
+                source: "/_next/static/:path*",
+                headers: [
+                    {
+                        key: "Cache-Control",
+                        value: "public, max-age=31536000, immutable",
+                    },
+                ],
+            },
+            {
+                source: "/assets/:path*",
+                headers: [
+                    {
+                        key: "Cache-Control",
+                        value: "public, max-age=31536000, immutable",
+                    },
+                ],
+            },
+        ];
     },
     // Increase max duration for video uploads
     // Note: `serverRuntimeConfig` is deprecated in Next.js 15+ and removed in Next.js 16.

@@ -18,7 +18,11 @@ import {
     Globe,
     FileCode,
 } from "lucide-react";
-import Editor, { OnMount } from "@monaco-editor/react";
+import dynamic from "next/dynamic";
+import type { OnMount } from "@monaco-editor/react";
+
+// Lazy load Monaco — kept here for refactor parity with the live IDE panel.
+const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
 import type {
     CodePlaygroundProps,

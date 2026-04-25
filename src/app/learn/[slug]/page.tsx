@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import confetti from "canvas-confetti";
 import {
     Play,
     PlayCircle,
@@ -543,7 +543,10 @@ export default function LearnCoursePage() {
         });
     };
 
-    const triggerFireworks = () => {
+    const triggerFireworks = async () => {
+        // canvas-confetti (~30KB) chỉ tải khi user thực sự hoàn thành 1 lesson.
+        const { default: confetti } = await import("canvas-confetti");
+
         const duration = 3 * 1000;
         const animationEnd = Date.now() + duration;
         const defaults = {
@@ -738,9 +741,11 @@ export default function LearnCoursePage() {
                         onClick={() => router.push("/")}
                         className={`flex items-center space-x-2 ${isDarkTheme ? "text-gray-300 hover:opacity-80" : "text-gray-600 hover:opacity-80"} transition-opacity flex-shrink-0`}
                     >
-                        <img
+                        <Image
                             src="/assets/img/logo.png"
                             alt="CodeSense AIoT Logo"
+                            width={32}
+                            height={32}
                             className="h-8 w-8 rounded"
                         />
                     </button>

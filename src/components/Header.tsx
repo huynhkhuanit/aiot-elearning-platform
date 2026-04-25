@@ -1,32 +1,31 @@
 "use client";
 
-import { Search, X, Sun, Moon, User, LogOut, FileText, Bookmark, Settings } from "lucide-react";
+import { Search, X, User, LogOut, FileText, Bookmark, Settings } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useRouter } from "next/navigation";
-import LoginModal from "./LoginModal";
-import RegisterModal from "./RegisterModal";
 import AvatarWithProBadge from "./AvatarWithProBadge";
 import VerifiedBadge from "@/components/profile/VerifiedBadge";
 import { getCanonicalProfilePath, normalizeUsername } from "@/lib/profile-url";
 
-import { removeVietnameseTones } from "@/lib/string-utils";
+// Modals are heavy (form validation + animations). Load only when user
+// opens them so the initial header bundle stays small.
+const LoginModal = dynamic(() => import("./LoginModal"), { ssr: false });
+const RegisterModal = dynamic(() => import("./RegisterModal"), { ssr: false });
 
 export default function Header() {
   const [searchValue, setSearchValue] = useState("");
-  const [courses, setCourses] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [searchPlaceholder, setSearchPlaceholder] = useState("Tìm kiếm");
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, logout, isLoading } = useAuth();
   const normalizedUsername = normalizeUsername(user?.username);
   const profileHref = getCanonicalProfilePath(normalizedUsername);
@@ -36,26 +35,6 @@ export default function Header() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
-
-  // Thay đổi placeholder dựa trên kích thước màn hình
-  useEffect(() => {
-    const updatePlaceholder = () => {
-      if (window.innerWidth >= 1024) {
-        // Desktop (lg breakpoint)
-        setSearchPlaceholder("Tìm kiếm khóa học, bài viết, video...");
-      } else {
-        // Mobile và Tablet
-        setSearchPlaceholder("Tìm kiếm");
-      }
-    };
-
-    updatePlaceholder();
-    window.addEventListener('resize', updatePlaceholder);
-
-    return () => {
-      window.removeEventListener('resize', updatePlaceholder);
-    };
-  }, []);
 
   // Đóng menu khi click bên ngoài
   useEffect(() => {
@@ -76,41 +55,51 @@ export default function Header() {
     };
   }, [showUserMenu, showResults]);
 
-  const fetchCourses = async () => {
-    if (courses.length > 0) return;
-    
-    try {
-      setIsLoadingCourses(true);
-      const res = await fetch('/api/courses?limit=100');
-      const data = await res.json();
-      if (data.success) {
-        setCourses(data.data.courses);
-      }
-    } catch (error) {
-      console.error("Failed to fetch courses for search:", error);
-    } finally {
+  // Debounced server-side search.
+  // - Trước đây: fetch 100 courses ngay khi focus, lọc client-side bằng removeVietnameseTones.
+  // - Sau: gọi /api/search chỉ khi user gõ ≥ 2 ký tự, debounce 250ms. Tiết kiệm bandwidth
+  //   và cho phép backend FTS làm việc hiệu quả hơn.
+  useEffect(() => {
+    const trimmed = searchValue.trim();
+    if (trimmed.length < 2) {
+      setSearchResults([]);
       setIsLoadingCourses(false);
+      return;
     }
-  };
+
+    setIsLoadingCourses(true);
+    setShowResults(true);
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/search?q=${encodeURIComponent(trimmed)}&type=courses&limit=5`,
+          { signal: controller.signal },
+        );
+        const data = await res.json();
+        if (data.success) {
+          setSearchResults(data.data.results || []);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (error: any) {
+        if (error?.name !== "AbortError") {
+          console.error("Search failed:", error);
+          setSearchResults([]);
+        }
+      } finally {
+        setIsLoadingCourses(false);
+      }
+    }, 250);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchValue]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchValue(value);
-    
-    if (value.trim()) {
-      setShowResults(true);
-      const normalizedSearch = removeVietnameseTones(value.toLowerCase());
-      
-      const filtered = courses.filter(course => {
-        const normalizedTitle = removeVietnameseTones(course.title.toLowerCase());
-        return normalizedTitle.includes(normalizedSearch);
-      });
-      
-      setSearchResults(filtered.slice(0, 5)); // Limit to 5 results
-    } else {
-      setSearchResults([]);
-      setShowResults(false);
-    }
+    setSearchValue(e.target.value);
   };
 
   const clearSearch = () => {
@@ -122,7 +111,11 @@ export default function Header() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       if (searchResults.length > 0) {
-        router.push(`/learn/${searchResults[0].slug}`);
+        const top = searchResults[0];
+        const target = top.sourceType === "blog"
+          ? `/articles/${top.slug}`
+          : `/learn/${top.slug}`;
+        router.push(target);
         setShowResults(false);
         setSearchValue("");
       }
@@ -145,11 +138,12 @@ export default function Header() {
         {/* Logo Section */}
         <div className="flex items-center gap-3 flex-shrink-0 z-10">
           <Link href="/" className="flex items-center justify-center transition-all duration-200 cursor-pointer">
-            <img 
-              src="/assets/img/logo.png" 
-              alt="CodeSense AIoT Logo" 
+            <Image
+              src="/assets/img/logo.png"
+              alt="CodeSense AIoT Logo"
               width={38}
               height={38}
+              priority
               style={{ objectFit: 'contain' }}
               className="w-[38px] h-[38px] rounded-lg"
             />
@@ -167,15 +161,10 @@ export default function Header() {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
-              placeholder={searchPlaceholder}
+              placeholder="Tìm kiếm khóa học, bài viết..."
               value={searchValue}
               onChange={handleSearchChange}
-              onFocus={() => {
-                setIsSearchFocused(true);
-                if (courses.length === 0) {
-                  fetchCourses();
-                }
-              }}
+              onFocus={() => setIsSearchFocused(true)}
               onKeyDown={handleKeyDown}
               aria-label="Tìm kiếm"
               className="w-full pl-12 pr-12 border border-border rounded-full text-card-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
@@ -224,9 +213,11 @@ export default function Header() {
                       >
                         <div className="relative w-8 h-8 flex-shrink-0 rounded-full overflow-hidden bg-gray-100">
                           {course.thumbnailUrl ? (
-                            <img
+                            <Image
                               src={course.thumbnailUrl}
                               alt={course.title}
+                              width={32}
+                              height={32}
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -411,25 +402,29 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Login Modal */}
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onSwitchToRegister={() => {
-          setShowLoginModal(false);
-          setShowRegisterModal(true);
-        }}
-      />
+      {/* Login Modal — chỉ mount khi user mở để dynamic import thật sự lazy */}
+      {showLoginModal && (
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onSwitchToRegister={() => {
+            setShowLoginModal(false);
+            setShowRegisterModal(true);
+          }}
+        />
+      )}
 
       {/* Register Modal */}
-      <RegisterModal
-        isOpen={showRegisterModal}
-        onClose={() => setShowRegisterModal(false)}
-        onSwitchToLogin={() => {
-          setShowRegisterModal(false);
-          setShowLoginModal(true);
-        }}
-      />
+      {showRegisterModal && (
+        <RegisterModal
+          isOpen={showRegisterModal}
+          onClose={() => setShowRegisterModal(false)}
+          onSwitchToLogin={() => {
+            setShowRegisterModal(false);
+            setShowLoginModal(true);
+          }}
+        />
+      )}
     </header>
   );
 }

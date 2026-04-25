@@ -5,6 +5,7 @@ import { ArrowRight, Clock, Eye } from "lucide-react";
 import AvatarWithProBadge from "@/components/AvatarWithProBadge";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { useToast } from "@/contexts/ToastContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
@@ -497,10 +498,12 @@ function CourseCard({
                     className={`relative aspect-video flex-shrink-0 overflow-hidden rounded-t-2xl ${isEnrolling ? "opacity-50" : ""}`}
                 >
                     {course.thumbnailUrl ? (
-                        <img
+                        <Image
                             src={course.thumbnailUrl}
                             alt={course.title}
-                            className="absolute inset-0 w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                            className="absolute inset-0 object-cover"
                             onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = "none";

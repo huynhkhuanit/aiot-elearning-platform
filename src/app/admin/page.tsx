@@ -25,19 +25,39 @@ import {
 } from "lucide-react";
 import { useAdminAccess } from "@/lib/hooks/useAdminAccess";
 import Link from "next/link";
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    Legend,
-    Cell,
-} from "recharts";
+import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import ProfileReviewQueue from "@/components/admin/ProfileReviewQueue";
+
+// Recharts (~400KB gzipped) lazy-loaded — only ship to admin users who view dashboard.
+const EnrollmentsByCourseChart = dynamic(
+    () =>
+        import("@/components/admin/AdminCharts").then(
+            (m) => m.EnrollmentsByCourseChart,
+        ),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="h-full flex items-center justify-center">
+                <Loader className="w-8 h-8 text-indigo-500 animate-spin" />
+            </div>
+        ),
+    },
+);
+const CourseContentStatsChart = dynamic(
+    () =>
+        import("@/components/admin/AdminCharts").then(
+            (m) => m.CourseContentStatsChart,
+        ),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="h-full flex items-center justify-center">
+                <Loader className="w-8 h-8 text-indigo-500 animate-spin" />
+            </div>
+        ),
+    },
+);
 
 // ============================================================
 // Types
@@ -219,28 +239,6 @@ function StarRating({ rating }: { rating: number }) {
             <span className="ml-1 text-sm font-semibold text-amber-400">
                 {rating}
             </span>
-        </div>
-    );
-}
-
-// Chart colors
-const CHART_COLORS = ["#818cf8", "#6366f1", "#4f46e5", "#4338ca", "#3730a3"];
-
-function CustomTooltip({ active, payload, label }: any) {
-    if (!active || !payload?.length) return null;
-    return (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 shadow-xl">
-            <p className="text-sm font-medium text-slate-200 mb-1">
-                {payload[0]?.payload?.fullName || label}
-            </p>
-            {payload.map((entry: any, index: number) => (
-                <p key={index} className="text-xs text-slate-400">
-                    <span style={{ color: entry.color }}>●</span> {entry.name}:{" "}
-                    <span className="text-slate-200 font-medium">
-                        {entry.value}
-                    </span>
-                </p>
-            ))}
         </div>
     );
 }
@@ -596,57 +594,9 @@ export default function AdminDashboard() {
                                 <Loader className="w-8 h-8 text-indigo-500 animate-spin" />
                             </div>
                         ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={charts?.enrollmentsByCourse || []}
-                                    barSize={32}
-                                >
-                                    <CartesianGrid
-                                        strokeDasharray="3 3"
-                                        stroke="#1e293b"
-                                        vertical={false}
-                                    />
-                                    <XAxis
-                                        dataKey="name"
-                                        stroke="#64748b"
-                                        fontSize={11}
-                                        tickLine={false}
-                                        axisLine={{ stroke: "#334155" }}
-                                    />
-                                    <YAxis
-                                        stroke="#64748b"
-                                        fontSize={11}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        allowDecimals={false}
-                                    />
-                                    <Tooltip
-                                        content={<CustomTooltip />}
-                                        cursor={{
-                                            fill: "rgba(99, 102, 241, 0.08)",
-                                        }}
-                                    />
-                                    <Bar
-                                        dataKey="enrollments"
-                                        name="Ghi danh"
-                                        radius={[6, 6, 0, 0]}
-                                    >
-                                        {(
-                                            charts?.enrollmentsByCourse || []
-                                        ).map((_, index) => (
-                                            <Cell
-                                                key={index}
-                                                fill={
-                                                    CHART_COLORS[
-                                                        index %
-                                                            CHART_COLORS.length
-                                                    ]
-                                                }
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <EnrollmentsByCourseChart
+                                data={charts?.enrollmentsByCourse || []}
+                            />
                         )}
                     </div>
                 </div>
@@ -665,64 +615,9 @@ export default function AdminDashboard() {
                                 <Loader className="w-8 h-8 text-indigo-500 animate-spin" />
                             </div>
                         ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={charts?.courseContentStats || []}
-                                    barSize={14}
-                                >
-                                    <CartesianGrid
-                                        strokeDasharray="3 3"
-                                        stroke="#1e293b"
-                                        vertical={false}
-                                    />
-                                    <XAxis
-                                        dataKey="name"
-                                        stroke="#64748b"
-                                        fontSize={11}
-                                        tickLine={false}
-                                        axisLine={{ stroke: "#334155" }}
-                                    />
-                                    <YAxis
-                                        stroke="#64748b"
-                                        fontSize={11}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        allowDecimals={false}
-                                    />
-                                    <Tooltip
-                                        content={<CustomTooltip />}
-                                        cursor={{
-                                            fill: "rgba(99, 102, 241, 0.08)",
-                                        }}
-                                    />
-                                    <Legend
-                                        wrapperStyle={{
-                                            fontSize: "11px",
-                                            color: "#94a3b8",
-                                        }}
-                                        iconSize={8}
-                                        iconType="circle"
-                                    />
-                                    <Bar
-                                        dataKey="lessons"
-                                        name="Tổng bài"
-                                        fill="#818cf8"
-                                        radius={[4, 4, 0, 0]}
-                                    />
-                                    <Bar
-                                        dataKey="published"
-                                        name="Đã xuất bản"
-                                        fill="#34d399"
-                                        radius={[4, 4, 0, 0]}
-                                    />
-                                    <Bar
-                                        dataKey="content"
-                                        name="Có nội dung"
-                                        fill="#fbbf24"
-                                        radius={[4, 4, 0, 0]}
-                                    />
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <CourseContentStatsChart
+                                data={charts?.courseContentStats || []}
+                            />
                         )}
                     </div>
                 </div>

@@ -1,11 +1,25 @@
 "use client";
 
-import Editor, { OnMount } from "@monaco-editor/react";
+import dynamic from "next/dynamic";
+import type { OnMount } from "@monaco-editor/react";
 import {
     configureMonacoEditor,
     getEditorOptions,
 } from "../CodePlayground/monacoConfig";
 import type { LanguageType } from "./useIDEState";
+
+// Monaco Editor là 1 thư viện rất nặng (~1MB+ gzipped). Lazy load để
+// không kéo theo trên các trang không phải playground.
+const Editor = dynamic(() => import("@monaco-editor/react"), {
+    ssr: false,
+    loading: () => (
+        <div className="h-full flex items-center justify-center bg-[var(--ide-bg)]">
+            <div className="text-[var(--ide-text-muted)] text-sm">
+                Loading editor...
+            </div>
+        </div>
+    ),
+});
 
 type MonacoEditor = Parameters<OnMount>[0];
 

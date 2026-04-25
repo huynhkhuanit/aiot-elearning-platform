@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import { CSRFInterceptor } from "@/components/CSRFInterceptor";
-import { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({
+    subsets: ["latin"],
+    variable: "--font-sans",
+    display: "swap",
+    preload: true,
+    adjustFontFallback: true,
+});
 
 export const metadata: Metadata = {
     title: "Nền tảng học tập thông minh AIoT | Hệ thống E-Learning cho giáo dục Việt Nam",
@@ -41,15 +45,7 @@ export default function RootLayout({
                 <CSRFInterceptor />
                 <ToastProvider>
                     <AuthProvider>
-                        <ThemeProvider
-                            attribute="class"
-                            defaultTheme="light"
-                            forcedTheme="light"
-                            enableSystem={false}
-                            enableColorScheme={false}
-                        >
-                            <LayoutWrapper>{children}</LayoutWrapper>
-                        </ThemeProvider>
+                        <LayoutWrapper>{children}</LayoutWrapper>
                     </AuthProvider>
                 </ToastProvider>
             </body>

@@ -14,6 +14,7 @@ import {
 import PageContainer from "@/components/PageContainer";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/contexts/ToastContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -665,10 +666,12 @@ function SlideContent({
             <div className="hidden sm:flex flex-[2] items-center justify-center pr-8 py-6">
                 <div className="relative w-full max-w-[280px] aspect-[16/10] rounded-xl overflow-hidden shadow-2xl shadow-black/20">
                     {course.thumbnailUrl ? (
-                        <img
+                        <Image
                             src={course.thumbnailUrl}
                             alt={course.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 768px) 280px, 280px"
+                            className="object-cover"
                         />
                     ) : (
                         <div className="w-full h-full bg-white/10 backdrop-blur-sm flex items-center justify-center">

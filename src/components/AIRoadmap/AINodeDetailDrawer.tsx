@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -247,9 +248,11 @@ export default function AINodeDetailDrawer({
                         className="flex items-center gap-3 p-3 bg-gray-50 hover:bg-indigo-50 rounded-xl transition-colors group"
                       >
                         {course.thumbnail_url ? (
-                          <img
+                          <Image
                             src={course.thumbnail_url}
                             alt={course.title}
+                            width={48}
+                            height={48}
                             className="w-12 h-12 rounded-lg object-cover"
                           />
                         ) : (
