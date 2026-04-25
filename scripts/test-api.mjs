@@ -6,6 +6,8 @@
 const BASE = "http://localhost:3000";
 const results = [];
 let authCookie = "";
+let csrfCookie = "";
+let csrfToken = "";
 let testUserId = "";
 const TS = Date.now();
 const TEST_EMAIL = `testuser_${TS}@test.com`;
@@ -16,7 +18,11 @@ let currentPassword = TEST_PASS;
 async function req(method, path, body, opts = {}) {
   const headers = { ...(opts.headers || {}) };
   if (!(body instanceof FormData)) headers["Content-Type"] = "application/json";
-  if (authCookie) headers["Cookie"] = authCookie;
+  const cookieHeader = [authCookie, csrfCookie].filter(Boolean).join("; ");
+  if (cookieHeader) headers["Cookie"] = cookieHeader;
+  if (csrfToken && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    headers["X-CSRF-Token"] = headers["X-CSRF-Token"] || csrfToken;
+  }
   const init = { method, headers, redirect: "manual" };
   if (body && method !== "GET") {
     init.body = body instanceof FormData ? body : JSON.stringify(body);
@@ -32,6 +38,10 @@ async function req(method, path, body, opts = {}) {
     const cookies = res.headers.getSetCookie?.() || [];
     for (const c of cookies) {
       if (c.startsWith("auth_token=")) authCookie = c.split(";")[0];
+      if (c.startsWith("csrf_token=")) {
+        csrfCookie = c.split(";")[0];
+        csrfToken = decodeURIComponent(csrfCookie.split("=")[1] || "");
+      }
     }
     return { status: res.status, data, ok: res.ok };
   } catch (e) {
@@ -55,6 +65,11 @@ async function login(email, password) {
   authCookie = "";
   const r = await req("POST", "/api/auth/login", { email, password });
   return r;
+}
+
+async function ensureCSRF() {
+  if (csrfToken) return;
+  await req("GET", "/api/auth/csrf");
 }
 
 // ============ 6.2.1 ============
@@ -320,6 +335,57 @@ async function testUploadAdmin() {
   addResult("TC43", G, "Lấy CSRF token", "GET /auth/csrf", "200|404", `${r.status}`, r.status, tc43ok);
 }
 
+// ============ 6.2.5 ============
+async function testLearningPersonalization() {
+  const G = "6.2.5 AI Learning Personalization";
+  if (!authCookie) await login(TEST_EMAIL, currentPassword);
+  await ensureCSRF();
+
+  let r = await req("PUT", "/api/learning/goals/me", {
+    targetRole: "Frontend Developer",
+    skillLevel: "beginner",
+    focusAreas: ["React", "TypeScript"],
+    currentSkills: ["HTML", "CSS"],
+    hoursPerWeek: 8,
+    timelineMonths: 4,
+    preferredLanguage: "vi"
+  });
+  check("TC44", G, "Save learning goal", "goal=frontend", 200, r, r => r.data?.success && r.data?.data?.goal);
+
+  r = await req("GET", "/api/learning/goals/me");
+  check("TC45", G, "Get learning goal", "GET /goals/me", 200, r, r => r.data?.data?.goal?.targetRole);
+
+  r = await req("POST", "/api/learning/recommendations/refresh?limit=5");
+  check("TC46", G, "Refresh learning recommendations", "POST /recommendations/refresh", 200, r, r => r.data?.success && Array.isArray(r.data?.data?.recommendations));
+
+  r = await req("GET", "/api/learning/recommendations?limit=5");
+  check("TC47", G, "Get learning recommendations", "GET /recommendations", 200, r, r => r.data?.success && Array.isArray(r.data?.data?.recommendations));
+
+  r = await req("GET", "/api/learning/insights");
+  check("TC48", G, "Get learning insights", "GET /insights", 200, r, r => r.data?.success && r.data?.data?.insights);
+
+  r = await req("POST", "/api/ai/tutor", {
+    messages: [{ role: "user", content: "Em nen hoc gi tiep theo?" }],
+    learningContext: {
+      courseTitle: "React Fundamentals",
+      courseSlug: "react-fundamentals",
+      currentLessonTitle: "State and Events",
+      currentLessonId: "lesson-demo",
+      lessonType: "reading",
+      lessonContent: "React state helps components remember values.",
+      videoUrl: "",
+      progress: 35,
+      completedLessons: 3,
+      totalLessons: 10,
+      currentSection: "React Basics",
+      recentCompletedTopics: ["Components", "Props"],
+      courseOutline: "Components > Props > State"
+    }
+  });
+  const tc49ok = [200, 503, 504].includes(r.status);
+  addResult("TC49", G, "AI Tutor memory-compatible request", "messages+context", "200|503|504", `${r.status}`, r.status, tc49ok);
+}
+
 // ============ MAIN ============
 async function main() {
   console.log("=".repeat(60));
@@ -336,6 +402,8 @@ async function main() {
     await testAI();
     console.log("\n▶ 6.2.4 Upload media, quản trị & phân quyền...");
     await testUploadAdmin();
+    console.log("\n▶ 6.2.5 AI Learning Personalization...");
+    await testLearningPersonalization();
   } catch (e) { console.error("FATAL:", e.message); }
 
   const passed = results.filter(r => r.pass === "PASS").length;
@@ -352,11 +420,14 @@ async function main() {
   }
 
   const fs = await import("fs");
-  fs.writeFileSync("scripts/test-results.json", JSON.stringify({
+  const path = await import("path");
+  const outputPath = process.env.API_TEST_RESULTS_PATH || "coverage/api-test-results.json";
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, JSON.stringify({
     summary: { total: results.length, passed, failed, rate: `${((passed/results.length)*100).toFixed(1)}%`, timestamp: new Date().toISOString() },
     results
   }, null, 2));
-  console.log(`\n✅ Kết quả JSON: scripts/test-results.json`);
+  console.log(`\nAPI test JSON: ${outputPath}`);
 }
 
 main();

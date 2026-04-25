@@ -172,9 +172,9 @@ export function withOptionalAuth(
         request: NextRequest,
         context: { user: AuthPayload | null; request: NextRequest },
         routeContext?: unknown,
-    ) => Promise<NextResponse>,
+    ) => Promise<Response>,
 ) {
-    return async (request: NextRequest, routeContext?: unknown): Promise<NextResponse> => {
+    return async (request: NextRequest, routeContext?: unknown): Promise<Response> => {
         const cookieToken = request.cookies.get("auth_token")?.value;
         const headerToken = extractTokenFromHeader(
             request.headers.get("Authorization"),

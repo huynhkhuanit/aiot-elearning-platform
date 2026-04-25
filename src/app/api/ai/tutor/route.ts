@@ -4,6 +4,12 @@ import {
     getChatCompletionStream,
     getOllamaConfig,
 } from "@/lib/ollama";
+import { withOptionalAuth } from "@/lib/api-middleware";
+import {
+    getTutorSession,
+    saveTutorSession,
+} from "@/lib/learning/learning-service";
+import { buildTutorSuggestedNextActions } from "@/lib/learning/tutor-memory";
 
 interface LearningContext {
     courseTitle: string;
@@ -26,7 +32,10 @@ interface TutorMessage {
     content: string;
 }
 
-function buildTutorSystemPrompt(ctx: LearningContext | null): string {
+function buildTutorSystemPrompt(
+    ctx: LearningContext | null,
+    memorySummary?: string | null,
+): string {
     const base = [
         "You are the AI Tutor for the CodeSense AIoT learning platform.",
         "Always answer in Vietnamese.",
@@ -36,8 +45,12 @@ function buildTutorSystemPrompt(ctx: LearningContext | null): string {
         "If you include code, add short comments that explain the important steps.",
     ].join("\n");
 
+    const memoryBlock = memorySummary
+        ? ["", "Tutor memory for this learner:", memorySummary].join("\n")
+        : "";
+
     if (!ctx) {
-        return base;
+        return `${base}${memoryBlock}`;
     }
 
     const lessonTypeLabel =
@@ -86,12 +99,21 @@ function buildTutorSystemPrompt(ctx: LearningContext | null): string {
         outline,
         "",
         "When the learner asks about the current lesson, answer based on this context first.",
+        memoryBlock,
     ].join("\n");
 }
 
-function buildCompactSystemPrompt(ctx: LearningContext | null): string {
+function buildCompactSystemPrompt(
+    ctx: LearningContext | null,
+    memorySummary?: string | null,
+): string {
     if (!ctx) {
-        return "You are a coding tutor. Answer in Vietnamese. Be concise. Use markdown.";
+        return [
+            "You are a coding tutor. Answer in Vietnamese. Be concise. Use markdown.",
+            memorySummary ? `Tutor memory: ${memorySummary}` : "",
+        ]
+            .filter(Boolean)
+            .join("\n");
     }
 
     return [
@@ -106,7 +128,10 @@ function buildCompactSystemPrompt(ctx: LearningContext | null): string {
         ctx.lessonContent
             ? `Lesson content:\n${ctx.lessonContent.slice(0, 1500)}`
             : "Lesson content is not available.",
-    ].join("\n");
+        memorySummary ? `Tutor memory:\n${memorySummary}` : "",
+    ]
+        .filter(Boolean)
+        .join("\n");
 }
 
 function isSmallModel(modelId?: string): boolean {
@@ -123,15 +148,16 @@ function buildTutorRequest(
     modelId: string | undefined,
     learningContext: LearningContext | null,
     messages: TutorMessage[],
+    memorySummary?: string | null,
 ) {
     const small = isSmallModel(modelId);
     const medium = isMediumModel(modelId);
 
     const systemPrompt = small
-        ? "You are a coding tutor. Answer in Vietnamese. Be concise. Use markdown."
+        ? buildCompactSystemPrompt(null, memorySummary)
         : medium
-          ? buildCompactSystemPrompt(learningContext)
-          : buildTutorSystemPrompt(learningContext);
+          ? buildCompactSystemPrompt(learningContext, memorySummary)
+          : buildTutorSystemPrompt(learningContext, memorySummary);
 
     const ollamaMessages: Array<{
         role: "user" | "assistant" | "system";
@@ -166,16 +192,18 @@ function createStaticStream(content: string): ReadableStream<string> {
     });
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withOptionalAuth(async (request: NextRequest, { user }) => {
     try {
         const {
             messages,
             learningContext,
             modelId,
+            sessionId,
         }: {
             messages: TutorMessage[];
             learningContext: LearningContext | null;
             modelId?: string;
+            sessionId?: string;
         } = await request.json();
 
         if (!Array.isArray(messages) || messages.length === 0) {
@@ -188,18 +216,47 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const existingSession =
+            user && sessionId
+                ? await getTutorSession(user.userId, sessionId).catch(
+                      (error) => {
+                          console.warn(
+                              "AI Tutor memory lookup failed:",
+                              error instanceof Error
+                                  ? error.message
+                                  : String(error),
+                          );
+                          return null;
+                      },
+                  )
+                : null;
+        const effectiveSessionId =
+            existingSession?.id ||
+            sessionId ||
+            (user ? crypto.randomUUID() : undefined);
+        const suggestedNextActions = buildTutorSuggestedNextActions(
+            learningContext || null,
+        );
+
         const { tutorModel, chatModel } = getOllamaConfig();
         let effectiveModelId = modelId || tutorModel;
         let requestConfig = buildTutorRequest(
             effectiveModelId,
             learningContext || null,
             messages,
+            existingSession?.memorySummary,
         );
 
         const encoder = new TextEncoder();
         const toSSE = (content: string, done: boolean, error?: string) =>
             encoder.encode(
-                `data: ${JSON.stringify({ content, done, ...(error && { error }) })}\n\n`,
+                `data: ${JSON.stringify({
+                    content,
+                    done,
+                    ...(effectiveSessionId && { sessionId: effectiveSessionId }),
+                    suggestedNextActions,
+                    ...(error && { error }),
+                })}\n\n`,
             );
 
         let stream: ReadableStream<string>;
@@ -244,6 +301,7 @@ export async function POST(request: NextRequest) {
                         effectiveModelId,
                         learningContext || null,
                         messages,
+                        existingSession?.memorySummary,
                     );
 
                     try {
@@ -299,6 +357,29 @@ export async function POST(request: NextRequest) {
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) {
+                            if (user) {
+                                await saveTutorSession({
+                                    userId: user.userId,
+                                    sessionId: effectiveSessionId,
+                                    courseId: learningContext?.courseSlug || null,
+                                    lessonId:
+                                        learningContext?.currentLessonId || null,
+                                    title:
+                                        learningContext?.currentLessonTitle ||
+                                        null,
+                                    previousSummary:
+                                        existingSession?.memorySummary || null,
+                                    learningContext,
+                                    messages,
+                                }).catch((error) => {
+                                    console.warn(
+                                        "AI Tutor memory save failed:",
+                                        error instanceof Error
+                                            ? error.message
+                                            : String(error),
+                                    );
+                                });
+                            }
                             controller.enqueue(toSSE("", true));
                             controller.close();
                             break;
@@ -369,4 +450,4 @@ export async function POST(request: NextRequest) {
             { status: 500, headers: { "Content-Type": "application/json" } },
         );
     }
-}
+});
