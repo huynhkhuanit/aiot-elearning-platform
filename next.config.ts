@@ -34,9 +34,10 @@ const nextConfig: NextConfig = {
         ],
     },
     // Increase max duration for video uploads
-    serverRuntimeConfig: {
-        // Will only be available on the server side
-        apiTimeout: 600, // 10 minutes
+    // Note: `serverRuntimeConfig` is deprecated in Next.js 15+ and removed in Next.js 16.
+    // Use environment variables instead. See: https://nextjs.org/docs/app/api-reference/config/next-config-js/runtime-configuration
+    env: {
+        API_TIMEOUT: "600", // 10 minutes (in seconds) - available on both server & client
     },
     serverExternalPackages: ["@sendgrid/mail"],
 };
