@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckIcon, ChevronsUpDown } from "lucide-react";
+import { Bot, Check, ChevronsUpDown, Code2, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     ModelSelector,
@@ -11,8 +11,6 @@ import {
     ModelSelectorInput,
     ModelSelectorItem,
     ModelSelectorList,
-    ModelSelectorLogo,
-    ModelSelectorLogoGroup,
     ModelSelectorName,
     ModelSelectorTrigger,
 } from "@/components/ai/model-selector";
@@ -20,7 +18,6 @@ import { cn } from "@/lib/utils";
 import type { AIModel } from "./types";
 import { AI_MODELS } from "./types";
 
-/* ── Group models by provider ── */
 function groupByProvider(models: AIModel[]) {
     const groups: Record<string, AIModel[]> = {};
     for (const model of models) {
@@ -28,6 +25,43 @@ function groupByProvider(models: AIModel[]) {
         groups[model.provider].push(model);
     }
     return groups;
+}
+
+function getModelIcon(model: AIModel) {
+    const modelId = model.id.toLowerCase();
+
+    if (modelId.includes("coder")) return Code2;
+    if (model.providerSlug === "deepseek") return Cpu;
+
+    return Bot;
+}
+
+function ModelIcon({
+    model,
+    theme,
+    className,
+}: {
+    model: AIModel;
+    theme: "light" | "dark";
+    className?: string;
+}) {
+    const Icon = getModelIcon(model);
+    const isDark = theme === "dark";
+
+    return (
+        <span
+            className={cn(
+                "flex size-5 shrink-0 items-center justify-center rounded-md",
+                isDark
+                    ? "bg-emerald-500/10 text-emerald-300"
+                    : "bg-emerald-50 text-emerald-700",
+                className,
+            )}
+            aria-hidden="true"
+        >
+            <Icon className="size-3.5" />
+        </span>
+    );
 }
 
 interface AIModelSelectorProps {
@@ -58,15 +92,18 @@ export default function AIModelSelector({
                             ? "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                             : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
+                    aria-label="Chọn mô hình AI"
+                    aria-expanded={open}
                 >
-                    <ModelSelectorLogo
-                        provider={selectedModel.providerSlug}
-                        className="size-3.5"
+                    <ModelIcon
+                        model={selectedModel}
+                        theme={theme}
+                        className="size-4"
                     />
                     <ModelSelectorName className="max-w-[120px]">
                         {selectedModel.name}
                     </ModelSelectorName>
-                    <ChevronsUpDown className="size-3 opacity-40" />
+                    <ChevronsUpDown className="size-3 shrink-0 opacity-50" />
                 </Button>
             </ModelSelectorTrigger>
 
@@ -94,28 +131,36 @@ export default function AIModelSelector({
                                             onModelChange(model);
                                             setOpen(false);
                                         }}
+                                        className="gap-2"
                                     >
-                                        <ModelSelectorLogo
-                                            provider={model.providerSlug}
-                                            className="size-4"
-                                        />
-                                        <ModelSelectorName>
-                                            {model.name}
-                                        </ModelSelectorName>
-                                        {model.description && (
-                                            <span className="hidden text-xs text-muted-foreground sm:inline">
-                                                {model.description}
-                                            </span>
-                                        )}
-                                        <ModelSelectorLogoGroup>
-                                            <ModelSelectorLogo
-                                                provider={model.providerSlug}
-                                            />
-                                        </ModelSelectorLogoGroup>
+                                        <ModelIcon model={model} theme={theme} />
+
+                                        <div className="min-w-0 flex-1">
+                                            <ModelSelectorName className="block">
+                                                {model.name}
+                                            </ModelSelectorName>
+                                            {model.description && (
+                                                <span className="block truncate text-xs text-muted-foreground">
+                                                    {model.description}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <span
+                                            className={cn(
+                                                "hidden shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium sm:inline-flex",
+                                                isDark
+                                                    ? "bg-zinc-800 text-zinc-400"
+                                                    : "bg-muted text-muted-foreground",
+                                            )}
+                                        >
+                                            {model.provider}
+                                        </span>
+
                                         {isActive ? (
-                                            <CheckIcon className="ml-auto size-4 text-emerald-500" />
+                                            <Check className="ml-auto size-4 shrink-0 text-emerald-500" />
                                         ) : (
-                                            <div className="ml-auto size-4" />
+                                            <span className="ml-auto size-4 shrink-0" />
                                         )}
                                     </ModelSelectorItem>
                                 );

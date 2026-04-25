@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { BotMessageSquare, Maximize2, Minimize2, X, Minus } from "lucide-react";
+import { Bot, Maximize2, Minimize2, X, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Tooltip,
@@ -51,21 +51,26 @@ export default function AITutorFAB() {
 
     return (
         <TooltipProvider>
-            {/* ═══ FAB Button ═══ */}
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button
                         type="button"
-                        variant={isOpen ? "ghost" : "default"}
+                        variant="default"
                         size="icon-lg"
                         onClick={togglePanel}
-                        className="fixed bottom-20 right-6 z-[9998] rounded-full shadow-md border-0"
-                        aria-label="AI Tutor"
+                        className={cn(
+                            "fixed bottom-20 right-6 z-[9998] rounded-full border-0 shadow-lg transition-colors",
+                            isOpen
+                                ? "bg-zinc-900 text-zinc-100 hover:bg-zinc-800"
+                                : "bg-emerald-600 text-white hover:bg-emerald-500",
+                        )}
+                        aria-label={isOpen ? "Đóng AI Tutor" : "Mở AI Tutor"}
+                        aria-expanded={isOpen}
                     >
                         {isOpen ? (
                             <X className="size-5" />
                         ) : (
-                            <BotMessageSquare className="size-5" />
+                            <Bot className="size-5" />
                         )}
                     </Button>
                 </TooltipTrigger>
@@ -77,7 +82,6 @@ export default function AITutorFAB() {
                 </TooltipContent>
             </Tooltip>
 
-            {/* ═══ Panel ═══ */}
             {isOpen && (
                 <div
                     className={cn(
@@ -95,10 +99,11 @@ export default function AITutorFAB() {
                             type="button"
                             onClick={() => setIsMinimized(false)}
                             className="flex h-full w-full items-center justify-between px-4 text-left transition-colors hover:bg-zinc-900"
+                            aria-label="Mở lại AI Tutor"
                         >
                             <div className="flex items-center gap-3">
                                 <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/15">
-                                    <BotMessageSquare className="size-4 text-emerald-400" />
+                                    <Bot className="size-4 text-emerald-400" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-zinc-100">
@@ -109,11 +114,10 @@ export default function AITutorFAB() {
                                     </p>
                                 </div>
                             </div>
-                            <Maximize2 className="size-3.5 text-zinc-600" />
+                            <Maximize2 className="size-3.5 text-zinc-500" />
                         </button>
                     ) : (
                         <div className="flex h-full flex-col">
-                            {/* Window Controls */}
                             <div className="flex items-center justify-end gap-0.5 px-2 py-1.5">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -124,7 +128,12 @@ export default function AITutorFAB() {
                                             onClick={() =>
                                                 setIsExpanded((v) => !v)
                                             }
-                                            className="size-6 rounded-md text-zinc-600 hover:text-zinc-300"
+                                            className="size-6 rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-zinc-100"
+                                            aria-label={
+                                                isExpanded
+                                                    ? "Thu gọn cửa sổ"
+                                                    : "Mở rộng cửa sổ"
+                                            }
                                         >
                                             {isExpanded ? (
                                                 <Minimize2 className="size-3" />
@@ -144,7 +153,8 @@ export default function AITutorFAB() {
                                             variant="ghost"
                                             size="icon"
                                             onClick={() => setIsMinimized(true)}
-                                            className="size-6 rounded-md text-zinc-600 hover:text-zinc-300"
+                                            className="size-6 rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-zinc-100"
+                                            aria-label="Thu nhỏ cửa sổ"
                                         >
                                             <Minus className="size-3" />
                                         </Button>
@@ -160,7 +170,8 @@ export default function AITutorFAB() {
                                             variant="ghost"
                                             size="icon"
                                             onClick={() => setIsOpen(false)}
-                                            className="size-6 rounded-md text-zinc-600 hover:text-zinc-300"
+                                            className="size-6 rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-zinc-100"
+                                            aria-label="Đóng AI Tutor"
                                         >
                                             <X className="size-3" />
                                         </Button>
