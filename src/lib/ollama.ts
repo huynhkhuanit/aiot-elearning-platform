@@ -14,6 +14,7 @@ import {
     DEFAULT_OLLAMA_CHAT_MODEL,
     DEFAULT_OLLAMA_COMPLETION_MODEL,
     DEFAULT_OLLAMA_TUTOR_MODEL,
+    DEFAULT_OLLAMA_FAST_MODEL,
 } from "@/lib/ai-models";
 
 // ===== Configuration =====
@@ -28,6 +29,12 @@ const OLLAMA_CHAT_MODEL =
     process.env.OLLAMA_CHAT_MODEL || DEFAULT_OLLAMA_CHAT_MODEL;
 const OLLAMA_TUTOR_MODEL =
     process.env.OLLAMA_TUTOR_MODEL || DEFAULT_OLLAMA_TUTOR_MODEL;
+const OLLAMA_FAST_MODEL =
+    process.env.OLLAMA_FAST_MODEL || DEFAULT_OLLAMA_FAST_MODEL;
+
+// Keep model loaded in RAM (seconds). "0" = unload immediately, "-1" = keep forever.
+// For CPU-only VPS, keep models warm to avoid 30s+ cold start reload.
+const MODEL_KEEP_ALIVE = "15m";
 
 // Timeout for different operations
 const COMPLETION_TIMEOUT_MS = 120000; // 120s for autocomplete (cold start can take a while)
@@ -195,17 +202,18 @@ export async function getCodeCompletion(
  */
 export async function getChatCompletion(
     messages: Array<{ role: "user" | "assistant" | "system"; content: string }>,
-    options?: { maxTokens?: number; temperature?: number; modelId?: string },
+    options?: { maxTokens?: number; temperature?: number; modelId?: string; num_ctx?: number },
 ): Promise<{ content: string; durationMs: number }> {
     const request: OllamaChatRequest = {
         model: options?.modelId || OLLAMA_CHAT_MODEL,
         messages,
         stream: false,
+        keep_alive: MODEL_KEEP_ALIVE,
         options: {
             temperature: options?.temperature ?? 0.3,
             num_predict: options?.maxTokens ?? 1024,
             top_p: 0.9,
-            num_ctx: 8192,
+            num_ctx: options?.num_ctx ?? 4096,
         },
     };
 
@@ -363,6 +371,7 @@ export async function getChatCompletionWithTools(
         model: options?.modelId || OLLAMA_CHAT_MODEL,
         messages: messages as OllamaChatRequest["messages"],
         stream: false,
+        keep_alive: MODEL_KEEP_ALIVE,
         tools,
         tool_choice: "auto",
         options: {
@@ -432,6 +441,7 @@ export async function getChatCompletionWithToolsStream(
         model: options?.modelId || OLLAMA_CHAT_MODEL,
         messages: messages as OllamaChatRequest["messages"],
         stream: true,
+        keep_alive: MODEL_KEEP_ALIVE,
         tools,
         tool_choice: "auto",
         options: {
@@ -646,17 +656,18 @@ export async function getChatCompletionWithToolsStream(
  */
 export async function getChatCompletionStream(
     messages: Array<{ role: "user" | "assistant" | "system"; content: string }>,
-    options?: { maxTokens?: number; temperature?: number; modelId?: string },
+    options?: { maxTokens?: number; temperature?: number; modelId?: string; num_ctx?: number },
 ): Promise<ReadableStream<string>> {
     const request: OllamaChatRequest = {
         model: options?.modelId || OLLAMA_CHAT_MODEL,
         messages,
         stream: true,
+        keep_alive: MODEL_KEEP_ALIVE,
         options: {
             temperature: options?.temperature ?? 0.3,
             num_predict: options?.maxTokens ?? 1024,
             top_p: 0.9,
-            num_ctx: 8192,
+            num_ctx: options?.num_ctx ?? 4096,
         },
     };
 
@@ -824,5 +835,34 @@ export function getOllamaConfig() {
         completionModel: OLLAMA_COMPLETION_MODEL,
         chatModel: OLLAMA_CHAT_MODEL,
         tutorModel: OLLAMA_TUTOR_MODEL,
+        fastModel: OLLAMA_FAST_MODEL,
     };
+}
+
+/**
+ * Pre-warm a model by sending a minimal request.
+ * Keeps the model loaded in RAM so the next real request has no cold start.
+ * Call this on server startup or when user opens the AI panel.
+ */
+export async function preWarmModel(modelId?: string): Promise<void> {
+    const model = modelId || OLLAMA_FAST_MODEL;
+    try {
+        await ollamaFetch<OllamaChatResponse>(
+            "/api/chat",
+            {
+                method: "POST",
+                body: JSON.stringify({
+                    model,
+                    messages: [{ role: "user", content: "hi" }],
+                    stream: false,
+                    keep_alive: MODEL_KEEP_ALIVE,
+                    options: { num_predict: 1, num_ctx: 256 },
+                }),
+            },
+            30000, // 30s timeout for warm-up
+            0,
+        );
+    } catch {
+        // Warm-up failure is non-critical — next real request will load the model
+    }
 }

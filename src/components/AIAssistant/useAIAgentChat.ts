@@ -1,8 +1,21 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { AIChatMessage } from "@/types/ai";
 import type { OllamaToolCall } from "@/types/ai";
+
+function usePreWarm() {
+    const warmed = useRef(false);
+    useEffect(() => {
+        if (warmed.current) return;
+        warmed.current = true;
+        fetch("/api/ai/warm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+        }).catch(() => {});
+    }, []);
+}
 import {
     executeReadCode,
     isValidEditTab,
@@ -57,6 +70,8 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const abortRef = useRef(false);
+
+    usePreWarm();
 
     const saveHistory = useCallback((msgs: AIChatMessage[]) => {
         try {
@@ -202,6 +217,37 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                         toolCalls = null;
                         let streamDone = false;
 
+                        // rAF batching for streaming updates
+                        let rafId: number | null = null;
+                        let pendingUpdate = false;
+
+                        const flushToUI = () => {
+                            if (rafId) cancelAnimationFrame(rafId);
+                            setMessages((prev) => {
+                                const next = [...prev];
+                                const lastIdx = next.length - 1;
+                                if (
+                                    lastIdx >= 0 &&
+                                    next[lastIdx].role === "assistant" &&
+                                    next[lastIdx].id === placeholderId
+                                ) {
+                                    next[lastIdx] = {
+                                        ...next[lastIdx],
+                                        content: assistantContent + "▌",
+                                        timestamp: Date.now(),
+                                    };
+                                }
+                                return next;
+                            });
+                            pendingUpdate = false;
+                        };
+
+                        const scheduleUpdate = () => {
+                            if (pendingUpdate) return;
+                            pendingUpdate = true;
+                            rafId = requestAnimationFrame(flushToUI);
+                        };
+
                         while (true) {
                             if (abortRef.current) break;
                             const { done, value } = await reader.read();
@@ -224,32 +270,12 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                                     if (data.error) {
                                         throw new Error(data.error);
                                     }
-                                    // Chỉ append content khi chưa done - tránh trùng nội dung
-                                    // (event done chứa full content, đã có sẵn từ các chunk trước)
                                     if (
                                         typeof data.content === "string" &&
                                         !data.done
                                     ) {
                                         assistantContent += data.content;
-                                        setMessages((prev) => {
-                                            const next = [...prev];
-                                            const lastIdx = next.length - 1;
-                                            if (
-                                                lastIdx >= 0 &&
-                                                next[lastIdx].role ===
-                                                    "assistant" &&
-                                                next[lastIdx].id ===
-                                                    placeholderId
-                                            ) {
-                                                next[lastIdx] = {
-                                                    ...next[lastIdx],
-                                                    content:
-                                                        assistantContent + "▌",
-                                                    timestamp: Date.now(),
-                                                };
-                                            }
-                                            return next;
-                                        });
+                                        scheduleUpdate();
                                     }
                                     if (data.done) {
                                         toolCalls = data.toolCalls ?? null;

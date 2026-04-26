@@ -3,37 +3,38 @@ import {
     getChatCompletionStream,
     getChatCompletion,
     getOllamaConfig,
+    preWarmModel,
 } from "@/lib/ollama";
+import {
+    classifyComplexity,
+    selectModel,
+    selectModelParams,
+} from "@/lib/ai-router";
 
-// System prompt for the AI coding tutor (Vietnamese context)
-const SYSTEM_PROMPT = `Bạn là một trợ lý lập trình AI thông minh trên nền tảng học tập CodeSense AIoT - một trang web E-learning dành cho sinh viên và người mới bắt đầu học lập trình tại Việt Nam.
+// ── Compressed system prompts ──────────────────────────────────
+// ~50% fewer tokens vs original → faster time-to-first-token
 
-VAI TRÒ CỦA BẠN:
-- Giúp học viên hiểu code, giải thích khái niệm lập trình
-- Hỗ trợ debug, tìm lỗi và đề xuất cách sửa
-- Gợi ý cách viết code tốt hơn, clean code practices
-- Trả lời câu hỏi về thuật toán, cấu trúc dữ liệu
-- Khuyến khích học viên tự suy nghĩ trước khi đưa ra đáp án
+const SYSTEM_PROMPT = `Bạn là trợ lý lập trình AI trên CodeSense AIoT — E-learning cho sinh viên Việt Nam.
 
-QUY TẮC PHẢN HỒI:
-- Trả lời bằng TIẾNG VIỆT
-- Giải thích đơn giản, dễ hiểu cho người mới nhưng ĐẦY ĐỦ và CÓ CẤU TRÚC
-- Tối ưu chất lượng: trả lời dài hơn khi cần, có ví dụ code cụ thể kèm comment
-- Khi đưa code, luôn kèm comment giải thích và bước thực hiện
-- Sử dụng markdown (## tiêu đề, - bullet, code blocks với language tag)
-- Nếu câu hỏi mơ hồ, hỏi lại ngắn gọn để làm rõ
-- Khuyến khích và động viên, không chê bai
-- Không viết code hoàn chỉnh cho bài tập, hướng dẫn từng bước
-- Ưu tiên phản hồi FOCUS vào câu hỏi chính, tránh lan man`;
+VAI TRÒ: Giải thích code, debug, gợi ý clean code, trả lời thuật toán/cấu trúc dữ liệu. Khuyến khích tự suy nghĩ.
 
-// Compact prompt for small models (1.3b, 1b) that can't handle long context
-const SYSTEM_PROMPT_LITE = `You are a coding assistant. Answer in Vietnamese. Be concise. Use markdown code blocks.`;
+QUY TẮC:
+- Tiếng Việt, dễ hiểu, có cấu trúc
+- Code kèm comment và bước thực hiện
+- Dùng markdown (## tiêu đề, - bullet, code blocks)
+- Không viết code hoàn chỉnh cho bài tập — hướng dẫn từng bước
+- Focus câu hỏi chính, tránh lan man`;
 
-// Detect small models that need reduced params
+const SYSTEM_PROMPT_LITE =
+    "Bạn là coding assistant. Tiếng Việt. Ngắn gọn. Markdown code blocks.";
+
 function isSmallModel(modelId?: string): boolean {
     if (!modelId) return false;
     return /[:\-](0\.5|1|1\.3|1\.5|3)b/i.test(modelId);
 }
+
+// Pre-warm fast model on module load (non-blocking)
+preWarmModel().catch(() => {});
 
 export async function POST(request: NextRequest) {
     try {
@@ -50,28 +51,42 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Use compact prompt for small models, full prompt for larger ones
-        const smallModel = isSmallModel(modelId);
-        const systemPrompt = smallModel ? SYSTEM_PROMPT_LITE : SYSTEM_PROMPT;
-        // Larger models: 4096 tokens for longer, higher-quality responses
-        const maxTokens = smallModel ? 512 : 4096;
+        // ── Smart Routing ──────────────────────────────────
+        const lastUserMsg = messages.filter((m: { role: string }) => m.role === "user").pop();
+        const ollamaConfig = getOllamaConfig();
 
-        // Build messages array with system prompt
+        let effectiveModelId: string;
+        if (modelId) {
+            effectiveModelId = modelId;
+        } else {
+            const complexity = classifyComplexity({
+                message: lastUserMsg?.content || "",
+                historyLength: messages.length,
+                hasCodeBlock: !!codeContext,
+            });
+            effectiveModelId = selectModel(complexity, "chat", ollamaConfig);
+        }
+
+        const smallModel = isSmallModel(effectiveModelId);
+        const systemPrompt = smallModel ? SYSTEM_PROMPT_LITE : SYSTEM_PROMPT;
+
+        // Get optimized params from router
+        const complexity = codeContext ? "complex" as const : "simple" as const;
+        const routerParams = selectModelParams(effectiveModelId, complexity);
+
         const ollamaMessages: Array<{
             role: "user" | "assistant" | "system";
             content: string;
         }> = [{ role: "system", content: systemPrompt }];
 
-        // Add code context if provided
         if (codeContext) {
             const langLabel = language || "code";
             ollamaMessages.push({
                 role: "system",
-                content: `Học viên đang làm việc với đoạn code ${langLabel} sau:\n\`\`\`${langLabel}\n${codeContext}\n\`\`\``,
+                content: `Code ${langLabel} hiện tại:\n\`\`\`${langLabel}\n${codeContext.slice(0, 3000)}\n\`\`\``,
             });
         }
 
-        // Add user messages (map from our format to Ollama format)
         for (const msg of messages) {
             if (msg.role === "user" || msg.role === "assistant") {
                 ollamaMessages.push({
@@ -81,21 +96,18 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Try streaming first; fallback to non-streaming on 405 (Ngrok) or other errors
         const encoder = new TextEncoder();
-
         const toSSE = (content: string, done: boolean, error?: string) =>
             encoder.encode(
                 `data: ${JSON.stringify({ content, done, ...(error && { error }) })}\n\n`,
             );
 
         let stream: ReadableStream<string>;
-        let effectiveModelId = modelId;
-        // Lower temperature for more focused, consistent answers
         const opts = {
-            maxTokens,
-            temperature: smallModel ? 0.2 : 0.25,
+            maxTokens: routerParams.num_predict,
+            temperature: routerParams.temperature,
             modelId: effectiveModelId,
+            num_ctx: routerParams.num_ctx,
         };
 
         try {
@@ -105,10 +117,9 @@ export async function POST(request: NextRequest) {
                 streamErr instanceof Error
                     ? streamErr.message
                     : String(streamErr);
-            // Fallback: model not found (404) -> retry with default chat model
+
             if (errMsg.includes("404") && errMsg.includes("not found")) {
-                const { chatModel } = getOllamaConfig();
-                effectiveModelId = chatModel;
+                effectiveModelId = ollamaConfig.chatModel;
                 try {
                     stream = await getChatCompletionStream(ollamaMessages, {
                         ...opts,
@@ -153,7 +164,6 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Convert to SSE (Server-Sent Events) format
         const sseStream = new ReadableStream({
             async start(controller) {
                 const reader = stream.getReader();
@@ -188,23 +198,17 @@ export async function POST(request: NextRequest) {
             },
         });
     } catch (error) {
-        // Check if error is AbortError (user triggered Stop or disconnected)
         const isAbort =
             error instanceof Error &&
             (error.name === "AbortError" || error.message.includes("aborted"));
 
         if (isAbort) {
-            console.log("AI Chat: Request was aborted by the client.");
-        } else {
-            console.error("AI Chat Error:", error);
+            return new Response(null, { status: 499 });
         }
 
+        console.error("AI Chat Error:", error);
         const message =
             error instanceof Error ? error.message : "Unknown error";
-
-        if (isAbort) {
-            return new Response(null, { status: 499 }); // 499 Client Closed Request
-        }
 
         if (message.includes("timed out")) {
             return new Response(

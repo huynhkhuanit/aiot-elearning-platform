@@ -1,7 +1,23 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { AIChatMessage } from "@/types/ai";
+
+/**
+ * Pre-warm AI model on mount (non-blocking, fire-and-forget).
+ */
+function usePreWarm() {
+    const warmed = useRef(false);
+    useEffect(() => {
+        if (warmed.current) return;
+        warmed.current = true;
+        fetch("/api/ai/warm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+        }).catch(() => {});
+    }, []);
+}
 
 // Generate unique ID
 function generateId(): string {
@@ -43,6 +59,9 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+
+    // Pre-warm model on first mount
+    usePreWarm();
 
     // Save to localStorage
     const saveHistory = useCallback((msgs: AIChatMessage[]) => {
@@ -134,15 +153,37 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 
                 const decoder = new TextDecoder();
                 let buffer = "";
-                let lastUpdateLen = 0;
 
-                // Copilot-style: update UI at word boundaries or every ~10 chars for long words
-                const shouldUpdate = (len: number, content: string): boolean => {
-                    if (len <= lastUpdateLen) return false;
-                    if (lastUpdateLen === 0) return true; // first chunk, show immediately
-                    if (len - lastUpdateLen >= 10) return true; // long word/token run
-                    const lastChar = content[len - 1];
-                    return /[\s\n.,!?;:()"'{}\[\]]/.test(lastChar);
+                // ── Optimized UI update: rAF batching ──
+                // Accumulate content and flush via requestAnimationFrame
+                // to prevent excessive re-renders on every SSE chunk.
+                let rafId: number | null = null;
+                let pendingUpdate = false;
+
+                const flushToUI = (done: boolean) => {
+                    if (rafId) cancelAnimationFrame(rafId);
+                    const displayContent = done ? fullContent : fullContent + "▌";
+                    setMessages((prev) => {
+                        const updated = [...prev];
+                        const lastIdx = updated.length - 1;
+                        if (
+                            lastIdx >= 0 &&
+                            updated[lastIdx].role === "assistant"
+                        ) {
+                            updated[lastIdx] = {
+                                ...updated[lastIdx],
+                                content: displayContent,
+                            };
+                        }
+                        return updated;
+                    });
+                    pendingUpdate = false;
+                };
+
+                const scheduleUpdate = () => {
+                    if (pendingUpdate) return;
+                    pendingUpdate = true;
+                    rafId = requestAnimationFrame(() => flushToUI(false));
                 };
 
                 // Client-side activity timeout: abort if no chunks for 60s
@@ -165,7 +206,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
                             try {
                                 const data = JSON.parse(buffer.trim().slice(6));
                                 if (data.content) fullContent += data.content;
-                            } catch {}
+                            } catch { /* skip */ }
                         }
                         break;
                     }
@@ -187,44 +228,16 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 
                                 if (data.content) {
                                     fullContent += data.content;
-                                    const len = fullContent.length;
-                                    const doUpdate =
-                                        data.done ||
-                                        shouldUpdate(len, fullContent);
-                                    if (doUpdate) lastUpdateLen = len;
-
-                                    // Update at word boundaries or when done (Copilot-style word-by-word feel)
-                                    if (doUpdate) {
-                                        const displayContent = data.done
-                                            ? fullContent
-                                            : fullContent + "▌";
-                                        setMessages((prev) => {
-                                        const updated = [...prev];
-                                        const lastIdx = updated.length - 1;
-                                        if (
-                                            lastIdx >= 0 &&
-                                            updated[lastIdx].role ===
-                                                "assistant"
-                                        ) {
-                                            updated[lastIdx] = {
-                                                ...updated[lastIdx],
-                                                content: displayContent,
-                                            };
-                                        }
-                                        return updated;
-                                    });
-                                    }
+                                    scheduleUpdate();
                                 }
 
                                 if (data.done) break;
                             } catch (parseError) {
-                                // Skip malformed SSE data
                                 if (
                                     parseError instanceof Error &&
                                     parseError.message !==
                                         "Unexpected end of JSON input"
                                 ) {
-                                    // Only throw real errors, not parse errors
                                     if (!String(parseError).includes("JSON")) {
                                         throw parseError;
                                     }
@@ -233,6 +246,9 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
                         }
                     }
                 }
+
+                // Final flush — show complete content without cursor
+                if (rafId) cancelAnimationFrame(rafId);
 
                 // Save final messages with complete content
                 setMessages((prev) => {

@@ -165,6 +165,7 @@ export interface OllamaChatRequest {
     tools?: OllamaToolDefinition[];
     tool_choice?: "auto" | "none";
     stream?: boolean;
+    keep_alive?: string | number;
     options?: {
         temperature?: number;
         num_predict?: number;

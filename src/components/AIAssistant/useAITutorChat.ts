@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { AIChatMessage } from "@/types/ai";
 import type { LearningContext } from "@/contexts/AITutorContext";
 
@@ -69,6 +69,23 @@ function getSuggestions(ctx: LearningContext | null): string[] {
     return baseSuggestions.slice(0, 4);
 }
 
+/**
+ * Pre-warm AI model on mount (non-blocking, fire-and-forget).
+ * Keeps model in RAM so first question has no cold start.
+ */
+function usePreWarm() {
+    const warmed = useRef(false);
+    useEffect(() => {
+        if (warmed.current) return;
+        warmed.current = true;
+        fetch("/api/ai/warm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+        }).catch(() => {});
+    }, []);
+}
+
 export function useAITutorChat(
     options: UseAITutorChatOptions,
 ): UseAITutorChatReturn {
@@ -84,6 +101,9 @@ export function useAITutorChat(
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+
+    // Pre-warm model on first mount
+    usePreWarm();
 
     const suggestions = getSuggestions(options.learningContext);
 
@@ -167,14 +187,38 @@ export function useAITutorChat(
 
                 const decoder = new TextDecoder();
                 let buffer = "";
-                let lastUpdateLen = 0;
 
-                const shouldUpdate = (len: number, c: string): boolean => {
-                    if (len <= lastUpdateLen) return false;
-                    if (lastUpdateLen === 0) return true;
-                    if (len - lastUpdateLen >= 10) return true;
-                    const lastChar = c[len - 1];
-                    return /[\s\n.,!?;:()"'{}[\]]/.test(lastChar);
+                // ── Optimized UI update: use rAF batching ──
+                // Instead of updating state on every SSE chunk, we accumulate
+                // content and flush to React state via requestAnimationFrame.
+                // This prevents excessive re-renders (especially on slow devices).
+                let rafId: number | null = null;
+                let pendingUpdate = false;
+
+                const flushToUI = (done: boolean) => {
+                    if (rafId) cancelAnimationFrame(rafId);
+                    const displayContent = done ? fullContent : fullContent + "▌";
+                    setMessages((prev) => {
+                        const updated = [...prev];
+                        const lastIdx = updated.length - 1;
+                        if (
+                            lastIdx >= 0 &&
+                            updated[lastIdx].role === "assistant"
+                        ) {
+                            updated[lastIdx] = {
+                                ...updated[lastIdx],
+                                content: displayContent,
+                            };
+                        }
+                        return updated;
+                    });
+                    pendingUpdate = false;
+                };
+
+                const scheduleUpdate = () => {
+                    if (pendingUpdate) return;
+                    pendingUpdate = true;
+                    rafId = requestAnimationFrame(() => flushToUI(false));
                 };
 
                 let activityTimer: ReturnType<typeof setTimeout> | null = null;
@@ -220,32 +264,8 @@ export function useAITutorChat(
 
                                 if (data.content) {
                                     fullContent += data.content;
-                                    const len = fullContent.length;
-                                    const doUpdate =
-                                        data.done ||
-                                        shouldUpdate(len, fullContent);
-                                    if (doUpdate) lastUpdateLen = len;
-
-                                    if (doUpdate) {
-                                        const displayContent = data.done
-                                            ? fullContent
-                                            : fullContent + "▌";
-                                        setMessages((prev) => {
-                                            const updated = [...prev];
-                                            const lastIdx = updated.length - 1;
-                                            if (
-                                                lastIdx >= 0 &&
-                                                updated[lastIdx].role ===
-                                                    "assistant"
-                                            ) {
-                                                updated[lastIdx] = {
-                                                    ...updated[lastIdx],
-                                                    content: displayContent,
-                                                };
-                                            }
-                                            return updated;
-                                        });
-                                    }
+                                    // Schedule batched UI update via rAF
+                                    scheduleUpdate();
                                 }
 
                                 if (data.done) break;
@@ -263,6 +283,10 @@ export function useAITutorChat(
                         }
                     }
                 }
+
+                // Final flush — show complete content without cursor
+                if (rafId) cancelAnimationFrame(rafId);
+                flushToUI(true);
 
                 setMessages((prev) => {
                     const final = [...prev];

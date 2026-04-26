@@ -1,6 +1,7 @@
 export const DEFAULT_OLLAMA_COMPLETION_MODEL = "deepseek-coder:1.3b";
 export const DEFAULT_OLLAMA_CHAT_MODEL = "qwen2.5-coder:7b-instruct";
 export const DEFAULT_OLLAMA_TUTOR_MODEL = "qwen2.5:7b-instruct";
+export const DEFAULT_OLLAMA_FAST_MODEL = "qwen2.5:3b-instruct";
 
 export interface OllamaUIModel {
     id: string;
@@ -11,6 +12,13 @@ export interface OllamaUIModel {
 }
 
 export const APPROVED_OLLAMA_MODELS: OllamaUIModel[] = [
+    {
+        id: DEFAULT_OLLAMA_FAST_MODEL,
+        name: "Qwen 2.5 3B ⚡",
+        provider: "Ollama",
+        providerSlug: "alibaba",
+        description: "Nhanh — phản hồi tức thì cho câu hỏi cơ bản",
+    },
     {
         id: DEFAULT_OLLAMA_TUTOR_MODEL,
         name: "Qwen 2.5 7B",

@@ -3,6 +3,7 @@ import {
     getChatCompletion,
     getChatCompletionStream,
     getOllamaConfig,
+    preWarmModel,
 } from "@/lib/ollama";
 import { withOptionalAuth } from "@/lib/api-middleware";
 import {
@@ -10,6 +11,11 @@ import {
     saveTutorSession,
 } from "@/lib/learning/learning-service";
 import { buildTutorSuggestedNextActions } from "@/lib/learning/tutor-memory";
+import {
+    classifyComplexity,
+    selectModel,
+    selectModelParams,
+} from "@/lib/ai-router";
 
 interface LearningContext {
     courseTitle: string;
@@ -32,75 +38,56 @@ interface TutorMessage {
     content: string;
 }
 
+// ── Compressed system prompts ──────────────────────────────────
+// Shorter prompts = fewer tokens for model to process = faster first token
+
 function buildTutorSystemPrompt(
     ctx: LearningContext | null,
     memorySummary?: string | null,
 ): string {
-    const base = [
-        "You are the AI Tutor for the CodeSense AIoT learning platform.",
-        "Always answer in Vietnamese.",
-        "Use markdown with headings, bullet lists, and code blocks when helpful.",
-        "Explain concepts clearly, accurately, and step by step.",
-        "Encourage the learner to think instead of giving away full solutions too early.",
-        "If you include code, add short comments that explain the important steps.",
-    ].join("\n");
+    const base =
+        "Bạn là AI Tutor trên CodeSense AIoT. " +
+        "Trả lời tiếng Việt. Dùng markdown. " +
+        "Giải thích rõ ràng, từng bước. Khuyến khích tư duy. " +
+        "Code kèm comment ngắn.";
 
     const memoryBlock = memorySummary
-        ? ["", "Tutor memory for this learner:", memorySummary].join("\n")
+        ? `\nTutor memory:\n${memorySummary}`
         : "";
 
-    if (!ctx) {
-        return `${base}${memoryBlock}`;
-    }
+    if (!ctx) return `${base}${memoryBlock}`;
 
     const lessonTypeLabel =
         ctx.lessonType === "video"
-            ? "Video lesson"
+            ? "Video"
             : ctx.lessonType === "reading"
-              ? "Reading lesson"
+              ? "Đọc"
               : "Quiz";
 
-    const recentTopics =
-        ctx.recentCompletedTopics.length > 0
-            ? ctx.recentCompletedTopics.join(", ")
-            : "None";
+    // Compress lesson content aggressively for speed
+    // 7B gets 2000 chars, enough for context without overwhelming
+    const lessonSnippet = ctx.lessonContent
+        ? `Nội dung bài:\n${ctx.lessonContent.slice(0, 2000)}`
+        : "";
 
-    const lessonContent = ctx.lessonContent
-        ? `Lesson content:\n${ctx.lessonContent.slice(0, 4000)}`
-        : "Lesson content is not available.";
-
-    const videoContext = ctx.videoUrl
-        ? [
-              `Video URL: ${ctx.videoUrl}`,
-              "Important: you cannot watch the video directly.",
-              "Infer the likely lesson content from the lesson title, section, course outline, and any available lesson text.",
-          ].join("\n")
-        : "No video URL provided.";
-
+    // Course outline compressed to 800 chars
     const outline = ctx.courseOutline
-        ? `Course outline:\n${ctx.courseOutline.slice(0, 2000)}`
-        : "Course outline is not available.";
+        ? `Outline khóa học:\n${ctx.courseOutline.slice(0, 800)}`
+        : "";
 
     return [
         base,
         "",
-        "Current learning context:",
-        `Course: ${ctx.courseTitle}`,
-        `Current lesson: ${ctx.currentLessonTitle}`,
-        `Lesson type: ${lessonTypeLabel}`,
-        `Section: ${ctx.currentSection}`,
-        `Progress: ${ctx.progress}% (${ctx.completedLessons}/${ctx.totalLessons})`,
-        `Recent completed topics: ${recentTopics}`,
-        "",
-        lessonContent,
-        "",
-        videoContext,
-        "",
+        `Khóa: ${ctx.courseTitle} | Bài: ${ctx.currentLessonTitle}`,
+        `Loại: ${lessonTypeLabel} | Chương: ${ctx.currentSection}`,
+        `Tiến độ: ${ctx.progress}% (${ctx.completedLessons}/${ctx.totalLessons})`,
+        lessonSnippet,
         outline,
-        "",
-        "When the learner asks about the current lesson, answer based on this context first.",
+        "Trả lời dựa trên ngữ cảnh bài học này.",
         memoryBlock,
-    ].join("\n");
+    ]
+        .filter(Boolean)
+        .join("\n");
 }
 
 function buildCompactSystemPrompt(
@@ -109,26 +96,21 @@ function buildCompactSystemPrompt(
 ): string {
     if (!ctx) {
         return [
-            "You are a coding tutor. Answer in Vietnamese. Be concise. Use markdown.",
-            memorySummary ? `Tutor memory: ${memorySummary}` : "",
+            "Bạn là coding tutor. Tiếng Việt. Ngắn gọn. Markdown.",
+            memorySummary ? `Memory: ${memorySummary}` : "",
         ]
             .filter(Boolean)
             .join("\n");
     }
 
     return [
-        "You are a coding tutor on CodeSense AIoT.",
-        "Answer in Vietnamese.",
-        "Use markdown.",
-        `Current lesson: ${ctx.currentLessonTitle}`,
-        `Course: ${ctx.courseTitle}`,
-        `Section: ${ctx.currentSection}`,
-        `Type: ${ctx.lessonType}`,
-        `Progress: ${ctx.progress}%`,
+        "Bạn là coding tutor trên CodeSense AIoT. Tiếng Việt. Markdown.",
+        `Bài: ${ctx.currentLessonTitle} | Khóa: ${ctx.courseTitle}`,
+        `Chương: ${ctx.currentSection} | Loại: ${ctx.lessonType} | ${ctx.progress}%`,
         ctx.lessonContent
-            ? `Lesson content:\n${ctx.lessonContent.slice(0, 1500)}`
-            : "Lesson content is not available.",
-        memorySummary ? `Tutor memory:\n${memorySummary}` : "",
+            ? `Nội dung:\n${ctx.lessonContent.slice(0, 800)}`
+            : "",
+        memorySummary ? `Memory:\n${memorySummary}` : "",
     ]
         .filter(Boolean)
         .join("\n");
@@ -139,9 +121,9 @@ function isSmallModel(modelId?: string): boolean {
     return /[:\-](0\.5|1|1\.3|1\.5)b/i.test(modelId);
 }
 
-function isMediumModel(modelId?: string): boolean {
+function isFastModel(modelId?: string): boolean {
     if (!modelId) return false;
-    return /[:\-](3|4)b/i.test(modelId);
+    return /[:\-](3)b/i.test(modelId);
 }
 
 function buildTutorRequest(
@@ -151,11 +133,11 @@ function buildTutorRequest(
     memorySummary?: string | null,
 ) {
     const small = isSmallModel(modelId);
-    const medium = isMediumModel(modelId);
+    const fast = isFastModel(modelId);
 
     const systemPrompt = small
         ? buildCompactSystemPrompt(null, memorySummary)
-        : medium
+        : fast
           ? buildCompactSystemPrompt(learningContext, memorySummary)
           : buildTutorSystemPrompt(learningContext, memorySummary);
 
@@ -173,12 +155,18 @@ function buildTutorRequest(
         }
     }
 
+    // Use ai-router for optimal params
+    const routerParams = modelId
+        ? selectModelParams(modelId, fast || small ? "simple" : "complex")
+        : { num_ctx: 4096, num_predict: 2048, temperature: 0.3 };
+
     return {
         ollamaMessages,
         options: {
-            maxTokens: small ? 512 : medium ? 2048 : 4096,
-            temperature: small ? 0.2 : 0.3,
+            maxTokens: small ? 512 : routerParams.num_predict,
+            temperature: routerParams.temperature,
             modelId,
+            num_ctx: routerParams.num_ctx,
         },
     };
 }
@@ -191,6 +179,11 @@ function createStaticStream(content: string): ReadableStream<string> {
         },
     });
 }
+
+// ── Pre-warm on module load (non-blocking) ─────────────────────
+// This runs once when the route module is first imported by Next.js.
+// It keeps the fast model in RAM so user's first question is instant.
+preWarmModel().catch(() => {});
 
 export const POST = withOptionalAuth(async (request: NextRequest, { user }) => {
     try {
@@ -238,8 +231,24 @@ export const POST = withOptionalAuth(async (request: NextRequest, { user }) => {
             learningContext || null,
         );
 
-        const { tutorModel, chatModel } = getOllamaConfig();
-        let effectiveModelId = modelId || tutorModel;
+        // ── Smart Routing: classify complexity & select model ──
+        const lastUserMsg = messages.filter((m) => m.role === "user").pop();
+        const ollamaConfig = getOllamaConfig();
+
+        let effectiveModelId: string;
+        if (modelId) {
+            // User explicitly selected a model → respect their choice
+            effectiveModelId = modelId;
+        } else {
+            const complexity = classifyComplexity({
+                message: lastUserMsg?.content || "",
+                historyLength: messages.length,
+                hasLearningContext: !!learningContext,
+                learningContentLength: learningContext?.lessonContent?.length ?? 0,
+            });
+            effectiveModelId = selectModel(complexity, "tutor", ollamaConfig);
+        }
+
         let requestConfig = buildTutorRequest(
             effectiveModelId,
             learningContext || null,
@@ -285,7 +294,11 @@ export const POST = withOptionalAuth(async (request: NextRequest, { user }) => {
                 errMsg.includes("404") &&
                 errMsg.includes("not found")
             ) {
-                const fallbackModelIds = [tutorModel, chatModel].filter(
+                const fallbackModelIds = [
+                    ollamaConfig.fastModel,
+                    ollamaConfig.tutorModel,
+                    ollamaConfig.chatModel,
+                ].filter(
                     (candidate, index, modelIds) =>
                         Boolean(candidate) &&
                         candidate !== effectiveModelId &&
