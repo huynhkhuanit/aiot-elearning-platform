@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { BRAND_LOGO_ALT, BRAND_LOGO_SRC } from "@/lib/brand";
 import { toolLinks } from "@/lib/tool-catalog";
 
 const footerLinks = {
@@ -72,8 +73,8 @@ export default function Footer() {
                                 style={{ transition: "all .2s ease" }}
                             >
                                 <Image
-                                    src="/assets/img/logo.png"
-                                    alt="CodeSense AI Logo"
+                                    src={BRAND_LOGO_SRC}
+                                    alt={BRAND_LOGO_ALT}
                                     width={38}
                                     height={38}
                                     style={{ objectFit: "contain" }}
@@ -217,8 +218,8 @@ export default function Footer() {
                                 style={{ transition: "all .2s ease" }}
                             >
                                 <Image
-                                    src="/assets/img/logo.png"
-                                    alt="CodeSense AI Logo"
+                                    src={BRAND_LOGO_SRC}
+                                    alt={BRAND_LOGO_ALT}
                                     width={38}
                                     height={38}
                                     style={{ objectFit: "contain" }}

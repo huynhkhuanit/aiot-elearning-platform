@@ -1,5 +1,5 @@
 /**
- * DHV LearnX Mobile - Enhanced Color System
+ * CodeSense AI Mobile - Enhanced Color System
  * Premium palette for programming education platform
  */
 

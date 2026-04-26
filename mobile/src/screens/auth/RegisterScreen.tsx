@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/AuthContext";
 import { colors, typography, spacing, radius } from "../../theme";
 import { AuthStackParamList } from "../../navigation/types";
+import BrandLogo from "../../components/BrandLogo";
 import InputField from "../../components/InputField";
 import GradientButton from "../../components/GradientButton";
 type Props = {
@@ -108,11 +109,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
                         <View style={styles.headerContent}>
                             <View style={styles.logoContainer}>
-                                <Ionicons
-                                    name="rocket-outline"
-                                    size={28}
-                                    color="#ffffff"
-                                />
+                                <BrandLogo size={56} borderRadius={radius.lg} />
                             </View>
                             <Text style={styles.appName}>Tạo tài khoản</Text>
                             <Text style={styles.tagline}>
@@ -257,12 +254,12 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: radius.lg,
-        backgroundColor: "rgba(255,255,255,0.2)",
         justifyContent: "center",
         alignItems: "center",
         marginBottom: spacing.md,
         borderWidth: 1,
         borderColor: "rgba(255,255,255,0.25)",
+        overflow: "hidden",
     },
     appName: {
         ...typography.h2,

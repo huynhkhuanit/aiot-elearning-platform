@@ -80,6 +80,7 @@ import {
     Text,
 } from "react-native";
 import AnimatedTabBar from "../components/AnimatedTabBar";
+import BrandLogo from "../components/BrandLogo";
 import { LinearGradient } from "expo-linear-gradient";
 
 // --- Shared screen options for content stacks (slide from right) ---
@@ -351,11 +352,11 @@ export default function RootNavigator() {
                 <View style={styles.splashCircle2} />
                 <View style={styles.splashContent}>
                     <View style={styles.splashLogo}>
-                        <Ionicons name="code-slash" size={36} color="#ffffff" />
+                        <BrandLogo size={76} borderRadius={radius.xl} />
                     </View>
-                    <Text style={styles.splashName}>DHV LearnX</Text>
+                    <Text style={styles.splashName}>CodeSense AI</Text>
                     <Text style={styles.splashTagline}>
-                        Nền tảng học lập trình AIoT
+                        Nền tảng học lập trình nâng cao tích hợp AI
                     </Text>
                 </View>
                 <ActivityIndicator
@@ -414,12 +415,12 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: radius.xl,
-        backgroundColor: "rgba(255,255,255,0.18)",
         justifyContent: "center",
         alignItems: "center",
         marginBottom: spacing.lg,
         borderWidth: 1.5,
         borderColor: "rgba(255,255,255,0.25)",
+        overflow: "hidden",
     },
     splashName: {
         ...typography.h1,

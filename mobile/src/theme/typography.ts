@@ -1,5 +1,5 @@
 /**
- * DHV LearnX Mobile - Enhanced Typography
+ * CodeSense AI Mobile - Enhanced Typography
  */
 
 import { TextStyle } from "react-native";

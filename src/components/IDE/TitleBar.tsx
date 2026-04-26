@@ -3,6 +3,7 @@
 import { Sun, Moon, Share2, ArrowLeft, Settings } from "lucide-react";
 import Image from "next/image";
 import type { LanguageType } from "./useIDEState";
+import { BRAND_LOGO_ALT, BRAND_LOGO_SRC } from "@/lib/brand";
 
 const FILE_NAMES: Record<LanguageType, string> = {
     html: "index.html",
@@ -47,8 +48,8 @@ export default function TitleBar({
                 </button>
                 <div className="flex items-center gap-2">
                     <Image
-                        src="/assets/img/logo.png"
-                        alt="Logo"
+                        src={BRAND_LOGO_SRC}
+                        alt={BRAND_LOGO_ALT}
                         width={20}
                         height={20}
                         className="w-5 h-5 rounded"

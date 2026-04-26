@@ -52,6 +52,7 @@ import CourseReviews from "@/components/CourseReviews";
 import PageLoading from "@/components/PageLoading";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { BRAND_LOGO_ALT, BRAND_LOGO_SRC } from "@/lib/brand";
 
 interface CourseDetail {
     id: string;
@@ -444,8 +445,8 @@ export default function CourseDetailPage() {
                         className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                     >
                         <Image
-                            src="/assets/img/logo.png"
-                            alt="DHV LearnX Logo"
+                            src={BRAND_LOGO_SRC}
+                            alt={BRAND_LOGO_ALT}
                             width={48}
                             height={48}
                             className="w-[48px] h-[48px] rounded-lg object-contain"

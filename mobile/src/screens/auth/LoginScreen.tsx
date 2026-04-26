@@ -15,6 +15,7 @@ import { TouchableOpacity } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { colors, typography, spacing, radius, shadows } from "../../theme";
 import { AuthStackParamList } from "../../navigation/types";
+import BrandLogo from "../../components/BrandLogo";
 import InputField from "../../components/InputField";
 import GradientButton from "../../components/GradientButton";
 type Props = {
@@ -77,18 +78,14 @@ export default function LoginScreen({ navigation }: Props) {
                         <View style={styles.headerContent}>
                             <View style={styles.logoContainer}>
                                 <View style={styles.logoInner}>
-                                    <Ionicons
-                                        name="code-slash"
-                                        size={32}
-                                        color="#ffffff"
-                                    />
+                                    <BrandLogo size={72} borderRadius={radius.xl} />
                                 </View>
                                 {/* Glow ring */}
                                 <View style={styles.logoGlow} />
                             </View>
-                            <Text style={styles.appName}>DHV LearnX</Text>
+                            <Text style={styles.appName}>CodeSense AI</Text>
                             <Text style={styles.tagline}>
-                                Nền tảng học lập trình AIoT
+                                Nền tảng học lập trình nâng cao tích hợp AI
                             </Text>
                         </View>
                     </LinearGradient>
@@ -236,11 +233,11 @@ const styles = StyleSheet.create({
         width: 72,
         height: 72,
         borderRadius: radius.xl,
-        backgroundColor: "rgba(255,255,255,0.2)",
         justifyContent: "center",
         alignItems: "center",
         borderWidth: 1.5,
         borderColor: "rgba(255,255,255,0.3)",
+        overflow: "hidden",
     },
     logoGlow: {
         position: "absolute",

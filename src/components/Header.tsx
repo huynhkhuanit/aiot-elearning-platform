@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import AvatarWithProBadge from "./AvatarWithProBadge";
 import VerifiedBadge from "@/components/profile/VerifiedBadge";
 import { getCanonicalProfilePath, normalizeUsername } from "@/lib/profile-url";
+import { BRAND_LOGO_ALT, BRAND_LOGO_SRC } from "@/lib/brand";
 
 // Modals are heavy (form validation + animations). Load only when user
 // opens them so the initial header bundle stays small.
@@ -139,8 +140,8 @@ export default function Header() {
         <div className="flex items-center gap-3 flex-shrink-0 z-10">
           <Link href="/" className="flex items-center justify-center transition-all duration-200 cursor-pointer">
             <Image
-              src="/assets/img/logo.png"
-              alt="CodeSense AI Logo"
+              src={BRAND_LOGO_SRC}
+              alt={BRAND_LOGO_ALT}
               width={38}
               height={38}
               priority

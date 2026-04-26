@@ -1,5 +1,5 @@
 /**
- * DHV LearnX Mobile - Spacing, Layout & Effects
+ * CodeSense AI Mobile - Spacing, Layout & Effects
  */
 
 export const spacing = {

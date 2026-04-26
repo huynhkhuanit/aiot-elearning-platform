@@ -2,7 +2,7 @@
  * Image optimization for static assets in /public.
  *
  * Reduces:
- *   - logo.png  365KB → ~5–15KB (PNG keep + WebP)
+ *   - codesense-ai-logo.png  365KB → ~5–15KB (PNG keep + WebP)
  *   - not_found_img.jpg 1.2MB → ~50–80KB
  *   - favicon.ico 360KB → ~5–10KB (multi-size 16/32/48)
  *
@@ -100,7 +100,7 @@ async function optimizeFavicon() {
     // Use Next.js native `app/icon.png` convention instead of ICO
     // (Turbopack has stricter ICO decoder than webpack). Next will
     // auto-generate multi-size meta tags from this single PNG.
-    const logo = path.join(PUBLIC, "assets", "img", "logo.png");
+    const logo = path.join(PUBLIC, "assets", "img", "codesense-ai-logo.png");
     const iconDest = path.join(APP, "icon.png");
     const oldFavicon = path.join(APP, "favicon.ico");
 
@@ -164,7 +164,10 @@ function buildIco(entries) {
 
 async function main() {
     console.log("--- optimize-images ---");
-    await optimizePng("assets/img/logo.png", { maxWidth: 256, maxHeight: 256 });
+    await optimizePng("assets/img/codesense-ai-logo.png", {
+        maxWidth: 256,
+        maxHeight: 256,
+    });
     await optimizeJpg("assets/img/not_found_img.jpg", { maxWidth: 1200 });
     await optimizeFavicon();
     console.log("--- done ---");

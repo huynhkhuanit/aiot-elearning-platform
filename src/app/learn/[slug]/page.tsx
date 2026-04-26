@@ -55,6 +55,7 @@ import {
 } from "@/components/gamification";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
+import { BRAND_LOGO_ALT, BRAND_LOGO_SRC } from "@/lib/brand";
 import "@/app/markdown.css";
 
 interface Exercise {
@@ -744,8 +745,8 @@ export default function LearnCoursePage() {
                         className={`flex items-center space-x-2 ${isDarkTheme ? "text-gray-300 hover:opacity-80" : "text-gray-600 hover:opacity-80"} transition-opacity flex-shrink-0`}
                     >
                         <Image
-                            src="/assets/img/logo.png"
-                            alt="CodeSense AI Logo"
+                            src={BRAND_LOGO_SRC}
+                            alt={BRAND_LOGO_ALT}
                             width={32}
                             height={32}
                             className="h-8 w-8 rounded"

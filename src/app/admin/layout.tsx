@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import PageLoading from "@/components/PageLoading";
+import { BRAND_LOGO_ALT, BRAND_LOGO_SRC } from "@/lib/brand";
 
 export default function AdminLayout({
     children,
@@ -138,8 +139,8 @@ export default function AdminLayout({
                                 className="flex items-center gap-2 flex-1"
                             >
                                 <Image
-                                    src="/assets/img/logo.png"
-                                    alt="Logo"
+                                    src={BRAND_LOGO_SRC}
+                                    alt={BRAND_LOGO_ALT}
                                     width={32}
                                     height={32}
                                     className="w-8 h-8 rounded"
