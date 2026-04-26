@@ -49,6 +49,18 @@ function localizeAIError(error: string): string {
     if (normalized.includes("no response stream")) {
         return "AI server không trả về luồng phản hồi hợp lệ";
     }
+    if (
+        normalized.includes("model may be loading") ||
+        normalized.includes("did not start responding")
+    ) {
+        return "Mô hình AI đang được tải lên VPS, vui lòng thử lại sau vài giây";
+    }
+    if (
+        normalized.includes("inactivity timeout") ||
+        normalized.includes("timed out")
+    ) {
+        return "AI server phản hồi quá chậm, vui lòng thử lại";
+    }
     if (normalized.includes("server error")) {
         return "AI server đang tạm thời không phản hồi";
     }

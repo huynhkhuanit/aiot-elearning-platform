@@ -481,19 +481,31 @@ export async function getChatCompletionWithToolsStream(
     let buffer = "";
     let bufferMode: boolean | null = null; // null = not yet decided, true = buffer (JSON), false = stream
     let totalContent = ""; // always accumulate for final content
+    // First chunk on a cold-started 7B model can take significantly longer than the
+    // inter-token activity threshold, so use the longer initial timeout until we
+    // see the first byte from Ollama.
+    let receivedFirstChunk = false;
 
     return new ReadableStream<ToolsStreamChunk>({
         async pull(streamController) {
             try {
+                const timeoutMs = receivedFirstChunk
+                    ? CHAT_ACTIVITY_TIMEOUT_MS
+                    : CHAT_INITIAL_TIMEOUT_MS;
                 const chunkTimeout = setTimeout(() => {
                     reader.cancel();
                     streamController.error(
-                        new Error("Stream inactivity timeout"),
+                        new Error(
+                            receivedFirstChunk
+                                ? `Ollama stream inactivity timeout after ${CHAT_ACTIVITY_TIMEOUT_MS}ms`
+                                : `Ollama did not start responding within ${CHAT_INITIAL_TIMEOUT_MS}ms (the model may be loading - please try again in a few seconds)`,
+                        ),
                     );
-                }, CHAT_ACTIVITY_TIMEOUT_MS);
+                }, timeoutMs);
 
                 const { done, value } = await reader.read();
                 clearTimeout(chunkTimeout);
+                receivedFirstChunk = true;
 
                 if (done) {
                     if (buffer.trim()) {
@@ -686,18 +698,35 @@ export async function getChatCompletionStream(
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
+    // Track whether we've received any body bytes from Ollama yet.
+    // The first chunk can take a long time (model cold start / model swap on VPS),
+    // while subsequent chunks should arrive every few hundred ms.
+    let receivedFirstChunk = false;
 
     return new ReadableStream<string>({
         async pull(streamController) {
             try {
-                // Per-chunk activity timeout: abort if no data for 30s
+                // First chunk: allow CHAT_INITIAL_TIMEOUT_MS (e.g. 180s) for model load + first token.
+                // Subsequent chunks: CHAT_ACTIVITY_TIMEOUT_MS (30s) is enough between tokens.
+                const timeoutMs = receivedFirstChunk
+                    ? CHAT_ACTIVITY_TIMEOUT_MS
+                    : CHAT_INITIAL_TIMEOUT_MS;
                 const chunkTimeout = setTimeout(() => {
                     reader.cancel();
-                    streamController.close();
-                }, CHAT_ACTIVITY_TIMEOUT_MS);
+                    // Surface the timeout as an error so callers/UI can show a
+                    // proper message instead of silently producing an empty response.
+                    streamController.error(
+                        new Error(
+                            receivedFirstChunk
+                                ? `Ollama stream inactivity timeout after ${CHAT_ACTIVITY_TIMEOUT_MS}ms`
+                                : `Ollama did not start responding within ${CHAT_INITIAL_TIMEOUT_MS}ms (the model may be loading - please try again in a few seconds)`,
+                        ),
+                    );
+                }, timeoutMs);
 
                 const { done, value } = await reader.read();
                 clearTimeout(chunkTimeout);
+                receivedFirstChunk = true;
 
                 if (done) {
                     if (buffer.trim()) {
