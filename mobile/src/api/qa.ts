@@ -1,4 +1,8 @@
 import apiClient from "./client";
+import {
+    normalizeCreateAnswerResponse,
+    normalizeQuestionDetailResponse,
+} from "./responseNormalizers";
 
 export interface Question {
     id: string;
@@ -73,15 +77,24 @@ export async function fetchQuestionDetail(
     data: { question: Question; answers: Answer[] };
 }> {
     const response = await apiClient.get(`/api/questions/${questionId}`);
-    return response.data;
+    return {
+        ...response.data,
+        data: normalizeQuestionDetailResponse(response.data?.data),
+    };
 }
 
 export async function createQuestion(data: {
     title: string;
     content: string;
-    lessonId?: string;
-}): Promise<{ success: boolean; data: Question }> {
-    const response = await apiClient.post("/api/questions", data);
+    lessonId: string;
+}): Promise<{ success: boolean; data: { questionId: string } }> {
+    const response = await apiClient.post(
+        `/api/lessons/${data.lessonId}/questions`,
+        {
+            title: data.title,
+            content: data.content,
+        },
+    );
     return response.data;
 }
 
@@ -90,8 +103,11 @@ export async function createAnswer(
     content: string,
 ): Promise<{ success: boolean; data: Answer }> {
     const response = await apiClient.post(
-        `/api/questions/${questionId}/answers`,
+        `/api/lessons/questions/${questionId}/answers`,
         { content },
     );
-    return response.data;
+    return {
+        ...response.data,
+        data: normalizeCreateAnswerResponse(response.data?.data),
+    };
 }

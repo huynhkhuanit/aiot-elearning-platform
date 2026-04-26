@@ -67,9 +67,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (!response.success || !response.data) {
                 throw new Error(response.message || "Đăng nhập thất bại");
             }
-            await setToken(response.data.token);
-            await saveUser(response.data.user);
-            setUser(response.data.user);
+            const session = authApi.normalizeAuthResponse(response);
+            await setToken(session.token);
+            await saveUser(session.user);
+            setUser(session.user);
         } catch (error: any) {
             // Error from interceptor already has clean message
             throw error;
@@ -93,9 +94,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (!response.success || !response.data) {
                     throw new Error(response.message || "Đăng ký thất bại");
                 }
-                await setToken(response.data.token);
-                await saveUser(response.data.user);
-                setUser(response.data.user);
+                const session = authApi.normalizeAuthResponse(response);
+                await setToken(session.token);
+                await saveUser(session.user);
+                setUser(session.user);
             } catch (error: any) {
                 throw error;
             }

@@ -5,8 +5,11 @@ export async function fetchProfile(): Promise<{
     success: boolean;
     data: UserProfile;
 }> {
-    const response = await apiClient.get("/api/users/profile");
-    return response.data;
+    const response = await apiClient.get("/api/auth/me");
+    return {
+        ...response.data,
+        data: response.data?.data?.user,
+    };
 }
 
 export async function updateProfile(
@@ -20,6 +23,9 @@ export async function fetchEnrolledCourses(): Promise<{
     success: boolean;
     data: any[];
 }> {
-    const response = await apiClient.get("/api/users/me");
-    return response.data;
+    const response = await apiClient.get("/api/users/me/courses");
+    return {
+        ...response.data,
+        data: response.data?.data?.courses ?? [],
+    };
 }

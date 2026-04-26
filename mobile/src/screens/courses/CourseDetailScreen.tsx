@@ -157,14 +157,20 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
     };
 
     const handleLessonPress = (lesson: any) => {
-        if (!lesson.video_url) {
+        const videoUrl =
+            lesson.video_url ||
+            lesson.videoUrl ||
+            lesson.youtube_backup_url ||
+            lesson.youtubeBackupUrl;
+
+        if (!videoUrl) {
             setShowNoVideo(true);
             return;
         }
         navigation.navigate("LessonVideo", {
             lessonId: lesson.id,
             title: lesson.title,
-            videoUrl: lesson.video_url,
+            videoUrl,
         });
     };
 
@@ -772,7 +778,10 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
                                                                 </Text>
                                                             )}
                                                         </View>
-                                                        {lesson.video_url && (
+                                                        {(lesson.video_url ||
+                                                            lesson.videoUrl ||
+                                                            lesson.youtube_backup_url ||
+                                                            lesson.youtubeBackupUrl) && (
                                                             <Ionicons
                                                                 name="videocam-outline"
                                                                 size={15}

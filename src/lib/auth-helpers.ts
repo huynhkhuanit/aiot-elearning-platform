@@ -1,23 +1,24 @@
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
-import { getJWTSecret } from "@/lib/env-validation";
+import { cookies, headers } from "next/headers";
+import { extractTokenFromHeader, verifyToken } from "@/lib/auth";
 
 /**
- * Extract and verify auth token from cookies.
+ * Extract and verify auth token from cookies or a Bearer Authorization header.
  * Returns userId if valid, null otherwise.
  */
 export async function getAuthUserId(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token");
+    const headerStore = await headers();
+    const cookieToken = cookieStore.get("auth_token")?.value;
+    const headerToken = extractTokenFromHeader(
+      headerStore.get("Authorization"),
+    );
+    const token = cookieToken || headerToken;
+
     if (!token) return null;
 
-    const decoded = jwt.verify(
-      token.value,
-      getJWTSecret(),
-    ) as { userId: string };
-
-    return decoded.userId;
+    const payload = verifyToken(token);
+    return payload?.userId ?? null;
   } catch {
     return null;
   }

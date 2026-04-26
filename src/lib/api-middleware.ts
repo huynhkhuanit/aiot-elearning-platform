@@ -77,11 +77,16 @@ export function withAuth(
                 }
             }
 
+            const headerToken = extractTokenFromHeader(
+                request.headers.get("Authorization"),
+            );
+
             // 2. CSRF validation (for mutating methods)
             if (
                 !options.skipCSRF &&
                 requiresCSRFCheck(request.method) &&
-                !isCSRFExempt(request.nextUrl.pathname)
+                !isCSRFExempt(request.nextUrl.pathname) &&
+                !headerToken
             ) {
                 if (!validateCSRFToken(request)) {
                     return NextResponse.json(
@@ -96,9 +101,6 @@ export function withAuth(
 
             // 3. JWT authentication
             const cookieToken = request.cookies.get("auth_token")?.value;
-            const headerToken = extractTokenFromHeader(
-                request.headers.get("Authorization"),
-            );
             const token = cookieToken || headerToken;
 
             if (!token) {

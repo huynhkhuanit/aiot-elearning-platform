@@ -89,14 +89,22 @@ export default function SettingsScreen({ navigation }: Props) {
                     name: "avatar.jpg",
                 } as any);
 
-                await apiClient.post("/api/upload/avatar", formData, {
-                    headers: { "Content-Type": "multipart/form-data" },
-                });
+                const response = await apiClient.post(
+                    "/api/upload/avatar",
+                    formData,
+                    {
+                        headers: { "Content-Type": "multipart/form-data" },
+                    },
+                );
+                const uploadedUrl = response.data?.data?.url;
+                if (uploadedUrl) {
+                    setAvatarUrl(uploadedUrl);
+                }
             } catch {
                 notification.error("Không thể tải lên ảnh đại diện");
             }
         }
-    }, []);
+    }, [notification]);
 
     const handleSaveProfile = useCallback(async () => {
         if (!fullName.trim()) {
@@ -105,9 +113,10 @@ export default function SettingsScreen({ navigation }: Props) {
         }
         setSaving(true);
         try {
-            await apiClient.patch("/api/users/profile", {
-                fullName: fullName.trim(),
-                bio: bio.trim(),
+            await apiClient.put("/api/users/profile", {
+                full_name: fullName.trim(),
+                bio: bio.trim() || null,
+                avatar_url: avatarUrl,
             });
             if (refreshUser) await refreshUser();
             notification.success("Đã cập nhật hồ sơ");
@@ -116,7 +125,7 @@ export default function SettingsScreen({ navigation }: Props) {
         } finally {
             setSaving(false);
         }
-    }, [fullName, bio, refreshUser]);
+    }, [fullName, bio, avatarUrl, refreshUser, notification]);
 
     const handleChangePassword = useCallback(async () => {
         if (!currentPassword || !newPassword || !confirmPassword) {
@@ -133,9 +142,9 @@ export default function SettingsScreen({ navigation }: Props) {
         }
         setSaving(true);
         try {
-            await apiClient.put("/api/auth/password", {
-                currentPassword,
-                newPassword,
+            await apiClient.put("/api/users/password", {
+                current_password: currentPassword,
+                new_password: newPassword,
             });
             setCurrentPassword("");
             setNewPassword("");
@@ -147,7 +156,7 @@ export default function SettingsScreen({ navigation }: Props) {
         } finally {
             setSaving(false);
         }
-    }, [currentPassword, newPassword, confirmPassword]);
+    }, [currentPassword, newPassword, confirmPassword, notification]);
 
     const tabs: { key: SettingsTab; label: string; icon: string }[] = [
         { key: "profile", label: "Hồ sơ", icon: "person" },

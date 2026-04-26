@@ -98,7 +98,14 @@ function setCorsHeaders(response: NextResponse, request: NextRequest) {
     );
     response.headers.set(
         "Access-Control-Allow-Headers",
-        "Content-Type, Authorization, Cookie, X-CSRF-Token",
+        [
+            "Content-Type",
+            "Authorization",
+            "Cookie",
+            "X-CSRF-Token",
+            "X-Client-Platform",
+            "X-Mobile-Client",
+        ].join(", "),
     );
     response.headers.set("Access-Control-Allow-Credentials", "true");
     response.headers.set("Access-Control-Max-Age", "86400");

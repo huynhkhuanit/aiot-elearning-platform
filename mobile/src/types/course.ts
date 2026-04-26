@@ -37,6 +37,7 @@ export interface Chapter {
     id: string;
     title: string;
     order_index: number;
+    order?: number;
     lessons: Lesson[];
 }
 
@@ -44,10 +45,16 @@ export interface Lesson {
     id: string;
     title: string;
     video_url: string | null;
+    videoUrl?: string | null;
     youtube_backup_url: string | null;
-    duration: number;
+    youtubeBackupUrl?: string | null;
+    duration: number | string;
     order_index: number;
+    order?: number;
     is_completed: boolean;
+    isCompleted?: boolean;
+    is_preview?: boolean;
+    isPreview?: boolean;
 }
 
 export interface EnrolledCourse {

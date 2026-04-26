@@ -9,6 +9,7 @@ import { normalizeUsername } from "@/lib/profile-url";
 import { checkRateLimit, getClientIP, RATE_LIMITS } from "@/lib/rateLimit";
 import { logAuditEvent, extractRequestMeta } from "@/lib/audit-log";
 import { getJWTSecret } from "@/lib/env-validation";
+import { buildAuthResponseData } from "@/lib/auth-response";
 
 export async function POST(request: NextRequest) {
     try {
@@ -174,7 +175,7 @@ export async function POST(request: NextRequest) {
                 success: true,
                 message: "Đăng ký thành công!",
                 data: {
-                    user:
+                    ...buildAuthResponseData(
                         (await getAuthUserById(newUser.id)) ?? {
                             id: newUser.id,
                             email: newUser.email,
@@ -192,6 +193,9 @@ export async function POST(request: NextRequest) {
                             is_verified: newUser.is_verified,
                             created_at: new Date(newUser.created_at),
                         },
+                        token,
+                        request.headers,
+                    ),
                     recoveryKeys, // Return recovery keys for immediate display
                 },
             },

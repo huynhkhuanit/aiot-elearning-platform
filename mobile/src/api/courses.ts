@@ -1,5 +1,6 @@
 import apiClient from "./client";
 import { CoursesResponse, CourseDetail, Chapter } from "../types/course";
+import { normalizeChaptersResponse } from "./responseNormalizers";
 
 interface FetchCoursesParams {
     page?: number;
@@ -38,7 +39,10 @@ export async function fetchCourseChapters(
     slug: string,
 ): Promise<{ success: boolean; data: Chapter[] }> {
     const response = await apiClient.get(`/api/courses/${slug}/chapters`);
-    return response.data;
+    return {
+        ...response.data,
+        data: normalizeChaptersResponse(response.data?.data),
+    };
 }
 
 export async function enrollCourse(

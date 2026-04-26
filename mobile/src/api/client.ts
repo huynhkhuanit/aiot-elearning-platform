@@ -53,14 +53,21 @@ if (__DEV__) {
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
     timeout: 15000,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+        "Content-Type": "application/json",
+        "X-Client-Platform": "mobile",
+    },
 });
 
 // Attach JWT token to every request
 apiClient.interceptors.request.use(async (config) => {
     const token = await getToken();
     if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        config.headers = config.headers ?? {};
+        (config.headers as any).Authorization = `Bearer ${token}`;
+        if (Platform.OS !== "web") {
+            (config.headers as any).Cookie = `auth_token=${token}`;
+        }
     }
     return config;
 });

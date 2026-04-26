@@ -6,6 +6,7 @@ import { checkRateLimit, getClientIP, RATE_LIMITS } from "@/lib/rateLimit";
 import { getAuthUserById } from "@/lib/profile-service";
 import { normalizeUsername } from "@/lib/profile-url";
 import { logAuditEvent, extractRequestMeta } from "@/lib/audit-log";
+import { buildAuthResponseData } from "@/lib/auth-response";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -199,14 +200,12 @@ export async function POST(request: NextRequest) {
             metadata: { email: user.email },
         });
 
-        // Create response — token ONLY in HTTP-only cookie, NOT in body
+        // Web keeps JWT in an HTTP-only cookie; mobile receives it in JSON for Bearer auth.
         const response = NextResponse.json(
             {
                 success: true,
                 message: "Đăng nhập thành công",
-                data: {
-                    user: publicUser,
-                },
+                data: buildAuthResponseData(publicUser, token, request.headers),
             },
             { status: 200 },
         );

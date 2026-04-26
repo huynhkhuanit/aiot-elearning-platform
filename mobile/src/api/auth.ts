@@ -5,6 +5,7 @@ import {
     RegisterRequest,
     User,
 } from "../types/auth";
+import { normalizeAuthResponse } from "./responseNormalizers";
 
 export async function login(data: LoginRequest): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>(
@@ -37,3 +38,5 @@ export async function logout(): Promise<void> {
         // Ignore logout errors — we clear local state anyway
     }
 }
+
+export { normalizeAuthResponse };
