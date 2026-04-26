@@ -1,5 +1,6 @@
 import apiClient, { API_BASE_URL } from "./client";
-import { AIChatMessage } from "../types/ai";
+import { getToken } from "../utils/storage";
+import { isAIHealthConnected, parseSSEText } from "./aiConnection";
 
 interface SendChatParams {
     messages: Array<{ role: string; content: string }>;
@@ -8,9 +9,50 @@ interface SendChatParams {
     language?: string;
 }
 
+type StreamResult = "continue" | "stop";
+
+function emitSSEText(
+    text: string,
+    onChunk: (content: string) => void,
+    onDone: () => void,
+    onError: (error: string) => void,
+): StreamResult {
+    const parsed = parseSSEText(text);
+
+    for (const chunk of parsed.chunks) {
+        onChunk(chunk);
+    }
+
+    if (parsed.error) {
+        onError(parsed.error);
+        return "stop";
+    }
+
+    if (parsed.done) {
+        onDone();
+        return "stop";
+    }
+
+    return "continue";
+}
+
+async function readErrorMessage(response: Response): Promise<string> {
+    const fallback = `HTTP ${response.status}`;
+    const text = await response.text().catch(() => "");
+    if (!text) return fallback;
+
+    try {
+        const data = JSON.parse(text) as { error?: string; message?: string };
+        return data.error || data.message || fallback;
+    } catch {
+        return text;
+    }
+}
+
 /**
  * Stream AI chat responses via SSE from /api/ai/chat.
- * Yields partial content strings as they arrive.
+ * Falls back to buffered SSE parsing on React Native runtimes without
+ * response.body.getReader().
  */
 export async function streamChatMessage(
     params: SendChatParams,
@@ -20,13 +62,14 @@ export async function streamChatMessage(
     signal?: AbortSignal,
 ): Promise<void> {
     try {
-        const { getToken } = require("../utils/storage");
         const token = await getToken();
 
         const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
             method: "POST",
             headers: {
+                Accept: "text/event-stream",
                 "Content-Type": "application/json",
+                "X-Client-Platform": "mobile",
                 ...(token
                     ? {
                           Authorization: `Bearer ${token}`,
@@ -44,13 +87,14 @@ export async function streamChatMessage(
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `HTTP ${response.status}`);
+            throw new Error(await readErrorMessage(response));
         }
 
         const reader = response.body?.getReader();
         if (!reader) {
-            throw new Error("No response body reader");
+            const text = await response.text();
+            emitSSEText(text, onChunk, onDone, onError);
+            return;
         }
 
         const decoder = new TextDecoder();
@@ -58,54 +102,51 @@ export async function streamChatMessage(
 
         while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+
+            if (done) {
+                if (buffer.trim()) {
+                    const result = emitSSEText(
+                        buffer,
+                        onChunk,
+                        onDone,
+                        onError,
+                    );
+                    if (result === "stop") return;
+                }
+                onDone();
+                return;
+            }
 
             buffer += decoder.decode(value, { stream: true });
 
-            // Parse SSE events
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || ""; // Keep incomplete line in buffer
+            const lines = buffer.split(/\r?\n/);
+            buffer = lines.pop() || "";
 
             for (const line of lines) {
-                const trimmed = line.trim();
-                if (!trimmed.startsWith("data: ")) continue;
+                if (!line.trim().startsWith("data:")) continue;
 
-                try {
-                    const data = JSON.parse(trimmed.slice(6));
-                    if (data.error) {
-                        onError(data.error);
-                        return;
-                    }
-                    if (data.content) {
-                        onChunk(data.content);
-                    }
-                    if (data.done) {
-                        onDone();
-                        return;
-                    }
-                } catch {
-                    // Skip invalid JSON lines
-                }
+                const result = emitSSEText(
+                    line,
+                    onChunk,
+                    onDone,
+                    onError,
+                );
+                if (result === "stop") return;
             }
         }
-
-        onDone();
     } catch (error: any) {
         if (error.name === "AbortError") {
             onDone();
             return;
         }
-        onError(error.message || "Không thể kết nối đến AI server");
+        onError(error.message || "Khong the ket noi den AI server");
     }
 }
 
-/**
- * Check AI server health
- */
 export async function checkAIHealth(): Promise<boolean> {
     try {
         const response = await apiClient.get("/api/ai/health");
-        return response.data?.status === "ok";
+        return isAIHealthConnected(response.data);
     } catch {
         return false;
     }
