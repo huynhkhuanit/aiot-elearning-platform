@@ -980,7 +980,7 @@ export default function SettingsPage() {
                                                         }
                                                         rows={3}
                                                         className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all resize-none"
-                                                        placeholder="Đam mê AI và IoT, đang học hỏi để áp dụng vào các dự án thực tế."
+                                                        placeholder="Đam mê AI và lập trình, đang học hỏi để áp dụng vào các dự án thực tế."
                                                     />
                                                 </div>
 

@@ -451,7 +451,7 @@ export default function CourseDetailPage() {
                             className="w-[48px] h-[48px] rounded-lg object-contain"
                         />
                         <span className="font-bold text-white text-sm hidden sm:inline uppercase tracking-wide">
-                            Học lập trình thông minh với AI &amp; IoT
+                            Học lập trình thông minh cùng AI
                         </span>
                     </Link>
                 </div>

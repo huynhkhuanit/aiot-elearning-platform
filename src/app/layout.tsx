@@ -16,17 +16,19 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-    title: "Nền tảng học tập thông minh AIoT | Hệ thống E-Learning cho giáo dục Việt Nam",
+    title: "CodeSense AI | Nền tảng học lập trình nâng cao tích hợp AI",
     description:
-        "Nền tảng học lập trình thông minh tích hợp AI và IoT, hỗ trợ học tập trực tuyến, quản lý khóa học, và hệ thống điểm danh thông minh.",
+        "Nền tảng học lập trình nâng cao tích hợp AI: hỗ trợ học trực tuyến, lộ trình cá nhân hóa, trợ lý AI và môi trường thực hành ngay trên trình duyệt.",
     keywords: [
         "học trực tuyến",
         "nền tảng e-learning",
         "học lập trình",
-        "AIoT",
+        "học lập trình nâng cao",
+        "tích hợp AI",
         "trí tuệ nhân tạo trong giáo dục",
         "hệ thống học tập thông minh",
-        "điểm danh bằng AI",
+        "trợ lý AI lập trình",
+        "AI code playground",
         "giáo dục số",
         "đồ án tốt nghiệp",
         "công nghệ thông tin",

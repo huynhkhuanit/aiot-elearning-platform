@@ -5,7 +5,7 @@ import { ArrowLeft, Braces } from "lucide-react";
 import { SnippetGenerator } from "@/components/tools/snippet-generator/SnippetGenerator";
 
 export const metadata: Metadata = {
-    title: "Snippet Generator | CodeSense AIoT",
+    title: "Snippet Generator | CodeSense AI",
     description:
         "Tạo code snippet cho VS Code, Sublime Text và Atom — nhập nội dung, chọn editor và copy kết quả.",
 };

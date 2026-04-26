@@ -547,7 +547,7 @@ export default function ProfessionalProfileTab() {
                                 currentTitle: value,
                             }))
                         }
-                        placeholder="Giảng viên AIoT chính"
+                        placeholder="Giảng viên AI chính"
                     />
                     <InputField
                         label="Tổ chức hiện tại"

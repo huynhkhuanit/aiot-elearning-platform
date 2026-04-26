@@ -46,7 +46,7 @@ function buildTutorSystemPrompt(
     memorySummary?: string | null,
 ): string {
     const base =
-        "Bạn là AI Tutor trên CodeSense AIoT. " +
+        "Bạn là AI Tutor trên CodeSense AI. " +
         "Trả lời tiếng Việt. Dùng markdown. " +
         "Giải thích rõ ràng, từng bước. Khuyến khích tư duy. " +
         "Code kèm comment ngắn.";
@@ -104,7 +104,7 @@ function buildCompactSystemPrompt(
     }
 
     return [
-        "Bạn là coding tutor trên CodeSense AIoT. Tiếng Việt. Markdown.",
+        "Bạn là coding tutor trên CodeSense AI. Tiếng Việt. Markdown.",
         `Bài: ${ctx.currentLessonTitle} | Khóa: ${ctx.courseTitle}`,
         `Chương: ${ctx.currentSection} | Loại: ${ctx.lessonType} | ${ctx.progress}%`,
         ctx.lessonContent

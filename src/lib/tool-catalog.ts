@@ -175,20 +175,20 @@ export const toolCatalog: ToolCatalogItem[] = [
     {
         ...toolLinks[5],
         icon: "face-alert",
-        category: "AIoT",
+        category: "Computer Vision",
         focus: "Computer vision",
-        audience: "AIoT, computer vision",
+        audience: "AI engineer, computer vision",
         summary:
-            "Ý tưởng công cụ AIoT dùng camera để phát hiện hành vi chạm tay lên mặt và đưa cảnh báo tức thời.",
+            "Công cụ AI Vision dùng camera để phát hiện hành vi chạm tay lên mặt và đưa cảnh báo tức thời.",
         description:
             "Phù hợp cho demo computer vision, bài toán theo dõi hành vi trong lớp học, phòng lab hoặc môi trường chăm sóc sức khỏe.",
         highlights: [
             "Nhấn mạnh cách tiếp cận privacy-first và cảnh báo tại chỗ.",
-            "Thích hợp cho demo AIoT kết hợp webcam với xử lý nhận diện thời gian thực.",
+            "Thích hợp cho demo Computer Vision kết hợp webcam với xử lý nhận diện thời gian thực.",
             "Có thể mở rộng thành bài toán nhận diện hành vi hoặc nhắc nhở an toàn.",
         ],
         tooltip:
-            "Đây là nhóm công cụ thiên về AIoT và computer vision, phù hợp làm demo nghiên cứu hoặc bài trình bày đồ án.",
+            "Đây là nhóm công cụ thiên về AI Vision và computer vision, phù hợp làm demo nghiên cứu hoặc bài trình bày đồ án.",
         outcome:
             "Tạo nền tảng tốt để trình bày pipeline nhận diện hành vi và kết nối giữa học máy với ứng dụng thực tế.",
         accent: "cyan",

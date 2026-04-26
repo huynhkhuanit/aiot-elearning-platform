@@ -33,9 +33,9 @@ import { toolCatalog, type ToolCatalogItem } from "@/lib/tool-catalog";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-    title: "Công cụ học tập và phát triển | CodeSense AIoT",
+    title: "Công cụ học tập và phát triển | CodeSense AI",
     description:
-        "Khám phá bộ công cụ hỗ trợ tạo CV, rút gọn liên kết, sinh snippet, dựng CSS Grid, clip-path và demo AIoT.",
+        "Khám phá bộ công cụ hỗ trợ tạo CV, rút gọn liên kết, sinh snippet, dựng CSS Grid, clip-path và demo Computer Vision.",
 };
 
 /* ── Icon map ─────────────────────────────────────────────── */
@@ -200,7 +200,7 @@ export default function ToolsPage() {
 
                             <p className="max-w-xl text-lg leading-relaxed text-indigo-100">
                                 Khám phá bộ công cụ thiết yếu dành cho học viên
-                                CodeSense AIoT. Tối ưu hóa quy trình làm việc,
+                                CodeSense AI. Tối ưu hóa quy trình làm việc,
                                 nâng cao hiệu suất lập trình và thiết kế với
                                 giao diện hiện đại, dễ sử dụng.
                             </p>
@@ -540,7 +540,7 @@ export default function ToolsPage() {
                                 </h3>
 
                                 <p className="mb-8 leading-relaxed text-slate-400">
-                                    CodeSense AIoT luôn hoan nghênh những đóng
+                                    CodeSense AI luôn hoan nghên h những đóng
                                     góp từ cộng đồng. Hãy chia sẻ ý tưởng của
                                     bạn hoặc tham gia phát triển công cụ cùng
                                     chúng tôi để xây dựng hệ sinh thái ngày càng
@@ -577,7 +577,7 @@ export default function ToolsPage() {
                     {/* Footer copyright */}
                     <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-8 md:flex-row">
                         <p className="text-sm text-slate-500">
-                            © {new Date().getFullYear()} CodeSense AIoT. All
+                            © {new Date().getFullYear()} CodeSense AI. All
                             rights reserved.
                         </p>
                         <div className="flex gap-6">

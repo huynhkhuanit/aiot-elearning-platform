@@ -61,7 +61,7 @@ const NGROK_HEADERS: Record<string, string> = isLocalOllama
     : {
           ...BASE_HEADERS,
           "ngrok-skip-browser-warning": "69420",
-          "User-Agent": "CodeSense-AIoT-Platform/1.0",
+          "User-Agent": "CodeSense-AI-Platform/1.0",
       };
 
 // ===== Helper Functions =====

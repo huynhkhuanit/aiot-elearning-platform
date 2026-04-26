@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     const lang = language || "javascript"
 
-    const systemPrompt = `Bạn là một trợ lý AI chuyên giải thích lỗi lập trình trên nền tảng CodeSense AIoT - dành cho sinh viên Việt Nam.
+    const systemPrompt = `Bạn là một trợ lý AI chuyên giải thích lỗi lập trình trên nền tảng CodeSense AI - dành cho sinh viên Việt Nam.
 
 YÊU CẦU:
 - Giải thích lỗi bằng TIẾNG VIỆT, đơn giản dễ hiểu

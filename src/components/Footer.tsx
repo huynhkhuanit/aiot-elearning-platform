@@ -73,7 +73,7 @@ export default function Footer() {
                             >
                                 <Image
                                     src="/assets/img/logo.png"
-                                    alt="CodeSense AIoT Logo"
+                                    alt="CodeSense AI Logo"
                                     width={38}
                                     height={38}
                                     style={{ objectFit: "contain" }}
@@ -87,7 +87,7 @@ export default function Footer() {
                                     style={{ transition: "all .2s ease" }}
                                 >
                                     <p className="text-small font-[700] text-white">
-                                        Học lập trình thông minh với AI & IoT
+                                        Học lập trình thông minh cùng AI
                                     </p>
                                 </Link>
                             </div>
@@ -115,10 +115,10 @@ export default function Footer() {
 
                     {/* Three columns - Row on tablet */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {/* About CodeSense AIoT */}
+                        {/* About CodeSense AI */}
                         <div className="text-center md:text-left">
                             <h4 className="font-semibold text-base mb-4 text-white">
-                                Về CodeSense AIoT
+                                Về CodeSense AI
                             </h4>
                             <ul className="space-y-2">
                                 <li>
@@ -218,7 +218,7 @@ export default function Footer() {
                             >
                                 <Image
                                     src="/assets/img/logo.png"
-                                    alt="CodeSense AIoT Logo"
+                                    alt="CodeSense AI Logo"
                                     width={38}
                                     height={38}
                                     style={{ objectFit: "contain" }}
@@ -232,7 +232,7 @@ export default function Footer() {
                                     style={{ transition: "all .2s ease" }}
                                 >
                                     <p className="text-small font-[700] text-white">
-                                        Học lập trình thông minh với AI & IoT
+                                        Học lập trình thông minh cùng AI
                                     </p>
                                 </Link>
                             </div>
@@ -258,10 +258,10 @@ export default function Footer() {
                         </div>
                     </div>
 
-                    {/* About CodeSense AIoT */}
+                    {/* About CodeSense AI */}
                     <div>
                         <h4 className="font-semibold text-base mb-4 text-white">
-                            Về CodeSense AIoT
+                            Về CodeSense AI
                         </h4>
                         <ul className="space-y-2">
                             <li>
@@ -351,7 +351,7 @@ export default function Footer() {
                 <div className="border-t border-gray-800 mt-8 pt-6 flex flex-col md:flex-row items-center justify-between pointer-events-auto">
                     <div className="flex items-center space-x-2 text-gray-400 text-xs mb-3 md:mb-0">
                         <span>
-                            © 2025 - 2026 CodeSense AIoT. All rights reserved.
+                            © 2025 - 2026 CodeSense AI. All rights reserved.
                         </span>
                     </div>
 

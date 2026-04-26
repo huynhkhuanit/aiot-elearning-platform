@@ -107,7 +107,7 @@ export default function LoginModal({
                             <Sparkles className="w-4 h-4 text-white" />
                         </div>
                         <span className="text-[14px] font-semibold text-gray-800">
-                            AI & IoT Learning
+                            CodeSense AI
                         </span>
                     </div>
                     <div>

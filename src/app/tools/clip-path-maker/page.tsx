@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-    title: "Clip-path maker | CodeSense AIoT",
+    title: "Clip-path maker | CodeSense AI",
     description:
         "Tạo clip-path trực quan với preset, preview thời gian thực và mã CSS hoặc JSX sẵn để dùng ngay trong dự án.",
 };

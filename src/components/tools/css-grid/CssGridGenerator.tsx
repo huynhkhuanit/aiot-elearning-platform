@@ -1257,7 +1257,7 @@ export function CssGridGenerator() {
                 <div className="flex items-center justify-center gap-2 border-t border-white/8 px-4 py-3 text-[11px] text-slate-500">
                     <span>CSS Grid Generator</span>
                     <span>•</span>
-                    <span>CodeSense AIoT</span>
+                    <span>CodeSense AI</span>
                 </div>
             </aside>
         </div>

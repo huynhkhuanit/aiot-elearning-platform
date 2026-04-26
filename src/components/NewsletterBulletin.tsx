@@ -8,10 +8,10 @@ import { AnimatePresence, motion } from "framer-motion";
 const bulletinEntries = [
     {
         id: 1,
-        title: "Chào mừng đến với CodeSense AIoT",
+        title: "Chào mừng đến với CodeSense AI",
         date: "01/03/2026",
         content: [
-            "Chúng tôi rất vui khi giới thiệu đến bạn nền tảng học tập thông minh CodeSense AIoT — nơi kết hợp trí tuệ nhân tạo và IoT để mang đến trải nghiệm học lập trình hiệu quả nhất.",
+            "Chúng tôi rất vui khi giới thiệu đến bạn nền tảng học lập trình nâng cao CodeSense AI — nơi tích hợp trí tuệ nhân tạo để mang đến trải nghiệm học lập trình hiệu quả nhất.",
             "Hệ thống cung cấp các khóa học từ cơ bản đến nâng cao, lộ trình học tập cá nhân hóa, và môi trường thực hành trực tiếp trên trình duyệt.",
         ],
     },
@@ -185,8 +185,8 @@ export default function NewsletterBulletin() {
                                 {/* Footer text */}
                                 <div className="mt-8 pt-5 border-t border-gray-100">
                                     <p className="text-sm text-gray-400 text-center">
-                                        CodeSense AIoT • Học lập trình thông
-                                        minh với AI & IoT
+                                        CodeSense AI • Học lập trình thông
+                                        minh cùng AI
                                     </p>
                                 </div>
                             </div>

@@ -466,7 +466,7 @@ export default function ArticlePage() {
                             Bài viết
                         </Link>
                         <span>·</span>
-                        <span className="text-indigo-600 font-medium">AI & IoT</span>
+                        <span className="text-indigo-600 font-medium">AI & Lập trình</span>
                     </div>
 
                     <h1 className={`${playfair.className} text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.15] text-slate-900 mb-6`}>
@@ -621,7 +621,7 @@ export default function ArticlePage() {
                             Tham gia thảo luận
                         </h3>
                         <p className="text-slate-600 mb-8 max-w-md mx-auto">
-                            Cùng chia sẻ góc nhìn của bạn hoặc đặt câu hỏi cho tác giả và cộng đồng AIOT.
+                            Cùng chia sẻ góc nhìn của bạn hoặc đặt câu hỏi cho tác giả và cộng đồng CodeSense AI.
                         </p>
                         <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-full font-medium transition-all shadow-sm inline-flex items-center gap-2">
                             <MessageCircle className="w-4 h-4" />

@@ -140,7 +140,7 @@ export default function Header() {
           <Link href="/" className="flex items-center justify-center transition-all duration-200 cursor-pointer">
             <Image
               src="/assets/img/logo.png"
-              alt="CodeSense AIoT Logo"
+              alt="CodeSense AI Logo"
               width={38}
               height={38}
               priority
@@ -150,7 +150,7 @@ export default function Header() {
           </Link>
           <div className="hidden lg:block">
             <Link href="/" className="transition-colors duration-200 hover:opacity-80">
-              <p className="text-small font-[700] text-black">Học lập trình thông minh với AI & IoT</p>
+              <p className="text-small font-[700] text-black">Học lập trình thông minh cùng AI</p>
             </Link>
           </div>
         </div>

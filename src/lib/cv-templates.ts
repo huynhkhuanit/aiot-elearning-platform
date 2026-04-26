@@ -305,14 +305,14 @@ function createDefaultSections(
                 {
                     id: cvId(),
                     label: "Tên dự án",
-                    value: "AIoT Learning Platform",
+                    value: "CodeSense AI Learning Platform",
                     meta: {
                         techStack: "Next.js, Supabase, Python, TensorFlow.js",
                         role: "Fullstack Developer",
                         period: "09/2023 – 01/2024",
                     },
                     bullets: [
-                        "Xây dựng nền tảng học trực tuyến tích hợp AI và IoT",
+                        "Xây dựng nền tảng học lập trình nâng cao tích hợp AI",
                         "Phát triển AI Code Playground với Ollama LLM integration",
                         "Deploy trên Vercel với CI/CD pipeline tự động",
                     ],

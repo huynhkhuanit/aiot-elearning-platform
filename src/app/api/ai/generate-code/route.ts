@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const lang = language || "javascript"
 
     // Build system message for code generation
-    const systemMessage = `Bạn là một AI chuyên sinh code chất lượng cao. Bạn đang hỗ trợ học viên trên nền tảng CodeSense AIoT.
+    const systemMessage = `Bạn là một AI chuyên sinh code chất lượng cao. Bạn đang hỗ trợ học viên trên nền tảng CodeSense AI.
 
 YÊU CẦU:
 - Sinh code ${lang} theo mô tả của người dùng

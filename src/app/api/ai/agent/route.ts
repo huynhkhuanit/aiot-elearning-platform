@@ -5,7 +5,7 @@ import {
 } from "@/lib/ollama";
 import { PLAYGROUND_TOOLS } from "@/lib/agent-tools";
 
-const AGENT_SYSTEM_PROMPT = `Bạn là AI Agent lập trình trong playground CodeSense AIoT. Bạn có thể ĐỌC và SỬA code trực tiếp bằng các tools.
+const AGENT_SYSTEM_PROMPT = `Bạn là AI Agent lập trình trong playground CodeSense AI. Bạn có thể ĐỌC và SỬA code trực tiếp bằng các tools.
 
 CÔNG CỤ (tools):
 - read_code: Đọc code HTML, CSS, JavaScript hiện tại. Gọi trước khi cần biết code hiện có.

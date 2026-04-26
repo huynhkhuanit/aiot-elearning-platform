@@ -96,8 +96,8 @@ export default async function AboutPage() {
                     {/* Subtitle */}
                     <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
                         Hành trình kiến tạo tương lai. Tham gia cộng đồng công
-                        nghệ hàng đầu Việt Nam. Nơi ươm mầm những tài năng AIoT
-                        xuất chúng.
+                        nghệ hàng đầu Việt Nam. Nơi ươm mầm những tài năng lập
+                        trình và AI xuất chúng.
                     </p>
 
                     {/* CTAs */}

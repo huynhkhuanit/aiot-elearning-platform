@@ -970,7 +970,7 @@ export function FaceTouchAlertTool() {
                 </div>
                 <div className="flex items-center gap-4 md:gap-8">
                     <span className="hidden rounded-full bg-[#13b6ec]/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#13b6ec] md:inline-flex">
-                        AIoT Realtime Tool
+                        AI Vision Realtime Tool
                     </span>
                     <Button
                         className="h-10 rounded-xl bg-[#13b6ec] px-6 text-sm font-bold text-[#07111f] hover:bg-[#13b6ec]/90"

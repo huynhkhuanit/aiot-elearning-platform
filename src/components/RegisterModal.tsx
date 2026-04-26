@@ -203,7 +203,7 @@ export default function RegisterModal({
                         Tạo tài khoản mới
                     </h2>
                     <p className="text-[13px] text-gray-500 leading-relaxed">
-                        Bắt đầu hành trình học tập cùng AIoT
+                        Bắt đầu hành trình học lập trình cùng AI
                     </p>
                 </motion.div>
 

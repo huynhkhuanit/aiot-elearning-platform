@@ -394,7 +394,7 @@ export default function WriteBlogPage() {
                                 </h1>
                                 <p className="mt-1 text-sm text-muted-foreground">
                                     Xây dựng bài viết rõ ràng, giàu ngữ cảnh và
-                                    sẵn sàng xuất bản cho cộng đồng AIOT.
+                                    sẵn sàng xuất bản cho cộng đồng CodeSense AI.
                                 </p>
                             </div>
                         </div>
@@ -623,7 +623,7 @@ export default function WriteBlogPage() {
                                         onChange={(e) =>
                                             setTitle(e.target.value)
                                         }
-                                        placeholder="Ví dụ: Cách xây dựng AI agent cho hệ thống IoT học tập"
+                                        placeholder="Ví dụ: Cách xây dựng AI agent cho nền tảng học lập trình"
                                         className="h-auto border-none bg-transparent px-0 py-0 text-4xl font-semibold tracking-tight shadow-none placeholder:text-slate-300 focus-visible:ring-0 md:text-5xl"
                                         maxLength={255}
                                     />
