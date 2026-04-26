@@ -3,14 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import {
-    Mail,
-    Lock,
-    Eye,
-    EyeOff,
-    ArrowRight,
-    Check,
-} from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import Modal from "./Modal";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import { useAuth } from "@/contexts/AuthContext";
@@ -122,9 +115,9 @@ export default function LoginModal({
                         <h2 className="text-[26px] font-extrabold leading-tight tracking-normal text-gray-950 sm:text-[28px]">
                             Đăng nhập {BRAND_NAME}
                         </h2>
-                        <p className="text-[14px] font-medium leading-relaxed text-rose-500">
-                            Tiếp tục lộ trình học tập và đồng bộ tiến độ của
-                            bạn trên hệ thống.
+                        <p className="text-[12px] font-medium leading-relaxed text-rose-500">
+                            Tiếp tục lộ trình học tập và đồng bộ tiến độ của bạn
+                            trên hệ thống.
                         </p>
                     </div>
                 </motion.div>
