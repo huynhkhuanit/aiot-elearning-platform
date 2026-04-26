@@ -1,21 +1,26 @@
 "use client";
 
 import React, { ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl";
 export type ButtonSize = "sm" | "md" | "lg";
+export type CloseButtonPlacement = "header" | "floating";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  ariaLabel?: string;
   children: ReactNode;
   size?: ModalSize;
   showCloseButton?: boolean;
+  closeButtonPlacement?: CloseButtonPlacement;
   closeOnBackdropClick?: boolean;
   className?: string;
+  contentClassName?: string;
   headerIcon?: ReactNode;
   buttonSize?: ButtonSize;
 }
@@ -37,16 +42,24 @@ export default function Modal({
   isOpen,
   onClose,
   title,
+  ariaLabel,
   children,
   size = "md",
   showCloseButton = true,
+  closeButtonPlacement = "header",
   closeOnBackdropClick = true,
   className = "",
+  contentClassName = "",
   headerIcon,
   buttonSize = "md",
 }: ModalProps) {
   // Helper function to get button classes
   const getButtonClasses = () => buttonSizeClasses[buttonSize];
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Handle escape key
   useEffect(() => {
@@ -100,9 +113,9 @@ export default function Modal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !isMounted) return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
@@ -117,17 +130,28 @@ export default function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? "modal-title" : undefined}
+        aria-label={!title ? ariaLabel : undefined}
       >
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-          className={`bg-white rounded-2xl shadow-2xl w-full ${sizeClasses[size]} ${className} max-h-[90vh] overflow-hidden flex flex-col`}
+          className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizeClasses[size]} ${className} max-h-[90vh] overflow-hidden flex flex-col`}
           onClick={(e) => e.stopPropagation()}
         >
+          {showCloseButton && closeButtonPlacement === "floating" && (
+            <button
+              onClick={onClose}
+              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-500 shadow-sm ring-1 ring-gray-200 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              aria-label="Đóng modal"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+
           {/* Header */}
-          {(title || headerIcon || showCloseButton) && (
+          {(title || headerIcon || (showCloseButton && closeButtonPlacement === "header")) && (
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <div className="flex items-center space-x-4">
                 {headerIcon && (
@@ -141,7 +165,7 @@ export default function Modal({
                   </div>
                 )}
               </div>
-              {showCloseButton && (
+              {showCloseButton && closeButtonPlacement === "header" && (
                 <button
                   onClick={onClose}
                   className="flex-shrink-0 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
@@ -154,12 +178,13 @@ export default function Modal({
           )}
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className={`flex-1 overflow-y-auto p-6 ${contentClassName}`}>
             {children}
           </div>
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 

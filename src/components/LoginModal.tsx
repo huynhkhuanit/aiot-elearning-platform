@@ -8,7 +8,6 @@ import {
     Eye,
     EyeOff,
     ArrowRight,
-    Sparkles,
     Check,
 } from "lucide-react";
 import Modal from "./Modal";
@@ -89,9 +88,10 @@ export default function LoginModal({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Đăng nhập"
+            ariaLabel="Đăng nhập"
             size="md"
             showCloseButton={true}
+            closeButtonPlacement="floating"
             closeOnBackdropClick={true}
         >
             <motion.div
@@ -100,16 +100,8 @@ export default function LoginModal({
                 animate="visible"
                 className="space-y-6"
             >
-                {/* Brand + Header */}
-                <motion.div variants={itemVariants} className="space-y-3">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                            <Sparkles className="w-4 h-4 text-white" />
-                        </div>
-                        <span className="text-[14px] font-semibold text-gray-800">
-                            CodeSense AI
-                        </span>
-                    </div>
+                {/* Intro */}
+                <motion.div variants={itemVariants} className="space-y-3 pr-10">
                     <div>
                         <h2 className="text-[22px] font-bold text-gray-900 tracking-tight">
                             Chào mừng trở lại

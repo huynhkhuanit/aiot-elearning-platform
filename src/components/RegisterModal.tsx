@@ -186,9 +186,10 @@ export default function RegisterModal({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Đăng ký"
+            ariaLabel="Đăng ký"
             size="lg"
             showCloseButton={true}
+            closeButtonPlacement="floating"
             closeOnBackdropClick={true}
         >
             <motion.div
@@ -197,8 +198,8 @@ export default function RegisterModal({
                 animate="visible"
                 className="space-y-5"
             >
-                {/* Header */}
-                <motion.div variants={itemVariants} className="space-y-1">
+                {/* Intro */}
+                <motion.div variants={itemVariants} className="space-y-1 pr-10">
                     <h2 className="text-[22px] font-bold text-gray-900 tracking-tight">
                         Tạo tài khoản mới
                     </h2>
