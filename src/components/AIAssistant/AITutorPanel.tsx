@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { useAITutor } from "@/contexts/AITutorContext";
 import { DEFAULT_OLLAMA_TUTOR_MODEL } from "@/lib/ai-models";
 import { useAITutorChat } from "./useAITutorChat";
-import AIAgentCodeBlock from "./AIAgentCodeBlock";
+import MarkdownRenderer from "./MarkdownRenderer";
 import AIModelSelector from "./AIModelSelector";
 import type { AIModel } from "./types";
 import { AI_MODELS } from "./types";
@@ -67,85 +67,6 @@ function localizeAIError(error: string): string {
     return error;
 }
 
-function parseContent(
-    content: string,
-): Array<{ type: "text" | "code"; content: string; language?: string }> {
-    const parts: Array<{
-        type: "text" | "code";
-        content: string;
-        language?: string;
-    }> = [];
-    const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-
-    while ((match = codeBlockRegex.exec(content)) !== null) {
-        if (match.index > lastIndex) {
-            const text = content.slice(lastIndex, match.index).trim();
-            if (text) parts.push({ type: "text", content: text });
-        }
-        parts.push({
-            type: "code",
-            content: match[2].trim(),
-            language: match[1] || undefined,
-        });
-        lastIndex = match.index + match[0].length;
-    }
-
-    if (lastIndex < content.length) {
-        const text = content.slice(lastIndex).trim();
-        if (text) parts.push({ type: "text", content: text });
-    }
-
-    if (parts.length === 0) {
-        parts.push({ type: "text", content });
-    }
-
-    return parts;
-}
-
-function renderInline(text: string, isDark: boolean) {
-    const inlineCodeClass = isDark
-        ? "bg-zinc-800 text-emerald-300"
-        : "bg-muted text-foreground";
-    const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g);
-
-    return parts.map((part, index) => {
-        if (part.startsWith("`") && part.endsWith("`")) {
-            return (
-                <code
-                    key={index}
-                    className={cn(
-                        "rounded-md px-1.5 py-0.5 text-[12px] font-mono",
-                        inlineCodeClass,
-                    )}
-                >
-                    {part.slice(1, -1)}
-                </code>
-            );
-        }
-        if (part.startsWith("**") && part.endsWith("**")) {
-            return (
-                <strong key={index} className="font-semibold">
-                    {part.slice(2, -2)}
-                </strong>
-            );
-        }
-        if (
-            part.startsWith("*") &&
-            part.endsWith("*") &&
-            !part.startsWith("**")
-        ) {
-            return (
-                <em key={index} className="italic">
-                    {part.slice(1, -1)}
-                </em>
-            );
-        }
-        return <span key={index}>{part}</span>;
-    });
-}
-
 function MessageBubble({
     content,
     role,
@@ -160,7 +81,6 @@ function MessageBubble({
     const isDark = theme === "dark";
     const rawContent = content.replace(/▌$/, "");
     const streaming = !!(role === "assistant" && content.endsWith("▌"));
-    const parts = parseContent(rawContent);
 
     if (role === "user") {
         return (
@@ -194,125 +114,15 @@ function MessageBubble({
                 </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-                <div
-                    className={cn(
-                        "text-[13px] leading-relaxed",
-                        isDark ? "text-zinc-200" : "text-zinc-800",
-                    )}
-                >
-                    {parts.map((part, index) =>
-                        part.type === "code" ? (
-                            <AIAgentCodeBlock
-                                key={index}
-                                code={part.content}
-                                language={part.language}
-                                theme={theme}
-                            />
-                        ) : (
-                            <div key={index} className="space-y-1.5">
-                                {part.content.split("\n").map((line, li) => {
-                                    if (!line.trim())
-                                        return (
-                                            <div key={li} className="h-1.5" />
-                                        );
-                                    if (line.startsWith("### "))
-                                        return (
-                                            <h4
-                                                key={li}
-                                                className={cn(
-                                                    "pt-1.5 text-[13px] font-semibold",
-                                                    isDark
-                                                        ? "text-zinc-100"
-                                                        : "text-zinc-900",
-                                                )}
-                                            >
-                                                {line.slice(4)}
-                                            </h4>
-                                        );
-                                    if (line.startsWith("## "))
-                                        return (
-                                            <h3
-                                                key={li}
-                                                className={cn(
-                                                    "pt-2 text-sm font-semibold",
-                                                    isDark
-                                                        ? "text-zinc-100"
-                                                        : "text-zinc-900",
-                                                )}
-                                            >
-                                                {line.slice(3)}
-                                            </h3>
-                                        );
-                                    if (line.match(/^[-*•]\s/))
-                                        return (
-                                            <div
-                                                key={li}
-                                                className="flex items-start gap-2 pl-1"
-                                            >
-                                                <span
-                                                    className={cn(
-                                                        "mt-[7px] size-1 shrink-0 rounded-full",
-                                                        isDark
-                                                            ? "bg-emerald-500/60"
-                                                            : "bg-emerald-500/50",
-                                                    )}
-                                                />
-                                                <span>
-                                                    {renderInline(
-                                                        line.slice(2),
-                                                        isDark,
-                                                    )}
-                                                </span>
-                                            </div>
-                                        );
-                                    if (line.match(/^\d+\.\s/)) {
-                                        const number =
-                                            line.match(/^(\d+)\./)?.[1];
-                                        return (
-                                            <div
-                                                key={li}
-                                                className="flex items-start gap-2 pl-1"
-                                            >
-                                                <span
-                                                    className={cn(
-                                                        "mt-0.5 shrink-0 text-xs font-semibold tabular-nums",
-                                                        isDark
-                                                            ? "text-emerald-400/70"
-                                                            : "text-emerald-600/70",
-                                                    )}
-                                                >
-                                                    {number}.
-                                                </span>
-                                                <span>
-                                                    {renderInline(
-                                                        line.replace(
-                                                            /^\d+\.\s/,
-                                                            "",
-                                                        ),
-                                                        isDark,
-                                                    )}
-                                                </span>
-                                            </div>
-                                        );
-                                    }
-                                    return (
-                                        <p key={li}>
-                                            {renderInline(line, isDark)}
-                                        </p>
-                                    );
-                                })}
-                            </div>
-                        ),
-                    )}
+                <MarkdownRenderer content={rawContent} theme={theme} />
 
-                    {(streaming || isStreaming) && (
-                        <span className="ml-0.5 inline-flex gap-[3px] align-middle">
-                            <span className="size-1.5 animate-bounce rounded-full bg-emerald-400 [animation-delay:0ms]" />
-                            <span className="size-1.5 animate-bounce rounded-full bg-emerald-400 [animation-delay:150ms]" />
-                            <span className="size-1.5 animate-bounce rounded-full bg-emerald-400 [animation-delay:300ms]" />
-                        </span>
-                    )}
-                </div>
+                {(streaming || isStreaming) && (
+                    <span className="ml-0.5 inline-flex gap-[3px] align-middle">
+                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400 [animation-delay:0ms]" />
+                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400 [animation-delay:150ms]" />
+                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400 [animation-delay:300ms]" />
+                    </span>
+                )}
             </div>
         </div>
     );
