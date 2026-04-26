@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import {
     Mail,
     Lock,
@@ -18,6 +19,7 @@ import RecoveryKeysModal from "./RecoveryKeysModal";
 import PasswordStrengthMeter from "./PasswordStrengthMeter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { BRAND_LOGO_ALT, BRAND_LOGO_SRC, BRAND_NAME } from "@/lib/brand";
 
 interface RegisterModalProps {
     isOpen: boolean;
@@ -191,6 +193,7 @@ export default function RegisterModal({
             showCloseButton={true}
             closeButtonPlacement="floating"
             closeOnBackdropClick={true}
+            contentClassName="pt-14"
         >
             <motion.div
                 variants={containerVariants}
@@ -198,14 +201,30 @@ export default function RegisterModal({
                 animate="visible"
                 className="space-y-5"
             >
-                {/* Intro */}
-                <motion.div variants={itemVariants} className="space-y-1 pr-10">
-                    <h2 className="text-[22px] font-bold text-gray-900 tracking-tight">
-                        Tạo tài khoản mới
-                    </h2>
-                    <p className="text-[13px] text-gray-500 leading-relaxed">
-                        Bắt đầu hành trình học lập trình cùng AI
-                    </p>
+                {/* Header */}
+                <motion.div
+                    variants={itemVariants}
+                    className="mx-auto max-w-[360px] space-y-4 text-center"
+                >
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-[0_12px_30px_-18px_rgba(79,70,229,0.75)] ring-1 ring-gray-100">
+                        <Image
+                            src={BRAND_LOGO_SRC}
+                            alt={BRAND_LOGO_ALT}
+                            width={40}
+                            height={40}
+                            priority
+                            className="h-10 w-10 rounded-xl object-contain"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <h2 className="text-[26px] font-extrabold leading-tight tracking-normal text-gray-950 sm:text-[28px]">
+                            Đăng ký tài khoản {BRAND_NAME}
+                        </h2>
+                        <p className="text-[14px] font-medium leading-relaxed text-rose-500">
+                            Mỗi người nên sử dụng riêng một tài khoản, tài khoản
+                            dùng chung có thể bị khóa.
+                        </p>
+                    </div>
                 </motion.div>
 
                 {/* Form */}

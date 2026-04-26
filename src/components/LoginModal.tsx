@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import {
     Mail,
     Lock,
@@ -14,6 +15,7 @@ import Modal from "./Modal";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { BRAND_LOGO_ALT, BRAND_LOGO_SRC, BRAND_NAME } from "@/lib/brand";
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -93,22 +95,36 @@ export default function LoginModal({
             showCloseButton={true}
             closeButtonPlacement="floating"
             closeOnBackdropClick={true}
+            contentClassName="pt-14"
         >
             <motion.div
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
-                className="space-y-6"
+                className="space-y-5"
             >
-                {/* Intro */}
-                <motion.div variants={itemVariants} className="space-y-3 pr-10">
-                    <div>
-                        <h2 className="text-[22px] font-bold text-gray-900 tracking-tight">
-                            Chào mừng trở lại
+                {/* Header */}
+                <motion.div
+                    variants={itemVariants}
+                    className="mx-auto max-w-[340px] space-y-4 text-center"
+                >
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-[0_12px_30px_-18px_rgba(79,70,229,0.75)] ring-1 ring-gray-100">
+                        <Image
+                            src={BRAND_LOGO_SRC}
+                            alt={BRAND_LOGO_ALT}
+                            width={40}
+                            height={40}
+                            priority
+                            className="h-10 w-10 rounded-xl object-contain"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <h2 className="text-[26px] font-extrabold leading-tight tracking-normal text-gray-950 sm:text-[28px]">
+                            Đăng nhập {BRAND_NAME}
                         </h2>
-                        <p className="text-[13px] text-gray-500 mt-1 leading-relaxed">
-                            Đăng nhập để tiếp tục hành trình học tập của bạn
-                            cùng chuyên gia.
+                        <p className="text-[14px] font-medium leading-relaxed text-rose-500">
+                            Tiếp tục lộ trình học tập và đồng bộ tiến độ của
+                            bạn trên hệ thống.
                         </p>
                     </div>
                 </motion.div>
