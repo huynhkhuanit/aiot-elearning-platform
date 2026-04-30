@@ -1207,31 +1207,15 @@ export function ClipPathMakerTool() {
                         .clippy-shapes-desktop .clippy-shape-list {
                             display: flex;
                             flex-wrap: wrap;
+                            gap: 0;
                             overflow-x: hidden;
                             padding: 0;
-                            perspective: 400px;
                             white-space: normal;
                         }
 
                         .clippy-shapes-desktop .clippy-gallery-cell {
-                            flex: 4.625rem;
-                            transform-origin: top center;
-                        }
-
-                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 9) {
-                            transform: translateZ(0) rotateX(-18deg);
-                        }
-
-                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 13) {
-                            transform: translateZ(-1.85rem) rotateX(-36deg);
-                        }
-
-                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 17) {
-                            transform: translateZ(-6.0125rem) rotateX(-54deg);
-                        }
-
-                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 21) {
-                            transform: translateZ(-9.25rem) rotateX(-72deg);
+                            flex: 0 1 4.625rem;
+                            transform: none;
                         }
 
                         .clippy-code {
