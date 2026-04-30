@@ -1193,11 +1193,28 @@ export function ClipPathMakerTool() {
 
                         .clippy-shapes-desktop {
                             display: block;
-                            height: 31.5rem;
-                            max-height: 31.5rem;
-                            overflow: hidden auto;
                             z-index: 2;
                             white-space: normal;
+                            height: auto;
+                            max-height: 12.75rem;
+                            overflow: hidden;
+                            transition:
+                                max-height 0.4s cubic-bezier(0.15, 1, 0.3, 1.1),
+                                overflow 0s linear 0.4s;
+                        }
+
+                        .clippy-shapes-desktop:hover,
+                        .clippy-shapes-desktop:focus-within {
+                            max-height: min(31.5rem, calc(100dvh - 10rem));
+                            overflow-x: hidden;
+                            overflow-y: auto;
+                            transition:
+                                max-height 0.4s cubic-bezier(0.15, 1, 0.3, 1.1),
+                                overflow 0s;
+                        }
+
+                        .clippy-shapes-desktop:focus {
+                            outline: 0;
                         }
 
                         .clippy-shapes-desktop:after {
@@ -1207,15 +1224,80 @@ export function ClipPathMakerTool() {
                         .clippy-shapes-desktop .clippy-shape-list {
                             display: flex;
                             flex-wrap: wrap;
-                            gap: 0;
                             overflow-x: hidden;
                             padding: 0;
+                            perspective: 400px;
                             white-space: normal;
                         }
 
                         .clippy-shapes-desktop .clippy-gallery-cell {
-                            flex: 0 1 4.625rem;
-                            transform: none;
+                            flex: 4.625rem;
+                            transform-origin: top center;
+                        }
+
+                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 9) {
+                            transform: translateZ(0) rotateX(-18deg);
+                        }
+
+                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 13) {
+                            transform: translateZ(-1.85rem) rotateX(-36deg);
+                        }
+
+                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 17) {
+                            transform: translateZ(-6.0125rem) rotateX(-54deg);
+                        }
+
+                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 21) {
+                            transform: translateZ(-9.25rem) rotateX(-72deg);
+                        }
+
+                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 25) {
+                            transform: translateZ(-11.5625rem) rotateX(-85deg);
+                        }
+
+                        .clippy-shapes-desktop:hover .clippy-gallery-cell,
+                        .clippy-shapes-desktop:focus .clippy-gallery-cell,
+                        .clippy-shapes-desktop:focus-within .clippy-gallery-cell {
+                            transform: translateZ(0) rotateX(0);
+                            transition:
+                                background 0.25s ease,
+                                transform 0.375s cubic-bezier(0.15, 1, 0.3, 1.1),
+                                opacity 0.2s ease;
+                        }
+
+                        .clippy-shapes-desktop:hover .clippy-gallery-cell:nth-child(n + 9),
+                        .clippy-shapes-desktop:focus .clippy-gallery-cell:nth-child(n + 9),
+                        .clippy-shapes-desktop:focus-within
+                            .clippy-gallery-cell:nth-child(n + 9) {
+                            transition-delay: 0.025s;
+                        }
+
+                        .clippy-shapes-desktop:hover .clippy-gallery-cell:nth-child(n + 13),
+                        .clippy-shapes-desktop:focus .clippy-gallery-cell:nth-child(n + 13),
+                        .clippy-shapes-desktop:focus-within
+                            .clippy-gallery-cell:nth-child(n + 13) {
+                            transition-delay: 0.05s;
+                        }
+
+                        .clippy-shapes-desktop:hover .clippy-gallery-cell:nth-child(n + 17),
+                        .clippy-shapes-desktop:focus .clippy-gallery-cell:nth-child(n + 17),
+                        .clippy-shapes-desktop:focus-within
+                            .clippy-gallery-cell:nth-child(n + 17) {
+                            transition-delay: 0.075s;
+                        }
+
+                        .clippy-shapes-desktop:hover .clippy-gallery-cell:nth-child(n + 21),
+                        .clippy-shapes-desktop:focus .clippy-gallery-cell:nth-child(n + 21),
+                        .clippy-shapes-desktop:focus-within
+                            .clippy-gallery-cell:nth-child(n + 21) {
+                            transition-delay: 0.1s;
+                        }
+
+                        .clippy-shapes-desktop:hover .clippy-gallery-cell:nth-child(n + 25),
+                        .clippy-shapes-desktop:focus .clippy-gallery-cell:nth-child(n + 25),
+                        .clippy-shapes-desktop:focus-within
+                            .clippy-gallery-cell:nth-child(n + 25) {
+                            transition-delay: 0.125s;
                         }
 
                         .clippy-code {
@@ -1231,19 +1313,30 @@ export function ClipPathMakerTool() {
                         .clippy-options {
                             position: relative;
                             z-index: 1;
+                            background: #d3d0c9;
                             transform: none;
                             transition: transform 0.25s 0.125s cubic-bezier(0.15, 1, 0.3, 1.1);
                         }
 
                         .clippy-options:before {
-                            display: none;
+                            display: block;
+                            position: absolute;
+                            inset: auto 0 100% 0;
+                            height: 4rem;
+                            pointer-events: none;
+                            background: linear-gradient(
+                                rgba(211, 208, 201, 0),
+                                #d3d0c9 90%
+                            );
+                            content: "";
+                            transform-origin: center bottom;
+                            transition: inherit;
+                            transition-timing-function: ease;
                         }
 
-                        .clippy-options:hover,
-                        .clippy-options:focus-within {
-                            transform: none;
-                        }
-
+                        .clippy-shapes-desktop:hover + .clippy-options:before,
+                        .clippy-shapes-desktop:focus + .clippy-options:before,
+                        .clippy-shapes-desktop:focus-within + .clippy-options:before,
                         .clippy-options:hover:before,
                         .clippy-options:focus-within:before {
                             transform: scale3d(1, 0, 1);
@@ -1394,6 +1487,7 @@ export function ClipPathMakerTool() {
                     <ShapeGallery
                         activeShapeName={activeShapeName}
                         className="clippy-shapes-desktop"
+                        galleryTabIndex={0}
                         onApplyShape={applyShape}
                     />
 
@@ -1551,14 +1645,16 @@ export function ClipPathMakerTool() {
 function ShapeGallery({
     activeShapeName,
     className,
+    galleryTabIndex = -1,
     onApplyShape,
 }: {
     activeShapeName: string;
     className: string;
+    galleryTabIndex?: number;
     onApplyShape: (shape: ShapePreset) => void;
 }) {
     return (
-        <section className={`clippy-shapes ${className}`} tabIndex={-1}>
+        <section className={`clippy-shapes ${className}`} tabIndex={galleryTabIndex}>
             <div className="clippy-shape-list">
                 {SHAPE_PRESETS.map((shape) => (
                     <button
