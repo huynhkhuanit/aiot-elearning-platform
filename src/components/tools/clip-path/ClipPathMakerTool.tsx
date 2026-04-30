@@ -1,314 +1,408 @@
 "use client";
 
-import { type CSSProperties, useEffect, useState } from "react";
 import {
-    ArrowRight,
-    Check,
-    Code2,
-    Copy,
-    Flag,
-    Hexagon,
-    Image,
-    Monitor,
-    RotateCcw,
-    Scissors,
-    Shuffle,
-    Sparkles,
-    Square,
-    Ticket,
-    Wand2,
-    type LucideIcon,
-} from "lucide-react";
+    type ClipboardEvent,
+    type CSSProperties,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
-
-type ClipPathPresetId =
-    | "diagonal"
-    | "hexagon"
-    | "chevron"
-    | "ticket"
-    | "ribbon";
-type ControlKey = "depth" | "balance" | "inset";
-type PreviewMode = "hero" | "card" | "media";
-type CodeFormat = "css" | "tailwind" | "jsx";
-
-type ControlValues = Record<ControlKey, number>;
-type ControlConfig = {
-    label: string;
-    description: string;
-    min: number;
-    max: number;
-    step: number;
+type Point = {
+    x: number;
+    y: number;
 };
-type Point = [number, number];
-type ClipPathPreset = {
-    id: ClipPathPresetId;
+
+type ShapePreset = {
     name: string;
-    summary: string;
-    bestFor: [string, string, string];
-    icon: LucideIcon;
-    defaults: ControlValues;
-    controls: Record<ControlKey, ControlConfig>;
-    generate: (values: ControlValues) => Point[];
+    color: string;
+    points: Point[];
 };
 
-const previewStats = [
-    { label: "Preset sẵn", value: "5" },
-    { label: "Bối cảnh preview", value: "3" },
-    { label: "Định dạng code", value: "3" },
+type DemoBackground = {
+    label: string;
+    src: string;
+};
+
+const HANDLE_COLORS = [
+    "#ff6347",
+    "#3cb371",
+    "#ffa500",
+    "#1e90ff",
+    "#da70d6",
+    "#d3d3d3",
+    "#00ced1",
+    "#db7093",
+    "#f0e68c",
+    "#32cd32",
+    "#ff7f50",
+    "#6a5acd",
+    "#cd5c5c",
+    "#808080",
+    "#dda0dd",
+    "#6b8e23",
+    "#90ee90",
+    "#ffa07a",
+    "#ffd700",
+    "#cd853f",
+    "#4169e1",
+    "#dc143c",
+    "#00bcd4",
+    "#8a2be2",
 ];
 
-const clipPathPresets: ClipPathPreset[] = [
+const SHAPE_PRESETS: ShapePreset[] = [
     {
-        id: "diagonal",
-        name: "Diagonal",
-        summary: "Khối cắt chéo nhanh cho hero, CTA hoặc banner nổi bật.",
-        bestFor: ["Hero landing", "CTA block", "Promo banner"],
-        icon: Scissors,
-        defaults: { depth: 22, balance: 8, inset: 6 },
-        controls: {
-            depth: {
-                label: "Độ cắt đáy",
-                description: "Tăng độ dốc ở cạnh dưới bên trái.",
-                min: 8,
-                max: 34,
-                step: 1,
-            },
-            balance: {
-                label: "Độ hạ đỉnh trái",
-                description: "Điều chỉnh điểm bắt đầu của đường chéo phía trên.",
-                min: 0,
-                max: 18,
-                step: 1,
-            },
-            inset: {
-                label: "Độ nâng cạnh phải",
-                description: "Làm gọn góc dưới bên phải để cân bố cục.",
-                min: 0,
-                max: 18,
-                step: 1,
-            },
-        },
-        generate: ({ depth, balance, inset }) => [
-            [0, balance],
-            [100, 0],
-            [100, 100 - inset],
-            [0, 100 - depth],
+        name: "Triangle",
+        color: "#ff6347",
+        points: [
+            { x: 50, y: 0 },
+            { x: 0, y: 100 },
+            { x: 100, y: 100 },
         ],
     },
     {
-        id: "hexagon",
+        name: "Trapezoid",
+        color: "#3cb371",
+        points: [
+            { x: 20, y: 0 },
+            { x: 80, y: 0 },
+            { x: 100, y: 100 },
+            { x: 0, y: 100 },
+        ],
+    },
+    {
+        name: "Parallelogram",
+        color: "#ffa500",
+        points: [
+            { x: 25, y: 0 },
+            { x: 100, y: 0 },
+            { x: 75, y: 100 },
+            { x: 0, y: 100 },
+        ],
+    },
+    {
+        name: "Rhombus",
+        color: "#1e90ff",
+        points: [
+            { x: 50, y: 0 },
+            { x: 100, y: 50 },
+            { x: 50, y: 100 },
+            { x: 0, y: 50 },
+        ],
+    },
+    {
+        name: "Pentagon",
+        color: "#da70d6",
+        points: [
+            { x: 50, y: 0 },
+            { x: 100, y: 38 },
+            { x: 82, y: 100 },
+            { x: 18, y: 100 },
+            { x: 0, y: 38 },
+        ],
+    },
+    {
         name: "Hexagon",
-        summary: "Lục giác mềm phù hợp card tính năng và nhãn nội dung.",
-        bestFor: ["Feature card", "Thumbnail", "Info tile"],
-        icon: Hexagon,
-        defaults: { depth: 16, balance: 0, inset: 4 },
-        controls: {
-            depth: {
-                label: "Độ vát cạnh",
-                description: "Điều khiển chiều sâu của hai cạnh chéo bên hông.",
-                min: 8,
-                max: 24,
-                step: 1,
-            },
-            balance: {
-                label: "Cân tâm",
-                description: "Dịch điểm giữa lên hoặc xuống để đổi trọng tâm.",
-                min: -12,
-                max: 12,
-                step: 1,
-            },
-            inset: {
-                label: "Khoảng lùi",
-                description: "Tăng khoảng thở để shape bớt gắt trên mobile.",
-                min: 0,
-                max: 12,
-                step: 1,
-            },
-        },
-        generate: ({ depth, balance, inset }) => {
-            const shoulder = clamp(depth + inset, 8, 32);
-            const center = clamp(50 + balance, 35, 65);
-
-            return [
-                [shoulder, 0],
-                [100 - shoulder, 0],
-                [100, center],
-                [100 - shoulder, 100],
-                [shoulder, 100],
-                [0, center],
-            ];
-        },
+        color: "#d3d3d3",
+        points: [
+            { x: 25, y: 0 },
+            { x: 75, y: 0 },
+            { x: 100, y: 50 },
+            { x: 75, y: 100 },
+            { x: 25, y: 100 },
+            { x: 0, y: 50 },
+        ],
     },
     {
-        id: "chevron",
-        name: "Chevron",
-        summary: "Mũi tên phải phù hợp khối chuyển hướng hoặc bước tiếp theo.",
-        bestFor: ["Next step", "Process card", "Highlight panel"],
-        icon: ArrowRight,
-        defaults: { depth: 22, balance: 0, inset: 6 },
-        controls: {
-            depth: {
-                label: "Độ nhọn",
-                description: "Tăng chiều sâu mũi nhọn ở cạnh phải.",
-                min: 10,
-                max: 28,
-                step: 1,
-            },
-            balance: {
-                label: "Lệch tâm",
-                description: "Kéo tâm mũi tên lên hoặc xuống để hợp nội dung.",
-                min: -16,
-                max: 16,
-                step: 1,
-            },
-            inset: {
-                label: "Độ vát đầu",
-                description: "Làm mềm cạnh trái để shape gọn hơn khi đặt text.",
-                min: 0,
-                max: 16,
-                step: 1,
-            },
-        },
-        generate: ({ depth, balance, inset }) => {
-            const center = clamp(50 + balance, 34, 66);
-            const inner = clamp(Math.round(depth * 0.72), 8, 24);
-
-            return [
-                [0, inset],
-                [100 - depth, 0],
-                [100, center],
-                [100 - depth, 100],
-                [0, 100 - inset],
-                [inner, center],
-            ];
-        },
+        name: "Heptagon",
+        color: "#00ced1",
+        points: [
+            { x: 50, y: 0 },
+            { x: 90, y: 20 },
+            { x: 100, y: 60 },
+            { x: 75, y: 100 },
+            { x: 25, y: 100 },
+            { x: 0, y: 60 },
+            { x: 10, y: 20 },
+        ],
     },
     {
-        id: "ticket",
-        name: "Ticket",
-        summary: "Khối vé có rãnh hai bên cho coupon, nhãn hoặc teaser card.",
-        bestFor: ["Coupon", "Pricing teaser", "Event badge"],
-        icon: Ticket,
-        defaults: { depth: 12, balance: 0, inset: 5 },
-        controls: {
-            depth: {
-                label: "Độ sâu rãnh",
-                description: "Điều chỉnh độ lõm ở hai cạnh giữa.",
-                min: 8,
-                max: 20,
-                step: 1,
-            },
-            balance: {
-                label: "Cân thân",
-                description: "Dịch vị trí rãnh lên hoặc xuống để cân chữ.",
-                min: -12,
-                max: 12,
-                step: 1,
-            },
-            inset: {
-                label: "Vát góc",
-                description: "Làm sạch bốn góc để nhìn hiện đại hơn.",
-                min: 0,
-                max: 10,
-                step: 1,
-            },
-        },
-        generate: ({ depth, balance, inset }) => {
-            const center = clamp(50 + balance, 38, 62);
-            const upper = clamp(center - depth, inset + 4, 46);
-            const lower = clamp(center + depth, 54, 100 - inset - 4);
-            const inner = clamp(Math.max(inset / 2, 2), 2, 6);
-
-            return [
-                [inset, 0],
-                [100 - inset, 0],
-                [100, inset],
-                [100, upper],
-                [100 - inner, center],
-                [100, lower],
-                [100, 100 - inset],
-                [100 - inset, 100],
-                [inset, 100],
-                [0, 100 - inset],
-                [0, lower],
-                [inner, center],
-                [0, upper],
-                [0, inset],
-            ];
-        },
+        name: "Octagon",
+        color: "#db7093",
+        points: [
+            { x: 30, y: 0 },
+            { x: 70, y: 0 },
+            { x: 100, y: 30 },
+            { x: 100, y: 70 },
+            { x: 70, y: 100 },
+            { x: 30, y: 100 },
+            { x: 0, y: 70 },
+            { x: 0, y: 30 },
+        ],
     },
     {
-        id: "ribbon",
-        name: "Ribbon",
-        summary: "Dải nhãn có đuôi gọn, hợp card tin tức và khối giới thiệu.",
-        bestFor: ["News card", "Project badge", "Section label"],
-        icon: Flag,
-        defaults: { depth: 18, balance: 0, inset: 4 },
-        controls: {
-            depth: {
-                label: "Độ dài đuôi",
-                description: "Tăng phần đuôi để tạo cảm giác chuyển động.",
-                min: 10,
-                max: 28,
-                step: 1,
-            },
-            balance: {
-                label: "Vị trí đuôi",
-                description: "Dời điểm đặt đuôi để hợp với nội dung ở dưới.",
-                min: -18,
-                max: 12,
-                step: 1,
-            },
-            inset: {
-                label: "Lùi mép",
-                description: "Tăng khoảng lùi ở viền trên dưới để dễ đặt text.",
-                min: 0,
-                max: 14,
-                step: 1,
-            },
-        },
-        generate: ({ depth, balance, inset }) => {
-            const anchor = clamp(74 + balance, 48, 86);
-            const cut = clamp(Math.round(depth * 0.65), 6, 18);
-
-            return [
-                [inset, 0],
-                [100 - inset, 0],
-                [100, 100 - inset],
-                [anchor, 100 - inset],
-                [anchor - cut, 100],
-                [anchor - depth, 100 - inset],
-                [inset, 100 - inset],
-                [0, 30 + inset],
-            ];
-        },
+        name: "Nonagon",
+        color: "#f0e68c",
+        points: [
+            { x: 50, y: 0 },
+            { x: 83, y: 12 },
+            { x: 100, y: 43 },
+            { x: 94, y: 78 },
+            { x: 68, y: 100 },
+            { x: 32, y: 100 },
+            { x: 6, y: 78 },
+            { x: 0, y: 43 },
+            { x: 17, y: 12 },
+        ],
+    },
+    {
+        name: "Decagon",
+        color: "#32cd32",
+        points: [
+            { x: 50, y: 0 },
+            { x: 80, y: 10 },
+            { x: 100, y: 35 },
+            { x: 100, y: 70 },
+            { x: 80, y: 90 },
+            { x: 50, y: 100 },
+            { x: 20, y: 90 },
+            { x: 0, y: 70 },
+            { x: 0, y: 35 },
+            { x: 20, y: 10 },
+        ],
+    },
+    {
+        name: "Bevel",
+        color: "#ff7f50",
+        points: [
+            { x: 20, y: 0 },
+            { x: 80, y: 0 },
+            { x: 100, y: 20 },
+            { x: 100, y: 80 },
+            { x: 80, y: 100 },
+            { x: 20, y: 100 },
+            { x: 0, y: 80 },
+            { x: 0, y: 20 },
+        ],
+    },
+    {
+        name: "Rabbet",
+        color: "#6a5acd",
+        points: [
+            { x: 0, y: 15 },
+            { x: 15, y: 15 },
+            { x: 15, y: 0 },
+            { x: 85, y: 0 },
+            { x: 85, y: 15 },
+            { x: 100, y: 15 },
+            { x: 100, y: 85 },
+            { x: 85, y: 85 },
+            { x: 85, y: 100 },
+            { x: 15, y: 100 },
+            { x: 15, y: 85 },
+            { x: 0, y: 85 },
+        ],
+    },
+    {
+        name: "Left arrow",
+        color: "#cd5c5c",
+        points: [
+            { x: 40, y: 0 },
+            { x: 40, y: 20 },
+            { x: 100, y: 20 },
+            { x: 100, y: 80 },
+            { x: 40, y: 80 },
+            { x: 40, y: 100 },
+            { x: 0, y: 50 },
+        ],
+    },
+    {
+        name: "Right arrow",
+        color: "#808080",
+        points: [
+            { x: 0, y: 20 },
+            { x: 60, y: 20 },
+            { x: 60, y: 0 },
+            { x: 100, y: 50 },
+            { x: 60, y: 100 },
+            { x: 60, y: 80 },
+            { x: 0, y: 80 },
+        ],
+    },
+    {
+        name: "Left Point",
+        color: "#dda0dd",
+        points: [
+            { x: 25, y: 0 },
+            { x: 100, y: 0 },
+            { x: 100, y: 100 },
+            { x: 25, y: 100 },
+            { x: 0, y: 50 },
+        ],
+    },
+    {
+        name: "Right Point",
+        color: "#6b8e23",
+        points: [
+            { x: 0, y: 0 },
+            { x: 75, y: 0 },
+            { x: 100, y: 50 },
+            { x: 75, y: 100 },
+            { x: 0, y: 100 },
+        ],
+    },
+    {
+        name: "Left Chevron",
+        color: "#90ee90",
+        points: [
+            { x: 100, y: 0 },
+            { x: 75, y: 50 },
+            { x: 100, y: 100 },
+            { x: 25, y: 100 },
+            { x: 0, y: 50 },
+            { x: 25, y: 0 },
+        ],
+    },
+    {
+        name: "Right Chevron",
+        color: "#ffa07a",
+        points: [
+            { x: 75, y: 0 },
+            { x: 100, y: 50 },
+            { x: 75, y: 100 },
+            { x: 0, y: 100 },
+            { x: 25, y: 50 },
+            { x: 0, y: 0 },
+        ],
+    },
+    {
+        name: "Star",
+        color: "#ffd700",
+        points: [
+            { x: 50, y: 0 },
+            { x: 61, y: 35 },
+            { x: 98, y: 35 },
+            { x: 68, y: 57 },
+            { x: 79, y: 91 },
+            { x: 50, y: 70 },
+            { x: 21, y: 91 },
+            { x: 32, y: 57 },
+            { x: 2, y: 35 },
+            { x: 39, y: 35 },
+        ],
+    },
+    {
+        name: "Cross",
+        color: "#cd853f",
+        points: [
+            { x: 10, y: 25 },
+            { x: 35, y: 25 },
+            { x: 35, y: 0 },
+            { x: 65, y: 0 },
+            { x: 65, y: 25 },
+            { x: 90, y: 25 },
+            { x: 90, y: 50 },
+            { x: 65, y: 50 },
+            { x: 65, y: 100 },
+            { x: 35, y: 100 },
+            { x: 35, y: 50 },
+            { x: 10, y: 50 },
+        ],
+    },
+    {
+        name: "Message",
+        color: "#4169e1",
+        points: [
+            { x: 0, y: 0 },
+            { x: 100, y: 0 },
+            { x: 100, y: 75 },
+            { x: 75, y: 75 },
+            { x: 75, y: 100 },
+            { x: 50, y: 75 },
+            { x: 0, y: 75 },
+        ],
+    },
+    {
+        name: "Close",
+        color: "#dc143c",
+        points: [
+            { x: 20, y: 0 },
+            { x: 0, y: 20 },
+            { x: 30, y: 50 },
+            { x: 0, y: 80 },
+            { x: 20, y: 100 },
+            { x: 50, y: 70 },
+            { x: 80, y: 100 },
+            { x: 100, y: 80 },
+            { x: 70, y: 50 },
+            { x: 100, y: 20 },
+            { x: 80, y: 0 },
+            { x: 50, y: 30 },
+        ],
+    },
+    {
+        name: "Frame",
+        color: "#00bcd4",
+        points: [
+            { x: 0, y: 0 },
+            { x: 0, y: 100 },
+            { x: 25, y: 100 },
+            { x: 25, y: 25 },
+            { x: 75, y: 25 },
+            { x: 75, y: 75 },
+            { x: 25, y: 75 },
+            { x: 25, y: 100 },
+            { x: 100, y: 100 },
+            { x: 100, y: 0 },
+        ],
+    },
+    {
+        name: "Custom Polygon",
+        color: "#8a2be2",
+        points: [
+            { x: 10, y: 75 },
+            { x: 10, y: 25 },
+            { x: 35, y: 0 },
+            { x: 100, y: 10 },
+            { x: 90, y: 30 },
+            { x: 50, y: 30 },
+            { x: 40, y: 40 },
+            { x: 40, y: 60 },
+            { x: 50, y: 70 },
+            { x: 90, y: 70 },
+            { x: 100, y: 90 },
+            { x: 35, y: 100 },
+        ],
     },
 ];
 
-const clipPathPresetMap = clipPathPresets.reduce(
-    (acc, preset) => {
-        acc[preset.id] = preset;
-        return acc;
+const DEMO_BACKGROUNDS: DemoBackground[] = [
+    {
+        label: "Pittsburgh bridge",
+        src: "/tools/clip-path/pittsburgh.jpg",
     },
-    {} as Record<ClipPathPresetId, ClipPathPreset>,
-);
+    {
+        label: "Firenze hills",
+        src: "/tools/clip-path/fierenze.jpg",
+    },
+    {
+        label: "Sparkler",
+        src: "/tools/clip-path/sparkler.jpg",
+    },
+    {
+        label: "Miami beach",
+        src: "/tools/clip-path/miami.jpg",
+    },
+];
 
 function clamp(value: number, min: number, max: number) {
     return Math.min(max, Math.max(min, value));
+}
+
+function clonePoints(points: Point[]) {
+    return points.map((point) => ({ ...point }));
 }
 
 function formatPercent(value: number) {
@@ -316,88 +410,209 @@ function formatPercent(value: number) {
     return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
 }
 
-function pointsToPolygon(points: Point[]) {
-    return `polygon(${points
-        .map(([x, y]) => `${formatPercent(x)}% ${formatPercent(y)}%`)
-        .join(", ")})`;
-}
-
 function formatPoint(point: Point) {
-    return `${formatPercent(point[0])}% ${formatPercent(point[1])}%`;
+    return `${formatPercent(point.x)}% ${formatPercent(point.y)}%`;
 }
 
-function toTailwindClipPathValue(clipPath: string) {
-    return clipPath.replace(/ /g, "_").replace(/,/g, ",_");
+function pointsToPolygon(points: Point[]) {
+    return `polygon(${points.map(formatPoint).join(", ")})`;
 }
 
-function sanitizeClassName(value: string) {
-    const normalized = value
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9_-]+/g, "-")
-        .replace(/-{2,}/g, "-")
-        .replace(/^-+|-+$/g, "");
-
-    return normalized || "clip-shape";
+function getHandleColor(index: number) {
+    return HANDLE_COLORS[index % HANDLE_COLORS.length];
 }
 
-function randomInRange(config: ControlConfig) {
-    const steps = Math.round((config.max - config.min) / config.step);
-    return config.min + Math.round(Math.random() * steps) * config.step;
+function normalizeShapeClassName(name: string) {
+    return name.replace(/\s+/g, "-").toLowerCase();
 }
 
-function formatControlValue(config: ControlConfig, value: number) {
-    if (config.min < 0 && value > 0) {
-        return `+${value}%`;
+function toCssImageUrl(url: string) {
+    return `url(${JSON.stringify(url)})`;
+}
+
+function getUsableImageUrl(value: string) {
+    const trimmedValue = value.trim();
+    if (
+        /^(https?:\/\/|data:image\/|blob:|\/)/i.test(trimmedValue)
+    ) {
+        return trimmedValue;
     }
 
-    return `${value}%`;
+    return "";
+}
+
+function insertPointAfter(points: Point[], index: number, point: Point) {
+    if (points.length === 0) {
+        return [point];
+    }
+
+    return [...points.slice(0, index + 1), point, ...points.slice(index + 1)];
 }
 
 export function ClipPathMakerTool() {
-    const [activePresetId, setActivePresetId] =
-        useState<ClipPathPresetId>("diagonal");
-    const [controls, setControls] = useState<ControlValues>(
-        clipPathPresetMap.diagonal.defaults,
+    const [activeShapeName, setActiveShapeName] = useState(SHAPE_PRESETS[0].name);
+    const [points, setPoints] = useState<Point[]>(() =>
+        clonePoints(SHAPE_PRESETS[0].points),
     );
-    const [previewMode, setPreviewMode] = useState<PreviewMode>("hero");
-    const [codeFormat, setCodeFormat] = useState<CodeFormat>("css");
-    const [classNameInput, setClassNameInput] = useState("clip-shape");
-    const [copiedState, setCopiedState] = useState<CodeFormat | "polygon" | null>(
-        null,
-    );
+    const [selectedPointIndex, setSelectedPointIndex] = useState(0);
+    const [draggingPointIndex, setDraggingPointIndex] = useState<number | null>(null);
+    const [demoWidth, setDemoWidth] = useState(280);
+    const [demoHeight, setDemoHeight] = useState(280);
+    const [backgroundUrl, setBackgroundUrl] = useState(DEMO_BACKGROUNDS[0].src);
+    const [customBackgroundUrl, setCustomBackgroundUrl] = useState("");
+    const [showOutsideClip, setShowOutsideClip] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const clipboardRef = useRef<HTMLDivElement | null>(null);
+    const pointsRef = useRef(points);
+    const draggingPointIndexRef = useRef(draggingPointIndex);
+
+    const activeShape =
+        SHAPE_PRESETS.find((shape) => shape.name === activeShapeName) ??
+        SHAPE_PRESETS[0];
+    const clipPath = useMemo(() => pointsToPolygon(points), [points]);
+    const cssCode = `clip-path: ${clipPath};`;
+    const selectedPoint = points[selectedPointIndex] ?? points[0];
 
     useEffect(() => {
-        if (!copiedState) {
+        pointsRef.current = points;
+    }, [points]);
+
+    useEffect(() => {
+        draggingPointIndexRef.current = draggingPointIndex;
+    }, [draggingPointIndex]);
+
+    useEffect(() => {
+        if (!copied) {
             return;
         }
 
-        const timeoutId = window.setTimeout(() => setCopiedState(null), 1800);
+        const timeoutId = window.setTimeout(() => setCopied(false), 1200);
         return () => window.clearTimeout(timeoutId);
-    }, [copiedState]);
+    }, [copied]);
 
-    const activePreset = clipPathPresetMap[activePresetId];
-    const points = activePreset.generate(controls);
-    const clipPath = pointsToPolygon(points);
-    const tailwindClipPath = toTailwindClipPathValue(clipPath);
-    const safeClassName = sanitizeClassName(classNameInput);
-    const clipStyle: CSSProperties = {
-        clipPath,
-        WebkitClipPath: clipPath,
-    };
+    useEffect(() => {
+        if (draggingPointIndex === null) {
+            return;
+        }
 
-    const snippets: Record<CodeFormat, string> = {
-        css: `.${safeClassName} {\n  -webkit-clip-path: ${clipPath};\n  clip-path: ${clipPath};\n}`,
-        tailwind: `<div className="[clip-path:${tailwindClipPath}]">\n  ...\n</div>`,
-        jsx: `<div\n  style={{\n    WebkitClipPath: "${clipPath}",\n    clipPath: "${clipPath}",\n  }}\n>\n  ...\n</div>`,
-    };
+        function handlePointerMove(event: PointerEvent) {
+            const bounds = clipboardRef.current?.getBoundingClientRect();
+            const index = draggingPointIndexRef.current;
+            if (!bounds || index === null) {
+                return;
+            }
 
-    async function copyText(text: string, type: CodeFormat | "polygon") {
+            const nextPoint = {
+                x: clamp(((event.clientX - bounds.left) / bounds.width) * 100, 0, 100),
+                y: clamp(((event.clientY - bounds.top) / bounds.height) * 100, 0, 100),
+            };
+
+            setPoints((current) =>
+                current.map((point, pointIndex) =>
+                    pointIndex === index ? nextPoint : point,
+                ),
+            );
+        }
+
+        function handlePointerUp() {
+            setDraggingPointIndex(null);
+        }
+
+        window.addEventListener("pointermove", handlePointerMove);
+        window.addEventListener("pointerup", handlePointerUp);
+        window.addEventListener("pointercancel", handlePointerUp);
+        return () => {
+            window.removeEventListener("pointermove", handlePointerMove);
+            window.removeEventListener("pointerup", handlePointerUp);
+            window.removeEventListener("pointercancel", handlePointerUp);
+        };
+    }, [draggingPointIndex]);
+
+    function applyShape(shape: ShapePreset) {
+        setActiveShapeName(shape.name);
+        setPoints(clonePoints(shape.points));
+        setSelectedPointIndex(0);
+    }
+
+    function updateDemoSize(axis: "width" | "height", value: string) {
+        const parsedValue = Number(value);
+        const safeValue = Number.isFinite(parsedValue)
+            ? clamp(Math.round(parsedValue), 100, 640)
+            : 280;
+
+        if (axis === "width") {
+            setDemoWidth(safeValue);
+            return;
+        }
+
+        setDemoHeight(safeValue);
+    }
+
+    function beginDrag(index: number, event: React.PointerEvent<HTMLButtonElement>) {
+        event.preventDefault();
+        setSelectedPointIndex(index);
+        setDraggingPointIndex(index);
+    }
+
+    function addPointAt(event: React.MouseEvent<HTMLDivElement>) {
+        if (event.detail < 2) {
+            return;
+        }
+
+        const bounds = clipboardRef.current?.getBoundingClientRect();
+        if (!bounds) {
+            return;
+        }
+
+        const point = {
+            x: clamp(((event.clientX - bounds.left) / bounds.width) * 100, 0, 100),
+            y: clamp(((event.clientY - bounds.top) / bounds.height) * 100, 0, 100),
+        };
+        const nextIndex = Math.min(selectedPointIndex + 1, pointsRef.current.length);
+        setPoints((current) => insertPointAfter(current, selectedPointIndex, point));
+        setActiveShapeName("Custom Polygon");
+        setSelectedPointIndex(nextIndex);
+    }
+
+    function removeSelectedPoint() {
+        if (points.length <= 3) {
+            return;
+        }
+
+        setPoints((current) =>
+            current.filter((_, pointIndex) => pointIndex !== selectedPointIndex),
+        );
+        setActiveShapeName("Custom Polygon");
+        setSelectedPointIndex((current) => Math.max(0, current - 1));
+    }
+
+    function applyCustomBackground(value = customBackgroundUrl) {
+        const trimmedUrl = getUsableImageUrl(value);
+        if (trimmedUrl.length > 0) {
+            setBackgroundUrl(trimmedUrl);
+        }
+    }
+
+    function updateCustomBackgroundUrl(value: string) {
+        setCustomBackgroundUrl(value);
+        applyCustomBackground(value);
+    }
+
+    function pasteCustomBackgroundUrl(event: ClipboardEvent<HTMLInputElement>) {
+        const pastedUrl = event.clipboardData.getData("text");
+        if (getUsableImageUrl(pastedUrl)) {
+            setCustomBackgroundUrl(pastedUrl.trim());
+            setBackgroundUrl(pastedUrl.trim());
+        }
+    }
+
+    async function copyCssCode() {
         try {
-            await navigator.clipboard.writeText(text);
+            await navigator.clipboard.writeText(cssCode);
         } catch {
             const textarea = document.createElement("textarea");
-            textarea.value = text;
+            textarea.value = cssCode;
             textarea.setAttribute("readonly", "");
             textarea.style.position = "absolute";
             textarea.style.left = "-9999px";
@@ -407,615 +622,983 @@ export function ClipPathMakerTool() {
             document.body.removeChild(textarea);
         }
 
-        setCopiedState(type);
-    }
-
-    function updateControl(key: ControlKey, nextValue: number) {
-        setControls((current) => ({
-            ...current,
-            [key]: nextValue,
-        }));
-    }
-
-    function applyPreset(presetId: ClipPathPresetId) {
-        setActivePresetId(presetId);
-        setControls(clipPathPresetMap[presetId].defaults);
-    }
-
-    function randomizeShape() {
-        const { controls: activeControls } = activePreset;
-
-        setControls({
-            depth: randomInRange(activeControls.depth),
-            balance: randomInRange(activeControls.balance),
-            inset: randomInRange(activeControls.inset),
-        });
+        setCopied(true);
     }
 
     return (
-        <section
-            id="clip-path-maker-workspace"
-            className="py-16"
-        >
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="mb-12 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="max-w-3xl">
-                        <Badge className="mb-4 rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700 hover:bg-white">
-                            Workspace
-                        </Badge>
-                        <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                            Khu vực tạo shape và xuất code
-                        </h2>
-                        <p className="mt-4 text-base leading-7 text-slate-600">
-                            Chọn preset phù hợp, điều chỉnh shape trên preview
-                            và lấy mã ngay trong cùng một flow. Mọi thành phần
-                            đều tối ưu cho thao tác nhanh, đọc dễ và thân thiện
-                            với người dùng mới.
-                        </p>
-                    </div>
+        <section className="clippy-tool min-h-[100dvh] bg-[#d3d0c9] text-[#100a09]">
+            <style>
+                {`
+                    @import url("https://fonts.googleapis.com/css?family=Alegreya+Sans:300,300i,400,400i");
 
-                    <div className="grid gap-3 sm:grid-cols-3">
-                        {previewStats.map((item) => (
+                    .clippy-tool {
+                        font: 100%/1.5 "Alegreya Sans", sans-serif;
+                    }
+
+                    body:has(.clippy-tool) nextjs-portal {
+                        display: none !important;
+                    }
+
+                    .clippy-tool * {
+                        box-sizing: border-box;
+                        line-height: 1;
+                    }
+
+                    .clippy-shell {
+                        min-height: 100dvh;
+                    }
+
+                    .clippy-main {
+                        display: flex;
+                        min-height: 100dvh;
+                        flex-direction: column;
+                    }
+
+                    .clippy-header {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        background: rgba(251, 252, 247, 0.75);
+                        box-shadow: inset 0 -1px rgba(211, 208, 201, 0.25);
+                        padding: 0.75rem 1rem;
+                    }
+
+                    .clippy-title {
+                        display: inline-block;
+                        color: inherit;
+                        font-size: 1rem;
+                        line-height: 1.5 !important;
+                        text-decoration: none;
+                    }
+
+                    .clippy-title:hover {
+                        text-decoration: underline;
+                    }
+
+                    .clippy-post {
+                        border-radius: 999px;
+                        background: #000;
+                        color: #fff;
+                        padding: 0.25rem 0.75rem;
+                        font-family: Arial, sans-serif;
+                        font-size: 12px;
+                        font-weight: 700;
+                    }
+
+                    .clippy-demo-container {
+                        display: flex;
+                        flex: 1;
+                        align-items: center;
+                        justify-content: center;
+                        background: #fbfcf7;
+                        box-shadow: 0 1px 2px rgba(16, 10, 9, 0.15);
+                        padding: 0.5rem;
+                        user-select: none;
+                    }
+
+                    .clippy-demo {
+                        position: relative;
+                        padding-bottom: 1rem;
+                    }
+
+                    .clippy-box {
+                        position: relative;
+                        box-shadow:
+                            inset 0 0 0 10px #fbfcf7,
+                            inset 0 0 0 11px #d3d0c9;
+                        touch-action: none;
+                    }
+
+                    .clippy-shadowboard,
+                    .clippy-clipboard {
+                        position: absolute;
+                        inset: 10px;
+                        background-color: #d3d0c9;
+                        background-position: center center;
+                        background-size: cover;
+                    }
+
+                    .clippy-shadowboard {
+                        pointer-events: none;
+                        opacity: 0;
+                        transition: opacity 0.375s ease;
+                    }
+
+                    .clippy-shadowboard[data-visible="true"] {
+                        opacity: 0.25;
+                    }
+
+                    .clippy-handles {
+                        position: absolute;
+                        inset: 0;
+                    }
+
+                    .clippy-handle {
+                        position: absolute;
+                        width: 20px;
+                        height: 20px;
+                        border-radius: 50%;
+                        border: 0;
+                        background: transparent;
+                        box-shadow: inset 0 0 0 10px currentColor;
+                        cursor: grab;
+                        opacity: 0.8;
+                        padding: 0;
+                        transition:
+                            opacity 0.25s ease,
+                            box-shadow 0.2s ease,
+                            transform 0.2s ease;
+                    }
+
+                    .clippy-demo:hover .clippy-handle,
+                    .clippy-handle[data-selected="true"] {
+                        opacity: 1;
+                    }
+
+                    .clippy-handle[data-selected="true"] {
+                        box-shadow: inset 0 0 0 10px currentColor;
+                    }
+
+                    .clippy-handle:after {
+                        position: absolute;
+                        inset: -8px;
+                        content: "";
+                    }
+
+                    .clippy-delete-point {
+                        position: absolute;
+                        left: 22px;
+                        top: 0;
+                        width: 25px;
+                        height: 20px;
+                        border: 0;
+                        border-radius: 3px;
+                        background: #d3d0c9;
+                        cursor: pointer;
+                        clip-path: polygon(25% 0%, 100% 1%, 100% 100%, 25% 100%, 0% 50%);
+                        opacity: 0;
+                        transform: scale3d(0, 0, 0);
+                        transform-origin: left center;
+                        transition:
+                            transform 0.25s cubic-bezier(0.15, 1, 0.3, 1.1),
+                            opacity 0.25s ease;
+                    }
+
+                    .clippy-handle-wrap:hover .clippy-delete-point {
+                        opacity: 1;
+                        transform: scale3d(0.9, 0.9, 0.9);
+                    }
+
+                    .clippy-delete-point:after {
+                        position: absolute;
+                        inset: 4px 4px 4px 9px;
+                        display: block;
+                        content: "";
+                        background: #100a09;
+                        clip-path: polygon(20% 10%, 10% 20%, 40% 50%, 10% 80%, 20% 90%, 50% 60%, 80% 90%, 90% 80%, 60% 50%, 90% 20%, 80% 10%, 50% 40%);
+                    }
+
+                    .clippy-custom-notice {
+                        position: absolute;
+                        inset: 0;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: rgba(16, 10, 9, 0.55);
+                        font-size: 0.95rem;
+                        pointer-events: none;
+                        text-align: center;
+                        opacity: 0;
+                    }
+
+                    .clippy-demo:hover .clippy-custom-notice {
+                        opacity: 1;
+                    }
+
+                    .clippy-shapes {
+                        position: relative;
+                        max-width: 100%;
+                        overflow-x: hidden;
+                        background: #d3d0c9;
+                        white-space: nowrap;
+                    }
+
+                    .clippy-shapes:after {
+                        position: absolute;
+                        top: 0;
+                        right: 0;
+                        bottom: 0;
+                        display: block;
+                        width: 1.5rem;
+                        content: "";
+                        pointer-events: none;
+                        background: linear-gradient(90deg, rgba(211, 208, 201, 0), #d3d0c9);
+                    }
+
+                    .clippy-shape-list {
+                        width: 100%;
+                        padding: 0.25rem;
+                        white-space: nowrap;
+                    }
+
+                    .clippy-gallery-cell {
+                        display: inline-block;
+                        width: 4.125rem;
+                        margin: 0.25rem;
+                        border: 0;
+                        border-radius: 2px;
+                        background: #fff;
+                        box-shadow: 0 1px 2px rgba(16, 10, 9, 0.15);
+                        color: var(--shape-color);
+                        cursor: pointer;
+                        padding: 0.625rem 0.25rem;
+                        text-align: center;
+                        transition:
+                            background 0.25s ease,
+                            transform 0.5s ease,
+                            opacity 0.2s ease;
+                        user-select: none;
+                    }
+
+                    .clippy-gallery-cell:hover {
+                        opacity: 0.86;
+                    }
+
+                    .clippy-gallery-cell[data-active="true"] {
+                        background: #100a09;
+                    }
+
+                    .clippy-shape-mark {
+                        display: block;
+                        width: 24px;
+                        height: 24px;
+                        margin: 0 auto 0.45rem;
+                        background: currentColor;
+                    }
+
+                    .clippy-shape-name {
+                        display: block;
+                        overflow: hidden;
+                        color: #5e5652;
+                        font-size: 0.75rem;
+                        text-overflow: ellipsis;
+                    }
+
+                    .clippy-gallery-cell[data-active="true"] .clippy-shape-name {
+                        color: #fff;
+                    }
+
+                    .clippy-code {
+                        display: flex;
+                        overflow: hidden;
+                        font-family: monospace;
+                        font-size: 1.1em;
+                    }
+
+                    .clippy-code-content {
+                        flex: 1;
+                        overflow: auto;
+                        border: 0;
+                        border-radius: 0;
+                        background: #100a09;
+                        box-shadow: 0 1px 2px rgba(16, 10, 9, 0.15);
+                        color: #9a8297;
+                        cursor: pointer;
+                        padding: 0.75rem;
+                        text-align: left;
+                    }
+
+                    .clippy-code-line {
+                        display: block;
+                        padding: 0.25rem;
+                        line-height: 1.3;
+                        white-space: normal;
+                    }
+
+                    .clippy-code-point {
+                        display: inline-block;
+                        position: relative;
+                        line-height: 1.3;
+                        vertical-align: baseline;
+                    }
+
+                    .clippy-code-point[data-copied="true"]:after {
+                        position: absolute;
+                        top: calc(50% - 40px);
+                        left: calc(50% - 40px);
+                        width: 80px;
+                        height: 80px;
+                        border-radius: 50%;
+                        background: currentColor;
+                        content: "";
+                        opacity: 0;
+                        animation: clippy-emph 1.25s ease;
+                    }
+
+                    @keyframes clippy-emph {
+                        20% {
+                            opacity: 0.5;
+                            transform: scale(0.2);
+                        }
+
+                        to {
+                            opacity: 0;
+                            transform: scale(1.2);
+                        }
+                    }
+
+                    .clippy-side {
+                        background: #d3d0c9;
+                    }
+
+                    .clippy-options {
+                        background: #d3d0c9;
+                    }
+
+                    .clippy-panel {
+                        display: block;
+                        margin: 0.5rem 0.25rem;
+                        border-radius: 2px;
+                        background: #fff;
+                        box-shadow: 0 1px 2px rgba(16, 10, 9, 0.15);
+                        padding: 1rem 1rem 1rem 0.5rem;
+                    }
+
+                    .clippy-panel:first-of-type {
+                        margin-top: 0.25rem;
+                    }
+
+                    .clippy-flex {
+                        display: flex;
+                        align-items: center;
+                    }
+
+                    .clippy-panel-title {
+                        display: inline-block;
+                        min-width: 1em;
+                        flex: 4rem auto;
+                        color: #100a09;
+                        font-size: 1.2rem !important;
+                        font-weight: 300 !important;
+                        line-height: 1 !important;
+                        padding: 0 1.25rem 0 0.5rem;
+                        pointer-events: none;
+                        text-align: left;
+                        user-select: none;
+                    }
+
+                    .clippy-panel-title.block {
+                        display: block;
+                    }
+
+                    .clippy-muted-title {
+                        flex: 0 0 auto;
+                        color: #bcb8ad;
+                        font-size: 1.2rem !important;
+                        font-weight: 500 !important;
+                        padding: 0 0.35rem;
+                        pointer-events: none;
+                    }
+
+                    .clippy-input,
+                    .clippy-toggle-label {
+                        display: inline-block;
+                        position: relative;
+                        flex: 1;
+                        min-width: 2rem;
+                        border: 0;
+                        border-radius: 2rem;
+                        background: #fff;
+                        box-shadow:
+                            inset 0 0.125rem #d3d0c9,
+                            inset -0.125rem 0 #d3d0c9,
+                            inset 0 -0.125rem #d3d0c9;
+                        color: #100a09;
+                        cursor: pointer;
+                        font: inherit;
+                        line-height: 1 !important;
+                        padding: 0.5rem 0.25rem;
+                        text-align: center;
+                        transition: background 0.25s ease;
+                    }
+
+                    .clippy-input:first-of-type {
+                        box-shadow:
+                            inset 0 0.125rem #d3d0c9,
+                            inset 0.125rem 0 #d3d0c9,
+                            inset -0.125rem 0 #d3d0c9,
+                            inset 0 -0.125rem #d3d0c9;
+                    }
+
+                    .clippy-input:hover,
+                    .clippy-toggle-label:hover {
+                        background: #d3d0c9;
+                    }
+
+                    .clippy-input:focus {
+                        z-index: 100;
+                        outline: 0;
+                        background: #100a09;
+                        box-shadow:
+                            inset 0 0 0 0.125rem #100a09,
+                            0 0 0 0.125rem #100a09;
+                        color: #d3d0c9;
+                    }
+
+                    .clippy-url {
+                        width: calc(100% - 0.375rem);
+                        margin-left: 0.375rem;
+                        padding: 0.55rem 1rem;
+                        text-align: left;
+                    }
+
+                    .clippy-backgrounds {
+                        overflow: hidden;
+                        padding: 0.5rem 0 0.75rem 0.375rem;
+                        position: relative;
+                    }
+
+                    .clippy-backgrounds button {
+                        float: left;
+                        width: calc(25% - 0.25rem);
+                        margin: 0.125rem;
+                        border: 0;
+                        background: transparent;
+                        padding: 0;
+                    }
+
+                    .clippy-background-thumb {
+                        display: block;
+                        width: 100%;
+                        height: auto;
+                        border: 0;
+                        border-radius: 0.25rem;
+                        outline: 0.25rem solid #fff;
+                        cursor: pointer;
+                        transition: opacity 0.5s ease;
+                    }
+
+                    .clippy-background-thumb:hover {
+                        opacity: 0.9;
+                    }
+
+                    .clippy-toggle-row {
+                        margin-top: 1rem;
+                    }
+
+                    .clippy-toggle-label:before {
+                        content: "Off";
+                    }
+
+                    .clippy-toggle-checkbox:checked + .clippy-toggle-label {
+                        z-index: 100;
+                        background: #100a09;
+                        box-shadow:
+                            inset 0 0 0 0.125rem #100a09,
+                            0 0 0 0.125rem #100a09;
+                        color: #d3d0c9;
+                    }
+
+                    .clippy-toggle-checkbox:checked + .clippy-toggle-label:before {
+                        content: "On";
+                    }
+
+                    .clippy-panel p {
+                        margin: 0.75rem 0 0;
+                        font-size: 1rem;
+                        line-height: 1.4;
+                    }
+
+                    .clippy-panel code {
+                        font-family: monospace;
+                        font-size: 1.1em;
+                    }
+
+                    .clippy-panel a {
+                        color: #0b7fda;
+                        text-decoration: underline;
+                    }
+
+                    .clippy-cite-spacer {
+                        height: 1.75rem;
+                    }
+
+                    @media (max-width: 799px) {
+                        .clippy-main {
+                            min-height: auto;
+                        }
+
+                        .clippy-demo-container {
+                            min-height: 324px;
+                        }
+
+                        .clippy-shapes-mobile {
+                            display: block;
+                            overflow-x: auto;
+                        }
+
+                        .clippy-shapes-desktop {
+                            display: none;
+                        }
+
+                        .clippy-code-content {
+                            min-height: 69px;
+                            border-radius: 0;
+                        }
+
+                        .clippy-side {
+                            display: block;
+                            padding: 0.25rem;
+                        }
+                    }
+
+                    @media (min-width: 800px) {
+                        .clippy-shell {
+                            display: grid;
+                            grid-template-columns: minmax(0, 1fr) 23.625rem;
+                            height: 100dvh;
+                            overflow: hidden;
+                        }
+
+                        .clippy-main {
+                            min-height: 0;
+                            padding: 0.25rem 0.25rem 0.25rem 0.75rem;
+                            touch-action: none;
+                        }
+
+                        .clippy-header {
+                            margin-top: 0.5rem;
+                            border-radius: 2px 2px 0 0;
+                            font-size: larger;
+                        }
+
+                        .clippy-title {
+                            font-size: 1.2rem;
+                        }
+
+                        .clippy-demo-container {
+                            min-height: 0;
+                            border-radius: 0 0 2px 2px;
+                        }
+
+                        .clippy-shapes-mobile {
+                            display: none;
+                        }
+
+                        .clippy-side {
+                            min-height: 100dvh;
+                            overflow: hidden auto;
+                            padding: 0.5rem 0.25rem 0;
+                        }
+
+                        .clippy-shapes-desktop {
+                            display: block;
+                            height: 31.5rem;
+                            max-height: 31.5rem;
+                            overflow: hidden auto;
+                            z-index: 2;
+                            white-space: normal;
+                        }
+
+                        .clippy-shapes-desktop:after {
+                            display: none;
+                        }
+
+                        .clippy-shapes-desktop .clippy-shape-list {
+                            display: flex;
+                            flex-wrap: wrap;
+                            overflow-x: hidden;
+                            padding: 0;
+                            perspective: 400px;
+                            white-space: normal;
+                        }
+
+                        .clippy-shapes-desktop .clippy-gallery-cell {
+                            flex: 4.625rem;
+                            transform-origin: top center;
+                        }
+
+                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 9) {
+                            transform: translateZ(0) rotateX(-18deg);
+                        }
+
+                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 13) {
+                            transform: translateZ(-1.85rem) rotateX(-36deg);
+                        }
+
+                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 17) {
+                            transform: translateZ(-6.0125rem) rotateX(-54deg);
+                        }
+
+                        .clippy-shapes-desktop .clippy-gallery-cell:nth-child(n + 21) {
+                            transform: translateZ(-9.25rem) rotateX(-72deg);
+                        }
+
+                        .clippy-code {
+                            margin: 0.5rem 0 0.25rem;
+                            border-radius: 2px;
+                        }
+
+                        .clippy-code-content {
+                            max-height: 160px;
+                            border-radius: 2px;
+                        }
+
+                        .clippy-options {
+                            position: relative;
+                            z-index: 1;
+                            transform: none;
+                            transition: transform 0.25s 0.125s cubic-bezier(0.15, 1, 0.3, 1.1);
+                        }
+
+                        .clippy-options:before {
+                            display: none;
+                        }
+
+                        .clippy-options:hover,
+                        .clippy-options:focus-within {
+                            transform: none;
+                        }
+
+                        .clippy-options:hover:before,
+                        .clippy-options:focus-within:before {
+                            transform: scale3d(1, 0, 1);
+                        }
+                    }
+                `}
+            </style>
+
+            <div className="clippy-shell">
+                <div className="clippy-main">
+                    <header className="clippy-header">
+                        <a className="clippy-title" href="#clip-path-maker-workspace">
+                            CSS clip-path maker
+                        </a>
+                        <a
+                            className="clippy-post"
+                            href={`https://twitter.com/share?text=${encodeURIComponent(
+                                "CSS clip-path maker",
+                            )}`}
+                            rel="noreferrer"
+                            target="_blank"
+                        >
+                            X Post
+                        </a>
+                    </header>
+
+                    <div
+                        id="clip-path-maker-workspace"
+                        className="clippy-demo-container"
+                    >
+                        <section className="clippy-demo" aria-label="Clip-path demo">
                             <div
-                                key={item.label}
-                                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+                                className="clippy-box"
+                                onDoubleClick={addPointAt}
+                                style={{
+                                    width: demoWidth + 20,
+                                    height: demoHeight + 20,
+                                }}
                             >
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                    {item.label}
-                                </p>
-                                <p className="mt-1 text-2xl font-black text-slate-900">
-                                    {item.value}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)_360px]">
-                    <Card className="overflow-hidden rounded-[28px] border-slate-200 bg-white/90 shadow-xl shadow-amber-100/50">
-                        <CardHeader className="border-b border-slate-100 pb-5">
-                            <div className="flex items-center gap-3">
-                                <div className="flex size-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-                                    <Wand2 className="size-5" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-xl text-slate-900">
-                                        Chọn dáng cắt
-                                    </CardTitle>
-                                    <CardDescription className="mt-1 text-slate-500">
-                                        Bắt đầu từ preset gần nhu cầu nhất rồi
-                                        tinh chỉnh nhẹ.
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-
-                        <CardContent className="space-y-6 pt-6">
-                            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                                {clipPathPresets.map((preset) => {
-                                    const Icon = preset.icon;
-                                    const isActive = preset.id === activePresetId;
-
-                                    return (
-                                        <button
-                                            key={preset.id}
-                                            type="button"
-                                            onClick={() => applyPreset(preset.id)}
-                                            className={cn(
-                                                "cursor-pointer rounded-2xl border px-4 py-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2",
-                                                isActive
-                                                    ? "border-amber-300 bg-amber-50 shadow-sm"
-                                                    : "border-slate-200 bg-white hover:border-amber-200 hover:bg-amber-50/40",
-                                            )}
-                                        >
-                                            <div className="flex items-start gap-3">
-                                                <div
-                                                    className={cn(
-                                                        "mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl",
-                                                        isActive
-                                                            ? "bg-amber-100 text-amber-700"
-                                                            : "bg-slate-100 text-slate-600",
-                                                    )}
-                                                >
-                                                    <Icon className="size-[18px]" />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="font-semibold text-slate-900">
-                                                            {preset.name}
-                                                        </p>
-                                                        {isActive ? (
-                                                            <Badge className="rounded-full bg-amber-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-amber-600">
-                                                                Đang dùng
-                                                            </Badge>
-                                                        ) : null}
-                                                    </div>
-                                                    <p className="mt-1 text-sm leading-6 text-slate-500">
-                                                        {preset.summary}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-                                <p className="text-sm font-semibold text-slate-900">
-                                    Hợp nhất với
-                                </p>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {activePreset.bestFor.map((item) => (
-                                        <span
-                                            key={item}
-                                            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600"
-                                        >
-                                            {item}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="space-y-5">
-                                {(
-                                    Object.keys(activePreset.controls) as ControlKey[]
-                                ).map((key) => {
-                                    const config = activePreset.controls[key];
-                                    const value = controls[key];
-
-                                    return (
-                                        <div key={key} className="space-y-3">
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <Label className="text-sm font-semibold text-slate-900">
-                                                        {config.label}
-                                                    </Label>
-                                                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                                                        {config.description}
-                                                    </p>
-                                                </div>
-                                                <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white">
-                                                    {formatControlValue(
-                                                        config,
-                                                        value,
-                                                    )}
-                                                </span>
-                                            </div>
-
-                                            <Slider
-                                                value={[value]}
-                                                min={config.min}
-                                                max={config.max}
-                                                step={config.step}
-                                                aria-label={config.label}
-                                                onValueChange={(nextValue) =>
-                                                    updateControl(
-                                                        key,
-                                                        nextValue[0] ?? value,
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            <div className="flex flex-wrap gap-3">
-                                <Button
-                                    type="button"
-                                    onClick={randomizeShape}
-                                    variant="outline"
-                                    className="cursor-pointer rounded-xl border-amber-200 bg-white text-slate-900 hover:bg-amber-50"
-                                >
-                                    <Shuffle className="mr-1.5 size-4" />
-                                    Thử ngẫu nhiên
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() =>
-                                        setControls(activePreset.defaults)
-                                    }
-                                    variant="secondary"
-                                    className="cursor-pointer rounded-xl bg-slate-100 text-slate-900 hover:bg-slate-200"
-                                >
-                                    <RotateCcw className="mr-1.5 size-4" />
-                                    Reset preset
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="overflow-hidden rounded-[32px] border-slate-200 bg-white shadow-2xl shadow-slate-200/70">
-                        <CardHeader className="border-b border-slate-100 pb-5">
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex size-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
-                                            <Sparkles className="size-5" />
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-xl text-slate-900">
-                                                Preview thời gian thực
-                                            </CardTitle>
-                                            <CardDescription className="text-slate-500">
-                                                Shape cập nhật ngay khi kéo
-                                                slider, không cần refresh.
-                                            </CardDescription>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <Tabs
-                                    value={previewMode}
-                                    onValueChange={(value) =>
-                                        setPreviewMode(value as PreviewMode)
-                                    }
-                                    className="w-full lg:w-auto"
-                                >
-                                    <TabsList
-                                        variant="line"
-                                        className="grid w-full grid-cols-3 rounded-2xl border border-slate-200 bg-slate-50 p-1 lg:w-[290px]"
-                                    >
-                                        <TabsTrigger
-                                            value="hero"
-                                            className="cursor-pointer rounded-xl data-[state=active]:bg-white"
-                                        >
-                                            <Monitor className="size-4" />
-                                            Hero
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            value="card"
-                                            className="cursor-pointer rounded-xl data-[state=active]:bg-white"
-                                        >
-                                            <Square className="size-4" />
-                                            Card
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            value="media"
-                                            className="cursor-pointer rounded-xl data-[state=active]:bg-white"
-                                        >
-                                            <Image className="size-4" />
-                                            Media
-                                        </TabsTrigger>
-                                    </TabsList>
-                                </Tabs>
-                            </div>
-                        </CardHeader>
-
-                        <CardContent className="space-y-6 pt-6">
-                            <Tabs value={previewMode} className="w-full">
-                                <TabsContent value="hero">
-                                    <div className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,_#0f172a_0%,_#1e293b_100%)] p-4 sm:p-6">
-                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(251,191,36,0.26),_transparent_30%)]" />
-                                        <div
-                                            className="relative flex min-h-[300px] flex-col justify-between overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,_#f59e0b_0%,_#f97316_40%,_#0f172a_100%)] p-6 text-white shadow-2xl transition-[clip-path] duration-300 motion-reduce:transition-none"
-                                            style={clipStyle}
-                                        >
-                                            <div className="flex items-center justify-between gap-3">
-                                                <Badge className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-white hover:bg-white/10">
-                                                    Prototype
-                                                </Badge>
-                                                <div className="text-right text-xs font-medium text-white/70">
-                                                    {activePreset.name}
-                                                </div>
-                                            </div>
-
-                                            <div className="max-w-sm space-y-4">
-                                                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-amber-100">
-                                                    Clip-path ready
-                                                </p>
-                                                <h3 className="text-3xl font-black leading-tight">
-                                                    Tạo hero lạ mắt mà vẫn dễ
-                                                    copy sang dự án.
-                                                </h3>
-                                                <p className="text-sm leading-6 text-white/80">
-                                                    Shape phù hợp cho landing,
-                                                    banner và các block nhấn
-                                                    mạnh nội dung ngay đầu
-                                                    trang.
-                                                </p>
-                                            </div>
-
-                                            <div className="flex flex-wrap gap-3">
-                                                <div className="rounded-full bg-white/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur">
-                                                    Copy CSS
-                                                </div>
-                                                <div className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80">
-                                                    Dùng cho hero
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </TabsContent>
-
-                                <TabsContent value="card">
-                                    <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4 sm:p-6">
-                                        <div className="grid min-h-[300px] place-items-center rounded-[24px] border border-dashed border-slate-200 bg-[linear-gradient(180deg,_rgba(241,245,249,0.7),_rgba(255,255,255,1))] p-5">
-                                            <div
-                                                className="w-full max-w-md overflow-hidden rounded-[26px] bg-[linear-gradient(135deg,_#0f172a_0%,_#334155_65%,_#f59e0b_120%)] p-6 text-white shadow-2xl transition-[clip-path] duration-300 motion-reduce:transition-none"
-                                                style={clipStyle}
-                                            >
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <div>
-                                                        <p className="text-sm font-semibold text-amber-200">
-                                                            UI experiment
-                                                        </p>
-                                                        <h3 className="mt-2 text-2xl font-bold">
-                                                            Card nổi bật nhưng
-                                                            không rối.
-                                                        </h3>
-                                                    </div>
-                                                    <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/70">
-                                                        Shape
-                                                    </div>
-                                                </div>
-
-                                                <p className="mt-4 text-sm leading-6 text-white/75">
-                                                    Dùng cho feature card, promo
-                                                    card hoặc khối nội dung cần
-                                                    nhấn bằng hình khối.
-                                                </p>
-
-                                                <div className="mt-6 flex items-center gap-3">
-                                                    <div className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900">
-                                                        Xem mã
-                                                    </div>
-                                                    <div className="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white/70">
-                                                        Responsive
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </TabsContent>
-
-                                <TabsContent value="media">
-                                    <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,_#fff7ed_0%,_#ffffff_100%)] p-4 sm:p-6">
-                                        <div className="grid gap-4 lg:grid-cols-[1.35fr_0.9fr]">
-                                            <div
-                                                className="relative aspect-[5/4] overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,_#1e293b_0%,_#334155_55%,_#f59e0b_120%)] shadow-xl transition-[clip-path] duration-300 motion-reduce:transition-none"
-                                                style={clipStyle}
-                                            >
-                                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.18),_transparent_28%)]" />
-                                                <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-                                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">
-                                                        Thumbnail
-                                                    </p>
-                                                    <h3 className="mt-2 text-2xl font-bold">
-                                                        Shape cho thumbnail,
-                                                        gallery hoặc teaser.
-                                                    </h3>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-4">
-                                                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                                                    <p className="text-sm font-semibold text-slate-500">
-                                                        Tỷ lệ hiện tại
-                                                    </p>
-                                                    <p className="mt-2 text-3xl font-black text-slate-900">
-                                                        {points.length} điểm
-                                                    </p>
-                                                    <p className="mt-2 text-sm leading-6 text-slate-500">
-                                                        Số điểm vừa đủ để shape
-                                                        khác biệt nhưng vẫn dễ
-                                                        maintain trong CSS.
-                                                    </p>
-                                                </div>
-
-                                                <div className="rounded-3xl border border-slate-200 bg-slate-950 p-5 text-white shadow-sm">
-                                                    <p className="text-sm font-semibold text-white/70">
-                                                        Gợi ý dùng
-                                                    </p>
-                                                    <ul className="mt-3 space-y-2 text-sm text-white/85">
-                                                        <li>Ảnh cover bài viết</li>
-                                                        <li>Thumbnail portfolio</li>
-                                                        <li>Khối media trong hero</li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </TabsContent>
-                            </Tabs>
-
-                            <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <div>
-                                        <p className="text-sm font-semibold text-slate-900">
-                                            Chuỗi polygon hiện tại
-                                        </p>
-                                        <p className="mt-1 text-xs text-slate-500">
-                                            Dễ kiểm tra lại từng điểm trước khi
-                                            copy sang component.
-                                        </p>
-                                    </div>
-                                    <Badge className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700 hover:bg-white">
-                                        {activePreset.name}
-                                    </Badge>
-                                </div>
-
-                                <div className="mt-4 flex flex-wrap gap-2">
-                                    {points.map((point, index) => (
-                                        <span
-                                            key={`${point[0]}-${point[1]}-${index}`}
-                                            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600"
-                                        >
-                                            #{index + 1} {formatPoint(point)}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="overflow-hidden rounded-[28px] border-slate-200 bg-white/95 shadow-xl shadow-slate-200/50">
-                        <CardHeader className="border-b border-slate-100 pb-5">
-                            <div className="flex items-center gap-3">
-                                <div className="flex size-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
-                                    <Code2 className="size-5" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-xl text-slate-900">
-                                        Xuất mã để dùng ngay
-                                    </CardTitle>
-                                    <CardDescription className="mt-1 text-slate-500">
-                                        Có sẵn CSS, Tailwind và JSX để cấy nhanh
-                                        vào project.
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-
-                        <CardContent className="space-y-6 pt-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="clip-path-class-name">
-                                    Tên class CSS
-                                </Label>
-                                <Input
-                                    id="clip-path-class-name"
-                                    value={classNameInput}
-                                    onChange={(event) =>
-                                        setClassNameInput(event.target.value)
-                                    }
-                                    placeholder="clip-shape"
-                                    className="h-11 rounded-xl border-slate-200"
+                                <div
+                                    className="clippy-shadowboard"
+                                    data-visible={showOutsideClip}
+                                    style={{ backgroundImage: toCssImageUrl(backgroundUrl) }}
                                 />
-                                {safeClassName !==
-                                classNameInput.trim().toLowerCase() ? (
-                                    <p className="text-xs text-slate-500">
-                                        Sẽ được chuẩn hóa thành{" "}
-                                        <span className="font-semibold text-slate-900">
-                                            .{safeClassName}
-                                        </span>
-                                        .
-                                    </p>
-                                ) : null}
-                            </div>
+                                <div
+                                    ref={clipboardRef}
+                                    className="clippy-clipboard"
+                                    style={{
+                                        backgroundImage: toCssImageUrl(backgroundUrl),
+                                        WebkitClipPath: clipPath,
+                                        clipPath,
+                                    }}
+                                />
+                                <div className="clippy-handles">
+                                    {points.map((point, index) => {
+                                        const color = getHandleColor(index);
+                                        const isSelected = selectedPointIndex === index;
 
-                            <Tabs
-                                value={codeFormat}
-                                onValueChange={(value) =>
-                                    setCodeFormat(value as CodeFormat)
-                                }
-                                className="w-full"
-                            >
-                                <TabsList
-                                    variant="line"
-                                    className="grid w-full grid-cols-3 rounded-2xl border border-slate-200 bg-slate-50 p-1"
-                                >
-                                    <TabsTrigger
-                                        value="css"
-                                        className="cursor-pointer rounded-xl data-[state=active]:bg-white"
-                                    >
-                                        CSS
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="tailwind"
-                                        className="cursor-pointer rounded-xl data-[state=active]:bg-white"
-                                    >
-                                        Tailwind
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="jsx"
-                                        className="cursor-pointer rounded-xl data-[state=active]:bg-white"
-                                    >
-                                        JSX
-                                    </TabsTrigger>
-                                </TabsList>
-
-                                {(Object.keys(snippets) as CodeFormat[]).map(
-                                    (format) => (
-                                        <TabsContent
-                                            key={format}
-                                            value={format}
-                                            className="mt-4"
-                                        >
-                                            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
-                                                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-                                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/55">
-                                                        {format}
-                                                    </p>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            copyText(
-                                                                snippets[
-                                                                    format
-                                                                ],
-                                                                format,
-                                                            )
-                                                        }
-                                                        className="cursor-pointer rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-white/80 transition-colors hover:border-white/20 hover:bg-white/10"
-                                                    >
-                                                        {copiedState === format
-                                                            ? "Đã sao chép"
-                                                            : "Copy đoạn mã"}
-                                                    </button>
-                                                </div>
-                                                <textarea
-                                                    readOnly
-                                                    spellCheck={false}
-                                                    value={snippets[format]}
-                                                    className="min-h-[220px] w-full resize-none border-0 bg-transparent px-4 py-4 font-mono text-sm leading-6 text-slate-100 outline-none"
+                                        return (
+                                            <div
+                                                key={`${index}-${point.x}-${point.y}`}
+                                                className="clippy-handle-wrap"
+                                                data-selected={isSelected}
+                                                style={{
+                                                    position: "absolute",
+                                                    left:
+                                                        10 +
+                                                        (point.x / 100) * demoWidth -
+                                                        10,
+                                                    top:
+                                                        10 +
+                                                        (point.y / 100) * demoHeight -
+                                                        10,
+                                                }}
+                                            >
+                                                <button
+                                                    aria-label={`Drag point ${index + 1}`}
+                                                    className="clippy-handle"
+                                                    data-selected={isSelected}
+                                                    onPointerDown={(event) =>
+                                                        beginDrag(index, event)
+                                                    }
+                                                    style={{ color }}
+                                                    type="button"
+                                                />
+                                                <button
+                                                    aria-label={`Delete point ${index + 1}`}
+                                                    className="clippy-delete-point"
+                                                    disabled={points.length <= 3}
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        setSelectedPointIndex(index);
+                                                        removeSelectedPoint();
+                                                    }}
+                                                    type="button"
                                                 />
                                             </div>
-                                        </TabsContent>
-                                    ),
-                                )}
-                            </Tabs>
-
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <Button
-                                    type="button"
-                                    onClick={() =>
-                                        copyText(snippets[codeFormat], codeFormat)
-                                    }
-                                    className="cursor-pointer rounded-xl bg-slate-900 text-white hover:bg-slate-800"
-                                >
-                                    {copiedState === codeFormat ? (
-                                        <Check className="mr-1.5 size-4" />
-                                    ) : (
-                                        <Copy className="mr-1.5 size-4" />
-                                    )}
-                                    Sao chép mã đang chọn
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    onClick={() => copyText(clipPath, "polygon")}
-                                    variant="outline"
-                                    className="cursor-pointer rounded-xl border-amber-200 bg-white text-slate-900 hover:bg-amber-50"
-                                >
-                                    {copiedState === "polygon" ? (
-                                        <Check className="mr-1.5 size-4 text-emerald-600" />
-                                    ) : (
-                                        <Copy className="mr-1.5 size-4" />
-                                    )}
-                                    Copy polygon(...)
-                                </Button>
+                                        );
+                                    })}
+                                </div>
+                                <div className="clippy-custom-notice">
+                                    <div>
+                                        Double click to add points
+                                        <br />
+                                        to custom polygon.
+                                    </div>
+                                </div>
                             </div>
+                        </section>
+                    </div>
 
-                            <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-4">
-                                <p className="text-sm font-semibold text-slate-900">
-                                    Lưu ý khi dùng thật
-                                </p>
-                                <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
-                                    <li>
-                                        Ưu tiên shape ít điểm cho khối có nhiều
-                                        text để tránh cảm giác chật.
-                                    </li>
-                                    <li>
-                                        Trên Safari, dùng snippet CSS hoặc JSX
-                                        vì đã kèm cả `WebkitClipPath`.
-                                    </li>
-                                    <li>
-                                        Khi áp dụng cho ảnh, giữ thêm một lớp
-                                        `overflow-hidden` nếu cần bo góc ngoài.
-                                    </li>
-                                </ul>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <ShapeGallery
+                        activeShapeName={activeShapeName}
+                        className="clippy-shapes-mobile"
+                        onApplyShape={applyShape}
+                    />
+
+                    <section className="clippy-code" tabIndex={-1}>
+                        <button
+                            aria-label={copied ? "Copied clip-path code" : "Copy clip-path code"}
+                            className="clippy-code-content"
+                            onClick={copyCssCode}
+                            title={copied ? "Copied" : "Copy clip-path code"}
+                            type="button"
+                        >
+                            <code className="clippy-code-line">
+                                clip-path:{" "}
+                                <span className="clippy-code-function">polygon(</span>
+                                {points.map((point, index) => (
+                                    <span key={`${index}-${point.x}-${point.y}`}>
+                                        <span
+                                            className="clippy-code-point"
+                                            data-copied={copied}
+                                            style={{ color: getHandleColor(index) }}
+                                        >
+                                            {formatPoint(point)}
+                                        </span>
+                                        {index < points.length - 1 ? ", " : ""}
+                                    </span>
+                                ))}
+                                <span className="clippy-code-function">);</span>
+                            </code>
+                        </button>
+                    </section>
                 </div>
+
+                <aside className="clippy-side">
+                    <ShapeGallery
+                        activeShapeName={activeShapeName}
+                        className="clippy-shapes-desktop"
+                        onApplyShape={applyShape}
+                    />
+
+                    <section className="clippy-options">
+                        <div className="clippy-panel clippy-flex">
+                            <h2 className="clippy-panel-title">Demo Size</h2>
+                            <input
+                                aria-label="Demo width"
+                                className="clippy-input"
+                                max={640}
+                                min={100}
+                                onChange={(event) =>
+                                    updateDemoSize("width", event.target.value)
+                                }
+                                type="number"
+                                value={demoWidth}
+                            />
+                            <h2 className="clippy-muted-title">x</h2>
+                            <input
+                                aria-label="Demo height"
+                                className="clippy-input"
+                                max={640}
+                                min={100}
+                                onChange={(event) =>
+                                    updateDemoSize("height", event.target.value)
+                                }
+                                type="number"
+                                value={demoHeight}
+                            />
+                        </div>
+
+                        <div className="clippy-panel">
+                            <h2 className="clippy-panel-title">Demo Background</h2>
+                            <div className="clippy-backgrounds">
+                                {DEMO_BACKGROUNDS.map((background) => (
+                                    <button
+                                        key={background.src}
+                                        aria-label={`Use ${background.label}`}
+                                        onClick={() => setBackgroundUrl(background.src)}
+                                        type="button"
+                                    >
+                                        <img
+                                            alt=""
+                                            className="clippy-background-thumb"
+                                            src={background.src}
+                                        />
+                                    </button>
+                                ))}
+                            </div>
+                            <input
+                                className="clippy-input clippy-url"
+                                onBlur={() => applyCustomBackground()}
+                                onChange={(event) =>
+                                    updateCustomBackgroundUrl(event.target.value)
+                                }
+                                onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                        applyCustomBackground();
+                                    }
+                                }}
+                                onPaste={pasteCustomBackgroundUrl}
+                                placeholder="Custom URL..."
+                                type="url"
+                                value={customBackgroundUrl}
+                            />
+
+                            <div className="clippy-flex clippy-toggle-row">
+                                <h2 className="clippy-panel-title">
+                                    Show outside clip-path
+                                </h2>
+                                <input
+                                    checked={showOutsideClip}
+                                    className="clippy-toggle-checkbox sr-only"
+                                    id="clippy-shadowboard-toggle"
+                                    onChange={(event) =>
+                                        setShowOutsideClip(event.target.checked)
+                                    }
+                                    type="checkbox"
+                                />
+                                <label
+                                    className="clippy-toggle-label"
+                                    htmlFor="clippy-shadowboard-toggle"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="clippy-panel">
+                            <h2 className="clippy-panel-title block">
+                                About Clip Paths
+                            </h2>
+                            <p>
+                                The <code>clip-path</code> property allows you to make
+                                complex shapes in CSS by clipping an element to a basic
+                                shape (circle, ellipse, polygon, or inset), or to an SVG
+                                source.
+                            </p>
+                            <p>
+                                CSS Animations and transitions are possible with two or
+                                more clip-path shapes with the same number of points.
+                            </p>
+                        </div>
+
+                        <div className="clippy-panel">
+                            <h2 className="clippy-panel-title block">
+                                Browser Support
+                            </h2>
+                            <p>
+                                Check out the current browser support for the{" "}
+                                <code>clip-path</code> property on{" "}
+                                <a
+                                    href="https://caniuse.com/#search=clip-path"
+                                    rel="noreferrer"
+                                    target="_blank"
+                                >
+                                    Can I Use
+                                </a>
+                                .
+                            </p>
+                        </div>
+
+                        <div className="clippy-panel">
+                            <h2 className="clippy-panel-title block">
+                                Brought to you by Bennett Feely
+                            </h2>
+                            <div className="clippy-cite-spacer" />
+                            <p>
+                                Find this project on{" "}
+                                <a
+                                    href="https://github.com/bennettfeely/Clippy"
+                                    rel="noreferrer"
+                                    target="_blank"
+                                >
+                                    Github
+                                </a>
+                                .
+                            </p>
+                            <p>
+                                Want a list of the name of every polygon? Check out my
+                                new site, Copy Paste List.
+                            </p>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+
+            <p className="sr-only" aria-live="polite">
+                {selectedPoint
+                    ? `${activeShape.name}, selected point ${selectedPointIndex + 1}: ${formatPoint(selectedPoint)}`
+                    : activeShape.name}
+            </p>
+        </section>
+    );
+}
+
+function ShapeGallery({
+    activeShapeName,
+    className,
+    onApplyShape,
+}: {
+    activeShapeName: string;
+    className: string;
+    onApplyShape: (shape: ShapePreset) => void;
+}) {
+    return (
+        <section className={`clippy-shapes ${className}`} tabIndex={-1}>
+            <div className="clippy-shape-list">
+                {SHAPE_PRESETS.map((shape) => (
+                    <button
+                        key={shape.name}
+                        className="clippy-gallery-cell"
+                        data-active={shape.name === activeShapeName}
+                        onClick={() => onApplyShape(shape)}
+                        style={
+                            {
+                                "--shape-color": shape.color,
+                            } as CSSProperties
+                        }
+                        type="button"
+                    >
+                        <span
+                            className={`clippy-shape-mark clippy-shape-${normalizeShapeClassName(shape.name)}`}
+                            style={{
+                                WebkitClipPath: pointsToPolygon(shape.points),
+                                clipPath: pointsToPolygon(shape.points),
+                            }}
+                        />
+                        <span className="clippy-shape-name">{shape.name}</span>
+                    </button>
+                ))}
             </div>
         </section>
     );
