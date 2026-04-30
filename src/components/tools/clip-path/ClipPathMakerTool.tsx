@@ -658,9 +658,27 @@ export function ClipPathMakerTool() {
                         display: flex;
                         align-items: center;
                         justify-content: space-between;
+                        gap: 1rem;
                         background: rgba(251, 252, 247, 0.75);
                         box-shadow: inset 0 -1px rgba(211, 208, 201, 0.25);
                         padding: 0.75rem 1rem;
+                    }
+
+                    .clippy-brand {
+                        display: flex;
+                        min-width: 0;
+                        flex-direction: column;
+                        gap: 0.2rem;
+                    }
+
+                    .clippy-brand-kicker {
+                        color: #6f6761;
+                        font-family: Arial, sans-serif;
+                        font-size: 0.68rem;
+                        font-weight: 700;
+                        letter-spacing: 0.12em;
+                        line-height: 1.2 !important;
+                        text-transform: uppercase;
                     }
 
                     .clippy-title {
@@ -675,6 +693,29 @@ export function ClipPathMakerTool() {
                         text-decoration: underline;
                     }
 
+                    .clippy-header-actions {
+                        display: flex;
+                        flex-shrink: 0;
+                        align-items: center;
+                        gap: 0.5rem;
+                    }
+
+                    .clippy-brand-pill {
+                        display: inline-flex;
+                        align-items: center;
+                        border: 1px solid rgba(16, 10, 9, 0.14);
+                        border-radius: 999px;
+                        background: #fbfcf7;
+                        color: #100a09;
+                        padding: 0.25rem 0.65rem;
+                        font-family: Arial, sans-serif;
+                        font-size: 11px;
+                        font-weight: 700;
+                        letter-spacing: 0.04em;
+                        line-height: 1.2 !important;
+                        text-transform: uppercase;
+                    }
+
                     .clippy-post {
                         border-radius: 999px;
                         background: #000;
@@ -683,6 +724,31 @@ export function ClipPathMakerTool() {
                         font-family: Arial, sans-serif;
                         font-size: 12px;
                         font-weight: 700;
+                    }
+
+                    .clippy-identity-strip {
+                        display: grid;
+                        gap: 0.35rem;
+                        background: rgba(251, 252, 247, 0.56);
+                        box-shadow: inset 0 -1px rgba(16, 10, 9, 0.08);
+                        padding: 0.75rem 1rem;
+                    }
+
+                    .clippy-identity-label {
+                        color: #100a09;
+                        font-family: Arial, sans-serif;
+                        font-size: 0.72rem;
+                        font-weight: 700;
+                        letter-spacing: 0.08em;
+                        line-height: 1.2 !important;
+                        text-transform: uppercase;
+                    }
+
+                    .clippy-identity-copy {
+                        max-width: 48rem;
+                        color: #5e5652;
+                        font-size: 0.95rem;
+                        line-height: 1.35 !important;
                     }
 
                     .clippy-demo-container {
@@ -966,6 +1032,42 @@ export function ClipPathMakerTool() {
 
                     .clippy-panel:first-of-type {
                         margin-top: 0.25rem;
+                    }
+
+                    .clippy-sense-panel {
+                        border-left: 3px solid #100a09;
+                        padding-left: 0.85rem;
+                    }
+
+                    .clippy-sense-panel p {
+                        line-height: 1.35 !important;
+                    }
+
+                    .clippy-sense-list {
+                        display: grid;
+                        gap: 0.4rem;
+                        margin: 0.8rem 0 0;
+                        padding: 0;
+                        list-style: none;
+                    }
+
+                    .clippy-sense-list li {
+                        display: flex;
+                        align-items: baseline;
+                        gap: 0.45rem;
+                        color: #5e5652;
+                        font-size: 0.92rem;
+                        line-height: 1.3 !important;
+                    }
+
+                    .clippy-sense-list li:before {
+                        width: 0.45rem;
+                        height: 0.45rem;
+                        flex: 0 0 auto;
+                        border-radius: 50%;
+                        background: #100a09;
+                        content: "";
+                        opacity: 0.72;
                     }
 
                     .clippy-flex {
@@ -1348,20 +1450,39 @@ export function ClipPathMakerTool() {
             <div className="clippy-shell">
                 <div className="clippy-main">
                     <header className="clippy-header">
-                        <a className="clippy-title" href="#clip-path-maker-workspace">
-                            CSS clip-path maker
-                        </a>
-                        <a
-                            className="clippy-post"
-                            href={`https://twitter.com/share?text=${encodeURIComponent(
-                                "CSS clip-path maker",
-                            )}`}
-                            rel="noreferrer"
-                            target="_blank"
-                        >
-                            X Post
-                        </a>
+                        <div className="clippy-brand">
+                            <span className="clippy-brand-kicker">CodeSense AI Lab</span>
+                            <a className="clippy-title" href="#clip-path-maker-workspace">
+                                Clip Path Marker
+                            </a>
+                        </div>
+                        <div className="clippy-header-actions">
+                            <span className="clippy-brand-pill">CodeSense AI</span>
+                            <a
+                                className="clippy-post"
+                                href={`https://twitter.com/share?text=${encodeURIComponent(
+                                    "CodeSense AI Clip Path Marker",
+                                )}`}
+                                rel="noreferrer"
+                                target="_blank"
+                            >
+                                X Post
+                            </a>
+                        </div>
                     </header>
+
+                    <section
+                        className="clippy-identity-strip"
+                        aria-label="CodeSense AI tool context"
+                    >
+                        <span className="clippy-identity-label">
+                            AI-assisted polygon workflow
+                        </span>
+                        <p className="clippy-identity-copy">
+                            Tune CSS polygons for CodeSense AI lessons, generated UI
+                            snippets, and visual experiments without leaving the maker.
+                        </p>
+                    </section>
 
                     <div
                         id="clip-path-maker-workspace"
@@ -1492,6 +1613,21 @@ export function ClipPathMakerTool() {
                     />
 
                     <section className="clippy-options">
+                        <div className="clippy-panel clippy-sense-panel">
+                            <h2 className="clippy-panel-title block">
+                                CodeSense AI workflow
+                            </h2>
+                            <p>
+                                A compact marker for turning visual clip-path edits into
+                                reusable CSS that fits CodeSense AI exercises.
+                            </p>
+                            <ul className="clippy-sense-list">
+                                <li>Keep presets fast for lesson demos.</li>
+                                <li>Copy production-ready polygon CSS in one click.</li>
+                                <li>Use custom backgrounds to test generated UI ideas.</li>
+                            </ul>
+                        </div>
+
                         <div className="clippy-panel clippy-flex">
                             <h2 className="clippy-panel-title">Demo Size</h2>
                             <input
