@@ -81,6 +81,8 @@ type DetectionResponse = {
         overlapScore: number;
         proximityScore: number;
         fingertipScore: number;
+        inFrontScore?: number;
+        depthScore?: number;
     };
 };
 
@@ -223,6 +225,8 @@ const defaultDetection: DetectionResponse = {
         overlapScore: 0,
         proximityScore: 0,
         fingertipScore: 0,
+        inFrontScore: 0,
+        depthScore: 0,
     },
 };
 
@@ -1424,6 +1428,11 @@ export function FaceTouchAlertTool() {
                                         label="Fingertip Score"
                                         subtitle="Keypoint alignment"
                                         score={detection.debug.fingertipScore}
+                                    />
+                                    <CircleScoreCard
+                                        label="Depth Guard"
+                                        subtitle="Foreground hand penalty"
+                                        score={detection.debug.depthScore ?? 0}
                                     />
                                 </div>
                             </div>

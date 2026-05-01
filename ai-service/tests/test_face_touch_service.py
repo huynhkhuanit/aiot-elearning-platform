@@ -8,7 +8,13 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from app.models import FaceTouchAnalyzeRequest
-from app.services.face_touch_service import analyze_face_touch_frame
+from app.services.face_touch_service import (
+    ALL_CONTACT_INDICES,
+    Box,
+    Point,
+    _hand_depth_assessment,
+    analyze_face_touch_frame,
+)
 
 
 LENA_FIXTURE_B64 = (
@@ -220,3 +226,41 @@ def test_detects_face_landmarks_when_face_is_small_in_landscape_frame():
     assert response.faceDetected is True
     assert response.overlay.faceBox is not None
     assert len(response.overlay.facePoints) > 0
+
+
+def _synthetic_hand_points(z_by_index: dict[int, float]) -> list[Point]:
+    points = [Point(x=300.0, y=240.0, z=0.0) for _ in range(21)]
+    for index in range(21):
+        points[index] = Point(
+            x=260.0 + (index % 5) * 24.0,
+            y=170.0 + (index // 5) * 38.0,
+            z=z_by_index.get(index, -0.02),
+        )
+    return points
+
+
+def test_depth_assessment_penalizes_hand_projected_on_face_but_closer_to_camera():
+    face_box = Box(x=220.0, y=120.0, width=200.0, height=240.0)
+    hand_box = Box(x=210.0, y=105.0, width=230.0, height=265.0)
+    hand_points = _synthetic_hand_points(
+        {
+            0: 0.03,
+            **{index: -0.46 for index in ALL_CONTACT_INDICES},
+        }
+    )
+
+    assessment = _hand_depth_assessment(hand_points, hand_box, face_box)
+
+    assert assessment.foreground_score >= 0.70
+    assert assessment.touch_multiplier <= 0.30
+
+
+def test_depth_assessment_preserves_side_face_contact_with_flat_depth():
+    face_box = Box(x=220.0, y=120.0, width=200.0, height=240.0)
+    hand_box = Box(x=145.0, y=195.0, width=125.0, height=145.0)
+    hand_points = _synthetic_hand_points({index: -0.03 for index in range(21)})
+
+    assessment = _hand_depth_assessment(hand_points, hand_box, face_box)
+
+    assert assessment.foreground_score <= 0.35
+    assert assessment.touch_multiplier >= 0.80

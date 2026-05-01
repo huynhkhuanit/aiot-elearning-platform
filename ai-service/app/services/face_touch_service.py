@@ -120,6 +120,16 @@ class Point:
     z: float = 0.0
 
 
+@dataclass
+class DepthAssessment:
+    foreground_score: float
+    touch_multiplier: float
+    near_multiplier: float
+    scale_score: float
+    z_score: float
+    projection_score: float
+
+
 def _require_dependencies() -> None:
     if cv2 is None:
         raise RuntimeError("opencv-python chưa được cài đặt cho AI service.")
@@ -546,6 +556,151 @@ def _hand_face_size_consistency(hand_box: Box, face_box: Box) -> float:
     return 1.0 - (ratio - soft_limit) / max(hard_limit - soft_limit, 1e-6)
 
 
+def _ramp_score(value: float, soft_limit: float, hard_limit: float) -> float:
+    if value <= soft_limit:
+        return 0.0
+    if value >= hard_limit:
+        return 1.0
+    return (value - soft_limit) / max(hard_limit - soft_limit, 1e-6)
+
+
+def _depth_multiplier(foreground_score: float, floor: float) -> float:
+    start = settings.FACE_TOUCH_DEPTH_PENALTY_START
+    full = settings.FACE_TOUCH_DEPTH_PENALTY_FULL
+    if foreground_score <= start:
+        return 1.0
+    if foreground_score >= full:
+        return floor
+
+    t = (foreground_score - start) / max(full - start, 1e-6)
+    return 1.0 - t * (1.0 - floor)
+
+
+def _face_coverage_by_hand(hand_box: Box, face_box: Box) -> float:
+    x_left = max(hand_box.x, face_box.x)
+    y_top = max(hand_box.y, face_box.y)
+    x_right = min(hand_box.x + hand_box.width, face_box.x + face_box.width)
+    y_bottom = min(hand_box.y + hand_box.height, face_box.y + face_box.height)
+
+    if x_right <= x_left or y_bottom <= y_top:
+        return 0.0
+
+    return ((x_right - x_left) * (y_bottom - y_top)) / max(face_box.area, 1.0)
+
+
+def _hand_z_protrusion_score(hand_points: Sequence[Point]) -> float:
+    """Estimate how much the hand protrudes toward the camera.
+
+    MediaPipe hand z is relative to the wrist and smaller values are closer to
+    the camera. It cannot be compared directly with face z, so this only uses
+    hand-internal depth: fingertips/joints far in front of the wrist are a
+    strong signal that the hand is being held toward the lens.
+    """
+    if not hand_points or WRIST_INDEX >= len(hand_points):
+        return 0.0
+
+    wrist_z = hand_points[WRIST_INDEX].z
+    contact_z_values = [
+        hand_points[index].z for index in ALL_CONTACT_INDICES if index < len(hand_points)
+    ]
+    palm_z_values = [
+        hand_points[index].z for index in PALM_CENTER_INDICES if index < len(hand_points)
+    ]
+    if not contact_z_values:
+        return 0.0
+
+    closest_contact_z = min(contact_z_values)
+    avg_palm_z = (
+        sum(palm_z_values) / len(palm_z_values)
+        if palm_z_values
+        else wrist_z
+    )
+    protrusion = max(wrist_z - closest_contact_z, avg_palm_z - closest_contact_z, 0.0)
+
+    return _clamp_score(
+        _ramp_score(
+            protrusion,
+            settings.FACE_TOUCH_DEPTH_Z_SOFT,
+            settings.FACE_TOUCH_DEPTH_Z_HARD,
+        )
+    )
+
+
+def _hand_projection_score(hand_box: Box, face_box: Box) -> float:
+    face_cx, face_cy = face_box.center
+    face_center_inside = (
+        hand_box.x <= face_cx <= hand_box.x + hand_box.width
+        and hand_box.y <= face_cy <= hand_box.y + hand_box.height
+    )
+
+    face_coverage = _face_coverage_by_hand(hand_box, face_box)
+    dx = abs(hand_box.center[0] - face_cx) / max(face_box.width, 1.0)
+    dy = abs(hand_box.center[1] - face_cy) / max(face_box.height, 1.0)
+    center_alignment = max(0.0, 1.0 - math.sqrt(dx * dx + dy * dy))
+
+    return _clamp_score(
+        (0.25 if face_center_inside else 0.0)
+        + _ramp_score(face_coverage, 0.18, 0.70) * 0.45
+        + center_alignment * 0.30
+    )
+
+
+def _hand_depth_assessment(
+    hand_points: Sequence[Point],
+    hand_box: Box,
+    face_box: Box,
+) -> DepthAssessment:
+    """Monocular depth guard for hand-vs-face contact.
+
+    A single webcam frame has no true metric depth. This assessment combines
+    three stable proxies: hand scale compared with face scale, hand-internal z
+    protrusion from MediaPipe, and projection covering the face center/area.
+    """
+    area_ratio = _hand_face_area_ratio(hand_box, face_box)
+    diagonal_ratio = hand_box.diagonal / max(face_box.diagonal, 1.0)
+    scale_score = _clamp_score(
+        max(
+            _ramp_score(
+                area_ratio,
+                settings.FACE_TOUCH_DEPTH_AREA_SOFT_MAX,
+                settings.FACE_TOUCH_DEPTH_AREA_HARD_MAX,
+            ),
+            _ramp_score(
+                diagonal_ratio,
+                settings.FACE_TOUCH_DEPTH_DIAGONAL_SOFT_MAX,
+                settings.FACE_TOUCH_DEPTH_DIAGONAL_HARD_MAX,
+            ),
+        )
+    )
+    z_score = _hand_z_protrusion_score(hand_points)
+    projection_score = _hand_projection_score(hand_box, face_box)
+
+    foreground_score = _clamp_score(
+        scale_score * 0.40
+        + z_score * 0.35
+        + projection_score * 0.25
+    )
+    if z_score >= 0.65 and projection_score >= 0.45:
+        foreground_score = max(foreground_score, 0.72)
+    if scale_score >= 0.70 and projection_score >= 0.50:
+        foreground_score = max(foreground_score, 0.68)
+
+    return DepthAssessment(
+        foreground_score=foreground_score,
+        touch_multiplier=_depth_multiplier(
+            foreground_score,
+            settings.FACE_TOUCH_DEPTH_TOUCH_FLOOR,
+        ),
+        near_multiplier=_depth_multiplier(
+            foreground_score,
+            settings.FACE_TOUCH_DEPTH_NEAR_FLOOR,
+        ),
+        scale_score=scale_score,
+        z_score=z_score,
+        projection_score=projection_score,
+    )
+
+
 def _face_points_occluded_by_hand(face_points: Sequence[Point], hand_box: Box) -> float:
     """Tỉ lệ face contour points nằm trong hand bounding box.
 
@@ -840,6 +995,7 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
     proximity_scores: List[float] = []
     fingertip_scores: List[float] = []
     palm_scores: List[float] = []
+    depth_scores: List[float] = []
     near_scores: List[float] = []
     touch_scores: List[float] = []
 
@@ -880,6 +1036,8 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
         occlusion = _face_points_occluded_by_hand(face_overlay_pts, hand_box)
         occlusion_penalty = _in_front_of_face_penalty(occlusion, hand_box, face_box)
         contact = _fingertip_contact_score(points, face_points, face_box)
+        depth_assessment = _hand_depth_assessment(points, hand_box, face_box)
+        depth_scores.append(depth_assessment.foreground_score)
 
         # Region scoring: touch dùng face box thật, near dùng expanded face box
         weighted_touch_region_scores = []
@@ -927,7 +1085,8 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
         # Bypass penalty CHỈ khi: contact cao + tay kích thước hợp lý
         # + occlusion thấp + KHÔNG có dấu hiệu tay ở trước mặt
         if (contact >= 0.5 and size_consistency >= 0.5
-                and occlusion < 0.40 and in_front < 0.35):
+                and occlusion < 0.40 and in_front < 0.35
+                and depth_assessment.foreground_score < 0.45):
             effective_penalty = max(occlusion_penalty, 0.85)
         elif in_front >= 0.35:
             # Tay có khả năng ở trước mặt → phạt mạnh hơn tỉ lệ với confidence
@@ -939,6 +1098,7 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
             max(contact * 0.88, base_touch)
             * size_consistency
             * effective_penalty
+            * depth_assessment.touch_multiplier
         )
         near_score = _clamp_score(
             (
@@ -949,6 +1109,7 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
             )
             * max(size_consistency, 0.55)
             * max(occlusion_penalty, 0.25)
+            * depth_assessment.near_multiplier
         )
 
         overlap_scores.append(_clamp_score(touch_overlap_score))
@@ -961,6 +1122,7 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
     proximity_score = _clamp_score(max(proximity_scores, default=0.0))
     fingertip_score = _clamp_score(max(fingertip_scores, default=0.0))
     palm_score = _clamp_score(max(palm_scores, default=0.0))
+    depth_score = _clamp_score(max(depth_scores, default=0.0))
     touch_score = _clamp_score(max(touch_scores, default=0.0))
     near_score = _clamp_score(max(near_scores, default=0.0))
     # Tính in_front tổng hợp cho debug output
@@ -1040,5 +1202,6 @@ def analyze_face_touch_frame(request: FaceTouchAnalyzeRequest) -> FaceTouchAnaly
             "proximityScore": round(_clamp_score(proximity_score), 4),
             "fingertipScore": round(_clamp_score(fingertip_score), 4),
             "inFrontScore": round(_clamp_score(in_front_max), 4),
+            "depthScore": round(_clamp_score(depth_score), 4),
         },
     )

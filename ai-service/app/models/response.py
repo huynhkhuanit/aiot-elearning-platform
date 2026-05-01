@@ -184,6 +184,7 @@ class FaceTouchDebugScores(BaseModel):
     proximityScore: float = Field(..., ge=0, le=1)
     fingertipScore: float = Field(..., ge=0, le=1)
     inFrontScore: float = Field(0.0, ge=0, le=1)
+    depthScore: float = Field(0.0, ge=0, le=1)
 
 
 class FaceTouchFrameSize(BaseModel):
