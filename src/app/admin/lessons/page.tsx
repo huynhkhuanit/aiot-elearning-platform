@@ -173,7 +173,7 @@ export default function AdminLessonsPage() {
 
     if (authLoading) {
         return (
-            <PageLoading message="Đang xác thực quyền truy cập..." bg="dark" />
+            <PageLoading message="Đang xác thực quyền truy cập..." bg="light" />
         );
     }
 
@@ -186,10 +186,10 @@ export default function AdminLessonsPage() {
             <div className="min-h-screen flex items-center justify-center p-6">
                 <div className="text-center max-w-md">
                     <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                    <p className="text-slate-100 mb-6 font-medium">{error}</p>
+                    <p className="text-slate-900 mb-6 font-medium">{error}</p>
                     <button
                         onClick={fetchCourses}
-                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition font-medium"
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium"
                     >
                         Thử Lại
                     </button>
@@ -202,55 +202,55 @@ export default function AdminLessonsPage() {
         <div className="space-y-6">
             {/* Page Header */}
             <div>
-                <h1 className="text-3xl font-bold text-slate-100 mb-2">
+                <h1 className="text-3xl font-bold text-slate-900 mb-2">
                     Quản Lý Nội Dung Bài Học
                 </h1>
-                <p className="text-slate-400">
+                <p className="text-slate-500">
                     Chỉnh sửa markdown content cho từng bài học trong khóa học
                 </p>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 hover:shadow-md hover:border-slate-300 transition-all duration-300">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-slate-400 text-sm font-medium">
+                            <p className="text-slate-500 text-sm font-medium">
                                 Khóa Học
                             </p>
-                            <p className="text-3xl font-bold text-slate-100 mt-1">
+                            <p className="text-3xl font-bold text-slate-900 mt-1">
                                 {stats.totalCourses}
                             </p>
                         </div>
-                        <div className="p-3 bg-blue-500/20 rounded-lg">
-                            <BookOpen className="w-6 h-6 text-blue-400" />
+                        <div className="p-3 bg-blue-100 rounded-lg">
+                            <BookOpen className="w-6 h-6 text-blue-600" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 hover:shadow-md hover:border-slate-300 transition-all duration-300">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-slate-400 text-sm font-medium">
+                            <p className="text-slate-500 text-sm font-medium">
                                 Tổng Bài Học
                             </p>
-                            <p className="text-3xl font-bold text-slate-100 mt-1">
+                            <p className="text-3xl font-bold text-slate-900 mt-1">
                                 {stats.totalLessons}
                             </p>
                         </div>
-                        <div className="p-3 bg-purple-500/20 rounded-lg">
-                            <FileText className="w-6 h-6 text-purple-400" />
+                        <div className="p-3 bg-sky-100 rounded-lg">
+                            <FileText className="w-6 h-6 text-sky-600" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 hover:shadow-md hover:border-slate-300 transition-all duration-300">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-slate-400 text-sm font-medium">
+                            <p className="text-slate-500 text-sm font-medium">
                                 Có Nội Dung
                             </p>
-                            <p className="text-3xl font-bold text-slate-100 mt-1">
+                            <p className="text-3xl font-bold text-slate-900 mt-1">
                                 {stats.lessonsWithContent}
                             </p>
                             <p className="text-xs text-slate-500 mt-1">
@@ -259,24 +259,24 @@ export default function AdminLessonsPage() {
                                     : "0%"}
                             </p>
                         </div>
-                        <div className="p-3 bg-green-500/20 rounded-lg">
-                            <CheckCircle className="w-6 h-6 text-green-400" />
+                        <div className="p-3 bg-emerald-100 rounded-lg">
+                            <CheckCircle className="w-6 h-6 text-emerald-600" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 hover:shadow-md hover:border-slate-300 transition-all duration-300">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-slate-400 text-sm font-medium">
+                            <p className="text-slate-500 text-sm font-medium">
                                 Đã Xuất Bản
                             </p>
-                            <p className="text-3xl font-bold text-slate-100 mt-1">
+                            <p className="text-3xl font-bold text-slate-900 mt-1">
                                 {stats.publishedLessons}
                             </p>
                         </div>
-                        <div className="p-3 bg-emerald-500/20 rounded-lg">
-                            <TrendingUp className="w-6 h-6 text-emerald-400" />
+                        <div className="p-3 bg-amber-100 rounded-lg">
+                            <TrendingUp className="w-6 h-6 text-amber-700" />
                         </div>
                     </div>
                 </div>
@@ -285,19 +285,19 @@ export default function AdminLessonsPage() {
             {/* Search and Filter */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input
                         type="text"
                         placeholder="Tìm kiếm khóa học, chương, bài học..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm"
                     />
                 </div>
                 <div className="relative">
                     <button
                         onClick={() => setShowFilter(!showFilter)}
-                        className={`flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-100 transition font-medium ${showFilter ? "ring-2 ring-indigo-500" : ""}`}
+                        className={`flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-700 transition font-medium shadow-sm ${showFilter ? "ring-2 ring-blue-500" : ""}`}
                     >
                         <Filter className="w-5 h-5" />
                         <span>
@@ -310,13 +310,13 @@ export default function AdminLessonsPage() {
                     </button>
 
                     {showFilter && (
-                        <div className="absolute right-0 top-full mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-10 overflow-hidden">
+                        <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-10 overflow-hidden">
                             <button
                                 onClick={() => {
                                     setFilterStatus("all");
                                     setShowFilter(false);
                                 }}
-                                className={`w-full text-left px-4 py-3 hover:bg-slate-700 transition text-sm ${filterStatus === "all" ? "text-indigo-400 font-medium" : "text-slate-300"}`}
+                                className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition text-sm ${filterStatus === "all" ? "text-blue-700 font-medium" : "text-slate-600"}`}
                             >
                                 Tất cả
                             </button>
@@ -325,7 +325,7 @@ export default function AdminLessonsPage() {
                                     setFilterStatus("published");
                                     setShowFilter(false);
                                 }}
-                                className={`w-full text-left px-4 py-3 hover:bg-slate-700 transition text-sm ${filterStatus === "published" ? "text-indigo-400 font-medium" : "text-slate-300"}`}
+                                className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition text-sm ${filterStatus === "published" ? "text-blue-700 font-medium" : "text-slate-600"}`}
                             >
                                 Đã xuất bản
                             </button>
@@ -334,7 +334,7 @@ export default function AdminLessonsPage() {
                                     setFilterStatus("draft");
                                     setShowFilter(false);
                                 }}
-                                className={`w-full text-left px-4 py-3 hover:bg-slate-700 transition text-sm ${filterStatus === "draft" ? "text-indigo-400 font-medium" : "text-slate-300"}`}
+                                className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition text-sm ${filterStatus === "draft" ? "text-blue-700 font-medium" : "text-slate-600"}`}
                             >
                                 Bản nháp
                             </button>
@@ -348,9 +348,9 @@ export default function AdminLessonsPage() {
                 {loading ? (
                     <PageLoading variant="section" />
                 ) : filteredCourses.length === 0 ? (
-                    <div className="text-center py-16 bg-slate-800/30 border border-slate-700 rounded-lg">
-                        <BookOpen className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                        <p className="text-slate-400 font-medium">
+                    <div className="text-center py-16 bg-white border border-slate-200 rounded-xl shadow-sm">
+                        <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                        <p className="text-slate-600 font-medium">
                             Không có khóa học nào
                         </p>
                         <p className="text-slate-500 text-sm mt-1">
@@ -361,23 +361,23 @@ export default function AdminLessonsPage() {
                     filteredCourses.map((course) => (
                         <div
                             key={course.id}
-                            className="border border-slate-700 rounded-lg overflow-hidden bg-slate-800/30 hover:bg-slate-800/50 transition-all duration-200"
+                            className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200"
                         >
                             {/* Course Header */}
                             <button
                                 onClick={() => toggleCourse(course.id)}
-                                className="w-full px-6 py-4 bg-slate-800/50 hover:bg-slate-800/70 transition flex items-center justify-between text-left border-b border-slate-700"
+                                className="w-full px-6 py-4 bg-white hover:bg-slate-50 transition flex items-center justify-between text-left border-b border-slate-200"
                             >
                                 <div className="flex items-center gap-4 flex-1 min-w-0">
                                     <div className="flex-shrink-0">
                                         {expandedCourses.has(course.id) ? (
-                                            <ChevronDown className="w-5 h-5 text-indigo-400" />
+                                            <ChevronDown className="w-5 h-5 text-blue-600" />
                                         ) : (
-                                            <ChevronRight className="w-5 h-5 text-slate-500" />
+                                            <ChevronRight className="w-5 h-5 text-slate-400" />
                                         )}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <h3 className="text-lg font-semibold text-slate-100 truncate">
+                                        <h3 className="text-lg font-semibold text-slate-900 truncate">
                                             {course.title}
                                         </h3>
                                         <p className="text-sm text-slate-500 mt-1">
@@ -386,10 +386,10 @@ export default function AdminLessonsPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                                    <div className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-xs font-semibold border border-indigo-500/30">
+                                    <div className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold border border-blue-200">
                                         {course.chapters?.length || 0} chương
                                     </div>
-                                    <div className="px-3 py-1 bg-slate-700/50 text-slate-300 rounded-full text-xs font-semibold">
+                                    <div className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">
                                         {course.chapters?.reduce(
                                             (total, ch) =>
                                                 total +
@@ -403,7 +403,7 @@ export default function AdminLessonsPage() {
 
                             {/* Chapters */}
                             {expandedCourses.has(course.id) && (
-                                <div className="divide-y divide-slate-700">
+                                <div className="divide-y divide-slate-200">
                                     {course.chapters?.map(
                                         (chapter, chapterIdx) => (
                                             <div key={chapter.id}>
@@ -414,20 +414,20 @@ export default function AdminLessonsPage() {
                                                             chapter.id,
                                                         )
                                                     }
-                                                    className="w-full px-6 py-3 bg-slate-900/50 hover:bg-slate-900/70 transition flex items-center justify-between text-left"
+                                                    className="w-full px-6 py-3 bg-slate-50 hover:bg-slate-100 transition flex items-center justify-between text-left"
                                                 >
                                                     <div className="flex items-center gap-3 flex-1">
                                                         <div className="flex-shrink-0">
                                                             {expandedChapters.has(
                                                                 chapter.id,
                                                             ) ? (
-                                                                <ChevronDown className="w-4 h-4 text-indigo-400" />
+                                                                <ChevronDown className="w-4 h-4 text-blue-600" />
                                                             ) : (
-                                                                <ChevronRight className="w-4 h-4 text-slate-500" />
+                                                                <ChevronRight className="w-4 h-4 text-slate-400" />
                                                             )}
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <h4 className="font-medium text-slate-200">
+                                                            <h4 className="font-medium text-slate-800">
                                                                 Chương{" "}
                                                                 {chapterIdx + 1}
                                                                 :{" "}
@@ -435,7 +435,7 @@ export default function AdminLessonsPage() {
                                                             </h4>
                                                         </div>
                                                     </div>
-                                                    <span className="text-xs text-slate-400 bg-slate-700/50 px-2.5 py-1 rounded-full whitespace-nowrap ml-4 flex-shrink-0">
+                                                    <span className="text-xs text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-full whitespace-nowrap ml-4 flex-shrink-0">
                                                         {chapter.lessons
                                                             ?.length || 0}{" "}
                                                         bài
@@ -446,7 +446,7 @@ export default function AdminLessonsPage() {
                                                 {expandedChapters.has(
                                                     chapter.id,
                                                 ) && (
-                                                    <div className="bg-slate-950/50 divide-y divide-slate-700">
+                                                    <div className="bg-white divide-y divide-slate-100">
                                                         {chapter.lessons?.map(
                                                             (
                                                                 lesson,
@@ -463,23 +463,23 @@ export default function AdminLessonsPage() {
                                                                             lesson.id
                                                                         }
                                                                         href={`/admin/lessons/${lesson.id}/edit`}
-                                                                        className="px-6 py-3 flex items-center justify-between hover:bg-slate-900/50 transition group"
+                                                                        className="px-6 py-3 flex items-center justify-between hover:bg-blue-50/60 transition group"
                                                                     >
                                                                         <div className="flex items-center gap-3 flex-1 min-w-0">
                                                                             <div className="flex-shrink-0">
                                                                                 {contentExists ? (
-                                                                                    <div className="w-6 h-6 rounded-full bg-green-500/20 border border-green-500/50 flex items-center justify-center">
-                                                                                        <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                                                                                    <div className="w-6 h-6 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+                                                                                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
                                                                                     </div>
                                                                                 ) : (
-                                                                                    <div className="w-6 h-6 rounded-full bg-slate-700/50 border border-slate-600 flex items-center justify-center">
-                                                                                        <Circle className="w-3.5 h-3.5 text-slate-500" />
+                                                                                    <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
+                                                                                        <Circle className="w-3.5 h-3.5 text-slate-400" />
                                                                                     </div>
                                                                                 )}
                                                                             </div>
                                                                             <div className="min-w-0 flex-1">
                                                                                 <div className="flex items-center gap-2">
-                                                                                    <p className="text-sm text-slate-300 group-hover:text-indigo-400 transition font-medium truncate">
+                                                                                    <p className="text-sm text-slate-700 group-hover:text-blue-700 transition font-medium truncate">
                                                                                         Bài{" "}
                                                                                         {lessonIdx +
                                                                                             1}
@@ -489,19 +489,19 @@ export default function AdminLessonsPage() {
                                                                                         }
                                                                                     </p>
                                                                                     {lesson.is_published ? (
-                                                                                        <span className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded whitespace-nowrap flex-shrink-0">
+                                                                                        <span className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded whitespace-nowrap flex-shrink-0">
                                                                                             Đã
                                                                                             Xuất
                                                                                             Bản
                                                                                         </span>
                                                                                     ) : (
-                                                                                        <span className="text-xs px-2 py-1 bg-slate-700/50 text-slate-400 rounded whitespace-nowrap flex-shrink-0">
+                                                                                        <span className="text-xs px-2 py-1 bg-slate-100 text-slate-500 border border-slate-200 rounded whitespace-nowrap flex-shrink-0">
                                                                                             Nháp
                                                                                         </span>
                                                                                     )}
                                                                                 </div>
                                                                                 {contentExists && (
-                                                                                    <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
+                                                                                    <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
                                                                                         <CheckCircle className="w-3 h-3" />
                                                                                         Có
                                                                                         nội
@@ -511,7 +511,7 @@ export default function AdminLessonsPage() {
                                                                                 )}
                                                                             </div>
                                                                         </div>
-                                                                        <Edit2 className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition flex-shrink-0 ml-4" />
+                                                                        <Edit2 className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition flex-shrink-0 ml-4" />
                                                                     </Link>
                                                                 );
                                                             },

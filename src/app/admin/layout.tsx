@@ -43,7 +43,7 @@ export default function AdminLayout({
 
     if (!mounted || isLoading) {
         return (
-            <PageLoading message="Đang kiểm tra quyền truy cập..." bg="dark" />
+            <PageLoading message="Đang kiểm tra quyền truy cập..." bg="light" />
         );
     }
 
@@ -59,10 +59,10 @@ export default function AdminLayout({
 
     if (!hasAccess) {
         return (
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
                 <div className="text-center max-w-md">
                     <div className="mb-6">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500/20 rounded-full border border-red-500/30">
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full border border-red-200">
                             <svg
                                 className="w-8 h-8 text-red-500"
                                 fill="none"
@@ -78,16 +78,16 @@ export default function AdminLayout({
                             </svg>
                         </div>
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-100 mb-2">
+                    <h2 className="text-2xl font-bold text-slate-900 mb-2">
                         Truy Cập Bị Từ Chối
                     </h2>
-                    <p className="text-slate-400 mb-6">
+                    <p className="text-slate-600 mb-6">
                         Bạn không có quyền truy cập trang admin. Chỉ admin và
                         instructor mới có thể sử dụng chức năng này.
                     </p>
                     <button
                         onClick={() => router.push("/")}
-                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition font-medium"
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium"
                     >
                         Quay Lại Trang Chủ
                     </button>
@@ -124,15 +124,15 @@ export default function AdminLayout({
 
     return (
         <ToastProvider>
-            <div className="min-h-screen bg-slate-950 flex">
+            <div className="min-h-screen bg-slate-50 flex">
                 {/* Sidebar */}
                 <aside
-                    className={`fixed left-0 top-0 h-screen bg-slate-900 border-r border-slate-800 transition-all duration-300 z-40 ${
+                    className={`fixed left-0 top-0 h-screen bg-white border-r border-slate-200 transition-all duration-300 z-40 ${
                         sidebarOpen ? "w-64" : "w-20"
                     }`}
                 >
                     {/* Sidebar Header */}
-                    <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800">
+                    <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
                         {sidebarOpen && (
                             <Link
                                 href="/"
@@ -145,14 +145,14 @@ export default function AdminLayout({
                                     height={32}
                                     className="w-8 h-8 rounded"
                                 />
-                                <span className="text-lg font-bold text-slate-100">
+                                <span className="text-lg font-bold text-slate-900">
                                     Admin
                                 </span>
                             </Link>
                         )}
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="p-2 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-slate-200"
+                            className="p-2 hover:bg-slate-100 rounded-lg transition text-slate-500 hover:text-slate-900"
                         >
                             {sidebarOpen ? (
                                 <ChevronLeft className="w-5 h-5" />
@@ -174,8 +174,8 @@ export default function AdminLayout({
                                     href={item.href}
                                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                                         active
-                                            ? "bg-indigo-600/20 text-indigo-400 border border-indigo-600/30"
-                                            : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                                     }`}
                                 >
                                     <Icon className="w-5 h-5 flex-shrink-0" />
@@ -190,13 +190,13 @@ export default function AdminLayout({
                     </nav>
 
                     {/* User Section */}
-                    <div className="border-t border-slate-800 p-3 space-y-2">
+                    <div className="border-t border-slate-200 p-3 space-y-2">
                         {sidebarOpen && (
-                            <div className="px-3 py-2 bg-slate-800/50 rounded-lg mb-2">
-                                <p className="text-xs text-slate-400 uppercase font-semibold tracking-wide">
+                            <div className="px-3 py-2 bg-slate-50 rounded-lg mb-2">
+                                <p className="text-xs text-slate-500 uppercase font-semibold tracking-wide">
                                     Đăng nhập
                                 </p>
-                                <p className="text-sm text-slate-100 font-medium mt-1">
+                                <p className="text-sm text-slate-900 font-medium mt-1">
                                     {user?.full_name}
                                 </p>
                                 <p className="text-xs text-slate-500">
@@ -209,7 +209,7 @@ export default function AdminLayout({
                                 logout();
                                 router.push("/");
                             }}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-600/20 transition-all duration-200 ${
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 ${
                                 sidebarOpen ? "" : "justify-center"
                             }`}
                         >
@@ -228,9 +228,9 @@ export default function AdminLayout({
                     className={`flex-1 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-20"} flex flex-col`}
                 >
                     {/* Top Bar */}
-                    <div className="sticky top-0 z-50 h-16 bg-slate-900/80 backdrop-blur-sm border-b border-slate-800 flex items-center justify-between px-6 flex-shrink-0">
+                    <div className="sticky top-0 z-50 h-16 bg-white/80 backdrop-blur-sm border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
                         <div className="flex items-center gap-3">
-                            <h1 className="text-lg font-semibold text-slate-100">
+                            <h1 className="text-lg font-semibold text-slate-900">
                                 {navigationItems.find((item) =>
                                     isActive(item.href),
                                 )?.label || "Admin"}
@@ -241,7 +241,7 @@ export default function AdminLayout({
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => router.push("/")}
-                                className="flex items-center gap-2 px-4 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition text-sm font-medium"
+                                className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition text-sm font-medium"
                             >
                                 <Home className="w-4 h-4" />
                                 <span className="hidden sm:inline">

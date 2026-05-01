@@ -13,61 +13,80 @@ import {
     BarChart,
     CartesianGrid,
     Cell,
-    Legend,
-    ResponsiveContainer,
-    Tooltip,
     XAxis,
     YAxis,
 } from "recharts";
+import {
+    type ChartConfig,
+    ChartContainer,
+    ChartLegend,
+    ChartLegendContent,
+    ChartTooltip,
+    ChartTooltipContent,
+} from "@/components/ui/chart";
 
-const CHART_COLORS = ["#818cf8", "#6366f1", "#4f46e5", "#4338ca", "#3730a3"];
-
-function CustomTooltip({ active, payload, label }: any) {
-    if (!active || !payload?.length) return null;
-    return (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 shadow-xl">
-            <p className="text-xs text-slate-400 mb-1">{label}</p>
-            {payload.map((entry: any, idx: number) => (
-                <p key={idx} className="text-sm font-medium text-slate-100">
-                    <span style={{ color: entry.color }}>● </span>
-                    {entry.name}:{" "}
-                    <span className="font-semibold">{entry.value}</span>
-                </p>
-            ))}
-        </div>
-    );
-}
+const CHART_COLORS = ["#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8", "#1e40af"];
 
 interface EnrollmentsChartProps {
     data: Array<{ name: string; enrollments: number }>;
 }
 
+const enrollmentsChartConfig = {
+    enrollments: {
+        label: "Ghi danh",
+        color: "var(--chart-2)",
+    },
+} satisfies ChartConfig;
+
+const courseContentChartConfig = {
+    lessons: {
+        label: "Tổng bài",
+        color: "var(--chart-3)",
+    },
+    published: {
+        label: "Đã xuất bản",
+        color: "var(--chart-1)",
+    },
+    content: {
+        label: "Có nội dung",
+        color: "var(--chart-5)",
+    },
+} satisfies ChartConfig;
+
 export function EnrollmentsByCourseChart({ data }: EnrollmentsChartProps) {
     return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ChartContainer
+            config={enrollmentsChartConfig}
+            className="h-full w-full"
+        >
             <BarChart data={data} barSize={32}>
                 <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="#1e293b"
+                    stroke="#e2e8f0"
                     vertical={false}
                 />
                 <XAxis
                     dataKey="name"
-                    stroke="#64748b"
+                    stroke="#94a3b8"
                     fontSize={11}
                     tickLine={false}
-                    axisLine={{ stroke: "#334155" }}
+                    axisLine={{ stroke: "#cbd5e1" }}
                 />
                 <YAxis
-                    stroke="#64748b"
+                    stroke="#94a3b8"
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
                     allowDecimals={false}
                 />
-                <Tooltip
-                    content={<CustomTooltip />}
-                    cursor={{ fill: "rgba(99, 102, 241, 0.08)" }}
+                <ChartTooltip
+                    content={
+                        <ChartTooltipContent
+                            hideLabel
+                            className="border-slate-200 bg-white shadow-lg"
+                        />
+                    }
+                    cursor={{ fill: "rgba(37, 99, 235, 0.06)" }}
                 />
                 <Bar
                     dataKey="enrollments"
@@ -82,7 +101,7 @@ export function EnrollmentsByCourseChart({ data }: EnrollmentsChartProps) {
                     ))}
                 </Bar>
             </BarChart>
-        </ResponsiveContainer>
+        </ChartContainer>
     );
 }
 
@@ -97,55 +116,59 @@ interface CourseContentChartProps {
 
 export function CourseContentStatsChart({ data }: CourseContentChartProps) {
     return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ChartContainer
+            config={courseContentChartConfig}
+            className="h-full w-full"
+        >
             <BarChart data={data} barSize={14}>
                 <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="#1e293b"
+                    stroke="#e2e8f0"
                     vertical={false}
                 />
                 <XAxis
                     dataKey="name"
-                    stroke="#64748b"
+                    stroke="#94a3b8"
                     fontSize={11}
                     tickLine={false}
-                    axisLine={{ stroke: "#334155" }}
+                    axisLine={{ stroke: "#cbd5e1" }}
                 />
                 <YAxis
-                    stroke="#64748b"
+                    stroke="#94a3b8"
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
                     allowDecimals={false}
                 />
-                <Tooltip
-                    content={<CustomTooltip />}
-                    cursor={{ fill: "rgba(99, 102, 241, 0.08)" }}
+                <ChartTooltip
+                    content={
+                        <ChartTooltipContent
+                            indicator="dashed"
+                            className="border-slate-200 bg-white shadow-lg"
+                        />
+                    }
+                    cursor={{ fill: "rgba(37, 99, 235, 0.06)" }}
                 />
-                <Legend
-                    wrapperStyle={{ fontSize: "11px", color: "#94a3b8" }}
-                    iconSize={8}
-                    iconType="circle"
-                />
+                <ChartLegend content={<ChartLegendContent />} />
                 <Bar
                     dataKey="lessons"
                     name="Tổng bài"
-                    fill="#818cf8"
+                    fill="var(--color-lessons)"
                     radius={[4, 4, 0, 0]}
                 />
                 <Bar
                     dataKey="published"
                     name="Đã xuất bản"
-                    fill="#34d399"
+                    fill="var(--color-published)"
                     radius={[4, 4, 0, 0]}
                 />
                 <Bar
                     dataKey="content"
                     name="Có nội dung"
-                    fill="#fbbf24"
+                    fill="var(--color-content)"
                     radius={[4, 4, 0, 0]}
                 />
             </BarChart>
-        </ResponsiveContainer>
+        </ChartContainer>
     );
 }

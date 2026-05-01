@@ -5,14 +5,14 @@
  */
 export default function AdminLoading() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
             <div className="text-center">
                 <div
-                    className="h-10 w-10 rounded-full border-4 border-slate-800 border-t-indigo-400 animate-spin mx-auto mb-4"
+                    className="h-10 w-10 rounded-full border-4 border-slate-200 border-t-blue-600 animate-spin mx-auto mb-4"
                     role="status"
                     aria-label="Đang tải"
                 />
-                <p className="text-sm font-medium text-slate-300">
+                <p className="text-sm font-medium text-slate-600">
                     Đang tải bảng điều khiển...
                 </p>
             </div>
