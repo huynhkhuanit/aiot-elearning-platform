@@ -46,55 +46,70 @@ const stateConfig: Record<
 > = {
     safe: {
         label: "An toàn",
-        tone: "border-emerald-400/20 bg-emerald-500/15 text-emerald-100",
+        tone: "border-emerald-200 bg-emerald-50 text-emerald-700",
         dotColor: "bg-emerald-400",
-        progressColor: "#34d399",
-        cameraBorder: "border-slate-800",
+        progressColor: "#10b981",
+        cameraBorder: "border-slate-200",
     },
     near_face: {
         label: "Tay gần mặt",
-        tone: "border-amber-400/20 bg-amber-500/15 text-amber-100",
+        tone: "border-amber-200 bg-amber-50 text-amber-700",
         dotColor: "bg-amber-400",
         progressColor: "#f59e0b",
-        cameraBorder: "border-amber-400/35",
+        cameraBorder: "border-amber-200",
     },
     touching_face: {
         label: "Đang chạm mặt",
-        tone: "border-rose-400/25 bg-rose-500/15 text-rose-100",
+        tone: "border-rose-200 bg-rose-50 text-rose-700",
         dotColor: "bg-rose-400",
-        progressColor: "#fb7185",
-        cameraBorder: "border-rose-400/40",
+        progressColor: "#e11d48",
+        cameraBorder: "border-rose-200",
     },
 };
 
 const shellStyle = {
-    backgroundColor: "#0a0f1a",
-    color: "#f8fafc",
+    backgroundColor: "#f7f9fc",
+    color: "#0f172a",
 } satisfies CSSProperties;
 
 const headerStyle = {
-    backgroundColor: "#0a0f1a",
-    color: "#f8fafc",
+    backgroundColor: "#f7f9fc",
+    color: "#0f172a",
 } satisfies CSSProperties;
 
 const panelStyle = {
-    backgroundColor: "#0f172a",
-    color: "#e2e8f0",
+    backgroundColor: "#ffffff",
+    color: "#0f172a",
 } satisfies CSSProperties;
 
 const cameraStyle = {
-    backgroundColor: "#111827",
-    color: "#cbd5e1",
+    backgroundColor: "#f1f5f9",
+    color: "#334155",
 } satisfies CSSProperties;
 
 const neutralAlertStyle = {
-    backgroundColor: "#0f172a",
-    color: "#cbd5e1",
+    backgroundColor: "#ffffff",
+    color: "#334155",
 } satisfies CSSProperties;
 
 const activeAlertStyle = {
-    backgroundColor: "#3f1720",
-    color: "#fecdd3",
+    backgroundColor: "#fff1f2",
+    color: "#9f1239",
+} satisfies CSSProperties;
+
+const systemPrimaryTextStyle = {
+    color: "var(--primary-gradient-from, #6366f1)",
+} satisfies CSSProperties;
+
+const systemIconSurfaceStyle = {
+    backgroundColor: "rgba(99, 102, 241, 0.1)",
+    color: "var(--primary-gradient-from, #6366f1)",
+} satisfies CSSProperties;
+
+const primaryButtonStyle = {
+    background:
+        "linear-gradient(135deg, var(--primary-gradient-from, #6366f1), var(--primary-gradient-to, #9333ea))",
+    color: "#ffffff",
 } satisfies CSSProperties;
 
 export function FaceTouchAlertTool() {
@@ -138,11 +153,11 @@ export function FaceTouchAlertTool() {
                   : liveStateConfig.label;
     const statusTone =
         detectorState === "error"
-            ? "border-rose-400/25 bg-rose-500/15 text-rose-100"
+            ? "border-rose-200 bg-rose-50 text-rose-700"
             : serviceState === "offline"
-              ? "border-amber-400/20 bg-amber-500/15 text-amber-100"
+              ? "border-amber-200 bg-amber-50 text-amber-700"
               : serviceState === "checking"
-                ? "border-sky-400/20 bg-sky-500/15 text-sky-100"
+                ? "border-indigo-200 bg-indigo-50 text-indigo-700"
                 : liveStateConfig.tone;
     const statusDot =
         detectorState === "error"
@@ -165,14 +180,14 @@ export function FaceTouchAlertTool() {
             style={shellStyle}
         >
             <header
-                className="sticky top-0 border-b border-slate-800 px-4 py-3 sm:px-6"
+                className="sticky top-0 border-b border-slate-200 px-4 py-3 sm:px-6"
                 style={headerStyle}
             >
                 <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
                         <div
-                            className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[#13b6ec]/25 text-[#13b6ec]"
-                            style={{ backgroundColor: "rgba(19, 182, 236, 0.12)" }}
+                            className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-indigo-200"
+                            style={systemIconSurfaceStyle}
                         >
                             <ScanFace className="size-5" aria-hidden="true" />
                         </div>
@@ -181,11 +196,11 @@ export function FaceTouchAlertTool() {
                                 role="heading"
                                 aria-level={1}
                                 className="truncate text-base font-semibold tracking-tight"
-                                style={{ color: "#f8fafc" }}
+                                style={{ color: "#0f172a" }}
                             >
                                 Face Touch Alert
                             </div>
-                            <p className="text-xs text-slate-400">
+                            <p className="text-xs text-slate-600">
                                 Camera realtime
                             </p>
                         </div>
@@ -201,7 +216,7 @@ export function FaceTouchAlertTool() {
                                     ? "Tắt âm thanh cảnh báo"
                                     : "Bật âm thanh cảnh báo"
                             }
-                            className="cursor-pointer border-slate-700 text-slate-100 hover:bg-slate-800 hover:text-slate-50"
+                            className="cursor-pointer border-slate-200 text-slate-700 shadow-sm hover:bg-slate-50"
                             style={panelStyle}
                             onClick={() => setAudioEnabled((value) => !value)}
                         >
@@ -219,7 +234,7 @@ export function FaceTouchAlertTool() {
                                     variant="outline"
                                     size="icon-sm"
                                     aria-label="Mở cài đặt"
-                                    className="cursor-pointer border-slate-700 text-slate-100 hover:bg-slate-800 hover:text-slate-50"
+                                    className="cursor-pointer border-slate-200 text-slate-700 shadow-sm hover:bg-slate-50"
                                     style={panelStyle}
                                 >
                                     <Settings
@@ -230,12 +245,12 @@ export function FaceTouchAlertTool() {
                             </PopoverTrigger>
                             <PopoverContent
                                 align="end"
-                                className="w-72 border-slate-700 p-4 shadow-xl"
+                                className="w-72 border-slate-200 p-4 shadow-xl"
                                 style={panelStyle}
                             >
                                 <PopoverHeader>
                                     <PopoverTitle>Cài đặt nhanh</PopoverTitle>
-                                    <PopoverDescription className="text-xs text-slate-400">
+                                    <PopoverDescription className="text-xs text-slate-600">
                                         Điều chỉnh nhịp lấy mẫu và trạng thái phiên.
                                     </PopoverDescription>
                                 </PopoverHeader>
@@ -243,10 +258,13 @@ export function FaceTouchAlertTool() {
                                 <div className="mt-4 space-y-4">
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between text-xs">
-                                            <span className="font-medium text-slate-300">
+                                            <span className="font-medium text-slate-700">
                                                 Sample rate
                                             </span>
-                                            <span className="font-semibold text-[#13b6ec]">
+                                            <span
+                                                className="font-semibold"
+                                                style={systemPrimaryTextStyle}
+                                            >
                                                 {sampleRate[0]} FPS
                                             </span>
                                         </div>
@@ -263,7 +281,7 @@ export function FaceTouchAlertTool() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            className="cursor-pointer border-slate-700 text-slate-100 hover:bg-slate-800 hover:text-slate-50"
+                                            className="cursor-pointer border-slate-200 text-slate-700 hover:bg-slate-50"
                                             style={panelStyle}
                                             onClick={checkServiceHealth}
                                         >
@@ -288,7 +306,7 @@ export function FaceTouchAlertTool() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            className="cursor-pointer border-slate-700 text-slate-100 hover:bg-slate-800 hover:text-slate-50"
+                                            className="cursor-pointer border-slate-200 text-slate-700 hover:bg-slate-50"
                                             style={panelStyle}
                                             onClick={resetCounters}
                                         >
@@ -309,7 +327,7 @@ export function FaceTouchAlertTool() {
             <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
                 <section
                     className={cn(
-                        "overflow-hidden rounded-xl border bg-slate-950 transition-colors duration-300",
+                        "overflow-hidden rounded-xl border shadow-sm transition-colors duration-300",
                         liveStateConfig.cameraBorder,
                     )}
                     style={panelStyle}
@@ -336,7 +354,7 @@ export function FaceTouchAlertTool() {
                                 style={cameraStyle}
                             >
                                 <div
-                                    className="flex size-14 items-center justify-center rounded-full border border-slate-700 text-slate-400"
+                                    className="flex size-14 items-center justify-center rounded-full border border-slate-200 text-slate-500"
                                     style={panelStyle}
                                 >
                                     <CameraOff
@@ -344,7 +362,7 @@ export function FaceTouchAlertTool() {
                                         aria-hidden="true"
                                     />
                                 </div>
-                                <p className="max-w-56 text-sm leading-6 text-slate-300">
+                                <p className="max-w-56 text-sm leading-6 text-slate-600">
                                     Bật camera để bắt đầu theo dõi chạm mặt.
                                 </p>
                             </div>
@@ -372,20 +390,20 @@ export function FaceTouchAlertTool() {
                 </section>
 
                 <section
-                    className="rounded-xl border border-slate-800 p-4"
+                    className="rounded-xl border border-slate-200 p-4 shadow-sm"
                     style={panelStyle}
                 >
                     <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-medium text-slate-200">
+                        <span className="text-sm font-medium text-slate-700">
                             Contact Score
                         </span>
-                        <span className="text-sm font-semibold text-slate-50">
+                        <span className="text-sm font-semibold text-slate-900">
                             {formatPercent(displayScore)}
                         </span>
                     </div>
                     <Progress
                         value={contactScorePercent}
-                        className="mt-3 h-2 bg-slate-800"
+                        className="mt-3 h-2 bg-slate-200"
                         style={progressStyle}
                     />
                 </section>
@@ -412,21 +430,21 @@ export function FaceTouchAlertTool() {
                     className={cn(
                         "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm",
                         alertCount > 0
-                            ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
-                            : "border-slate-800 bg-slate-950/70 text-slate-500",
+                            ? "border-rose-200 text-rose-700"
+                            : "border-slate-200 text-slate-700",
                     )}
                     style={alertCount > 0 ? activeAlertStyle : neutralAlertStyle}
                 >
                     <BellRing
                         className={cn(
                             "size-4 shrink-0",
-                            alertCount > 0 ? "text-rose-300" : "text-slate-600",
+                            alertCount > 0 ? "text-rose-600" : "text-slate-500",
                         )}
                         aria-hidden="true"
                     />
                         <span>
                             Cảnh báo chạm mặt:{" "}
-                        <strong className="font-semibold text-slate-50">
+                        <strong className="font-semibold text-slate-900">
                             {alertCount}
                         </strong>{" "}
                         lần trong phiên này
@@ -440,9 +458,10 @@ export function FaceTouchAlertTool() {
                     className={cn(
                         "h-12 w-full cursor-pointer rounded-xl text-base font-semibold",
                         cameraActive
-                            ? "border-rose-400/20 bg-rose-500/15 text-rose-100 hover:bg-rose-500/25"
-                            : "bg-[#13b6ec] text-slate-950 hover:bg-[#13b6ec]/90",
+                            ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                            : "border-transparent shadow-sm hover:opacity-95",
                     )}
+                    style={cameraActive ? undefined : primaryButtonStyle}
                     onClick={toggleCamera}
                     disabled={isStarting}
                 >
@@ -486,14 +505,14 @@ function MetricTile({
 }) {
     return (
         <div
-            className="min-w-0 rounded-lg border border-slate-800 p-3"
+            className="min-w-0 rounded-lg border border-slate-200 p-3 shadow-sm"
             style={panelStyle}
         >
-            <div className="flex items-center gap-2 text-slate-400">
+            <div className="flex items-center gap-2 text-slate-600">
                 <Icon className="size-4 shrink-0" aria-hidden="true" />
                 <span className="truncate text-xs font-medium">{label}</span>
             </div>
-            <p className="mt-2 truncate text-base font-semibold text-slate-50">
+            <p className="mt-2 truncate text-base font-semibold text-slate-900">
                 {value}
             </p>
         </div>
@@ -512,14 +531,14 @@ function InlineMessage({
             className={cn(
                 "flex items-start gap-3 rounded-xl border px-4 py-3 text-sm leading-6",
                 tone === "warning"
-                    ? "border-amber-400/20 bg-amber-500/10 text-amber-100"
-                    : "border-rose-400/20 bg-rose-500/10 text-rose-100",
+                    ? "border-amber-200 bg-amber-50 text-amber-800"
+                    : "border-rose-200 bg-rose-50 text-rose-800",
             )}
         >
             <AlertTriangle
                 className={cn(
                     "mt-0.5 size-4 shrink-0",
-                    tone === "warning" ? "text-amber-300" : "text-rose-300",
+                    tone === "warning" ? "text-amber-600" : "text-rose-600",
                 )}
                 aria-hidden="true"
             />
