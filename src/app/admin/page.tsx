@@ -39,7 +39,7 @@ const EnrollmentsByCourseChart = dynamic(
         ssr: false,
         loading: () => (
             <div className="h-full flex items-center justify-center">
-                <Loader className="w-8 h-8 text-indigo-500 animate-spin" />
+                <Loader className="w-8 h-8 text-blue-600 animate-spin" />
             </div>
         ),
     },
@@ -53,7 +53,7 @@ const CourseContentStatsChart = dynamic(
         ssr: false,
         loading: () => (
             <div className="h-full flex items-center justify-center">
-                <Loader className="w-8 h-8 text-indigo-500 animate-spin" />
+                <Loader className="w-8 h-8 text-blue-600 animate-spin" />
             </div>
         ),
     },
@@ -127,10 +127,10 @@ interface DashboardData {
 
 function LiveIndicator() {
     return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 rounded-full text-xs font-medium text-emerald-400">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-medium text-emerald-700">
             <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
             </span>
             Live
         </span>
@@ -157,50 +157,50 @@ function StatCard({
         { bg: string; text: string; hoverBg: string }
     > = {
         blue: {
-            bg: "bg-blue-500/15",
-            text: "text-blue-400",
-            hoverBg: "group-hover:bg-blue-500/25",
+            bg: "bg-blue-100",
+            text: "text-blue-600",
+            hoverBg: "group-hover:bg-blue-200",
         },
         indigo: {
-            bg: "bg-indigo-500/15",
-            text: "text-indigo-400",
-            hoverBg: "group-hover:bg-indigo-500/25",
+            bg: "bg-blue-100",
+            text: "text-blue-600",
+            hoverBg: "group-hover:bg-blue-200",
         },
         emerald: {
-            bg: "bg-emerald-500/15",
-            text: "text-emerald-400",
-            hoverBg: "group-hover:bg-emerald-500/25",
+            bg: "bg-emerald-100",
+            text: "text-emerald-600",
+            hoverBg: "group-hover:bg-emerald-200",
         },
         amber: {
-            bg: "bg-amber-500/15",
-            text: "text-amber-400",
-            hoverBg: "group-hover:bg-amber-500/25",
+            bg: "bg-amber-100",
+            text: "text-amber-700",
+            hoverBg: "group-hover:bg-amber-200",
         },
         pink: {
-            bg: "bg-pink-500/15",
-            text: "text-pink-400",
-            hoverBg: "group-hover:bg-pink-500/25",
+            bg: "bg-pink-100",
+            text: "text-pink-600",
+            hoverBg: "group-hover:bg-pink-200",
         },
         cyan: {
-            bg: "bg-cyan-500/15",
-            text: "text-cyan-400",
-            hoverBg: "group-hover:bg-cyan-500/25",
+            bg: "bg-sky-100",
+            text: "text-sky-600",
+            hoverBg: "group-hover:bg-sky-200",
         },
         violet: {
-            bg: "bg-violet-500/15",
-            text: "text-violet-400",
-            hoverBg: "group-hover:bg-violet-500/25",
+            bg: "bg-blue-100",
+            text: "text-blue-600",
+            hoverBg: "group-hover:bg-blue-200",
         },
         rose: {
-            bg: "bg-rose-500/15",
-            text: "text-rose-400",
-            hoverBg: "group-hover:bg-rose-500/25",
+            bg: "bg-rose-100",
+            text: "text-rose-600",
+            hoverBg: "group-hover:bg-rose-200",
         },
     };
     const c = colorMap[color] || colorMap.blue;
 
     return (
-        <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/80 transition-all duration-300 group backdrop-blur-sm">
+        <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 hover:shadow-md hover:border-slate-300 transition-all duration-300 group">
             <div className="flex items-center justify-between mb-3">
                 <div
                     className={`p-2.5 ${c.bg} ${c.hoverBg} rounded-lg transition-colors duration-300`}
@@ -212,9 +212,9 @@ function StatCard({
                 </span>
             </div>
             <div className="space-y-1">
-                <p className="text-3xl font-bold text-slate-100 tracking-tight">
+                <p className="text-3xl font-bold text-slate-900 tracking-tight">
                     {loading ? (
-                        <span className="inline-block w-16 h-8 bg-slate-700/50 rounded animate-pulse" />
+                        <span className="inline-block w-16 h-8 bg-slate-200 rounded animate-pulse" />
                     ) : (
                         value
                     )}
@@ -233,10 +233,10 @@ function StarRating({ rating }: { rating: number }) {
             {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                     key={star}
-                    className={`w-3.5 h-3.5 ${star <= Math.round(rating) ? "text-amber-400 fill-amber-400" : "text-slate-600"}`}
+                    className={`w-3.5 h-3.5 ${star <= Math.round(rating) ? "text-amber-500 fill-amber-500" : "text-slate-300"}`}
                 />
             ))}
-            <span className="ml-1 text-sm font-semibold text-amber-400">
+            <span className="ml-1 text-sm font-semibold text-amber-600">
                 {rating}
             </span>
         </div>
@@ -384,8 +384,8 @@ export default function AdminDashboard() {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <Loader className="w-12 h-12 text-indigo-500 animate-spin mx-auto mb-4" />
-                    <p className="text-slate-300">Đang xác thực...</p>
+                    <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+                    <p className="text-slate-600">Đang xác thực...</p>
                 </div>
             </div>
         );
@@ -404,12 +404,12 @@ export default function AdminDashboard() {
           ================================================ */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-100 tracking-tight">
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
                         Dashboard Quản Trị
                     </h1>
-                    <p className="text-slate-400 text-sm mt-1">
+                    <p className="text-slate-500 text-sm mt-1">
                         Xin chào,{" "}
-                        <span className="text-slate-200 font-medium">
+                        <span className="text-slate-900 font-medium">
                             {user?.full_name}
                         </span>
                     </p>
@@ -419,15 +419,15 @@ export default function AdminDashboard() {
                     <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500">
                         <Clock className="w-3.5 h-3.5" />
                         <span>{formatDate(currentTime)}</span>
-                        <span className="text-slate-600">|</span>
-                        <span className="font-mono text-slate-400">
+                        <span className="text-slate-400">|</span>
+                        <span className="font-mono text-slate-700">
                             {formatTime(currentTime)}
                         </span>
                     </div>
                     <button
                         onClick={() => fetchStats(true)}
                         disabled={isRefreshing}
-                        className="p-2 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-slate-200 disabled:opacity-50"
+                        className="p-2 hover:bg-slate-100 rounded-lg transition text-slate-500 hover:text-slate-900 disabled:opacity-50"
                         title="Làm mới dữ liệu"
                     >
                         <RefreshCw
@@ -439,17 +439,17 @@ export default function AdminDashboard() {
 
             {/* Error State */}
             {error && (
-                <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
                     <div>
-                        <p className="text-red-300 font-medium text-sm">
+                        <p className="text-red-800 font-medium text-sm">
                             Lỗi khi tải dữ liệu
                         </p>
-                        <p className="text-red-400 text-xs">{error}</p>
+                        <p className="text-red-600 text-xs">{error}</p>
                     </div>
                     <button
                         onClick={() => fetchStats()}
-                        className="ml-auto text-xs text-red-300 hover:text-red-200 underline"
+                        className="ml-auto text-xs text-red-700 hover:text-red-800 underline"
                     >
                         Thử lại
                     </button>
@@ -459,7 +459,7 @@ export default function AdminDashboard() {
             {/* ================================================
           KPI ROW 1: Users, Courses, Enrollments, Revenue
           ================================================ */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <StatCard
                     icon={Users}
                     label="Người dùng"
@@ -499,7 +499,7 @@ export default function AdminDashboard() {
             {/* ================================================
           KPI ROW 2: Blog, Reviews, Lessons, Completion
           ================================================ */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <StatCard
                     icon={FileText}
                     label="Bài viết"
@@ -510,19 +510,19 @@ export default function AdminDashboard() {
                 />
 
                 {/* Reviews with star rating */}
-                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/80 transition-all duration-300 group backdrop-blur-sm">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 hover:shadow-md hover:border-slate-300 transition-all duration-300 group">
                     <div className="flex items-center justify-between mb-3">
-                        <div className="p-2.5 bg-cyan-500/15 group-hover:bg-cyan-500/25 rounded-lg transition-colors duration-300">
-                            <MessageSquare className="w-5 h-5 text-cyan-400" />
+                        <div className="p-2.5 bg-sky-100 group-hover:bg-sky-200 rounded-lg transition-colors duration-300">
+                            <MessageSquare className="w-5 h-5 text-sky-600" />
                         </div>
                         <span className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
                             Đánh giá
                         </span>
                     </div>
                     <div className="space-y-2">
-                        <p className="text-3xl font-bold text-slate-100 tracking-tight">
+                        <p className="text-3xl font-bold text-slate-900 tracking-tight">
                             {loading ? (
-                                <span className="inline-block w-12 h-8 bg-slate-700/50 rounded animate-pulse" />
+                                <span className="inline-block w-12 h-8 bg-slate-200 rounded animate-pulse" />
                             ) : (
                                 (stats?.totalReviews ?? 0)
                             )}
@@ -543,24 +543,24 @@ export default function AdminDashboard() {
                 />
 
                 {/* Completion Rate with progress bar */}
-                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/80 transition-all duration-300 group backdrop-blur-sm">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 hover:shadow-md hover:border-slate-300 transition-all duration-300 group">
                     <div className="flex items-center justify-between mb-3">
-                        <div className="p-2.5 bg-rose-500/15 group-hover:bg-rose-500/25 rounded-lg transition-colors duration-300">
-                            <Activity className="w-5 h-5 text-rose-400" />
+                        <div className="p-2.5 bg-rose-100 group-hover:bg-rose-200 rounded-lg transition-colors duration-300">
+                            <Activity className="w-5 h-5 text-rose-600" />
                         </div>
                         <span className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
                             Nội dung
                         </span>
                     </div>
                     <div className="space-y-2">
-                        <p className="text-3xl font-bold text-slate-100 tracking-tight">
+                        <p className="text-3xl font-bold text-slate-900 tracking-tight">
                             {loading ? (
-                                <span className="inline-block w-16 h-8 bg-slate-700/50 rounded animate-pulse" />
+                                <span className="inline-block w-16 h-8 bg-slate-200 rounded animate-pulse" />
                             ) : (
                                 `${stats?.completionRate ?? 0}%`
                             )}
                         </p>
-                        <div className="w-full h-1.5 bg-slate-700/80 rounded-full overflow-hidden">
+                        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                             <div
                                 className="h-full bg-gradient-to-r from-rose-500 to-rose-400 transition-all duration-700 ease-out rounded-full"
                                 style={{
@@ -581,17 +581,17 @@ export default function AdminDashboard() {
           ================================================ */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Enrollments by Course */}
-                <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-base font-semibold text-slate-100">
+                        <h3 className="text-base font-semibold text-slate-900">
                             Ghi Danh Theo Khóa Học
                         </h3>
-                        <GraduationCap className="w-4 h-4 text-slate-500" />
+                        <GraduationCap className="w-4 h-4 text-slate-400" />
                     </div>
                     <div className="h-[280px] w-full">
                         {loading ? (
                             <div className="h-full flex items-center justify-center">
-                                <Loader className="w-8 h-8 text-indigo-500 animate-spin" />
+                                <Loader className="w-8 h-8 text-blue-600 animate-spin" />
                             </div>
                         ) : (
                             <EnrollmentsByCourseChart
@@ -602,17 +602,17 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Content per Course */}
-                <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-base font-semibold text-slate-100">
+                        <h3 className="text-base font-semibold text-slate-900">
                             Nội Dung Khóa Học
                         </h3>
-                        <BarChart3 className="w-4 h-4 text-slate-500" />
+                        <BarChart3 className="w-4 h-4 text-slate-400" />
                     </div>
                     <div className="h-[280px] w-full">
                         {loading ? (
                             <div className="h-full flex items-center justify-center">
-                                <Loader className="w-8 h-8 text-indigo-500 animate-spin" />
+                                <Loader className="w-8 h-8 text-blue-600 animate-spin" />
                             </div>
                         ) : (
                             <CourseContentStatsChart
@@ -628,12 +628,12 @@ export default function AdminDashboard() {
           ================================================ */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Recent Activity */}
-                <div className="lg:col-span-2 bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
+                <div className="lg:col-span-2 bg-white border border-slate-200 shadow-sm rounded-xl p-6">
                     <div className="flex items-center justify-between mb-5">
-                        <h3 className="text-base font-semibold text-slate-100">
+                        <h3 className="text-base font-semibold text-slate-900">
                             Hoạt Động Gần Đây
                         </h3>
-                        <Activity className="w-4 h-4 text-slate-500" />
+                        <Activity className="w-4 h-4 text-slate-400" />
                     </div>
 
                     {loading ? (
@@ -643,18 +643,18 @@ export default function AdminDashboard() {
                                     key={i}
                                     className="flex items-center gap-3"
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-slate-700/50 animate-pulse" />
+                                    <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse" />
                                     <div className="flex-1 space-y-1.5">
-                                        <div className="w-3/4 h-3 bg-slate-700/50 rounded animate-pulse" />
-                                        <div className="w-1/2 h-2.5 bg-slate-700/30 rounded animate-pulse" />
+                                        <div className="w-3/4 h-3 bg-slate-200 rounded animate-pulse" />
+                                        <div className="w-1/2 h-2.5 bg-slate-100 rounded animate-pulse" />
                                     </div>
                                 </div>
                             ))}
                         </div>
                     ) : recentActivity.length === 0 ? (
                         <div className="text-center py-10">
-                            <Activity className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                            <p className="text-sm text-slate-500">
+                            <Activity className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                            <p className="text-sm text-slate-400">
                                 Chưa có hoạt động nào
                             </p>
                         </div>
@@ -663,13 +663,13 @@ export default function AdminDashboard() {
                             {recentActivity.map((item, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors"
+                                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors"
                                 >
                                     <div
                                         className={`p-2 rounded-full flex-shrink-0 ${
                                             item.type === "enrollment"
-                                                ? "bg-indigo-500/15 text-indigo-400"
-                                                : "bg-amber-500/15 text-amber-400"
+                                                ? "bg-blue-100 text-blue-600"
+                                                : "bg-amber-100 text-amber-600"
                                         }`}
                                     >
                                         {item.type === "enrollment" ? (
@@ -679,22 +679,22 @@ export default function AdminDashboard() {
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm text-slate-200">
+                                        <p className="text-sm text-slate-900">
                                             <span className="font-medium">
                                                 {item.userName}
                                             </span>
                                             {item.type === "enrollment" ? (
-                                                <span className="text-slate-400">
+                                                <span className="text-slate-500">
                                                     {" "}
                                                     đã ghi danh khóa{" "}
                                                 </span>
                                             ) : (
-                                                <span className="text-slate-400">
+                                                <span className="text-slate-500">
                                                     {" "}
                                                     đã đánh giá khóa{" "}
                                                 </span>
                                             )}
-                                            <span className="font-medium text-indigo-400">
+                                            <span className="font-medium text-blue-600">
                                                 {item.courseName}
                                             </span>
                                         </p>
@@ -705,7 +705,7 @@ export default function AdminDashboard() {
                                                         (s) => (
                                                             <Star
                                                                 key={s}
-                                                                className={`w-3 h-3 ${s <= item.rating! ? "text-amber-400 fill-amber-400" : "text-slate-600"}`}
+                                                                className={`w-3 h-3 ${s <= item.rating! ? "text-amber-500 fill-amber-500" : "text-slate-300"}`}
                                                             />
                                                         ),
                                                     )}
@@ -729,12 +729,12 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6">
                     <div className="flex items-center justify-between mb-5">
-                        <h3 className="text-base font-semibold text-slate-100">
+                        <h3 className="text-base font-semibold text-slate-900">
                             Thao Tác Nhanh
                         </h3>
-                        <Zap className="w-4 h-4 text-slate-500" />
+                        <Zap className="w-4 h-4 text-slate-400" />
                     </div>
 
                     <div className="space-y-3">
@@ -769,11 +769,11 @@ export default function AdminDashboard() {
                             },
                         ].map((action) => {
                             const colorMap: Record<string, string> = {
-                                indigo: "hover:border-indigo-500/40 text-indigo-400",
-                                pink: "hover:border-pink-500/40 text-pink-400",
+                                indigo: "hover:border-blue-300 text-blue-600",
+                                pink: "hover:border-pink-300 text-pink-600",
                                 emerald:
-                                    "hover:border-emerald-500/40 text-emerald-400",
-                                amber: "hover:border-amber-500/40 text-amber-400",
+                                    "hover:border-emerald-300 text-emerald-600",
+                                amber: "hover:border-amber-300 text-amber-600",
                             };
                             const Icon = action.icon;
 
@@ -781,18 +781,18 @@ export default function AdminDashboard() {
                                 <Link
                                     key={action.href}
                                     href={action.href}
-                                    className={`flex items-center gap-3 p-3 rounded-lg border border-slate-700/40 hover:bg-slate-800/60 transition-all duration-200 group ${colorMap[action.color]}`}
+                                    className={`flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all duration-200 group ${colorMap[action.color]}`}
                                 >
                                     <Icon className="w-4.5 h-4.5 flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-slate-200">
+                                        <p className="text-sm font-medium text-slate-900">
                                             {action.label}
                                         </p>
                                         <p className="text-xs text-slate-500">
                                             {action.description}
                                         </p>
                                     </div>
-                                    <ArrowUpRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 transition" />
+                                    <ArrowUpRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition" />
                                 </Link>
                             );
                         })}
@@ -805,16 +805,16 @@ export default function AdminDashboard() {
             {/* ================================================
           INFO TIP
           ================================================ */}
-            <div className="p-5 bg-indigo-500/8 border border-indigo-500/20 rounded-xl">
+            <div className="p-5 bg-blue-50 border border-blue-200 rounded-xl">
                 <div className="flex items-start gap-3">
-                    <div className="p-2 bg-indigo-500/15 rounded-lg flex-shrink-0">
-                        <Lightbulb className="w-5 h-5 text-indigo-400" />
+                    <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                        <Lightbulb className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-semibold text-indigo-300 mb-0.5">
+                        <h3 className="text-sm font-semibold text-blue-800 mb-0.5">
                             Mẹo
                         </h3>
-                        <p className="text-xs text-indigo-200/80 leading-relaxed">
+                        <p className="text-xs text-blue-700 leading-relaxed">
                             Dashboard tự động cập nhật khi có ghi danh, đánh giá
                             hoặc thanh toán mới nhờ Supabase Realtime. Nhấn{" "}
                             <RefreshCw className="w-3 h-3 inline" /> để làm mới

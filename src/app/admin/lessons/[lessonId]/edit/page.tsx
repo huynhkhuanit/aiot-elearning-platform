@@ -28,7 +28,7 @@ import "@uiw/react-markdown-preview/markdown.css";
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), {
     ssr: false,
     loading: () => (
-        <div className="w-full h-96 bg-slate-800/50 rounded-lg animate-pulse" />
+        <div className="w-full h-96 bg-slate-200 rounded-lg animate-pulse" />
     ),
 });
 
@@ -152,7 +152,7 @@ export default function LessonContentEditor() {
     // Chờ auth check xong
     if (authLoading) {
         return (
-            <PageLoading message="Đang xác thực quyền truy cập..." bg="dark" />
+            <PageLoading message="Đang xác thực quyền truy cập..." bg="light" />
         );
     }
 
@@ -162,20 +162,20 @@ export default function LessonContentEditor() {
     }
 
     if (loading) {
-        return <PageLoading message="Đang tải bài học..." bg="dark" />;
+        return <PageLoading message="Đang tải bài học..." bg="light" />;
     }
 
     if (!lesson) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-6 bg-slate-950">
+            <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
                 <div className="text-center max-w-md">
                     <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                    <p className="text-slate-100 mb-6 font-medium">
+                    <p className="text-slate-900 mb-6 font-medium">
                         Không tìm thấy bài học
                     </p>
                     <button
                         onClick={() => router.back()}
-                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition font-medium"
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium"
                     >
                         Quay Lại
                     </button>
@@ -185,23 +185,23 @@ export default function LessonContentEditor() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950" data-color-mode="dark">
+        <div className="min-h-screen bg-slate-50" data-color-mode="light">
             {/* Editor Header */}
-            <div className="sticky top-0 z-40 border-b border-slate-700 bg-slate-900/80 backdrop-blur-sm">
+            <div className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-sm">
                 <div className="px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                         <button
                             onClick={() => router.back()}
-                            className="p-2 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-slate-200 flex-shrink-0"
+                            className="p-2 hover:bg-slate-100 rounded-lg transition text-slate-500 hover:text-slate-900 flex-shrink-0"
                             title="Quay lại"
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <div className="min-w-0">
-                            <h2 className="text-xl font-bold text-slate-100 truncate">
+                            <h2 className="text-xl font-bold text-slate-900 truncate">
                                 {lesson.title}
                             </h2>
-                            <p className="text-slate-400 text-sm mt-1">
+                            <p className="text-slate-500 text-sm mt-1">
                                 Chỉnh sửa nội dung markdown
                             </p>
                         </div>
@@ -213,8 +213,8 @@ export default function LessonContentEditor() {
                             <div
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium ${
                                     status === "success"
-                                        ? "bg-green-500/20 text-green-300 border border-green-500/30"
-                                        : "bg-red-500/20 text-red-300 border border-red-500/30"
+                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                        : "bg-red-50 text-red-700 border border-red-200"
                                 }`}
                             >
                                 {status === "success" ? (
@@ -230,7 +230,7 @@ export default function LessonContentEditor() {
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-600 text-white rounded-lg transition disabled:cursor-not-allowed font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-lg transition disabled:cursor-not-allowed font-medium"
                         >
                             {saving ? (
                                 <Loader className="w-4 h-4 animate-spin" />
@@ -246,13 +246,13 @@ export default function LessonContentEditor() {
             {/* Editor Content */}
             <div className="p-6 space-y-6">
                 {/* Video Upload Section */}
-                <div className="rounded-lg border border-slate-700 overflow-hidden bg-slate-900">
-                    <div className="px-6 py-4 border-b border-slate-700 bg-slate-800/50">
-                        <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                            <Upload className="w-5 h-5 text-blue-400" />
+                <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
+                    <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <Upload className="w-5 h-5 text-blue-600" />
                             Upload Video
                         </h3>
-                        <p className="text-sm text-slate-400 mt-1">
+                        <p className="text-sm text-slate-500 mt-1">
                             Upload video cho bài học này
                         </p>
                     </div>
@@ -268,8 +268,8 @@ export default function LessonContentEditor() {
 
                 {/* Markdown Editor */}
                 <div
-                    className="rounded-lg border border-slate-700 overflow-hidden shadow-2xl"
-                    data-color-mode="dark"
+                    className="rounded-xl border border-slate-200 overflow-hidden shadow-sm"
+                    data-color-mode="light"
                 >
                     <MDEditor
                         value={content}
@@ -281,8 +281,8 @@ export default function LessonContentEditor() {
                         textareaProps={{
                             disabled: saving,
                             style: {
-                                backgroundColor: "#111827",
-                                color: "#f1f5f9",
+                                backgroundColor: "#ffffff",
+                                color: "#0f172a",
                                 fontSize: "14px",
                                 fontFamily:
                                     "'SF Mono', Monaco, Inconsolata, 'Roboto Mono', monospace",
@@ -295,57 +295,57 @@ export default function LessonContentEditor() {
                 {/* Help Section */}
                 <div className="mt-8 grid md:grid-cols-2 gap-6">
                     {/* Tips */}
-                    <div className="p-6 bg-slate-800/50 border border-indigo-500/30 rounded-lg hover:border-indigo-500/50 transition">
-                        <h3 className="font-bold text-indigo-300 mb-4 flex items-center gap-2">
+                    <div className="p-6 bg-blue-50 border border-blue-200 rounded-xl hover:border-blue-300 transition">
+                        <h3 className="font-bold text-blue-800 mb-4 flex items-center gap-2">
                             <Lightbulb className="w-5 h-5" />
                             Mẹo Markdown
                         </h3>
-                        <ul className="space-y-3 text-sm text-slate-300">
+                        <ul className="space-y-3 text-sm text-slate-600">
                             <li className="flex gap-3">
-                                <span className="text-indigo-400 font-semibold min-w-max">
+                                <span className="text-blue-700 font-semibold min-w-max">
                                     # Tiêu đề
                                 </span>
-                                <span className="text-slate-400">
+                                <span className="text-slate-600">
                                     Dùng # h1, ## h2, ### h3
                                 </span>
                             </li>
                             <li className="flex gap-3">
-                                <span className="text-indigo-400 font-semibold min-w-max">
+                                <span className="text-blue-700 font-semibold min-w-max">
                                     Code block
                                 </span>
-                                <span className="text-slate-400">
+                                <span className="text-slate-600">
                                     Bao bằng ``` (backticks)
                                 </span>
                             </li>
                             <li className="flex gap-3">
-                                <span className="text-indigo-400 font-semibold min-w-max">
+                                <span className="text-blue-700 font-semibold min-w-max">
                                     **Bold**
                                 </span>
-                                <span className="text-slate-400">
+                                <span className="text-slate-600">
                                     Dùng ** hoặc __ xung quanh
                                 </span>
                             </li>
                             <li className="flex gap-3">
-                                <span className="text-indigo-400 font-semibold min-w-max">
+                                <span className="text-blue-700 font-semibold min-w-max">
                                     *Italic*
                                 </span>
-                                <span className="text-slate-400">
+                                <span className="text-slate-600">
                                     Dùng * hoặc _ xung quanh
                                 </span>
                             </li>
                             <li className="flex gap-3">
-                                <span className="text-indigo-400 font-semibold min-w-max">
+                                <span className="text-blue-700 font-semibold min-w-max">
                                     - List items
                                 </span>
-                                <span className="text-slate-400">
+                                <span className="text-slate-600">
                                     Dùng - hoặc * hoặc 1.
                                 </span>
                             </li>
                             <li className="flex gap-3">
-                                <span className="text-indigo-400 font-semibold min-w-max">
+                                <span className="text-blue-700 font-semibold min-w-max">
                                     Ctrl+S
                                 </span>
-                                <span className="text-slate-400">
+                                <span className="text-slate-600">
                                     Lưu nội dung nhanh
                                 </span>
                             </li>
@@ -353,21 +353,21 @@ export default function LessonContentEditor() {
                     </div>
 
                     {/* Info */}
-                    <div className="p-6 bg-slate-800/50 border border-slate-700 rounded-lg hover:border-slate-600 transition">
-                        <h3 className="font-bold text-slate-100 mb-4 flex items-center gap-2">
+                    <div className="p-6 bg-white border border-slate-200 rounded-xl hover:border-slate-300 transition shadow-sm">
+                        <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
                             <Info className="w-5 h-5" />
                             Thông Tin Bài Học
                         </h3>
                         <div className="space-y-3 text-sm">
                             <div>
                                 <p className="text-slate-400">ID:</p>
-                                <code className="bg-slate-900 text-green-400 px-2 py-1 rounded text-xs font-mono">
+                                <code className="bg-slate-100 text-emerald-700 px-2 py-1 rounded text-xs font-mono">
                                     {lesson.id}
                                 </code>
                             </div>
                             <div>
                                 <p className="text-slate-400">Chương ID:</p>
-                                <code className="bg-slate-900 text-blue-400 px-2 py-1 rounded text-xs font-mono">
+                                <code className="bg-slate-100 text-blue-700 px-2 py-1 rounded text-xs font-mono">
                                     {lesson.chapter_id}
                                 </code>
                             </div>
@@ -375,18 +375,18 @@ export default function LessonContentEditor() {
                                 <p className="text-slate-400">
                                     Cập nhật lần cuối:
                                 </p>
-                                <p className="text-slate-300 font-mono text-xs">
+                                <p className="text-slate-600 font-mono text-xs">
                                     {new Date(lesson.updated_at).toLocaleString(
                                         "vi-VN",
                                     )}
                                 </p>
                             </div>
-                            <div className="pt-3 border-t border-slate-700">
-                                <p className="text-slate-300 font-medium flex items-center gap-2">
+                            <div className="pt-3 border-t border-slate-200">
+                                <p className="text-slate-700 font-medium flex items-center gap-2">
                                     {content.trim().length > 0 ? (
                                         <>
-                                            <CheckCircle className="w-5 h-5 text-green-400" />
-                                            <span className="text-green-400">
+                                            <CheckCircle className="w-5 h-5 text-emerald-600" />
+                                            <span className="text-emerald-600">
                                                 Có nội dung
                                             </span>
                                         </>
