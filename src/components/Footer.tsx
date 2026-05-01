@@ -8,22 +8,14 @@ import {
     Twitter,
     Youtube,
     Github,
-    Volume2,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { BRAND_LOGO_ALT, BRAND_LOGO_SRC } from "@/lib/brand";
 import { toolLinks } from "@/lib/tool-catalog";
+import { getToolLinkProps } from "@/lib/tool-link-props";
 
 const footerLinks = {
-    tools: [
-        { name: "Tạo CV xin việc", href: "#" },
-        { name: "Rút gọn liên kết", href: "#" },
-        { name: "Clip-path maker", href: "#" },
-        { name: "Snippet generator", href: "#" },
-        { name: "CSS Grid generator", href: "#" },
-        { name: "Cảnh báo sờ tay lên mặt", href: "#" },
-    ],
     community: [
         { name: "Discord", href: "https://discord.com/invite/a6pe69KkPd" },
         { name: "Facebook Group", href: "#" },
@@ -40,17 +32,6 @@ const socialLinks = [
     { icon: Youtube, href: "#", label: "Youtube" },
     { icon: Github, href: "https://github.com/huynhkhuanit", label: "Github" },
 ];
-
-function getLinkProps(href: string) {
-    if (href.startsWith("http://") || href.startsWith("https://")) {
-        return {
-            target: "_blank" as const,
-            rel: "noopener noreferrer" as const,
-        };
-    }
-
-    return {};
-}
 
 export default function Footer() {
     return (
@@ -157,7 +138,7 @@ export default function Footer() {
                                             style={{
                                                 transition: "all .2s ease",
                                             }}
-                                            {...getLinkProps(link.href)}
+                                            {...getToolLinkProps(link.href)}
                                         >
                                             {link.name}
                                         </Link>
@@ -180,7 +161,7 @@ export default function Footer() {
                                             style={{
                                                 transition: "all .2s ease",
                                             }}
-                                            {...getLinkProps(link.href)}
+                                            {...getToolLinkProps(link.href)}
                                         >
                                             {link.name}
                                         </Link>
@@ -195,7 +176,7 @@ export default function Footer() {
                                         key={index}
                                         href={social.href}
                                         aria-label={social.label}
-                                        {...getLinkProps(social.href)}
+                                        {...getToolLinkProps(social.href)}
                                         className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700"
                                         style={{ transition: "all .2s ease" }}
                                     >
@@ -298,7 +279,7 @@ export default function Footer() {
                                         href={link.href}
                                         className="text-gray-400 hover:text-white inline-block hover:translate-x-[4px]"
                                         style={{ transition: "all .2s ease" }}
-                                        {...getLinkProps(link.href)}
+                                        {...getToolLinkProps(link.href)}
                                     >
                                         {link.name}
                                     </Link>
@@ -319,7 +300,7 @@ export default function Footer() {
                                         href={link.href}
                                         className="text-gray-400 hover:text-white inline-block hover:translate-x-[4px]"
                                         style={{ transition: "all .2s ease" }}
-                                        {...getLinkProps(link.href)}
+                                        {...getToolLinkProps(link.href)}
                                     >
                                         {link.name}
                                     </Link>
@@ -334,7 +315,7 @@ export default function Footer() {
                                     key={index}
                                     href={social.href}
                                     aria-label={social.label}
-                                    {...getLinkProps(social.href)}
+                                    {...getToolLinkProps(social.href)}
                                     className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700"
                                     style={{ transition: "all .2s ease" }}
                                 >

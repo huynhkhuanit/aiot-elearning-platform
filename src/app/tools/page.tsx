@@ -30,6 +30,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { toolCatalog, type ToolCatalogItem } from "@/lib/tool-catalog";
+import { getToolLinkProps } from "@/lib/tool-link-props";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -154,17 +155,6 @@ const methodologyPillars = [
     },
 ];
 
-function getLinkProps(href: string) {
-    if (href.startsWith("http://") || href.startsWith("https://")) {
-        return {
-            target: "_blank" as const,
-            rel: "noopener noreferrer" as const,
-        };
-    }
-
-    return {};
-}
-
 /* ══════════════════════════════════════════════════════════════
    PAGE COMPONENT
    ══════════════════════════════════════════════════════════════ */
@@ -254,7 +244,9 @@ export default function ToolsPage() {
                                                 <Link
                                                     key={tool.id}
                                                     href={tool.href}
-                                                    {...getLinkProps(tool.href)}
+                                                    {...getToolLinkProps(
+                                                        tool.href,
+                                                    )}
                                                     className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-colors hover:bg-white/10"
                                                 >
                                                     <div
@@ -479,7 +471,7 @@ export default function ToolsPage() {
                                     >
                                         <Link
                                             href={tool.href}
-                                            {...getLinkProps(tool.href)}
+                                            {...getToolLinkProps(tool.href)}
                                         >
                                             Mở công cụ
                                             <ExternalLink className="ml-2 size-3.5" />
