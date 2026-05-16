@@ -83,3 +83,23 @@ test("getDevServerUrlFromGlobal skips empty polyfilled location values", () => {
         "http://192.168.1.66:8081",
     );
 });
+
+test("getDevServerUrlFromGlobal skips 'file:' polyfilled origins", () => {
+    assert.equal(
+        getDevServerUrlFromGlobal({
+            location: { origin: "file:" },
+            window: { location: { origin: "" } },
+            __expo_manifest: { debuggerHost: "192.168.2.31:8081" },
+        }),
+        "192.168.2.31:8081",
+    );
+});
+
+test("getDevServerUrlFromGlobal reads __expo_manifest.hostUri as fallback", () => {
+    assert.equal(
+        getDevServerUrlFromGlobal({
+            __expo_manifest: { hostUri: "192.168.2.31:8081" },
+        }),
+        "192.168.2.31:8081",
+    );
+});
