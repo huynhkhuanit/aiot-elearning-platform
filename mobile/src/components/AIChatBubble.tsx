@@ -111,15 +111,47 @@ function parseContent(text: string): ContentBlock[] {
     return blocks;
 }
 
+const BlinkingCursor = () => {
+    const blinkAnim = useRef(new RNAnimated.Value(0)).current;
+
+    useEffect(() => {
+        RNAnimated.loop(
+            RNAnimated.sequence([
+                RNAnimated.timing(blinkAnim, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+                RNAnimated.timing(blinkAnim, {
+                    toValue: 0,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+            ]),
+        ).start();
+    }, [blinkAnim]);
+
+    return (
+        <RNAnimated.Text style={{ opacity: blinkAnim, color: colors.light.primary, fontSize: 16 }}>
+            {" ▋"}
+        </RNAnimated.Text>
+    );
+};
+
 // ── Inline formatter ──────────────────────────────────────────
 // Handles **bold**, `inline code`, and plain text within a line.
 
-function renderInlineText(text: string, baseStyle: any) {
+function renderInlineText(text: string, baseStyle: any, showCursor: boolean = false) {
     // Split by bold + inline code patterns
     const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
 
     if (parts.length === 1) {
-        return <Text style={baseStyle}>{text}</Text>;
+        return (
+            <Text style={baseStyle}>
+                {text}
+                {showCursor && <BlinkingCursor />}
+            </Text>
+        );
     }
 
     return (
@@ -141,6 +173,7 @@ function renderInlineText(text: string, baseStyle: any) {
                 }
                 return <Text key={idx}>{part}</Text>;
             })}
+            {showCursor && <BlinkingCursor />}
         </Text>
     );
 }
@@ -222,14 +255,19 @@ export default function AIChatBubble({ message, isStreaming }: Props) {
                 ]}
             >
                 {blocks.map((block, idx) => {
+                    const isLastBlock = idx === blocks.length - 1;
+                    const showCursor = isStreaming && isLastBlock;
+
                     switch (block.type) {
                         case "code":
                             return (
-                                <CodeBlock
-                                    key={idx}
-                                    code={block.code}
-                                    language={block.language}
-                                />
+                                <View key={idx}>
+                                    <CodeBlock
+                                        code={block.code}
+                                        language={block.language}
+                                    />
+                                    {showCursor && <BlinkingCursor />}
+                                </View>
                             );
                         case "header":
                             return (
@@ -242,6 +280,7 @@ export default function AIChatBubble({ message, isStreaming }: Props) {
                                     }
                                 >
                                     {block.text}
+                                    {showCursor && <BlinkingCursor />}
                                 </Text>
                             );
                         case "bullet":
@@ -256,6 +295,7 @@ export default function AIChatBubble({ message, isStreaming }: Props) {
                                         {renderInlineText(
                                             block.text,
                                             styles.aiText,
+                                            showCursor
                                         )}
                                     </View>
                                 </View>
@@ -270,6 +310,7 @@ export default function AIChatBubble({ message, isStreaming }: Props) {
                                         {renderInlineText(
                                             block.text,
                                             styles.aiText,
+                                            showCursor
                                         )}
                                     </View>
                                 </View>
@@ -279,7 +320,9 @@ export default function AIChatBubble({ message, isStreaming }: Props) {
                                 <View
                                     key={idx}
                                     style={{ height: spacing.sm }}
-                                />
+                                >
+                                    {showCursor && <BlinkingCursor />}
+                                </View>
                             );
                         case "text":
                         default:
@@ -288,16 +331,12 @@ export default function AIChatBubble({ message, isStreaming }: Props) {
                                     {renderInlineText(
                                         block.text,
                                         styles.aiText,
+                                        showCursor
                                     )}
                                 </React.Fragment>
                             );
                     }
                 })}
-                {isStreaming && (
-                    <View style={styles.cursor}>
-                        <View style={styles.cursorBlink} />
-                    </View>
-                )}
             </View>
         </RNAnimated.View>
     );
@@ -422,15 +461,4 @@ const styles = StyleSheet.create({
         fontWeight: "700",
     },
 
-    // Cursor
-    cursor: {
-        marginTop: 4,
-    },
-    cursorBlink: {
-        width: 8,
-        height: 16,
-        backgroundColor: colors.light.primary,
-        borderRadius: 1,
-        opacity: 0.7,
-    },
 });
