@@ -166,6 +166,29 @@ export default function AIChatScreen({ navigation }: Props) {
         setServerStatus(healthy ? "connected" : "disconnected");
     };
 
+    // ── Performance: batch streaming updates to reduce renders ──
+    const streamBufferRef = useRef("");
+    const rafIdRef = useRef<number | null>(null);
+
+    const flushStreamBuffer = useCallback(() => {
+        rafIdRef.current = null;
+        setStreamingContent(streamBufferRef.current);
+    }, []);
+
+    const appendStreamChunk = useCallback(
+        (chunk: string) => {
+            streamBufferRef.current += chunk;
+            // Coalesce rapid SSE chunks into a single render frame
+            if (rafIdRef.current === null) {
+                rafIdRef.current = requestAnimationFrame(flushStreamBuffer);
+            }
+        },
+        [flushStreamBuffer],
+    );
+
+    // ── Max context messages sent to AI (fewer = faster response) ──
+    const MAX_CONTEXT_MESSAGES = 6;
+
     const sendMessage = useCallback(async () => {
         const text = inputText.trim();
         if (!text || isLoading) return;
@@ -173,6 +196,7 @@ export default function AIChatScreen({ navigation }: Props) {
         setInputText("");
         setIsLoading(true);
         setStreamingContent("");
+        streamBufferRef.current = "";
 
         const userMsg: AIChatMessage = {
             id: generateId(),
@@ -184,26 +208,35 @@ export default function AIChatScreen({ navigation }: Props) {
         const updatedMessages = [...messages, userMsg];
         setMessages(updatedMessages);
 
-        const apiMessages = updatedMessages
+        // Only send the last N messages to reduce context size → faster inference
+        const recentMessages = updatedMessages
             .filter((m) => m.role !== "system")
-            .map((m) => ({ role: m.role, content: m.content }));
+            .slice(-MAX_CONTEXT_MESSAGES);
+
+        const apiMessages = recentMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+        }));
 
         const abortController = new AbortController();
         abortControllerRef.current = abortController;
-        let fullContent = "";
 
         try {
             await streamChatMessage(
                 { messages: apiMessages, modelId: selectedModel.id },
                 (chunk) => {
-                    fullContent += chunk;
-                    setStreamingContent(fullContent);
+                    appendStreamChunk(chunk);
                 },
                 () => {
+                    // Cancel any pending RAF before final state
+                    if (rafIdRef.current !== null) {
+                        cancelAnimationFrame(rafIdRef.current);
+                        rafIdRef.current = null;
+                    }
                     const aiMsg: AIChatMessage = {
                         id: generateId(),
                         role: "assistant",
-                        content: fullContent,
+                        content: streamBufferRef.current,
                         timestamp: Date.now(),
                     };
                     const finalMessages = [...updatedMessages, aiMsg];
@@ -213,6 +246,10 @@ export default function AIChatScreen({ navigation }: Props) {
                     setIsLoading(false);
                 },
                 (error) => {
+                    if (rafIdRef.current !== null) {
+                        cancelAnimationFrame(rafIdRef.current);
+                        rafIdRef.current = null;
+                    }
                     const errorMsg: AIChatMessage = {
                         id: generateId(),
                         role: "assistant",
@@ -230,7 +267,7 @@ export default function AIChatScreen({ navigation }: Props) {
             setIsLoading(false);
             setStreamingContent("");
         }
-    }, [inputText, isLoading, messages, selectedModel]);
+    }, [inputText, isLoading, messages, selectedModel, appendStreamChunk]);
 
     const stopGeneration = useCallback(() => {
         abortControllerRef.current?.abort();

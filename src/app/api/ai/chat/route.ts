@@ -87,12 +87,15 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        // Truncate long assistant messages to reduce prompt tokens → faster inference
+        const MAX_MSG_LEN = 1500;
         for (const msg of messages) {
             if (msg.role === "user" || msg.role === "assistant") {
-                ollamaMessages.push({
-                    role: msg.role,
-                    content: msg.content,
-                });
+                const content =
+                    msg.role === "assistant" && msg.content.length > MAX_MSG_LEN
+                        ? msg.content.slice(0, MAX_MSG_LEN) + "...[đã cắt bớt]"
+                        : msg.content;
+                ollamaMessages.push({ role: msg.role, content });
             }
         }
 
@@ -108,6 +111,7 @@ export async function POST(request: NextRequest) {
             temperature: routerParams.temperature,
             modelId: effectiveModelId,
             num_ctx: routerParams.num_ctx,
+            repeat_penalty: 1.1,
         };
 
         try {

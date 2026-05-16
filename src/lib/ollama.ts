@@ -656,7 +656,7 @@ export async function getChatCompletionWithToolsStream(
  */
 export async function getChatCompletionStream(
     messages: Array<{ role: "user" | "assistant" | "system"; content: string }>,
-    options?: { maxTokens?: number; temperature?: number; modelId?: string; num_ctx?: number },
+    options?: { maxTokens?: number; temperature?: number; modelId?: string; num_ctx?: number; repeat_penalty?: number },
 ): Promise<ReadableStream<string>> {
     const request: OllamaChatRequest = {
         model: options?.modelId || OLLAMA_CHAT_MODEL,
@@ -668,8 +668,10 @@ export async function getChatCompletionStream(
             num_predict: options?.maxTokens ?? 1024,
             top_p: 0.9,
             num_ctx: options?.num_ctx ?? 4096,
+            ...(options?.repeat_penalty ? { repeat_penalty: options.repeat_penalty } : {}),
         },
     };
+
 
     // Use initial timeout for the first response (model loading + first token)
     const { controller: fetchController, clear: clearInitial } =
