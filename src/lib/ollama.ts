@@ -17,13 +17,26 @@ import {
     DEFAULT_OLLAMA_FAST_MODEL,
 } from "@/lib/ai-models";
 import { createOllamaChatRequest } from "@/lib/ollama-request";
+import {
+    createOllamaEndpointCandidates,
+    parseBooleanEnv,
+    type OllamaEndpointCandidate,
+} from "@/lib/ollama-endpoints";
 
 // ===== Configuration =====
 
-// Normalize: remove trailing slash to avoid //api/chat (causes 405 with Ngrok)
-const OLLAMA_BASE_URL = (
-    process.env.OLLAMA_BASE_URL || "http://localhost:11434"
-).replace(/\/+$/, "");
+const OLLAMA_REMOTE_BASE_URL =
+    process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+const OLLAMA_LOCAL_BASE_URL =
+    process.env.OLLAMA_LOCAL_BASE_URL || "http://localhost:11434";
+const OLLAMA_PREFER_LOCAL = parseBooleanEnv(process.env.OLLAMA_PREFER_LOCAL);
+const OLLAMA_ENDPOINTS = createOllamaEndpointCandidates({
+    baseUrl: OLLAMA_REMOTE_BASE_URL,
+    localBaseUrl: OLLAMA_LOCAL_BASE_URL,
+    preferLocal: OLLAMA_PREFER_LOCAL,
+});
+const OLLAMA_BASE_URL =
+    OLLAMA_ENDPOINTS[0]?.baseUrl || "http://localhost:11434";
 const OLLAMA_COMPLETION_MODEL =
     process.env.OLLAMA_COMPLETION_MODEL || DEFAULT_OLLAMA_COMPLETION_MODEL;
 const OLLAMA_CHAT_MODEL =
@@ -44,27 +57,6 @@ const CHAT_INITIAL_TIMEOUT_MS = 180000; // 180s for first chunk from streaming (
 const CHAT_ACTIVITY_TIMEOUT_MS = 30000; // 30s inactivity timeout between chunks
 const HEALTH_TIMEOUT_MS = 10000; // 10s for health check
 
-// Auto-detect local vs ngrok mode
-const isLocalOllama = /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(
-    OLLAMA_BASE_URL,
-);
-
-// Base headers for all requests
-const BASE_HEADERS: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-};
-
-// Ngrok free tier requires extra headers to bypass browser warning.
-// Skip these when running locally to avoid unnecessary overhead.
-const NGROK_HEADERS: Record<string, string> = isLocalOllama
-    ? BASE_HEADERS
-    : {
-          ...BASE_HEADERS,
-          "ngrok-skip-browser-warning": "69420",
-          "User-Agent": "CodeSense-AI-Platform/1.0",
-      };
-
 // ===== Helper Functions =====
 
 /**
@@ -82,6 +74,96 @@ function createTimeoutController(timeoutMs: number): {
     };
 }
 
+function mergeHeaders(
+    endpointCandidate: OllamaEndpointCandidate,
+    requestHeaders?: HeadersInit,
+): Headers {
+    const headers = new Headers(endpointCandidate.headers);
+    if (requestHeaders) {
+        new Headers(requestHeaders).forEach((value, key) => {
+            headers.set(key, value);
+        });
+    }
+    return headers;
+}
+
+function formatEndpointError(
+    endpointCandidate: OllamaEndpointCandidate,
+    message: string,
+): Error {
+    return new Error(
+        `Ollama ${endpointCandidate.kind} endpoint ${endpointCandidate.baseUrl} failed: ${message}`,
+    );
+}
+
+async function fetchOllamaResponse(
+    endpoint: string,
+    options: RequestInit,
+    timeoutMs: number,
+    retries: number = 0,
+): Promise<Response> {
+    let lastError: Error | null = null;
+
+    for (const endpointCandidate of OLLAMA_ENDPOINTS) {
+        for (let attempt = 0; attempt <= retries; attempt++) {
+            const { controller, clear } = createTimeoutController(timeoutMs);
+
+            try {
+                const response = await fetch(
+                    `${endpointCandidate.baseUrl}${endpoint}`,
+                    {
+                        ...options,
+                        headers: mergeHeaders(
+                            endpointCandidate,
+                            options.headers,
+                        ),
+                        signal: controller.signal,
+                    },
+                );
+
+                clear();
+
+                if (!response.ok) {
+                    const errorText = await response
+                        .text()
+                        .catch(() => "Unknown error");
+                    throw formatEndpointError(
+                        endpointCandidate,
+                        `Ollama API error ${response.status}: ${errorText}`,
+                    );
+                }
+
+                return response;
+            } catch (error) {
+                clear();
+                const rawError =
+                    error instanceof Error ? error : new Error(String(error));
+
+                lastError =
+                    rawError.name === "AbortError"
+                        ? formatEndpointError(
+                              endpointCandidate,
+                              `Ollama request timed out after ${timeoutMs}ms`,
+                          )
+                        : rawError.message.startsWith("Ollama ")
+                          ? rawError
+                          : formatEndpointError(
+                                endpointCandidate,
+                                rawError.message,
+                            );
+
+                if (attempt < retries) {
+                    await new Promise((resolve) =>
+                        setTimeout(resolve, 500 * Math.pow(2, attempt)),
+                    );
+                }
+            }
+        }
+    }
+
+    throw lastError || new Error("Ollama request failed");
+}
+
 /**
  * Make a request to Ollama with retry logic
  */
@@ -91,52 +173,13 @@ async function ollamaFetch<T>(
     timeoutMs: number,
     retries: number = 1,
 ): Promise<T> {
-    let lastError: Error | null = null;
-
-    for (let attempt = 0; attempt <= retries; attempt++) {
-        const { controller, clear } = createTimeoutController(timeoutMs);
-
-        try {
-            const response = await fetch(`${OLLAMA_BASE_URL}${endpoint}`, {
-                ...options,
-                headers: { ...NGROK_HEADERS, ...options.headers },
-                signal: controller.signal,
-            });
-
-            clear();
-
-            if (!response.ok) {
-                const errorText = await response
-                    .text()
-                    .catch(() => "Unknown error");
-                throw new Error(
-                    `Ollama API error ${response.status}: ${errorText}`,
-                );
-            }
-
-            return (await response.json()) as T;
-        } catch (error) {
-            clear();
-            lastError =
-                error instanceof Error ? error : new Error(String(error));
-
-            if (lastError.name === "AbortError") {
-                lastError = new Error(
-                    `Ollama request timed out after ${timeoutMs}ms`,
-                );
-            }
-
-            // Don't retry on non-retryable errors
-            if (attempt < retries) {
-                // Exponential backoff: 500ms, 1000ms, 2000ms...
-                await new Promise((resolve) =>
-                    setTimeout(resolve, 500 * Math.pow(2, attempt)),
-                );
-            }
-        }
-    }
-
-    throw lastError || new Error("Ollama request failed");
+    const response = await fetchOllamaResponse(
+        endpoint,
+        options,
+        timeoutMs,
+        retries,
+    );
+    return (await response.json()) as T;
 }
 
 // ===== FIM (Fill-in-Middle) Format =====
@@ -453,35 +496,15 @@ export async function getChatCompletionWithToolsStream(
         },
     });
 
-    const { controller: fetchController, clear: clearInitial } =
-        createTimeoutController(CHAT_INITIAL_TIMEOUT_MS);
-
-    let response: Response;
-    try {
-        response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+    const response = await fetchOllamaResponse(
+        "/api/chat",
+        {
             method: "POST",
-            headers: NGROK_HEADERS,
             body: JSON.stringify(request),
-            signal: fetchController.signal,
-        });
-    } catch (fetchErr) {
-        clearInitial();
-        if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
-            throw new Error(
-                `Ollama request timed out after ${CHAT_INITIAL_TIMEOUT_MS}ms waiting for model response. Try again.`,
-            );
-        }
-        throw fetchErr;
-    }
-
-    clearInitial();
-
-    if (!response.ok) {
-        const errorText = await response.text().catch(() => "Unknown error");
-        throw new Error(
-            `Ollama streaming error ${response.status}: ${errorText}`,
-        );
-    }
+        },
+        CHAT_INITIAL_TIMEOUT_MS,
+        0,
+    );
 
     if (!response.body) {
         throw new Error("No response body for streaming");
@@ -673,37 +696,15 @@ export async function getChatCompletionStream(
         },
     });
 
-
-    // Use initial timeout for the first response (model loading + first token)
-    const { controller: fetchController, clear: clearInitial } =
-        createTimeoutController(CHAT_INITIAL_TIMEOUT_MS);
-
-    let response: Response;
-    try {
-        response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+    const response = await fetchOllamaResponse(
+        "/api/chat",
+        {
             method: "POST",
-            headers: NGROK_HEADERS,
             body: JSON.stringify(request),
-            signal: fetchController.signal,
-        });
-    } catch (fetchErr) {
-        clearInitial();
-        if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
-            throw new Error(
-                `Ollama request timed out after ${CHAT_INITIAL_TIMEOUT_MS}ms waiting for model response. Try again.`,
-            );
-        }
-        throw fetchErr;
-    }
-
-    clearInitial();
-
-    if (!response.ok) {
-        const errorText = await response.text().catch(() => "Unknown error");
-        throw new Error(
-            `Ollama streaming error ${response.status}: ${errorText}`,
-        );
-    }
+        },
+        CHAT_INITIAL_TIMEOUT_MS,
+        0,
+    );
 
     if (!response.body) {
         throw new Error("No response body for streaming");
@@ -835,6 +836,15 @@ export async function checkHealth(): Promise<{
 export function getOllamaConfig() {
     return {
         baseUrl: OLLAMA_BASE_URL,
+        localBaseUrl: OLLAMA_LOCAL_BASE_URL,
+        preferLocal: OLLAMA_PREFER_LOCAL,
+        fallbackBaseUrls: OLLAMA_ENDPOINTS.slice(1).map(
+            (endpoint) => endpoint.baseUrl,
+        ),
+        endpointOrder: OLLAMA_ENDPOINTS.map((endpoint) => ({
+            baseUrl: endpoint.baseUrl,
+            kind: endpoint.kind,
+        })),
         completionModel: OLLAMA_COMPLETION_MODEL,
         chatModel: OLLAMA_CHAT_MODEL,
         tutorModel: OLLAMA_TUTOR_MODEL,

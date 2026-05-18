@@ -75,6 +75,13 @@ export interface AIHealthResponse {
     status: "connected" | "disconnected" | "error";
     models: string[];
     baseUrl: string;
+    localBaseUrl?: string;
+    preferLocal?: boolean;
+    fallbackBaseUrls?: string[];
+    endpointOrder?: Array<{
+        baseUrl: string;
+        kind: "local" | "remote";
+    }>;
     latencyMs?: number;
     error?: string;
 }
