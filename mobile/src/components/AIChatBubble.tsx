@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, Animated as RNAnimated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -11,6 +11,7 @@ import {
     animation,
 } from "../theme";
 import { AIChatMessage } from "../types/ai";
+import { getNextTypewriterText } from "../utils/typewriterText";
 import CodeBlock from "./CodeBlock";
 
 interface Props {
@@ -115,7 +116,7 @@ const BlinkingCursor = () => {
     const blinkAnim = useRef(new RNAnimated.Value(0)).current;
 
     useEffect(() => {
-        RNAnimated.loop(
+        const loop = RNAnimated.loop(
             RNAnimated.sequence([
                 RNAnimated.timing(blinkAnim, {
                     toValue: 1,
@@ -128,13 +129,111 @@ const BlinkingCursor = () => {
                     useNativeDriver: true,
                 }),
             ]),
-        ).start();
+        );
+        loop.start();
+        return () => loop.stop();
     }, [blinkAnim]);
 
     return (
-        <RNAnimated.Text style={{ opacity: blinkAnim, color: colors.light.primary, fontSize: 16 }}>
+        <RNAnimated.Text
+            style={{
+                opacity: blinkAnim,
+                color: colors.light.primary,
+                fontSize: 16,
+            }}
+        >
             {" ▋"}
         </RNAnimated.Text>
+    );
+};
+
+const TYPEWRITER_STEP = 3;
+const TYPEWRITER_INTERVAL_MS = 18;
+
+function useTypewriterText(targetText: string, enabled?: boolean) {
+    const [visibleText, setVisibleText] = useState(enabled ? "" : targetText);
+
+    useEffect(() => {
+        if (!enabled) {
+            setVisibleText(targetText);
+            return;
+        }
+
+        setVisibleText((current) => {
+            if (!targetText.startsWith(current)) {
+                return getNextTypewriterText("", targetText, TYPEWRITER_STEP);
+            }
+            return current;
+        });
+    }, [enabled, targetText]);
+
+    useEffect(() => {
+        if (!enabled || visibleText.length >= targetText.length) return;
+
+        const timer = setTimeout(() => {
+            setVisibleText((current) =>
+                getNextTypewriterText(
+                    current,
+                    targetText,
+                    TYPEWRITER_STEP,
+                ),
+            );
+        }, TYPEWRITER_INTERVAL_MS);
+
+        return () => clearTimeout(timer);
+    }, [enabled, targetText, visibleText]);
+
+    return enabled ? visibleText : targetText;
+}
+
+const TypingDots = () => {
+    const dot1 = useRef(new RNAnimated.Value(0.35)).current;
+    const dot2 = useRef(new RNAnimated.Value(0.35)).current;
+    const dot3 = useRef(new RNAnimated.Value(0.35)).current;
+
+    useEffect(() => {
+        const animateDot = (dot: RNAnimated.Value, delay: number) =>
+            RNAnimated.loop(
+                RNAnimated.sequence([
+                    RNAnimated.delay(delay),
+                    RNAnimated.timing(dot, {
+                        toValue: 1,
+                        duration: 260,
+                        useNativeDriver: true,
+                    }),
+                    RNAnimated.timing(dot, {
+                        toValue: 0.35,
+                        duration: 360,
+                        useNativeDriver: true,
+                    }),
+                ]),
+            );
+
+        const animations = [
+            animateDot(dot1, 0),
+            animateDot(dot2, 140),
+            animateDot(dot3, 280),
+        ];
+
+        animations.forEach((item) => item.start());
+        return () => animations.forEach((item) => item.stop());
+    }, [dot1, dot2, dot3]);
+
+    return (
+        <View style={styles.typingDots}>
+            {[dot1, dot2, dot3].map((dot, index) => (
+                <RNAnimated.View
+                    key={index}
+                    style={[
+                        styles.typingDot,
+                        {
+                            opacity: dot,
+                            transform: [{ scale: dot }],
+                        },
+                    ]}
+                />
+            ))}
+        </View>
     );
 };
 
@@ -184,6 +283,11 @@ export default function AIChatBubble({ message, isStreaming }: Props) {
     const isUser = message.role === "user";
     const fadeAnim = useRef(new RNAnimated.Value(0)).current;
     const slideAnim = useRef(new RNAnimated.Value(isUser ? 20 : -20)).current;
+    const visibleContent = useTypewriterText(
+        message.content,
+        !isUser && isStreaming,
+    );
+    const hasVisibleContent = visibleContent.trim().length > 0;
 
     useEffect(() => {
         RNAnimated.parallel([
@@ -202,8 +306,8 @@ export default function AIChatBubble({ message, isStreaming }: Props) {
     }, []);
 
     const blocks = useMemo(
-        () => parseContent(message.content),
-        [message.content],
+        () => parseContent(visibleContent),
+        [visibleContent],
     );
 
     if (isUser) {
@@ -240,7 +344,12 @@ export default function AIChatBubble({ message, isStreaming }: Props) {
             ]}
         >
             <View style={styles.aiAvatarContainer}>
-                <View style={styles.aiAvatar}>
+                <View
+                    style={[
+                        styles.aiAvatar,
+                        isStreaming && styles.aiAvatarStreaming,
+                    ]}
+                >
                     <Ionicons
                         name="sparkles"
                         size={14}
@@ -254,7 +363,12 @@ export default function AIChatBubble({ message, isStreaming }: Props) {
                     isStreaming && styles.aiBubbleStreaming,
                 ]}
             >
-                {blocks.map((block, idx) => {
+                {isStreaming && !hasVisibleContent ? (
+                    <View style={styles.typingBubbleContent}>
+                        <TypingDots />
+                    </View>
+                ) : (
+                    blocks.map((block, idx) => {
                     const isLastBlock = idx === blocks.length - 1;
                     const showCursor = isStreaming && isLastBlock;
 
@@ -336,7 +450,8 @@ export default function AIChatBubble({ message, isStreaming }: Props) {
                                 </React.Fragment>
                             );
                     }
-                })}
+                })
+                )}
             </View>
         </RNAnimated.View>
     );
@@ -382,18 +497,42 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
     },
+    aiAvatarStreaming: {
+        backgroundColor: colors.light.accentSoft,
+        borderWidth: 1,
+        borderColor: colors.light.primary + "24",
+    },
     aiBubble: {
         flex: 1,
         backgroundColor: colors.light.surfaceElevated,
         borderRadius: radius.xl,
         borderBottomLeftRadius: radius.xs,
+        borderWidth: 1,
+        borderColor: "rgba(226, 232, 240, 0.72)",
         padding: spacing.md,
         paddingHorizontal: spacing.base,
         ...shadows.sm,
     },
     aiBubbleStreaming: {
-        borderColor: colors.light.primary + "30",
-        borderWidth: 1,
+        borderColor: colors.light.primary + "2E",
+        backgroundColor: "#ffffff",
+    },
+    typingBubbleContent: {
+        minHeight: 22,
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    typingDots: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+        paddingVertical: 2,
+    },
+    typingDot: {
+        width: 7,
+        height: 7,
+        borderRadius: 3.5,
+        backgroundColor: colors.light.primary,
     },
     aiText: {
         ...typography.body,

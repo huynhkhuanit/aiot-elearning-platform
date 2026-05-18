@@ -16,6 +16,7 @@ import {
     DEFAULT_OLLAMA_TUTOR_MODEL,
     DEFAULT_OLLAMA_FAST_MODEL,
 } from "@/lib/ai-models";
+import { createOllamaChatRequest } from "@/lib/ollama-request";
 
 // ===== Configuration =====
 
@@ -204,7 +205,7 @@ export async function getChatCompletion(
     messages: Array<{ role: "user" | "assistant" | "system"; content: string }>,
     options?: { maxTokens?: number; temperature?: number; modelId?: string; num_ctx?: number },
 ): Promise<{ content: string; durationMs: number }> {
-    const request: OllamaChatRequest = {
+    const request = createOllamaChatRequest({
         model: options?.modelId || OLLAMA_CHAT_MODEL,
         messages,
         stream: false,
@@ -215,7 +216,7 @@ export async function getChatCompletion(
             top_p: 0.9,
             num_ctx: options?.num_ctx ?? 4096,
         },
-    };
+    });
 
     const response = await ollamaFetch<OllamaChatResponse>(
         "/api/chat",
@@ -367,7 +368,7 @@ export async function getChatCompletionWithTools(
         modelId?: string;
     },
 ): Promise<ChatWithToolsResult> {
-    const request: OllamaChatRequest & { tools?: OllamaToolDefinition[] } = {
+    const request = createOllamaChatRequest({
         model: options?.modelId || OLLAMA_CHAT_MODEL,
         messages: messages as OllamaChatRequest["messages"],
         stream: false,
@@ -380,7 +381,7 @@ export async function getChatCompletionWithTools(
             top_p: 0.9,
             num_ctx: 4096,
         },
-    };
+    });
 
     const response = await ollamaFetch<OllamaChatResponse>(
         "/api/chat",
@@ -437,7 +438,7 @@ export async function getChatCompletionWithToolsStream(
         modelId?: string;
     },
 ): Promise<ReadableStream<ToolsStreamChunk>> {
-    const request: OllamaChatRequest & { tools?: OllamaToolDefinition[] } = {
+    const request = createOllamaChatRequest({
         model: options?.modelId || OLLAMA_CHAT_MODEL,
         messages: messages as OllamaChatRequest["messages"],
         stream: true,
@@ -450,7 +451,7 @@ export async function getChatCompletionWithToolsStream(
             top_p: 0.9,
             num_ctx: 4096,
         },
-    };
+    });
 
     const { controller: fetchController, clear: clearInitial } =
         createTimeoutController(CHAT_INITIAL_TIMEOUT_MS);
@@ -658,7 +659,7 @@ export async function getChatCompletionStream(
     messages: Array<{ role: "user" | "assistant" | "system"; content: string }>,
     options?: { maxTokens?: number; temperature?: number; modelId?: string; num_ctx?: number; repeat_penalty?: number },
 ): Promise<ReadableStream<string>> {
-    const request: OllamaChatRequest = {
+    const request = createOllamaChatRequest({
         model: options?.modelId || OLLAMA_CHAT_MODEL,
         messages,
         stream: true,
@@ -670,7 +671,7 @@ export async function getChatCompletionStream(
             num_ctx: options?.num_ctx ?? 4096,
             ...(options?.repeat_penalty ? { repeat_penalty: options.repeat_penalty } : {}),
         },
-    };
+    });
 
 
     // Use initial timeout for the first response (model loading + first token)
@@ -856,6 +857,7 @@ export async function preWarmModel(modelId?: string): Promise<void> {
                 body: JSON.stringify({
                     model,
                     messages: [{ role: "user", content: "hi" }],
+                    think: false,
                     stream: false,
                     keep_alive: MODEL_KEEP_ALIVE,
                     options: { num_predict: 1, num_ctx: 256 },

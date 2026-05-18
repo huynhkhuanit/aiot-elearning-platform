@@ -113,6 +113,7 @@ export interface OllamaGenerateRequest {
         num_ctx?: number;
         top_p?: number;
         top_k?: number;
+        repeat_penalty?: number;
         stop?: string[];
     };
 }
@@ -164,6 +165,7 @@ export interface OllamaChatRequest {
     messages: OllamaChatMessage[];
     tools?: OllamaToolDefinition[];
     tool_choice?: "auto" | "none";
+    think?: boolean;
     stream?: boolean;
     keep_alive?: string | number;
     options?: {
@@ -172,6 +174,7 @@ export interface OllamaChatRequest {
         num_ctx?: number;
         top_p?: number;
         top_k?: number;
+        repeat_penalty?: number;
         stop?: string[];
     };
 }

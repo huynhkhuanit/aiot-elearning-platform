@@ -23,10 +23,11 @@ QUY TẮC:
 - Code kèm comment và bước thực hiện
 - Dùng markdown (## tiêu đề, - bullet, code blocks)
 - Không viết code hoàn chỉnh cho bài tập — hướng dẫn từng bước
+- Trả lời trực tiếp, không xuất chain-of-thought/reasoning hoặc thẻ <think>
 - Focus câu hỏi chính, tránh lan man`;
 
 const SYSTEM_PROMPT_LITE =
-    "Bạn là coding assistant. Tiếng Việt. Ngắn gọn. Markdown code blocks.";
+    "Bạn là coding assistant. Tiếng Việt. Ngắn gọn. Markdown code blocks. Không xuất chain-of-thought/reasoning hoặc thẻ <think>.";
 
 function isSmallModel(modelId?: string): boolean {
     if (!modelId) return false;

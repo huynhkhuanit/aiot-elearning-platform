@@ -67,7 +67,7 @@ export default function AIChatScreen({ navigation }: Props) {
     const [messages, setMessages] = useState<AIChatMessage[]>([]);
     const [inputText, setInputText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS[1]);
+    const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS[0]);
     const [serverStatus, setServerStatus] =
         useState<AIServerStatus>("checking");
     const [showModelPicker, setShowModelPicker] = useState(false);
@@ -80,46 +80,10 @@ export default function AIChatScreen({ navigation }: Props) {
     // Animations
     const welcomeFade = useRef(new RNAnimated.Value(1)).current;
     const welcomeScale = useRef(new RNAnimated.Value(0.95)).current;
-    const dotAnim1 = useRef(new RNAnimated.Value(0.3)).current;
-    const dotAnim2 = useRef(new RNAnimated.Value(0.3)).current;
-    const dotAnim3 = useRef(new RNAnimated.Value(0.3)).current;
-
     useEffect(() => {
         loadHistory();
         checkHealth();
     }, []);
-
-    // Animated typing dots
-    useEffect(() => {
-        if (!isLoading || streamingContent) return;
-        const animateDot = (dot: RNAnimated.Value, delay: number) =>
-            RNAnimated.loop(
-                RNAnimated.sequence([
-                    RNAnimated.delay(delay),
-                    RNAnimated.timing(dot, {
-                        toValue: 1,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }),
-                    RNAnimated.timing(dot, {
-                        toValue: 0.3,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }),
-                ]),
-            );
-        const a1 = animateDot(dotAnim1, 0);
-        const a2 = animateDot(dotAnim2, 150);
-        const a3 = animateDot(dotAnim3, 300);
-        a1.start();
-        a2.start();
-        a3.start();
-        return () => {
-            a1.stop();
-            a2.stop();
-            a3.stop();
-        };
-    }, [isLoading, streamingContent]);
 
     useEffect(() => {
         RNAnimated.parallel([
@@ -352,7 +316,7 @@ export default function AIChatScreen({ navigation }: Props) {
     ];
 
     const listData = [...messages];
-    if (streamingContent) {
+    if (isLoading) {
         listData.push({
             id: "streaming",
             role: "assistant" as const,
@@ -637,41 +601,9 @@ export default function AIChatScreen({ navigation }: Props) {
                     />
                 )}
 
-                {/* Typing Indicator */}
-                {isLoading && !streamingContent && (
-                    <View style={styles.typingContainer}>
-                        <View style={styles.typingBubble}>
-                            <View style={styles.typingAvatarSmall}>
-                                <Ionicons
-                                    name="sparkles"
-                                    size={12}
-                                    color={colors.light.primary}
-                                />
-                            </View>
-                            <View style={styles.typingDots}>
-                                <RNAnimated.View
-                                    style={[
-                                        styles.typingDot,
-                                        { opacity: dotAnim1 },
-                                    ]}
-                                />
-                                <RNAnimated.View
-                                    style={[
-                                        styles.typingDot,
-                                        { opacity: dotAnim2 },
-                                    ]}
-                                />
-                                <RNAnimated.View
-                                    style={[
-                                        styles.typingDot,
-                                        { opacity: dotAnim3 },
-                                    ]}
-                                />
-                            </View>
-                            <Text style={styles.typingText}>
-                                AI đang suy nghĩ...
-                            </Text>
-                        </View>
+                {/* Generation controls */}
+                {isLoading && (
+                    <View style={styles.generationControls}>
                         <TouchableOpacity
                             style={styles.stopGeneratingBtn}
                             onPress={stopGeneration}
@@ -1044,44 +976,11 @@ const styles = StyleSheet.create({
         paddingBottom: spacing.sm,
     },
 
-    // Typing
-    typingContainer: {
-        alignItems: "center",
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.md,
-        gap: spacing.sm,
-    },
-    typingBubble: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: spacing.sm,
-        backgroundColor: colors.light.surfaceElevated,
+    // Generation controls
+    generationControls: {
+        alignItems: "flex-start",
         paddingHorizontal: spacing.base,
-        paddingVertical: spacing.sm,
-        borderRadius: radius.full,
-        ...shadows.sm,
-    },
-    typingAvatarSmall: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: colors.light.primarySoft,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    typingDots: {
-        flexDirection: "row",
-        gap: 4,
-    },
-    typingDot: {
-        width: 7,
-        height: 7,
-        borderRadius: 3.5,
-        backgroundColor: colors.light.primary,
-    },
-    typingText: {
-        ...typography.small,
-        color: colors.light.textMuted,
+        paddingBottom: spacing.sm,
     },
     stopGeneratingBtn: {
         flexDirection: "row",

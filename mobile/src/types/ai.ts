@@ -13,13 +13,18 @@ export interface AIModel {
 
 export const AI_MODELS: AIModel[] = [
     {
-        id: "deepseek-coder:1.3b",
-        name: "DeepSeek Coder 1.3B",
+        id: "qwen2.5:3b-instruct",
+        name: "Qwen 2.5 3B Fast",
         provider: "Ollama",
     },
     {
         id: "qwen2.5-coder:7b-instruct",
         name: "Qwen 2.5 Coder 7B",
+        provider: "Ollama",
+    },
+    {
+        id: "deepseek-coder:1.3b",
+        name: "DeepSeek Coder 1.3B",
         provider: "Ollama",
     },
 ];
