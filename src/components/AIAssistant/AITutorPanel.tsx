@@ -27,6 +27,8 @@ import MarkdownRenderer from "./MarkdownRenderer";
 import AIModelSelector from "./AIModelSelector";
 import type { AIModel } from "./types";
 import { AI_MODELS } from "./types";
+import { stripStreamingCursor } from "./typewriter";
+import { useTypewriterText } from "./useTypewriterText";
 
 interface AITutorPanelProps {
     className?: string;
@@ -79,8 +81,11 @@ function MessageBubble({
     theme?: "light" | "dark";
 }) {
     const isDark = theme === "dark";
-    const rawContent = content.replace(/▌$/, "");
     const streaming = !!(role === "assistant" && content.endsWith("▌"));
+    const visibleContent = useTypewriterText(content, {
+        enabled: streaming || !!isStreaming,
+    });
+    const rawContent = stripStreamingCursor(visibleContent);
 
     if (role === "user") {
         return (
@@ -117,10 +122,13 @@ function MessageBubble({
                 <MarkdownRenderer content={rawContent} theme={theme} />
 
                 {(streaming || isStreaming) && (
-                    <span className="ml-0.5 inline-flex gap-[3px] align-middle">
-                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400 [animation-delay:0ms]" />
-                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400 [animation-delay:150ms]" />
-                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400 [animation-delay:300ms]" />
+                    <span
+                        className="ml-1 inline-flex translate-y-[1px] gap-[3px] align-middle"
+                        aria-label="AI dang tra loi"
+                    >
+                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400/85 [animation-delay:0ms]" />
+                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400/75 [animation-delay:150ms]" />
+                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400/65 [animation-delay:300ms]" />
                     </span>
                 )}
             </div>

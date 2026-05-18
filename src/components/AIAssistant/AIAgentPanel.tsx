@@ -280,7 +280,7 @@ export default function AIAgentPanel({
                                         onInsertCode={onInsertCode}
                                         theme={theme}
                                         accent={useAgentMode ? "amber" : "blue"}
-                                        animateWords={false}
+                                        animateWords
                                     />
                                 ))}
 

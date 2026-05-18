@@ -1,21 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import type { AIChatMessage } from "@/types/ai";
 import type { OllamaToolCall } from "@/types/ai";
-
-function usePreWarm() {
-    const warmed = useRef(false);
-    useEffect(() => {
-        if (warmed.current) return;
-        warmed.current = true;
-        fetch("/api/ai/warm", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: "{}",
-        }).catch(() => {});
-    }, []);
-}
+import { usePreWarmAIModel } from "./usePreWarmAIModel";
 import {
     executeReadCode,
     isValidEditTab,
@@ -71,7 +59,7 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
     const [error, setError] = useState<string | null>(null);
     const abortRef = useRef(false);
 
-    usePreWarm();
+    usePreWarmAIModel(options.modelId);
 
     const saveHistory = useCallback((msgs: AIChatMessage[]) => {
         try {

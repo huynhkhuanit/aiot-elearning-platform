@@ -1,23 +1,8 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import type { AIChatMessage } from "@/types/ai";
-
-/**
- * Pre-warm AI model on mount (non-blocking, fire-and-forget).
- */
-function usePreWarm() {
-    const warmed = useRef(false);
-    useEffect(() => {
-        if (warmed.current) return;
-        warmed.current = true;
-        fetch("/api/ai/warm", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: "{}",
-        }).catch(() => {});
-    }, []);
-}
+import { usePreWarmAIModel } from "./usePreWarmAIModel";
 
 // Generate unique ID
 function generateId(): string {
@@ -60,8 +45,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
     const [error, setError] = useState<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    // Pre-warm model on first mount
-    usePreWarm();
+    usePreWarmAIModel(options.modelId);
 
     // Save to localStorage
     const saveHistory = useCallback((msgs: AIChatMessage[]) => {
@@ -314,6 +298,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
             isLoading,
             options.codeContext,
             options.language,
+            options.modelId,
             options.onError,
             saveHistory,
         ],

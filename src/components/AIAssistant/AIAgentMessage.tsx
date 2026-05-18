@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import type { AIChatMessage } from "@/types/ai";
 import { getAITheme } from "./theme";
 import MarkdownRenderer from "./MarkdownRenderer";
+import { stripStreamingCursor } from "./typewriter";
+import { useTypewriterText } from "./useTypewriterText";
 
 interface AIAgentMessageProps {
     message: AIChatMessage;
@@ -27,11 +29,15 @@ export default function AIAgentMessage({
     const [copied, setCopied] = useState(false);
     const [hovered, setHovered] = useState(false);
 
-    const rawContent = message.content.replace(/▌$/, "");
     const isStreaming = !isUser && message.content.endsWith("▌");
+    const visibleContent = useTypewriterText(message.content, {
+        enabled: animateWords && isStreaming,
+    });
+    const rawContent = stripStreamingCursor(visibleContent);
+    const copyContent = stripStreamingCursor(message.content);
 
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(rawContent);
+        await navigator.clipboard.writeText(copyContent);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
@@ -63,10 +69,13 @@ export default function AIAgentMessage({
                 <MarkdownRenderer content={rawContent} theme={theme} />
 
                 {isStreaming && (
-                    <span className="ml-0.5 inline-flex gap-1 align-middle">
-                        <span className="size-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:0ms]" />
-                        <span className="size-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:150ms]" />
-                        <span className="size-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:300ms]" />
+                    <span
+                        className="ml-1 inline-flex translate-y-[1px] gap-1 align-middle"
+                        aria-label="AI dang tra loi"
+                    >
+                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400/80 [animation-delay:0ms]" />
+                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400/70 [animation-delay:150ms]" />
+                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400/60 [animation-delay:300ms]" />
                     </span>
                 )}
             </div>

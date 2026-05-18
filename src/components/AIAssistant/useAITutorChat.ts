@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import type { AIChatMessage } from "@/types/ai";
 import type { LearningContext } from "@/contexts/AITutorContext";
+import { usePreWarmAIModel } from "./usePreWarmAIModel";
 
 function generateId(): string {
     return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -69,23 +70,6 @@ function getSuggestions(ctx: LearningContext | null): string[] {
     return baseSuggestions.slice(0, 4);
 }
 
-/**
- * Pre-warm AI model on mount (non-blocking, fire-and-forget).
- * Keeps model in RAM so first question has no cold start.
- */
-function usePreWarm() {
-    const warmed = useRef(false);
-    useEffect(() => {
-        if (warmed.current) return;
-        warmed.current = true;
-        fetch("/api/ai/warm", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: "{}",
-        }).catch(() => {});
-    }, []);
-}
-
 export function useAITutorChat(
     options: UseAITutorChatOptions,
 ): UseAITutorChatReturn {
@@ -102,8 +86,7 @@ export function useAITutorChat(
     const [error, setError] = useState<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    // Pre-warm model on first mount
-    usePreWarm();
+    usePreWarmAIModel(options.modelId);
 
     const suggestions = getSuggestions(options.learningContext);
 
