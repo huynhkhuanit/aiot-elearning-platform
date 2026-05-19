@@ -29,6 +29,14 @@ class Settings(BaseSettings):
     # - llama-3.3-70b-versatile (best for Vietnamese + complex JSON)
     # - llama-3.1-70b-versatile (stable, good for production)
     # - llama-3.1-8b-instant (fastest, lower quality)
+
+    # Fill model — used by the incremental fill pipeline that backfills empty
+    # subsections after the initial generate + repair. We deliberately pick a
+    # cheaper, faster model with its own TPM bucket so the small fill calls
+    # don't compete with the main 70B call for the 12k TPM budget. Quality
+    # for short, scoped node generation is fine on the 8b instant model.
+    GROQ_FILL_MODEL: str = "llama-3.1-8b-instant"
+    GROQ_FILL_MAX_TOKENS: int = 4000
     
     # Supabase Configuration (optional - for direct access)
     SUPABASE_URL: str = ""

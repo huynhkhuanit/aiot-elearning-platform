@@ -17,6 +17,14 @@ import type {
 const FASTAPI_BASE_URL =
     process.env.FASTAPI_BASE_URL || "http://localhost:8000";
 
+// Roadmap generation can take 2-4 minutes when Groq's TPM kicks in and the
+// SDK has to wait 20-60s between calls. Tell Next.js (Node runtime) to allow
+// this whole route up to 5 minutes before terminating it. Without this,
+// Vercel/Next defaults abort the request long before FastAPI is done.
+export const maxDuration = 300;
+export const runtime = "nodejs";
+const FASTAPI_FETCH_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
 interface GenerateRequest {
     profile: UserProfile;
 }
@@ -140,8 +148,9 @@ export async function POST(request: NextRequest) {
                         },
                         generation_directives: generationDirectivesRequest,
                     }),
-                    // Add timeout
-                    signal: AbortSignal.timeout(60000), // 60 seconds timeout
+                    // Allow Groq's TPM-driven backoffs (up to 60s per retry,
+                    // multiple repair + fill rounds) to complete before we abort.
+                    signal: AbortSignal.timeout(FASTAPI_FETCH_TIMEOUT_MS),
                 },
             );
         } catch (fetchError: any) {
@@ -155,7 +164,7 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json(
                     {
                         success: false,
-                        error: "AI service timeout. Vui lòng thử lại sau.",
+                        error: "AI service timeout sau 5 phút. Có thể Groq đang nghẽn TPM. Vui lòng đợi 1-2 phút rồi thử lại.",
                     },
                     { status: 504 },
                 );

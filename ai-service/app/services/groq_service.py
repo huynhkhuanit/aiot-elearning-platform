@@ -16,8 +16,23 @@ def get_groq_client() -> AsyncGroq:
     """
     Get or create Groq client with current API key from settings.
     This ensures we always use the latest API key if .env is updated.
+
+    max_retries=0 — we handle 429 backoff in the application layer with a
+    much shorter cooldown (20s) than the SDK's default (60s). Letting the
+    SDK retry would block the whole pipeline for a full minute every time
+    Groq returns 429.
     """
-    return AsyncGroq(api_key=settings.GROQ_API_KEY)
+    return AsyncGroq(api_key=settings.GROQ_API_KEY, max_retries=0)
+
+
+def get_groq_client_for_fill() -> AsyncGroq:
+    """
+    Client tuned for incremental fill calls. max_retries=0 so a transient
+    429 fails immediately — the roadmap_generator's fill loop treats a
+    failed round as non-fatal and either retries with a short cooldown or
+    skips to the next round.
+    """
+    return AsyncGroq(api_key=settings.GROQ_API_KEY, max_retries=0)
 
 
 class GroqAPIError(Exception):
@@ -134,12 +149,52 @@ async def generate_roadmap_json(user_prompt: str) -> Tuple[Dict[str, Any], Dict[
         return roadmap_data, metadata
     
     except RateLimitError as e:
-        # Groq free tier: 30 requests/min, 6000 tokens/min
-        raise GroqAPIError(
-            message="Groq API rate limit exceeded. Vui lòng đợi 1 phút và thử lại. (Free tier: 30 requests/phút)",
-            status_code=429,
-            error_type="rate_limit"
+        # We disabled SDK retries (max_retries=0) so we own the backoff.
+        # Wait a short, deterministic period and retry once. This is much
+        # better than the SDK's default 60s wait because the per-minute TPM
+        # window often opens up within 15-25s once the previous big call
+        # finishes.
+        import logging as _logging
+        _logger = _logging.getLogger(__name__)
+        _logger.warning(
+            "Groq 429 on main call — sleeping 20s before single retry."
         )
+        import asyncio as _asyncio
+        await _asyncio.sleep(20)
+        try:
+            response = await client.chat.completions.create(
+                model=settings.GROQ_MODEL,
+                messages=[
+                    {"role": "system", "content": ROADMAP_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt}
+                ],
+                response_format={"type": "json_object"},
+                temperature=settings.GROQ_TEMPERATURE,
+                max_tokens=attempted_max_tokens,
+            )
+            end_time = time.time()
+            latency_ms = int((end_time - start_time) * 1000)
+            content = response.choices[0].message.content
+            if not content:
+                raise ValueError("Empty response from Groq API")
+            roadmap_data = json.loads(content)
+            metadata = {
+                "model": settings.GROQ_MODEL,
+                "model_quality": model_info.get("quality", "unknown"),
+                "input_tokens": response.usage.prompt_tokens if response.usage else 0,
+                "output_tokens": response.usage.completion_tokens if response.usage else 0,
+                "total_tokens": response.usage.total_tokens if response.usage else 0,
+                "latency_ms": latency_ms,
+                "prompt_version": settings.PROMPT_VERSION,
+                "provider": "groq",
+            }
+            return roadmap_data, metadata
+        except RateLimitError:
+            raise GroqAPIError(
+                message="Groq API rate limit exceeded. Vui lòng đợi 1 phút và thử lại. (Free tier: 30 requests/phút)",
+                status_code=429,
+                error_type="rate_limit"
+            )
     
     except APIStatusError as e:
         error_message = str(e.message) if hasattr(e, 'message') else str(e)
@@ -330,9 +385,11 @@ async def generate_fill_nodes_json(
     """
     Generate ADDITIONAL nodes/edges to backfill empty subsections.
 
-    Uses a focused system prompt and a smaller max_tokens budget so the
-    request stays well below Groq's per-minute TPM cap. Returns the parsed
-    JSON object, expected to look like {"nodes": [...], "edges": [...]}.
+    Uses settings.GROQ_FILL_MODEL (a cheaper / smaller model with its own TPM
+    bucket) and a smaller max_tokens budget so each fill round stays well
+    below Groq's per-minute TPM cap and does not contend with the main 70B
+    generation. Returns the parsed JSON object, expected to look like
+    {"nodes": [...], "edges": [...]}.
 
     Args:
         fill_user_prompt: Already-built user prompt enumerating which
@@ -351,13 +408,18 @@ async def generate_fill_nodes_json(
             error_type="missing_api_key",
         )
 
-    client = get_groq_client()
+    # Use a low-retry client for fill calls so a transient 429 doesn't trigger
+    # a 60s wait inside the SDK. The caller (roadmap_generator) treats a
+    # failed fill round as non-fatal and moves on, which is much better UX
+    # than blocking the whole roadmap pipeline for a minute.
+    client = get_groq_client_for_fill()
+    fill_model = settings.GROQ_FILL_MODEL or settings.GROQ_MODEL
     if "json" not in fill_user_prompt.lower():
         fill_user_prompt = fill_user_prompt + "\n\nReturn JSON only."
 
     try:
         response = await client.chat.completions.create(
-            model=settings.GROQ_MODEL,
+            model=fill_model,
             messages=[
                 {"role": "system", "content": FILL_NODES_SYSTEM_PROMPT},
                 {"role": "user", "content": fill_user_prompt},
@@ -373,7 +435,7 @@ async def generate_fill_nodes_json(
         if status_code == 413 and max_tokens_override > 2000:
             fallback = max(2000, max_tokens_override // 2)
             response = await client.chat.completions.create(
-                model=settings.GROQ_MODEL,
+                model=fill_model,
                 messages=[
                     {"role": "system", "content": FILL_NODES_SYSTEM_PROMPT},
                     {"role": "user", "content": fill_user_prompt},

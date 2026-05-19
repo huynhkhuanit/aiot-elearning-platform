@@ -2,6 +2,7 @@
 Roadmap Generator Service - Main business logic
 """
 
+import asyncio
 import logging
 import re
 import unicodedata
@@ -980,9 +981,15 @@ def _collect_structural_issues(roadmap: GeneratedRoadmap) -> List[str]:
 
 # Each fill chunk targets a small slice of subsections so the LLM stays
 # focused and the output stays comfortably under Groq's TPM budget.
-_FILL_CHUNK_SIZE = 6
-_FILL_MAX_ROUNDS = 3
-_FILL_OUTPUT_MAX_TOKENS = 4000
+# Smaller chunks = smaller per-call output = less likely to trip TPM, and
+# the 8b-instant model (used by the fill pipeline) is fast enough that
+# making 4-5 small calls is faster end-to-end than 2-3 big ones that hit 429.
+_FILL_CHUNK_SIZE = 4
+_FILL_MAX_ROUNDS = 5
+_FILL_OUTPUT_MAX_TOKENS = 2800
+# Local backoff if a fill round itself returns 429. Much shorter than the
+# 60s the Groq SDK would otherwise wait, because the 8b bucket recovers fast.
+_FILL_RATE_LIMIT_COOLDOWN_S = 15
 
 
 def _subsections_needing_fill(
@@ -1221,10 +1228,18 @@ async def _incremental_fill_roadmap(
     Returns total nodes added across all rounds.
     """
     total_added = 0
+    rate_limit_recoveries = 0
     for round_index in range(_FILL_MAX_ROUNDS):
         pending = _subsections_needing_fill(roadmap, directives)
         if not pending:
             break
+
+        # Small cooldown before each fill round (except the first) to spread
+        # the calls out across Groq's per-minute TPM window. The fill model
+        # has its own bucket but we still want to avoid stacking back-to-back
+        # 429s if the user generates two roadmaps quickly.
+        if round_index > 0:
+            await asyncio.sleep(0.5)
 
         chunk = pending[:_FILL_CHUNK_SIZE]
         logger.info(
@@ -1240,15 +1255,47 @@ async def _incremental_fill_roadmap(
                 fill_user_prompt,
                 max_tokens_override=_FILL_OUTPUT_MAX_TOKENS,
             )
+        except GroqAPIError as exc:
+            # 429 from the fill model: wait a short period and retry the same
+            # chunk once. Total worst case is _FILL_RATE_LIMIT_COOLDOWN_S +
+            # one more call (~3-4s), still much faster than letting the SDK
+            # block on its 60s default retry.
+            if exc.error_type == "rate_limit" and rate_limit_recoveries < 2:
+                rate_limit_recoveries += 1
+                logger.warning(
+                    "Fill round %d hit 429; waiting %ds and retrying once.",
+                    round_index + 1,
+                    _FILL_RATE_LIMIT_COOLDOWN_S,
+                )
+                await asyncio.sleep(_FILL_RATE_LIMIT_COOLDOWN_S)
+                try:
+                    fill_data = await generate_fill_nodes_json(
+                        fill_user_prompt,
+                        max_tokens_override=_FILL_OUTPUT_MAX_TOKENS,
+                    )
+                except Exception as retry_exc:  # noqa: BLE001
+                    logger.warning(
+                        "Fill round %d retry also failed (%s); skipping.",
+                        round_index + 1,
+                        retry_exc,
+                    )
+                    continue
+            else:
+                logger.warning(
+                    "Fill round %d failed (%s); skipping to next round.",
+                    round_index + 1,
+                    exc,
+                )
+                continue
         except Exception as exc:  # noqa: BLE001
             # Don't fail the whole roadmap if a fill chunk errors out — just
-            # stop here and return whatever we already merged in.
+            # skip and try the next round (or stop if we're out).
             logger.warning(
-                "Incremental fill round %d failed (%s); returning current roadmap.",
+                "Fill round %d failed unexpectedly (%s); skipping.",
                 round_index + 1,
                 exc,
             )
-            break
+            continue
 
         added = _merge_fill_response(roadmap, fill_data)
         total_added += added
@@ -1311,7 +1358,40 @@ async def generate_roadmap(
 
     quality_issues = _validate_roadmap_quality(roadmap, directives)
 
-    if quality_issues:
+    # The repair pass is expensive (full 70B regeneration → another ~10s + 0-60s
+    # backoff if we hit Groq's TPM limit). Past observations show the repair
+    # rarely fixes "missing lesson nodes" issues since the LLM tends to drop
+    # the same subsections again. Only run repair when we have STRUCTURAL
+    # issues (missing sections, isolated nodes, missing prerequisites) that
+    # full regeneration is more likely to fix. Pure count/lesson shortages
+    # are handled much faster by the incremental fill pass below.
+    structural_keywords = (
+        "isolated",
+        "subsection_id",
+        "Expected at least",  # missing sections
+        "missing prerequisites",
+        "missing learning outcomes",
+        "exceed the allowed density",
+    )
+    needs_repair = any(
+        any(kw in issue for kw in structural_keywords)
+        # Skip the "Expected at least N nodes" issue since fill handles it
+        and "nodes but received" not in issue
+        for issue in quality_issues
+    )
+    # Always repair when sections themselves are missing — fill can't create new ones.
+    needs_repair = needs_repair or any(
+        "sections but received" in issue for issue in quality_issues
+    )
+
+    if quality_issues and needs_repair:
+        # Repair pass: full 70B regeneration. Expensive (10s + possible 20s
+        # cooldown if Groq returns 429), so we only do it when there are
+        # structural problems that incremental fill can't fix.
+        logger.info(
+            "Running repair pass for %d quality issues.", len(quality_issues)
+        )
+        await asyncio.sleep(2.0)
         repair_prompt = _build_repair_prompt(user_prompt, quality_issues)
         raw_roadmap, raw_metadata = await generate_roadmap_json(repair_prompt)
         roadmap = validate_and_parse_roadmap(raw_roadmap)
