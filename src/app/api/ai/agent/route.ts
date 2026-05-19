@@ -76,6 +76,13 @@ function toChatMessages(
         }));
 }
 
+// Force Node.js runtime + dynamic streaming so the SSE response isn't
+// buffered by Next.js. Without these the AI reply arrives as a single blob
+// and the client never gets to render a typewriter effect.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 300;
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -181,6 +188,8 @@ export async function POST(request: NextRequest) {
             const sseStream = new ReadableStream({
                 async start(controller) {
                     const reader = answerStream.getReader();
+                    // Initial ping so headers flush right away.
+                    controller.enqueue(encoder.encode(": ping\n\n"));
                     try {
                         while (true) {
                             const { done, value } = await reader.read();
@@ -253,6 +262,8 @@ export async function POST(request: NextRequest) {
         const sseStream = new ReadableStream({
             async start(controller) {
                 const reader = stream.getReader();
+                // Flush headers immediately by sending a comment frame.
+                controller.enqueue(encoder.encode(": ping\n\n"));
                 try {
                     while (true) {
                         const { done, value } = await reader.read();

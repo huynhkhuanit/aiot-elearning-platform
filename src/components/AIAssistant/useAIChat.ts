@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { flushSync } from "react-dom";
 import type { AIChatMessage } from "@/types/ai";
 import { getExplicitOllamaModelId } from "@/lib/ai-models";
 import { parseSSEChunk } from "@/lib/sse-stream";
@@ -90,21 +91,29 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
             saveHistory(updatedMessages);
 
             // Create assistant message placeholder
+            const assistantId = generateId();
             const assistantMessage: AIChatMessage = {
-                id: generateId(),
+                id: assistantId,
                 role: "assistant",
                 content: "",
                 timestamp: Date.now(),
             };
 
-            setMessages([...updatedMessages, assistantMessage]);
-            setIsLoading(true);
+            // Mount the placeholder synchronously so the user sees the AI
+            // start responding immediately, even before the first byte from
+            // the server arrives. Without flushSync, React 18 may batch this
+            // with the next state update and the placeholder stays invisible.
+            flushSync(() => {
+                setMessages([...updatedMessages, assistantMessage]);
+                setIsLoading(true);
+            });
 
             // Setup abort controller
             const abortController = new AbortController();
             abortControllerRef.current = abortController;
 
             let fullContent = "";
+            let firstChunkApplied = false;
 
             try {
                 // Build messages for API (only send last 6 messages for faster inference)
@@ -214,7 +223,19 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 
                         if (data.content) {
                             fullContent += data.content;
-                            scheduleUpdate();
+                            // First token → flush synchronously so the user
+                            // sees the cursor + first characters appear right
+                            // away. Subsequent tokens use rAF batching.
+                            if (!firstChunkApplied) {
+                                firstChunkApplied = true;
+                                if (rafId) {
+                                    cancelAnimationFrame(rafId);
+                                    rafId = null;
+                                }
+                                flushSync(() => flushToUI(false));
+                            } else {
+                                scheduleUpdate();
+                            }
                         }
 
                         if (data.done) {
@@ -231,11 +252,18 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
                 // Final flush — show complete content without cursor
                 if (rafId) cancelAnimationFrame(rafId);
 
-                // Save final messages with complete content
+                // Show one last frame WITH the cursor — this preserves the
+                // streaming signal so the message component's typewriter has
+                // a chance to keep typing toward the final text. We swap to
+                // the cursor-less final value once typing animation has had
+                // time to catch up.
+                flushToUI(false);
+
+                // Save final messages with complete content (no cursor).
                 setMessages((prev) => {
                     const final = [...prev];
                     const lastIdx = final.length - 1;
-                    if (lastIdx >= 0 && final[lastIdx].role === "assistant") {
+                    if (lastIdx >= 0 && final[lastIdx].id === assistantId) {
                         final[lastIdx] = {
                             ...final[lastIdx],
                             content:

@@ -41,6 +41,13 @@ function isSmallModel(modelId?: string): boolean {
 // Pre-warm fast model on module load (non-blocking)
 preWarmModel().catch(() => {});
 
+// Force Node.js runtime + dynamic streaming so the SSE response isn't buffered
+// by Next.js. Without these the AI reply tends to arrive as one big blob
+// instead of token-by-token, which kills the typewriter effect on the client.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 300;
+
 export async function POST(request: NextRequest) {
     try {
         const { messages, codeContext, language, modelId } =
@@ -177,6 +184,9 @@ export async function POST(request: NextRequest) {
         const sseStream = new ReadableStream({
             async start(controller) {
                 const reader = stream.getReader();
+                // Initial keep-alive comment so any proxy/CDN flushes headers
+                // and the client begins reading the body immediately.
+                controller.enqueue(encoder.encode(": ping\n\n"));
 
                 try {
                     while (true) {

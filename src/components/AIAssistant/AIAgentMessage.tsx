@@ -10,8 +10,6 @@ import MarkdownRenderer from "./MarkdownRenderer";
 import {
     getAssistantDisplayContent,
     isAssistantStreamingContent,
-    shouldRenderAssistantMarkdown,
-    shouldReplayAssistantTypewriter,
 } from "./streaming-display";
 import { useTypewriterText } from "./useTypewriterText";
 
@@ -20,6 +18,10 @@ interface AIAgentMessageProps {
     onInsertCode?: (code: string) => void;
     theme?: "light" | "dark";
     accent?: "amber" | "blue";
+    /**
+     * Enable the typewriter effect for this message. Pass `false` for already
+     * completed messages from history that should appear instantly.
+     */
     animateWords?: boolean;
 }
 
@@ -27,26 +29,41 @@ export default function AIAgentMessage({
     message,
     onInsertCode: _onInsertCode,
     theme = "dark",
+    accent = "blue",
     animateWords = false,
 }: AIAgentMessageProps) {
     const isUser = message.role === "user";
     const themed = getAITheme(theme);
+    const isDark = theme === "dark";
     const [copied, setCopied] = useState(false);
     const [hovered, setHovered] = useState(false);
 
+    // The chat hook appends "▌" to the live message while streaming. That's
+    // our reliable signal that the response is still arriving from the server.
     const isStreaming =
         !isUser && isAssistantStreamingContent(message.content);
+
+    // Typewriter runs at the component level, with its own setTimeout chain,
+    // so it isn't affected by React 18 automatic batching at the chat hook.
+    // intervalMs=12 ≈ 80 chars/sec — fast enough not to lag, slow enough to
+    // clearly look like typing.
     const visibleContent = useTypewriterText(message.content, {
-        // Replay the typewriter while the message is still streaming so the
-        // user sees characters appearing one-by-one. `animateWords` allows
-        // callers to disable the effect (e.g. for already-completed history).
-        enabled:
-            animateWords !== false &&
-            shouldReplayAssistantTypewriter(isStreaming, message.content),
-        intervalMs: 14,
+        enabled: animateWords && !isUser && isStreaming,
+        intervalMs: 12,
     });
-    const rawContent = getAssistantDisplayContent(visibleContent);
-    const copyContent = getAssistantDisplayContent(message.content);
+
+    const visibleClean = getAssistantDisplayContent(visibleContent);
+    const targetClean = getAssistantDisplayContent(message.content);
+
+    // While the typewriter is still catching up to the target, render plain
+    // text with a blinking caret. This is the only reliable way to get a
+    // smooth, ChatGPT-style typing effect: re-parsing markdown on every
+    // keystroke is both expensive (lag) and visually unstable (lists/code
+    // blocks "pop" in place).
+    const stillTyping = !isUser && visibleClean !== targetClean;
+    const showCaret = stillTyping || isStreaming;
+
+    const copyContent = targetClean;
 
     const handleCopy = async () => {
         await navigator.clipboard.writeText(copyContent);
@@ -69,6 +86,15 @@ export default function AIAgentMessage({
         );
     }
 
+    const caretColor =
+        accent === "amber"
+            ? isDark
+                ? "bg-amber-400"
+                : "bg-amber-500"
+            : isDark
+              ? "bg-emerald-400"
+              : "bg-emerald-500";
+
     return (
         <div
             className="group px-4 py-3"
@@ -76,23 +102,45 @@ export default function AIAgentMessage({
             onMouseLeave={() => setHovered(false)}
         >
             <div className={cn("max-w-full", themed.textBody)}>
-                {shouldRenderAssistantMarkdown(message.content) && (
-                    <MarkdownRenderer
-                        content={rawContent}
-                        theme={theme}
-                        isStreaming={isStreaming}
-                    />
-                )}
-
-                {isStreaming && (
-                    <span
-                        className="ml-1 inline-flex translate-y-[1px] gap-1 align-middle"
-                        aria-label="AI dang tra loi"
+                {stillTyping ? (
+                    // Plain-text rendering during typing — fast, stable, and
+                    // matches the ChatGPT feel.
+                    <div
+                        className={cn(
+                            "whitespace-pre-wrap break-words text-sm leading-relaxed",
+                            isDark ? "text-zinc-100" : "text-zinc-900",
+                        )}
                     >
-                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400/80 [animation-delay:0ms]" />
-                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400/70 [animation-delay:150ms]" />
-                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400/60 [animation-delay:300ms]" />
-                    </span>
+                        {visibleClean}
+                        <span
+                            className={cn(
+                                "ml-0.5 inline-block w-[6px] h-[1em] translate-y-[2px] align-middle rounded-sm",
+                                "animate-pulse",
+                                caretColor,
+                            )}
+                            aria-label="AI đang gõ"
+                        />
+                    </div>
+                ) : (
+                    // Once typing is done, hand off to the full markdown
+                    // renderer for the final, richly-formatted view.
+                    <>
+                        <MarkdownRenderer
+                            content={visibleClean}
+                            theme={theme}
+                            isStreaming={false}
+                        />
+                        {showCaret && (
+                            <span
+                                className={cn(
+                                    "ml-0.5 inline-block w-[6px] h-[1em] translate-y-[2px] align-middle rounded-sm",
+                                    "animate-pulse",
+                                    caretColor,
+                                )}
+                                aria-label="AI đang gõ"
+                            />
+                        )}
+                    </>
                 )}
             </div>
 

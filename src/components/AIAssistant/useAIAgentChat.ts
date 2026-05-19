@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { flushSync } from "react-dom";
 import type { AIChatMessage } from "@/types/ai";
 import type { OllamaToolCall } from "@/types/ai";
 import { getExplicitOllamaModelId } from "@/lib/ai-models";
@@ -154,9 +155,15 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                 content: "",
                 timestamp: Date.now(),
             };
-            setMessages([...updatedMessages, placeholderMessage]);
+            // Mount placeholder + isLoading synchronously so the user sees
+            // the AI start responding right away. Without flushSync, React 18
+            // can batch this with downstream updates and the placeholder
+            // never paints until the first network response.
+            flushSync(() => {
+                setMessages([...updatedMessages, placeholderMessage]);
+                setIsLoading(true);
+            });
             saveHistory(updatedMessages);
-            setIsLoading(true);
 
             const apiMessages: Array<
                 | { role: "user"; content: string }
@@ -213,6 +220,7 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                         toolCalls = null;
                         let streamDone = false;
                         let buffer = "";
+                        let firstChunkApplied = false;
 
                         // rAF batching for streaming updates
                         let rafId: number | null = null;
@@ -269,7 +277,20 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                                     !data.done
                                 ) {
                                     assistantContent += data.content;
-                                    scheduleUpdate();
+                                    // First token paints synchronously so the
+                                    // streaming cursor + initial characters
+                                    // appear without waiting for the next
+                                    // animation frame.
+                                    if (!firstChunkApplied) {
+                                        firstChunkApplied = true;
+                                        if (rafId) {
+                                            cancelAnimationFrame(rafId);
+                                            rafId = null;
+                                        }
+                                        flushSync(() => flushToUI());
+                                    } else {
+                                        scheduleUpdate();
+                                    }
                                 }
                                 if (data.done) {
                                     toolCalls = data.toolCalls ?? null;
