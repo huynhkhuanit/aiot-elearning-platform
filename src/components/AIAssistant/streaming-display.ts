@@ -9,10 +9,12 @@ export function isAssistantStreamingContent(content: string): boolean {
 }
 
 export function shouldReplayAssistantTypewriter(
-    _animateWords: boolean,
-    _content: string,
+    isStreaming: boolean,
+    content: string,
 ): boolean {
-    return false;
+    // Replay the typewriter only while the assistant is actively streaming.
+    // Static (already-completed) messages are shown immediately without re-typing.
+    return isStreaming && content.length > 0;
 }
 
 export function shouldRenderAssistantMarkdown(_content: string): boolean {

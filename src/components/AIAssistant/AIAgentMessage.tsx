@@ -37,14 +37,15 @@ export default function AIAgentMessage({
     const isStreaming =
         !isUser && isAssistantStreamingContent(message.content);
     const visibleContent = useTypewriterText(message.content, {
-        enabled: shouldReplayAssistantTypewriter(
-            animateWords,
-            message.content,
-        ),
+        // Replay the typewriter while the message is still streaming so the
+        // user sees characters appearing one-by-one. `animateWords` allows
+        // callers to disable the effect (e.g. for already-completed history).
+        enabled:
+            animateWords !== false &&
+            shouldReplayAssistantTypewriter(isStreaming, message.content),
+        intervalMs: 14,
     });
-    const rawContent = isStreaming
-        ? getAssistantDisplayContent(message.content)
-        : getAssistantDisplayContent(visibleContent);
+    const rawContent = getAssistantDisplayContent(visibleContent);
     const copyContent = getAssistantDisplayContent(message.content);
 
     const handleCopy = async () => {

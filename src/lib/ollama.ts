@@ -48,7 +48,9 @@ const OLLAMA_FAST_MODEL =
 
 // Keep model loaded in RAM (seconds). "0" = unload immediately, "-1" = keep forever.
 // For CPU-only VPS, keep models warm to avoid 30s+ cold start reload.
-const MODEL_KEEP_ALIVE = "15m";
+// 60 minutes is long enough to span typical user sessions while still letting
+// idle deployments free RAM eventually.
+const MODEL_KEEP_ALIVE = "60m";
 
 // Timeout for different operations
 const COMPLETION_TIMEOUT_MS = 120000; // 120s for autocomplete (cold start can take a while)

@@ -149,9 +149,12 @@ function buildTutorRequest(
     }> = [{ role: "system", content: systemPrompt }];
 
     const compactMessages = compactAIMessageHistory(messages, {
-        maxMessages: 8,
-        maxUserChars: 1600,
-        maxAssistantChars: 800,
+        // Keep the prompt small so the first token arrives faster. The system
+        // prompt + lesson context already carries plenty of signal; chat
+        // history beyond the last few turns rarely improves the answer.
+        maxMessages: 6,
+        maxUserChars: 1200,
+        maxAssistantChars: 600,
     });
 
     for (const message of compactMessages) {
@@ -192,6 +195,15 @@ function createStaticStream(content: string): ReadableStream<string> {
 // This runs once when the route module is first imported by Next.js.
 // It keeps the fast model in RAM so user's first question is instant.
 preWarmModel().catch(() => {});
+
+// Force this route into the Node.js runtime in dynamic mode so the SSE
+// response is streamed straight to the client without Next.js wrapping it
+// in a buffered handler. Without these flags the framework can hold the
+// whole response in memory until completion, which is exactly what makes
+// the AI reply appear all at once instead of token-by-token.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export const POST = withOptionalAuth(async (request: NextRequest, { user }) => {
     try {
@@ -375,12 +387,23 @@ export const POST = withOptionalAuth(async (request: NextRequest, { user }) => {
         const sseStream = new ReadableStream({
             async start(controller) {
                 const reader = stream.getReader();
+                // Send an immediate keep-alive comment so any intermediary
+                // (CDN, proxy, dev server) flushes the headers and the client
+                // starts reading the body without waiting for the first token.
+                controller.enqueue(encoder.encode(": ping\n\n"));
                 try {
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) {
+                            // Emit the final SSE event and close the stream
+                            // BEFORE persisting the session. Saving memory can
+                            // take hundreds of ms (DB round-trip), and we don't
+                            // want to delay the user-visible "done" signal.
+                            controller.enqueue(toSSE("", true));
+                            controller.close();
+
                             if (user) {
-                                await saveTutorSession({
+                                saveTutorSession({
                                     userId: user.userId,
                                     sessionId: effectiveSessionId,
                                     courseId: learningContext?.courseSlug || null,
@@ -402,8 +425,6 @@ export const POST = withOptionalAuth(async (request: NextRequest, { user }) => {
                                     );
                                 });
                             }
-                            controller.enqueue(toSSE("", true));
-                            controller.close();
                             break;
                         }
                         controller.enqueue(toSSE(value, false));

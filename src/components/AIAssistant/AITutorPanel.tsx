@@ -86,16 +86,18 @@ function MessageBubble({
 }) {
     const isDark = theme === "dark";
     const streaming =
-        role === "assistant" && isAssistantStreamingContent(content);
+        role === "assistant" &&
+        (!!isStreaming || isAssistantStreamingContent(content));
     const visibleContent = useTypewriterText(content, {
-        enabled: shouldReplayAssistantTypewriter(
-            streaming || !!isStreaming,
-            content,
-        ),
+        enabled: shouldReplayAssistantTypewriter(streaming, content),
+        // Faster typing speed than the default 22ms keeps the UI feeling
+        // snappy while still giving a clear "typing" effect.
+        intervalMs: 14,
     });
-    const rawContent = streaming
-        ? getAssistantDisplayContent(content)
-        : getAssistantDisplayContent(visibleContent);
+    // Always render through the typewriter projection so the user actually
+    // sees characters appearing one-by-one — even when the network delivers
+    // a big chunk in a single SSE event.
+    const rawContent = getAssistantDisplayContent(visibleContent);
 
     if (role === "user") {
         return (

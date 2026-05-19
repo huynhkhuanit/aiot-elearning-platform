@@ -143,8 +143,10 @@ export function useAITutorChat(
             let fullContent = "";
 
             try {
+                // Send only the most recent turns to keep prompt size small,
+                // which directly reduces time-to-first-token on the model.
                 const contextMessages = updatedMessages
-                    .slice(-10)
+                    .slice(-6)
                     .map((msg) => ({
                         role: msg.role,
                         content: msg.content,
@@ -175,15 +177,24 @@ export function useAITutorChat(
                 let buffer = "";
                 let streamDone = false;
 
-                // ── Optimized UI update: use rAF batching ──
-                // Instead of updating state on every SSE chunk, we accumulate
-                // content and flush to React state via requestAnimationFrame.
-                // This prevents excessive re-renders (especially on slow devices).
+                // ── Optimized UI update: rAF batching with immediate first paint ──
+                // We accumulate streamed content and flush to React state via
+                // requestAnimationFrame to avoid one re-render per token. The
+                // very first chunk is flushed synchronously so the user sees
+                // characters appearing the moment the AI starts responding.
                 let rafId: number | null = null;
                 let pendingUpdate = false;
+                let hasFirstPaint = false;
 
                 const flushToUI = (done: boolean) => {
-                    if (rafId) cancelAnimationFrame(rafId);
+                    if (rafId !== null) {
+                        cancelAnimationFrame(rafId);
+                        rafId = null;
+                    }
+                    // Append a streaming-cursor marker to the content while
+                    // generation is in progress. The UI uses this marker to
+                    // (a) keep the typewriter effect active and (b) auto-close
+                    // any unfinished markdown fences for safe rendering.
                     const displayContent = done ? fullContent : fullContent + "▌";
                     setMessages((prev) => {
                         const updated = [...prev];
@@ -203,6 +214,14 @@ export function useAITutorChat(
                 };
 
                 const scheduleUpdate = () => {
+                    // First token: paint immediately so the user sees the AI
+                    // start responding without waiting up to ~16ms for the next
+                    // animation frame.
+                    if (!hasFirstPaint) {
+                        hasFirstPaint = true;
+                        flushToUI(false);
+                        return;
+                    }
                     if (pendingUpdate) return;
                     pendingUpdate = true;
                     rafId = requestAnimationFrame(() => flushToUI(false));

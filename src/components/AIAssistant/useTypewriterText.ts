@@ -13,7 +13,7 @@ interface UseTypewriterTextOptions {
 
 export function useTypewriterText(
     content: string,
-    { enabled, intervalMs = 22 }: UseTypewriterTextOptions,
+    { enabled, intervalMs = 14 }: UseTypewriterTextOptions,
 ): string {
     const targetText = useMemo(() => stripStreamingCursor(content), [content]);
     const [visibleText, setVisibleText] = useState(() =>

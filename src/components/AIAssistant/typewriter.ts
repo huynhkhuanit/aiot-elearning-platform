@@ -10,10 +10,14 @@ export function stripStreamingCursor(content: string): string {
 }
 
 function getAdaptiveStep(pendingLength: number): number {
-    if (pendingLength > 360) return 24;
-    if (pendingLength > 180) return 16;
-    if (pendingLength > 80) return 10;
-    if (pendingLength > 32) return 6;
+    // Catch up faster when there's a big backlog so the visible text doesn't
+    // fall behind the streamed content. The minimum step (3 chars) preserves
+    // the "typing" feel for short bursts.
+    if (pendingLength > 600) return 60;
+    if (pendingLength > 300) return 36;
+    if (pendingLength > 150) return 20;
+    if (pendingLength > 64) return 10;
+    if (pendingLength > 24) return 6;
     return 3;
 }
 
