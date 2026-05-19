@@ -31,7 +31,6 @@ import { useTypewriterText } from "./useTypewriterText";
 import {
     getAssistantDisplayContent,
     isAssistantStreamingContent,
-    shouldReplayAssistantTypewriter,
 } from "./streaming-display";
 
 interface AITutorPanelProps {
@@ -85,19 +84,25 @@ function MessageBubble({
     theme?: "light" | "dark";
 }) {
     const isDark = theme === "dark";
+    // Detect "actively streaming" via the cursor marker the chat hook appends
+    // to live content, OR via the explicit prop. The marker survives until the
+    // hook finalizes the message.
     const streaming =
         role === "assistant" &&
         (!!isStreaming || isAssistantStreamingContent(content));
+
+    // Run the typewriter at the message-component level so its setTimeout
+    // chain is isolated from any state batching happening at the hook above.
+    // intervalMs=12 ≈ 80 chars/s — fast enough not to lag behind the model
+    // but slow enough to feel like typing.
     const visibleContent = useTypewriterText(content, {
-        enabled: shouldReplayAssistantTypewriter(streaming, content),
-        // Faster typing speed than the default 22ms keeps the UI feeling
-        // snappy while still giving a clear "typing" effect.
-        intervalMs: 14,
+        enabled: streaming,
+        intervalMs: 12,
     });
-    // Always render through the typewriter projection so the user actually
-    // sees characters appearing one-by-one — even when the network delivers
-    // a big chunk in a single SSE event.
-    const rawContent = getAssistantDisplayContent(visibleContent);
+
+    // Strip the cursor marker before rendering. The cursor is only used as a
+    // signal between the hook and the component.
+    const visibleClean = getAssistantDisplayContent(visibleContent);
 
     if (role === "user") {
         return (
@@ -116,6 +121,12 @@ function MessageBubble({
         );
     }
 
+    // While typing, render plain text. Re-parsing markdown on every keystroke
+    // is expensive AND visually unstable (lists / code fences "pop" in place).
+    // Once typing finishes, we hand off to the full markdown renderer.
+    const stillTyping =
+        streaming || visibleContent !== getAssistantDisplayContent(content);
+
     return (
         <div className="group flex gap-2.5 px-4 py-2">
             <Avatar size="sm" className="mt-0.5 shrink-0">
@@ -131,21 +142,29 @@ function MessageBubble({
                 </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-                <MarkdownRenderer
-                    content={rawContent}
-                    theme={theme}
-                    isStreaming={streaming || !!isStreaming}
-                />
-
-                {(streaming || isStreaming) && (
-                    <span
-                        className="ml-1 inline-flex translate-y-[1px] gap-[3px] align-middle"
-                        aria-label="AI dang tra loi"
+                {stillTyping ? (
+                    <div
+                        className={cn(
+                            "whitespace-pre-wrap break-words text-[13px] leading-relaxed",
+                            isDark ? "text-zinc-100" : "text-zinc-900",
+                        )}
                     >
-                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400/85 [animation-delay:0ms]" />
-                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400/75 [animation-delay:150ms]" />
-                        <span className="size-1.5 animate-bounce rounded-full bg-emerald-400/65 [animation-delay:300ms]" />
-                    </span>
+                        {visibleClean}
+                        <span
+                            className={cn(
+                                "ml-0.5 inline-block w-[6px] h-[1em] translate-y-[2px] align-middle",
+                                "animate-pulse rounded-sm",
+                                isDark ? "bg-emerald-400" : "bg-emerald-500",
+                            )}
+                            aria-label="AI đang gõ"
+                        />
+                    </div>
+                ) : (
+                    <MarkdownRenderer
+                        content={visibleClean}
+                        theme={theme}
+                        isStreaming={false}
+                    />
                 )}
             </div>
         </div>

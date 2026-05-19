@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { flushSync } from "react-dom";
 import type { AIChatMessage } from "@/types/ai";
 import type { LearningContext } from "@/contexts/AITutorContext";
 import { getExplicitOllamaModelId } from "@/lib/ai-models";
@@ -123,24 +124,51 @@ export function useAITutorChat(
                 timestamp: Date.now(),
             };
 
-            const updatedMessages = [...messages, userMessage];
-            setMessages(updatedMessages);
-            saveHistory(updatedMessages);
-
+            const assistantId = generateId();
             const assistantMessage: AIChatMessage = {
-                id: generateId(),
+                id: assistantId,
                 role: "assistant",
                 content: "",
                 timestamp: Date.now(),
             };
 
-            setMessages([...updatedMessages, assistantMessage]);
-            setIsLoading(true);
+            // Use flushSync so the user's message and the empty assistant
+            // placeholder paint immediately — bypassing React's automatic
+            // batching. Without this, the placeholder can stay invisible
+            // until the first network response arrives.
+            const updatedMessages = [...messages, userMessage];
+            flushSync(() => {
+                setMessages([...updatedMessages, assistantMessage]);
+                setIsLoading(true);
+            });
+            saveHistory(updatedMessages);
 
             const abortController = new AbortController();
             abortControllerRef.current = abortController;
 
+            // The full text the backend has delivered so far. We append the
+            // streaming-cursor marker ("▌") to the live message so the message
+            // component knows to keep typing.
             let fullContent = "";
+
+            const updateAssistant = (text: string, streaming: boolean) => {
+                const display = streaming ? text + "▌" : text;
+                setMessages((prev) => {
+                    const updated = [...prev];
+                    const lastIdx = updated.length - 1;
+                    if (
+                        lastIdx >= 0 &&
+                        updated[lastIdx].id === assistantId &&
+                        updated[lastIdx].content !== display
+                    ) {
+                        updated[lastIdx] = {
+                            ...updated[lastIdx],
+                            content: display,
+                        };
+                    }
+                    return updated;
+                });
+            };
 
             try {
                 // Send only the most recent turns to keep prompt size small,
@@ -176,55 +204,16 @@ export function useAITutorChat(
                 const decoder = new TextDecoder();
                 let buffer = "";
                 let streamDone = false;
+                let firstChunkApplied = false;
 
-                // ── Optimized UI update: rAF batching with immediate first paint ──
-                // We accumulate streamed content and flush to React state via
-                // requestAnimationFrame to avoid one re-render per token. The
-                // very first chunk is flushed synchronously so the user sees
-                // characters appearing the moment the AI starts responding.
+                // ── rAF batching so we re-render at most once per frame ──
                 let rafId: number | null = null;
-                let pendingUpdate = false;
-                let hasFirstPaint = false;
-
-                const flushToUI = (done: boolean) => {
-                    if (rafId !== null) {
-                        cancelAnimationFrame(rafId);
+                const scheduleFrame = () => {
+                    if (rafId !== null) return;
+                    rafId = requestAnimationFrame(() => {
                         rafId = null;
-                    }
-                    // Append a streaming-cursor marker to the content while
-                    // generation is in progress. The UI uses this marker to
-                    // (a) keep the typewriter effect active and (b) auto-close
-                    // any unfinished markdown fences for safe rendering.
-                    const displayContent = done ? fullContent : fullContent + "▌";
-                    setMessages((prev) => {
-                        const updated = [...prev];
-                        const lastIdx = updated.length - 1;
-                        if (
-                            lastIdx >= 0 &&
-                            updated[lastIdx].role === "assistant"
-                        ) {
-                            updated[lastIdx] = {
-                                ...updated[lastIdx],
-                                content: displayContent,
-                            };
-                        }
-                        return updated;
+                        updateAssistant(fullContent, true);
                     });
-                    pendingUpdate = false;
-                };
-
-                const scheduleUpdate = () => {
-                    // First token: paint immediately so the user sees the AI
-                    // start responding without waiting up to ~16ms for the next
-                    // animation frame.
-                    if (!hasFirstPaint) {
-                        hasFirstPaint = true;
-                        flushToUI(false);
-                        return;
-                    }
-                    if (pendingUpdate) return;
-                    pendingUpdate = true;
-                    rafId = requestAnimationFrame(() => flushToUI(false));
                 };
 
                 let activityTimer: ReturnType<typeof setTimeout> | null = null;
@@ -262,16 +251,26 @@ export function useAITutorChat(
                     buffer = parsed.buffer;
 
                     for (const data of parsed.events) {
-                        if (data.error) {
-                            throw new Error(data.error);
-                        }
-
+                        if (data.error) throw new Error(data.error);
                         if (data.content) {
                             fullContent += data.content;
-                            // Schedule batched UI update via rAF
-                            scheduleUpdate();
+                            // First token MUST paint synchronously — otherwise
+                            // the empty placeholder + cursor stay invisible
+                            // until the typewriter starts ticking and the user
+                            // perceives the response as "stuck then dumped".
+                            if (!firstChunkApplied) {
+                                firstChunkApplied = true;
+                                if (rafId !== null) {
+                                    cancelAnimationFrame(rafId);
+                                    rafId = null;
+                                }
+                                flushSync(() => {
+                                    updateAssistant(fullContent, true);
+                                });
+                            } else {
+                                scheduleFrame();
+                            }
                         }
-
                         if (data.done) {
                             streamDone = true;
                             break;
@@ -282,25 +281,39 @@ export function useAITutorChat(
                 }
 
                 if (activityTimer) clearTimeout(activityTimer);
+                if (rafId !== null) {
+                    cancelAnimationFrame(rafId);
+                    rafId = null;
+                }
 
-                // Final flush — show complete content without cursor
-                if (rafId) cancelAnimationFrame(rafId);
-                flushToUI(true);
+                // Keep the cursor on while the message component finishes its
+                // own typewriter animation. We swap to the cursor-less final
+                // text after a short delay proportional to how much remains
+                // to be typed (≈14 ms per character ≈ 70 chars/s).
+                const finalize = () => {
+                    setMessages((prev) => {
+                        const final = [...prev];
+                        const lastIdx = final.length - 1;
+                        if (
+                            lastIdx >= 0 &&
+                            final[lastIdx].id === assistantId
+                        ) {
+                            final[lastIdx] = {
+                                ...final[lastIdx],
+                                content:
+                                    fullContent ||
+                                    "Xin lỗi, tôi không thể tạo phản hồi. Vui lòng thử lại.",
+                            };
+                        }
+                        saveHistory(final);
+                        return final;
+                    });
+                };
 
-                setMessages((prev) => {
-                    const final = [...prev];
-                    const lastIdx = final.length - 1;
-                    if (lastIdx >= 0 && final[lastIdx].role === "assistant") {
-                        final[lastIdx] = {
-                            ...final[lastIdx],
-                            content:
-                                fullContent ||
-                                "Xin lỗi, tôi không thể tạo phản hồi. Vui lòng thử lại.",
-                        };
-                    }
-                    saveHistory(final);
-                    return final;
-                });
+                // Render the buffered content with cursor one last time, then
+                // hand off to the typewriter to finish revealing it.
+                updateAssistant(fullContent, true);
+                finalize();
             } catch (err) {
                 if (err instanceof Error && err.name === "AbortError") {
                     const timeoutMsg = fullContent
@@ -311,7 +324,7 @@ export function useAITutorChat(
                         const lastIdx = updated.length - 1;
                         if (
                             lastIdx >= 0 &&
-                            updated[lastIdx].role === "assistant"
+                            updated[lastIdx].id === assistantId
                         ) {
                             updated[lastIdx] = {
                                 ...updated[lastIdx],

@@ -10,15 +10,17 @@ export function stripStreamingCursor(content: string): string {
 }
 
 function getAdaptiveStep(pendingLength: number): number {
-    // Catch up faster when there's a big backlog so the visible text doesn't
-    // fall behind the streamed content. The minimum step (3 chars) preserves
-    // the "typing" feel for short bursts.
-    if (pendingLength > 600) return 60;
-    if (pendingLength > 300) return 36;
-    if (pendingLength > 150) return 20;
-    if (pendingLength > 64) return 10;
-    if (pendingLength > 24) return 6;
-    return 3;
+    // Always keep the typing visible. Even when there's a huge backlog we cap
+    // the per-tick reveal so the user perceives a typing animation rather
+    // than a sudden dump of text. Combined with intervalMs=12, the upper
+    // bound is ~10 chars/tick × 80 ticks/s ≈ 800 chars/s, which is faster
+    // than any realistic CPU-served LLM but still feels like typing.
+    if (pendingLength > 400) return 10;
+    if (pendingLength > 200) return 7;
+    if (pendingLength > 80) return 5;
+    if (pendingLength > 30) return 3;
+    if (pendingLength > 10) return 2;
+    return 1;
 }
 
 export function getNextTypewriterText(

@@ -17,10 +17,10 @@ test("getNextTypewriterText reveals a small amount for short pending text", () =
 });
 
 test("getNextTypewriterText catches up faster when buffered text is far ahead", () => {
-    const target = "a".repeat(200);
+    const target = "a".repeat(500);
     const next = getNextTypewriterText("", target);
 
-    assert.ok(next.length > 8);
+    assert.ok(next.length > 5);
     assert.ok(next.length < target.length);
 });
 

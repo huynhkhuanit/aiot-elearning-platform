@@ -49,9 +49,9 @@ function buildTutorSystemPrompt(
 ): string {
     const base =
         "Bạn là AI Tutor trên CodeSense AI. " +
-        "Trả lời tiếng Việt. Dùng markdown. " +
-        "Giải thích rõ ràng, từng bước, có ví dụ minh họa. Khuyến khích tư duy. " +
-        "Code kèm comment ngắn. Trả lời đầy đủ, chi tiết, tránh quá ngắn.";
+        "Trả lời tiếng Việt, dùng markdown. " +
+        "Súc tích, đi thẳng vào vấn đề, ưu tiên trả lời ngắn rõ trước rồi bổ sung chi tiết khi cần. " +
+        "Code kèm comment ngắn. Tránh lặp lại câu hỏi của người dùng.";
 
     const memoryBlock = memorySummary
         ? `\nTutor memory:\n${memorySummary}`
@@ -67,14 +67,14 @@ function buildTutorSystemPrompt(
               : "Quiz";
 
     // Compress lesson content aggressively for speed
-    // 7B gets 2000 chars, enough for context without overwhelming
+    // 7B gets 1500 chars, enough for context without overwhelming
     const lessonSnippet = ctx.lessonContent
-        ? `Nội dung bài:\n${ctx.lessonContent.slice(0, 2000)}`
+        ? `Nội dung bài:\n${ctx.lessonContent.slice(0, 1500)}`
         : "";
 
-    // Course outline compressed to 800 chars
+    // Course outline compressed to 600 chars
     const outline = ctx.courseOutline
-        ? `Outline khóa học:\n${ctx.courseOutline.slice(0, 800)}`
+        ? `Outline khóa học:\n${ctx.courseOutline.slice(0, 600)}`
         : "";
 
     return [
@@ -183,9 +183,32 @@ function buildTutorRequest(
 }
 
 function createStaticStream(content: string): ReadableStream<string> {
+    // When the underlying provider doesn't support streaming (or we fell back
+    // to a non-stream call), simulate a token-by-token stream so the client
+    // still gets a typewriter feel instead of a single instant blob.
+    //
+    // Chunk size and delay are tuned to feel like a fast model on a CPU VPS:
+    // ≈ 18 chars per 30 ms ≈ 600 chars/s, which is faster than a 7B model can
+    // realistically generate but still slow enough for the eye to follow.
+    const CHUNK_SIZE = 18;
+    const CHUNK_DELAY_MS = 30;
+
     return new ReadableStream({
-        start(controller) {
-            if (content) controller.enqueue(content);
+        async start(controller) {
+            if (!content) {
+                controller.close();
+                return;
+            }
+            const chars = Array.from(content);
+            for (let i = 0; i < chars.length; i += CHUNK_SIZE) {
+                const piece = chars.slice(i, i + CHUNK_SIZE).join("");
+                controller.enqueue(piece);
+                if (i + CHUNK_SIZE < chars.length) {
+                    await new Promise((resolve) =>
+                        setTimeout(resolve, CHUNK_DELAY_MS),
+                    );
+                }
+            }
             controller.close();
         },
     });
@@ -229,10 +252,14 @@ export const POST = withOptionalAuth(async (request: NextRequest, { user }) => {
             );
         }
 
+        // Memory lookup runs with a tight budget — if Mongo is slow we just
+        // proceed without prior context rather than making the user wait.
         const existingSession =
             user && sessionId
-                ? await getTutorSession(user.userId, sessionId).catch(
-                      (error) => {
+                ? await Promise.race<Awaited<
+                      ReturnType<typeof getTutorSession>
+                  > | null>([
+                      getTutorSession(user.userId, sessionId).catch((error) => {
                           console.warn(
                               "AI Tutor memory lookup failed:",
                               error instanceof Error
@@ -240,8 +267,11 @@ export const POST = withOptionalAuth(async (request: NextRequest, { user }) => {
                                   : String(error),
                           );
                           return null;
-                      },
-                  )
+                      }),
+                      new Promise<null>((resolve) =>
+                          setTimeout(() => resolve(null), 400),
+                      ),
+                  ])
                 : null;
         const effectiveSessionId =
             existingSession?.id ||

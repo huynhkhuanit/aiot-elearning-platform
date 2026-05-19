@@ -44,14 +44,16 @@ export function classifyComplexity(opts: ClassifyOptions): QueryComplexity {
     // Keyword-based detection
     if (COMPLEX_KEYWORDS_RE.test(trimmed)) return "complex";
 
-    // Long messages imply nuanced questions
-    if (trimmed.length > 200) return "complex";
+    // Long messages imply nuanced questions — but raise the threshold so we
+    // route more traffic to the fast 3B model for an interactive feel.
+    if (trimmed.length > 320) return "complex";
 
     // Deep conversations need context continuity (7B handles better)
-    if (historyLength > 6) return "complex";
+    if (historyLength > 10) return "complex";
 
     // Heavy learning context = more reasoning needed
-    if (hasLearningContext && (learningContentLength ?? 0) > 1000) return "complex";
+    if (hasLearningContext && (learningContentLength ?? 0) > 2000)
+        return "complex";
 
     // Simple keyword match → definitely simple
     if (SIMPLE_KEYWORDS_RE.test(trimmed)) return "simple";
@@ -93,16 +95,20 @@ export function selectModelParams(
 
     if (is3B) {
         return {
-            num_ctx: complexity === "simple" ? 2048 : 4096,
-            num_predict: complexity === "simple" ? 768 : 1536,
+            num_ctx: complexity === "simple" ? 2048 : 3072,
+            // Keep responses tight on CPU — the 3B model produces ~20 tok/s
+            // so 512 tokens ≈ 25s, which is the upper bound of acceptable.
+            num_predict: complexity === "simple" ? 384 : 768,
             temperature: 0.25,
         };
     }
 
-    // 7B+ models
+    // 7B+ models — only used for genuinely complex reasoning. We aggressively
+    // cap output tokens because 7B on a CPU VPS produces ~6 tok/s; 1024 tokens
+    // already takes ~3 minutes which is too slow for an interactive chat.
     return {
-        num_ctx: complexity === "simple" ? 3072 : 8192,
-        num_predict: complexity === "simple" ? 1536 : 6144,
+        num_ctx: complexity === "simple" ? 3072 : 6144,
+        num_predict: complexity === "simple" ? 768 : 1536,
         temperature: 0.25,
     };
 }
