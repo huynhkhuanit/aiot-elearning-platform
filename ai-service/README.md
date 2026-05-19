@@ -672,7 +672,9 @@ Tạo file `.env`:
 # Groq API (Required)
 GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 GROQ_MODEL=llama-3.3-70b-versatile
-GROQ_MAX_TOKENS=12000
+# Keep <= 8000 on Groq free tier: TPM cap is 12,000 and Groq counts
+# (prompt_tokens + max_tokens) at request time. Larger values cause HTTP 413.
+GROQ_MAX_TOKENS=8000
 GROQ_TEMPERATURE=0.7
 
 # Supabase (Optional - for direct access)

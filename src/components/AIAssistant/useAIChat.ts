@@ -6,6 +6,7 @@ import type { AIChatMessage } from "@/types/ai";
 import { getExplicitOllamaModelId } from "@/lib/ai-models";
 import { parseSSEChunk } from "@/lib/sse-stream";
 import { usePreWarmAIModel } from "./usePreWarmAIModel";
+import { stripStreamingCursor } from "./typewriter";
 
 // Generate unique ID
 function generateId(): string {
@@ -266,9 +267,13 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
                     if (lastIdx >= 0 && final[lastIdx].id === assistantId) {
                         final[lastIdx] = {
                             ...final[lastIdx],
-                            content:
+                            // Strip any leftover streaming cursor before
+                            // persisting so the message has clean content
+                            // (no caret marker) once the response is done.
+                            content: stripStreamingCursor(
                                 fullContent ||
-                                "Xin lỗi, tôi không thể tạo phản hồi. Vui lòng thử lại.",
+                                    "Xin lỗi, tôi không thể tạo phản hồi. Vui lòng thử lại.",
+                            ),
                         };
                     }
                     saveHistory(final);

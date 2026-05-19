@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # Groq Configuration (Llama 3 models)
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"  # Default: best Vietnamese support (llama-3.1-70b-versatile is decommissioned)
-    GROQ_MAX_TOKENS: int = 12000  # Increased from 8000 to support tree structure roadmaps (150-200 nodes with branching)
+    GROQ_MAX_TOKENS: int = 10000  # Groq free-tier TPM=12000; counts prompt+max_tokens at request time. 10000 = full roadmap (110-150 nodes) with ~800 token safety buffer below the cap. Raise to 12000+ on Dev tier.
     GROQ_TEMPERATURE: float = 0.7
     
     # Ollama Local Configuration (backup for Colab)

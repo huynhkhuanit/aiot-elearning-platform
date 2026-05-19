@@ -7,6 +7,7 @@ import type { LearningContext } from "@/contexts/AITutorContext";
 import { getExplicitOllamaModelId } from "@/lib/ai-models";
 import { parseSSEChunk } from "@/lib/sse-stream";
 import { usePreWarmAIModel } from "./usePreWarmAIModel";
+import { stripStreamingCursor } from "./typewriter";
 
 function generateId(): string {
     return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -300,9 +301,13 @@ export function useAITutorChat(
                         ) {
                             final[lastIdx] = {
                                 ...final[lastIdx],
-                                content:
+                                // Strip the streaming-cursor marker so the
+                                // persisted message has clean content with
+                                // no caret artifact.
+                                content: stripStreamingCursor(
                                     fullContent ||
-                                    "Xin lỗi, tôi không thể tạo phản hồi. Vui lòng thử lại.",
+                                        "Xin lỗi, tôi không thể tạo phản hồi. Vui lòng thử lại.",
+                                ),
                             };
                         }
                         saveHistory(final);

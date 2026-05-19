@@ -8,6 +8,7 @@ import { getExplicitOllamaModelId } from "@/lib/ai-models";
 import { compactAIMessageHistory } from "@/lib/ai-message-history";
 import { parseSSEChunk } from "@/lib/sse-stream";
 import { usePreWarmAIModel } from "./usePreWarmAIModel";
+import { stripStreamingCursor } from "./typewriter";
 import {
     executeReadCode,
     isValidEditTab,
@@ -342,9 +343,10 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                     break;
                 }
 
-                const finalContent =
+                const finalContent = stripStreamingCursor(
                     assistantContent ||
-                    "Đã xử lý xong. Nếu cần sửa code, tôi đã dùng tools để cập nhật.";
+                        "Đã xử lý xong. Nếu cần sửa code, tôi đã dùng tools để cập nhật.",
+                );
 
                 setMessages((prev) => {
                     const next = [...prev];
@@ -356,7 +358,7 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                     ) {
                         next[lastIdx] = {
                             ...next[lastIdx],
-                            content: finalContent.replace(/▌$/, ""),
+                            content: finalContent,
                             timestamp: Date.now(),
                         };
                     } else {

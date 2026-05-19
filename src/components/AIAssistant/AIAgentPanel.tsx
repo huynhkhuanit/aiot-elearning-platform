@@ -287,16 +287,30 @@ export default function AIAgentPanel({
                                             !message.content
                                         ),
                                 )
-                                .map((message) => (
-                                    <AIAgentMessage
-                                        key={message.id}
-                                        message={message}
-                                        onInsertCode={onInsertCode}
-                                        theme={theme}
-                                        accent={useAgentMode ? "amber" : "blue"}
-                                        animateWords
-                                    />
-                                ))}
+                                .map((message, _idx, arr) => {
+                                    // Only the very last assistant message is
+                                    // considered "live" — and only while
+                                    // isLoading. Every other message renders
+                                    // as plain history with no caret.
+                                    const isLastAssistant =
+                                        message === arr[arr.length - 1] &&
+                                        message.role === "assistant";
+                                    return (
+                                        <AIAgentMessage
+                                            key={message.id}
+                                            message={message}
+                                            onInsertCode={onInsertCode}
+                                            theme={theme}
+                                            accent={
+                                                useAgentMode ? "amber" : "blue"
+                                            }
+                                            animateWords
+                                            isStreaming={
+                                                isLoading && isLastAssistant
+                                            }
+                                        />
+                                    );
+                                })}
 
                             {isLoading &&
                                 messages.length > 0 &&

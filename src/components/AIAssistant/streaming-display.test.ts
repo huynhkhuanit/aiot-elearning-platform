@@ -33,3 +33,43 @@ test("streaming markdown content closes an unfinished code fence for rendering",
         "```javascript\nbutton.addEventListener('click', onClick);\n```",
     );
 });
+
+test("streaming markdown auto-closes a partially typed inline backtick", () => {
+    const content = "Use the `useState";
+    assert.equal(
+        prepareAssistantMarkdownContent(content, true),
+        "Use the `useState`",
+    );
+});
+
+test("streaming markdown auto-closes a partially typed bold marker", () => {
+    const content = "This is **important";
+    assert.equal(
+        prepareAssistantMarkdownContent(content, true),
+        "This is **important**",
+    );
+});
+
+test("streaming markdown auto-closes a partially typed italic marker", () => {
+    const content = "This is _important";
+    assert.equal(
+        prepareAssistantMarkdownContent(content, true),
+        "This is _important_",
+    );
+});
+
+test("streaming markdown leaves balanced markers alone", () => {
+    const content = "Already **closed** and `done`";
+    assert.equal(
+        prepareAssistantMarkdownContent(content, true),
+        "Already **closed** and `done`",
+    );
+});
+
+test("non-streaming markdown is returned unchanged", () => {
+    const content = "Use the `useState";
+    assert.equal(
+        prepareAssistantMarkdownContent(content, false),
+        "Use the `useState",
+    );
+});

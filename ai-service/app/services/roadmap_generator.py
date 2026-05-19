@@ -25,7 +25,7 @@ from app.models import (
     UserProfileRequest,
 )
 from app.prompts import build_user_prompt
-from app.services.groq_service import generate_roadmap_json
+from app.services.groq_service import generate_roadmap_json, generate_fill_nodes_json
 
 logger = logging.getLogger(__name__)
 
@@ -976,6 +976,296 @@ def _collect_structural_issues(roadmap: GeneratedRoadmap) -> List[str]:
     return issues
 
 
+# --- Incremental fill helpers ------------------------------------------------
+
+# Each fill chunk targets a small slice of subsections so the LLM stays
+# focused and the output stays comfortably under Groq's TPM budget.
+_FILL_CHUNK_SIZE = 6
+_FILL_MAX_ROUNDS = 3
+_FILL_OUTPUT_MAX_TOKENS = 4000
+
+
+def _subsections_needing_fill(
+    roadmap: GeneratedRoadmap,
+    directives: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """
+    Return a list describing each subsection that still needs more lesson
+    nodes, ordered by how short it is.
+
+    Each item: {"section": RoadmapSection, "subsection": RoadmapSubsection,
+                "current": int, "needed": int}
+    """
+    min_lessons = directives["min_lessons_per_subsection"]["min"]
+
+    counts: Counter[str] = Counter(
+        node.subsection_id
+        for node in roadmap.nodes
+        if node.subsection_id and node.type != "project"
+    )
+
+    pending: List[Dict[str, Any]] = []
+    for section in roadmap.sections:
+        for subsection in section.subsections or []:
+            current = counts.get(subsection.id, 0)
+            if current >= min_lessons:
+                continue
+            pending.append(
+                {
+                    "section": section,
+                    "subsection": subsection,
+                    "current": current,
+                    "needed": min_lessons - current,
+                }
+            )
+
+    pending.sort(key=lambda item: (item["current"], item["section"].order))
+    return pending
+
+
+def _existing_node_ids(roadmap: GeneratedRoadmap) -> List[str]:
+    return [node.id for node in roadmap.nodes]
+
+
+def _build_fill_user_prompt(
+    profile: UserProfileRequest,
+    roadmap: GeneratedRoadmap,
+    chunk: List[Dict[str, Any]],
+) -> str:
+    """
+    Build a focused user prompt asking the LLM to ONLY produce additional
+    nodes for the requested subsections, using the exact existing IDs.
+    """
+    lang_instruction = "Vietnamese" if profile.preferred_language == "vi" else "English"
+
+    sections_block: List[str] = []
+    for item in chunk:
+        section: RoadmapSection = item["section"]
+        subsection: RoadmapSubsection = item["subsection"]
+        sections_block.append(
+            f'- section_id="{section.id}" ("{section.name}"), '
+            f'subsection_id="{subsection.id}" ("{subsection.name}"), '
+            f'add {item["needed"]} new lesson nodes (currently has {item["current"]}).'
+        )
+    sections_text = "\n".join(sections_block)
+
+    existing_ids = _existing_node_ids(roadmap)
+    # Cap at 80 ids to keep the prompt small but still give the LLM enough
+    # context for sensible edge connections.
+    existing_ids_preview = existing_ids[:80]
+
+    skills_text = ", ".join(profile.current_skills) if profile.current_skills else "None"
+    focus_text = ", ".join(profile.focus_areas) if profile.focus_areas else "Standard path"
+
+    return (
+        "EXTEND AN EXISTING LEARNING ROADMAP. Add NEW lesson nodes to the "
+        "subsections listed below. Do NOT redefine the roadmap, sections, or "
+        "subsections — they already exist.\n\n"
+        f"Learner: target_role={profile.target_role}, current_role={profile.current_role}, "
+        f"level={profile.skill_level}, hours/week={profile.hours_per_week}, "
+        f"target_months={profile.target_months}, language={lang_instruction}.\n"
+        f"Known skills: {skills_text}. Focus areas: {focus_text}.\n\n"
+        "ADD NODES FOR THESE SUBSECTIONS (use these EXACT ids):\n"
+        f"{sections_text}\n\n"
+        f"EXISTING NODE IDS (do not reuse): {existing_ids_preview}\n\n"
+        "REQUIREMENTS:\n"
+        "- Each new node id MUST start with 'fill-' followed by a unique slug.\n"
+        "- Each node MUST set section_id and subsection_id to the values above (no new ids).\n"
+        "- Most nodes should be type='core'. At most one project per chunk.\n"
+        "- Provide concrete prerequisites and learning_outcomes for every core node.\n"
+        "- Add edges connecting the new nodes (sequential within a subsection) and at "
+        "least one edge from an existing node id to the first new node in each subsection.\n"
+        "- Output JSON only. Schema: {\"nodes\": [...], \"edges\": [...]}."
+    )
+
+
+def _merge_fill_response(
+    roadmap: GeneratedRoadmap,
+    fill_data: Dict[str, Any],
+) -> int:
+    """
+    Merge nodes/edges from a fill response into the roadmap in place.
+
+    Returns the number of nodes actually added.
+    """
+    valid_section_ids = {section.id for section in roadmap.sections}
+    valid_subsection_ids: Dict[str, str] = {}
+    for section in roadmap.sections:
+        for subsection in section.subsections or []:
+            valid_subsection_ids[subsection.id] = section.id
+
+    existing_node_ids = {node.id for node in roadmap.nodes}
+    valid_node_ids = set(existing_node_ids)
+
+    added_count = 0
+    raw_nodes = _ensure_list(fill_data.get("nodes", []))
+    for raw_node in raw_nodes:
+        if not isinstance(raw_node, dict):
+            continue
+
+        node_id = _normalize_identifier(
+            raw_node.get("id"),
+            f"fill-{added_count + 1}",
+        )
+        # Avoid id collisions with existing nodes.
+        if node_id in existing_node_ids:
+            node_id = f"{node_id}-x{added_count + 1}"
+
+        section_id = _normalize_identifier(raw_node.get("section_id"), "")
+        subsection_id = _normalize_identifier(raw_node.get("subsection_id"), "")
+
+        # Only accept fill nodes that target an existing subsection. This
+        # prevents the LLM from accidentally creating new sections via fill.
+        if subsection_id not in valid_subsection_ids:
+            continue
+        if section_id and section_id not in valid_section_ids:
+            section_id = valid_subsection_ids[subsection_id]
+        if not section_id:
+            section_id = valid_subsection_ids[subsection_id]
+
+        node_data = raw_node.get("data") if isinstance(raw_node.get("data"), dict) else {}
+        learning_res = (
+            node_data.get("learning_resources")
+            if isinstance(node_data.get("learning_resources"), dict)
+            else {}
+        )
+
+        position_data = (
+            raw_node.get("position")
+            if isinstance(raw_node.get("position"), dict)
+            else {}
+        )
+
+        try:
+            new_node = RoadmapNode(
+                id=node_id,
+                phase_id=_normalize_identifier(raw_node.get("phase_id"), section_id),
+                section_id=section_id,
+                subsection_id=subsection_id,
+                type=_normalize_node_type(raw_node.get("type", "core")),
+                is_hub=_normalize_bool(raw_node.get("is_hub", False), False),
+                data=RoadmapNodeData(
+                    label=_normalize_text(node_data.get("label"), "Untitled lesson"),
+                    description=_normalize_text(node_data.get("description"), ""),
+                    estimated_hours=_normalize_int(
+                        node_data.get("estimated_hours"),
+                        4,
+                        minimum=1,
+                    ),
+                    difficulty=_normalize_difficulty(
+                        str(node_data.get("difficulty", "beginner"))
+                    ),
+                    prerequisites=_normalize_string_list(
+                        node_data.get("prerequisites", [])
+                    ),
+                    learning_outcomes=_normalize_string_list(
+                        node_data.get("learning_outcomes", [])
+                    ),
+                    learning_resources=LearningResources(
+                        keywords=_normalize_string_list(
+                            learning_res.get("keywords", [])
+                        ),
+                        suggested_type=_normalize_suggested_type(
+                            str(learning_res.get("suggested_type", "doc"))
+                        ),
+                    ),
+                ),
+                position=NodePosition(
+                    x=_normalize_float(position_data.get("x", 0), 0),
+                    y=_normalize_float(position_data.get("y", 0), 0),
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Skipping malformed fill node: %s", exc)
+            continue
+
+        roadmap.nodes.append(new_node)
+        existing_node_ids.add(new_node.id)
+        valid_node_ids.add(new_node.id)
+        added_count += 1
+
+    raw_edges = _ensure_list(fill_data.get("edges", []))
+    existing_edge_pairs = {(edge.source, edge.target) for edge in roadmap.edges}
+    next_edge_index = len(roadmap.edges)
+    for raw_edge in raw_edges:
+        if not isinstance(raw_edge, dict):
+            continue
+        source = _normalize_identifier(raw_edge.get("source"), "")
+        target = _normalize_identifier(raw_edge.get("target"), "")
+        if not source or not target or source == target:
+            continue
+        if source not in valid_node_ids or target not in valid_node_ids:
+            continue
+        pair = (source, target)
+        if pair in existing_edge_pairs:
+            continue
+        edge_id = _normalize_identifier(raw_edge.get("id"), f"e{next_edge_index}")
+        next_edge_index += 1
+        roadmap.edges.append(
+            RoadmapEdge(id=edge_id, source=source, target=target)
+        )
+        existing_edge_pairs.add(pair)
+
+    return added_count
+
+
+async def _incremental_fill_roadmap(
+    profile: UserProfileRequest,
+    roadmap: GeneratedRoadmap,
+    directives: Dict[str, Any],
+) -> int:
+    """
+    Run up to _FILL_MAX_ROUNDS rounds of incremental backfill against any
+    subsection that is still below the minimum lesson count.
+
+    Returns total nodes added across all rounds.
+    """
+    total_added = 0
+    for round_index in range(_FILL_MAX_ROUNDS):
+        pending = _subsections_needing_fill(roadmap, directives)
+        if not pending:
+            break
+
+        chunk = pending[:_FILL_CHUNK_SIZE]
+        logger.info(
+            "Incremental fill round %d: %d subsections need more nodes (filling %d this round).",
+            round_index + 1,
+            len(pending),
+            len(chunk),
+        )
+
+        fill_user_prompt = _build_fill_user_prompt(profile, roadmap, chunk)
+        try:
+            fill_data = await generate_fill_nodes_json(
+                fill_user_prompt,
+                max_tokens_override=_FILL_OUTPUT_MAX_TOKENS,
+            )
+        except Exception as exc:  # noqa: BLE001
+            # Don't fail the whole roadmap if a fill chunk errors out — just
+            # stop here and return whatever we already merged in.
+            logger.warning(
+                "Incremental fill round %d failed (%s); returning current roadmap.",
+                round_index + 1,
+                exc,
+            )
+            break
+
+        added = _merge_fill_response(roadmap, fill_data)
+        total_added += added
+        logger.info(
+            "Incremental fill round %d added %d nodes (total: %d).",
+            round_index + 1,
+            added,
+            total_added,
+        )
+
+        if added == 0:
+            # If a round produced nothing, further rounds likely won't help.
+            break
+
+    return total_added
+
+
 async def generate_roadmap(
     profile: UserProfileRequest,
     generation_directives: Optional[GenerationDirectivesRequest] = None,
@@ -1047,6 +1337,40 @@ async def generate_roadmap(
                 "Returning roadmap with non-fatal quality warnings after repair: %s",
                 joined,
             )
+
+    # Incremental fill: when the LLM returns a structurally valid roadmap but
+    # leaves some subsections short on lesson nodes (a common failure mode
+    # when the model prematurely stops without using its full token budget),
+    # backfill the missing nodes in small focused chunks. Each chunk requests
+    # only ~6 subsections and ~4000 output tokens, so it stays comfortably
+    # under Groq's per-minute TPM cap and does not regress the parts of the
+    # roadmap that are already good.
+    pending_after_repair = _subsections_needing_fill(roadmap, directives)
+    if pending_after_repair:
+        logger.info(
+            "Roadmap has %d subsections below the minimum lesson count after repair — "
+            "running incremental fill.",
+            len(pending_after_repair),
+        )
+        added = await _incremental_fill_roadmap(profile, roadmap, directives)
+        if added > 0:
+            _rebalance_nodes_across_subsections(roadmap, directives)
+            # Refresh edges if the fill rounds didn't connect every new node.
+            connected = set()
+            for edge in roadmap.edges:
+                if edge.source:
+                    connected.add(edge.source)
+                if edge.target:
+                    connected.add(edge.target)
+            if any(node.id not in connected for node in roadmap.nodes):
+                synthesized = _synthesize_edges(roadmap)
+                # Merge: keep existing edges, add only new pairs from synthesis.
+                existing_pairs = {(e.source, e.target) for e in roadmap.edges}
+                for edge in synthesized:
+                    if (edge.source, edge.target) not in existing_pairs:
+                        roadmap.edges.append(edge)
+                        existing_pairs.add((edge.source, edge.target))
+            quality_issues = _validate_roadmap_quality(roadmap, directives)
 
     personalization_score = calculate_personalization_score(profile, roadmap)
     metadata = GenerationMetadata(
