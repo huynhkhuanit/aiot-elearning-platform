@@ -3,6 +3,9 @@
 import { useState, useCallback, useRef } from "react";
 import type { AIChatMessage } from "@/types/ai";
 import type { OllamaToolCall } from "@/types/ai";
+import { getExplicitOllamaModelId } from "@/lib/ai-models";
+import { compactAIMessageHistory } from "@/lib/ai-message-history";
+import { parseSSEChunk } from "@/lib/sse-stream";
 import { usePreWarmAIModel } from "./usePreWarmAIModel";
 import {
     executeReadCode,
@@ -58,8 +61,9 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const abortRef = useRef(false);
+    const explicitModelId = getExplicitOllamaModelId(options.modelId);
 
-    usePreWarmAIModel(options.modelId);
+    usePreWarmAIModel(explicitModelId);
 
     const saveHistory = useCallback((msgs: AIChatMessage[]) => {
         try {
@@ -158,7 +162,11 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                 | { role: "user"; content: string }
                 | { role: "assistant"; content?: string; tool_calls?: OllamaToolCall[] }
                 | { role: "tool"; tool_name: string; content: string }
-            > = updatedMessages
+            > = compactAIMessageHistory(updatedMessages, {
+                maxMessages: 6,
+                maxUserChars: 1400,
+                maxAssistantChars: 700,
+            })
                 .filter((m) => m.role === "user" || m.role === "assistant")
                 .map((m) => {
                     if (m.role === "user")
@@ -180,7 +188,7 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                         body: JSON.stringify({
                             messages: apiMessages,
                             code: currentCode,
-                            modelId: options.modelId,
+                            modelId: explicitModelId,
                         }),
                     });
 
@@ -204,6 +212,7 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                         assistantContent = "";
                         toolCalls = null;
                         let streamDone = false;
+                        let buffer = "";
 
                         // rAF batching for streaming updates
                         let rafId: number | null = null;
@@ -243,40 +252,34 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
                             const text = decoder.decode(value, {
                                 stream: true,
                             });
-                            const lines = text.split("\n");
-                            for (const line of lines) {
-                                if (!line.startsWith("data: ")) continue;
-                                try {
-                                    const data = JSON.parse(
-                                        line.slice(6),
-                                    ) as {
-                                        content?: string;
-                                        toolCalls?: OllamaToolCall[] | null;
-                                        done?: boolean;
-                                        error?: string;
-                                    };
-                                    if (data.error) {
-                                        throw new Error(data.error);
-                                    }
+                            const parsed = parseSSEChunk<{
+                                content?: string;
+                                toolCalls?: OllamaToolCall[] | null;
+                                done?: boolean;
+                                error?: string;
+                            }>(buffer, text);
+                            buffer = parsed.buffer;
+
+                            for (const data of parsed.events) {
+                                if (data.error) {
+                                    throw new Error(data.error);
+                                }
+                                if (
+                                    typeof data.content === "string" &&
+                                    !data.done
+                                ) {
+                                    assistantContent += data.content;
+                                    scheduleUpdate();
+                                }
+                                if (data.done) {
+                                    toolCalls = data.toolCalls ?? null;
                                     if (
                                         typeof data.content === "string" &&
-                                        !data.done
+                                        !assistantContent
                                     ) {
-                                        assistantContent += data.content;
-                                        scheduleUpdate();
+                                        assistantContent = data.content;
                                     }
-                                    if (data.done) {
-                                        toolCalls = data.toolCalls ?? null;
-                                        if (
-                                            typeof data.content === "string" &&
-                                            !assistantContent
-                                        ) {
-                                            assistantContent = data.content;
-                                        }
-                                        streamDone = true;
-                                    }
-                                } catch {
-                                    /* skip malformed SSE line */
+                                    streamDone = true;
                                 }
                             }
                             if (streamDone) break;
@@ -374,7 +377,7 @@ export function useAIAgentChat(options: UseAIAgentChatOptions): UseAIAgentChatRe
             messages,
             isLoading,
             options.code,
-            options.modelId,
+            explicitModelId,
             options.onEditCode,
             options.onToolExecute,
             options.onError,

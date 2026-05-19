@@ -21,14 +21,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useAITutor } from "@/contexts/AITutorContext";
-import { DEFAULT_OLLAMA_TUTOR_MODEL } from "@/lib/ai-models";
+import { AUTO_OLLAMA_MODEL_ID, getExplicitOllamaModelId } from "@/lib/ai-models";
 import { useAITutorChat } from "./useAITutorChat";
 import MarkdownRenderer from "./MarkdownRenderer";
 import AIModelSelector from "./AIModelSelector";
 import type { AIModel } from "./types";
 import { AI_MODELS } from "./types";
-import { stripStreamingCursor } from "./typewriter";
 import { useTypewriterText } from "./useTypewriterText";
+import {
+    getAssistantDisplayContent,
+    isAssistantStreamingContent,
+    shouldReplayAssistantTypewriter,
+} from "./streaming-display";
 
 interface AITutorPanelProps {
     className?: string;
@@ -36,7 +40,7 @@ interface AITutorPanelProps {
 }
 
 const DEFAULT_TUTOR_MODEL =
-    AI_MODELS.find((model) => model.id === DEFAULT_OLLAMA_TUTOR_MODEL) ||
+    AI_MODELS.find((model) => model.id === AUTO_OLLAMA_MODEL_ID) ||
     AI_MODELS[0];
 
 function localizeAIError(error: string): string {
@@ -81,11 +85,17 @@ function MessageBubble({
     theme?: "light" | "dark";
 }) {
     const isDark = theme === "dark";
-    const streaming = !!(role === "assistant" && content.endsWith("▌"));
+    const streaming =
+        role === "assistant" && isAssistantStreamingContent(content);
     const visibleContent = useTypewriterText(content, {
-        enabled: streaming || !!isStreaming,
+        enabled: shouldReplayAssistantTypewriter(
+            streaming || !!isStreaming,
+            content,
+        ),
     });
-    const rawContent = stripStreamingCursor(visibleContent);
+    const rawContent = streaming
+        ? getAssistantDisplayContent(content)
+        : getAssistantDisplayContent(visibleContent);
 
     if (role === "user") {
         return (
@@ -179,7 +189,7 @@ export default function AITutorPanel({
         suggestions,
     } = useAITutorChat({
         learningContext,
-        modelId: selectedModel.id,
+        modelId: getExplicitOllamaModelId(selectedModel.id),
     });
 
     useEffect(() => {

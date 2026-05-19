@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useRef } from "react";
 import type { AIChatMessage } from "@/types/ai";
+import { getExplicitOllamaModelId } from "@/lib/ai-models";
+import { parseSSEChunk } from "@/lib/sse-stream";
 import { usePreWarmAIModel } from "./usePreWarmAIModel";
 
 // Generate unique ID
@@ -44,8 +46,9 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const explicitModelId = getExplicitOllamaModelId(options.modelId);
 
-    usePreWarmAIModel(options.modelId);
+    usePreWarmAIModel(explicitModelId);
 
     // Save to localStorage
     const saveHistory = useCallback((msgs: AIChatMessage[]) => {
@@ -119,7 +122,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
                         messages: contextMessages,
                         codeContext: options.codeContext,
                         language: options.language,
-                        modelId: options.modelId,
+                        modelId: explicitModelId,
                     }),
                     signal: abortController.signal,
                 });
@@ -137,6 +140,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
 
                 const decoder = new TextDecoder();
                 let buffer = "";
+                let streamDone = false;
 
                 // ── Optimized UI update: rAF batching ──
                 // Accumulate content and flush via requestAnimationFrame
@@ -196,40 +200,33 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
                     }
 
                     const text = decoder.decode(value, { stream: true });
-                    buffer += text;
-                    const lines = buffer.split("\n");
-                    buffer = lines.pop() || "";
+                    const parsed = parseSSEChunk<{
+                        content?: string;
+                        done?: boolean;
+                        error?: string;
+                    }>(buffer, text);
+                    buffer = parsed.buffer;
 
-                    for (const line of lines) {
-                        const trimmed = line.trim();
-                        if (trimmed.startsWith("data: ")) {
-                            try {
-                                const data = JSON.parse(trimmed.slice(6));
+                    for (const data of parsed.events) {
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
 
-                                if (data.error) {
-                                    throw new Error(data.error);
-                                }
+                        if (data.content) {
+                            fullContent += data.content;
+                            scheduleUpdate();
+                        }
 
-                                if (data.content) {
-                                    fullContent += data.content;
-                                    scheduleUpdate();
-                                }
-
-                                if (data.done) break;
-                            } catch (parseError) {
-                                if (
-                                    parseError instanceof Error &&
-                                    parseError.message !==
-                                        "Unexpected end of JSON input"
-                                ) {
-                                    if (!String(parseError).includes("JSON")) {
-                                        throw parseError;
-                                    }
-                                }
-                            }
+                        if (data.done) {
+                            streamDone = true;
+                            break;
                         }
                     }
+
+                    if (streamDone) break;
                 }
+
+                if (activityTimer) clearTimeout(activityTimer);
 
                 // Final flush — show complete content without cursor
                 if (rafId) cancelAnimationFrame(rafId);
@@ -298,7 +295,7 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
             isLoading,
             options.codeContext,
             options.language,
-            options.modelId,
+            explicitModelId,
             options.onError,
             saveHistory,
         ],

@@ -7,8 +7,12 @@ import { cn } from "@/lib/utils";
 import type { AIChatMessage } from "@/types/ai";
 import { getAITheme } from "./theme";
 import MarkdownRenderer from "./MarkdownRenderer";
-import { stripStreamingCursor } from "./typewriter";
 import { useTypewriterText } from "./useTypewriterText";
+import {
+    getAssistantDisplayContent,
+    isAssistantStreamingContent,
+    shouldReplayAssistantTypewriter,
+} from "./streaming-display";
 
 interface AIAgentMessageProps {
     message: AIChatMessage;
@@ -29,12 +33,18 @@ export default function AIAgentMessage({
     const [copied, setCopied] = useState(false);
     const [hovered, setHovered] = useState(false);
 
-    const isStreaming = !isUser && message.content.endsWith("▌");
+    const isStreaming =
+        !isUser && isAssistantStreamingContent(message.content);
     const visibleContent = useTypewriterText(message.content, {
-        enabled: animateWords && isStreaming,
+        enabled: shouldReplayAssistantTypewriter(
+            animateWords,
+            message.content,
+        ),
     });
-    const rawContent = stripStreamingCursor(visibleContent);
-    const copyContent = stripStreamingCursor(message.content);
+    const rawContent = isStreaming
+        ? getAssistantDisplayContent(message.content)
+        : getAssistantDisplayContent(visibleContent);
+    const copyContent = getAssistantDisplayContent(message.content);
 
     const handleCopy = async () => {
         await navigator.clipboard.writeText(copyContent);

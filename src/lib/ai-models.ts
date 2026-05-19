@@ -2,6 +2,7 @@ export const DEFAULT_OLLAMA_COMPLETION_MODEL = "deepseek-coder:1.3b";
 export const DEFAULT_OLLAMA_CHAT_MODEL = "qwen2.5-coder:7b-instruct";
 export const DEFAULT_OLLAMA_TUTOR_MODEL = "qwen2.5:7b-instruct";
 export const DEFAULT_OLLAMA_FAST_MODEL = "qwen2.5:3b-instruct";
+export const AUTO_OLLAMA_MODEL_ID = "__auto__";
 
 export interface OllamaUIModel {
     id: string;
@@ -11,7 +12,24 @@ export interface OllamaUIModel {
     description?: string;
 }
 
+export function isAutoOllamaModel(modelId?: string | null): boolean {
+    return !modelId || modelId === AUTO_OLLAMA_MODEL_ID;
+}
+
+export function getExplicitOllamaModelId(
+    modelId?: string | null,
+): string | undefined {
+    return isAutoOllamaModel(modelId) ? undefined : modelId || undefined;
+}
+
 export const APPROVED_OLLAMA_MODELS: OllamaUIModel[] = [
+    {
+        id: AUTO_OLLAMA_MODEL_ID,
+        name: "Auto",
+        provider: "CodeSense",
+        providerSlug: "codesense",
+        description: "Tu chon model nhanh/phu hop theo do kho cau hoi",
+    },
     {
         id: DEFAULT_OLLAMA_FAST_MODEL,
         name: "Qwen 2.5 3B ⚡",

@@ -4,7 +4,11 @@ import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { AlertCircle, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { DEFAULT_OLLAMA_CHAT_MODEL } from "@/lib/ai-models";
+import {
+    AUTO_OLLAMA_MODEL_ID,
+    DEFAULT_OLLAMA_CHAT_MODEL,
+    getExplicitOllamaModelId,
+} from "@/lib/ai-models";
 import { useAIChat } from "./useAIChat";
 import { useAIAgentChat } from "./useAIAgentChat";
 import { useAIAgent } from "./useAIAgent";
@@ -83,10 +87,18 @@ export default function AIAgentPanel({
             ) || AI_MODELS[0],
         [],
     );
+    const autoModel = useMemo(
+        () =>
+            AI_MODELS.find((model) => model.id === AUTO_OLLAMA_MODEL_ID) ||
+            AI_MODELS[0],
+        [],
+    );
     const [mode, setMode] = useState<AIAgentMode>(
         hasAgentContext ? "agent" : "ask",
     );
-    const [selectedModel, setSelectedModel] = useState<AIModel>(() => chatModel);
+    const [selectedModel, setSelectedModel] = useState<AIModel>(() =>
+        hasAgentContext ? chatModel : autoModel,
+    );
 
     useEffect(() => {
         if (
@@ -103,9 +115,15 @@ export default function AIAgentPanel({
             setMode(newMode);
             if (newMode === "agent" && selectedModel.id !== chatModel.id) {
                 setSelectedModel(chatModel);
+            } else if (
+                newMode === "ask" &&
+                hasAgentContext &&
+                selectedModel.id === chatModel.id
+            ) {
+                setSelectedModel(autoModel);
             }
         },
-        [chatModel, selectedModel.id],
+        [autoModel, chatModel, hasAgentContext, selectedModel.id],
     );
 
     const {
@@ -125,7 +143,7 @@ export default function AIAgentPanel({
     const agentChat = useAIAgentChat({
         code: code || { html: "", css: "", javascript: "" },
         language,
-        modelId: selectedModel.id,
+        modelId: getExplicitOllamaModelId(selectedModel.id),
         onEditCode: onEditCode || (() => {}),
         onToolExecute: (_toolName, status) => {
             if (status === "start") startThinking();
@@ -136,7 +154,7 @@ export default function AIAgentPanel({
     const normalChat = useAIChat({
         codeContext,
         language,
-        modelId: selectedModel.id,
+        modelId: getExplicitOllamaModelId(selectedModel.id),
     });
 
     const useAgentMode = mode === "agent" && !!code && !!onEditCode;

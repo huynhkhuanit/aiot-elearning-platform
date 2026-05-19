@@ -4,28 +4,7 @@ import {
     getChatCompletionWithToolsStream,
 } from "@/lib/ollama";
 import { PLAYGROUND_TOOLS } from "@/lib/agent-tools";
-
-const AGENT_SYSTEM_PROMPT = `Bạn là AI Agent lập trình trong playground CodeSense AI. Bạn có thể ĐỌC và SỬA code trực tiếp bằng các tools.
-
-CÔNG CỤ (tools):
-- read_code: Đọc code HTML, CSS, JavaScript hiện tại. Gọi trước khi cần biết code hiện có.
-- edit_code: Thay thế toàn bộ nội dung một tab (html, css, javascript). Dùng khi cần sửa code.
-
-QUY TRÌNH:
-1. Đọc yêu cầu của học viên
-2. LUÔN gọi read_code trước để xem code hiện tại (trừ khi đã có kết quả từ round trước)
-3. Sửa code bằng edit_code khi cần thay đổi
-4. Trả lời bằng TIẾNG VIỆT, giải thích ngắn gọn những gì đã làm
-
-ĐỊNH DẠNG KHI GỌI TOOL - trả lời DUY NHẤT bằng JSON:
-- read_code: {"name":"read_code","arguments":{}}
-- edit_code: {"name":"edit_code","arguments":{"tab":"css","content":"nội dung đầy đủ"}}
-KHÔNG thêm text trước/sau JSON khi gọi tool.
-
-QUY TẮC:
-- Ưu tiên dùng tools để sửa code thay vì chỉ đưa code mẫu
-- Khi sửa CSS/HTML/JS, gọi edit_code với tab và content đầy đủ
-- Giữ cấu trúc code hợp lệ (HTML đóng thẻ, CSS đóng ngoặc, JS cú pháp đúng)`;
+import { buildAgentSystemPrompt } from "@/lib/agent-prompt";
 
 export async function POST(request: NextRequest) {
     try {
@@ -55,7 +34,7 @@ export async function POST(request: NextRequest) {
                   }>;
               }
             | { role: "tool"; tool_name: string; content: string }
-        > = [{ role: "system", content: AGENT_SYSTEM_PROMPT }];
+        > = [{ role: "system", content: buildAgentSystemPrompt() }];
 
         // Inject current code so model can edit directly; also instruct to use read_code if unsure
         if (code && typeof code === "object") {

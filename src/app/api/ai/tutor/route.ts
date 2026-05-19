@@ -16,6 +16,8 @@ import {
     selectModel,
     selectModelParams,
 } from "@/lib/ai-router";
+import { getExplicitOllamaModelId } from "@/lib/ai-models";
+import { compactAIMessageHistory } from "@/lib/ai-message-history";
 
 interface LearningContext {
     courseTitle: string;
@@ -146,7 +148,13 @@ function buildTutorRequest(
         content: string;
     }> = [{ role: "system", content: systemPrompt }];
 
-    for (const message of messages) {
+    const compactMessages = compactAIMessageHistory(messages, {
+        maxMessages: 8,
+        maxUserChars: 1600,
+        maxAssistantChars: 800,
+    });
+
+    for (const message of compactMessages) {
         if (message.role === "user" || message.role === "assistant") {
             ollamaMessages.push({
                 role: message.role,
@@ -234,11 +242,12 @@ export const POST = withOptionalAuth(async (request: NextRequest, { user }) => {
         // ── Smart Routing: classify complexity & select model ──
         const lastUserMsg = messages.filter((m) => m.role === "user").pop();
         const ollamaConfig = getOllamaConfig();
+        const requestedModelId = getExplicitOllamaModelId(modelId);
 
         let effectiveModelId: string;
-        if (modelId) {
+        if (requestedModelId) {
             // User explicitly selected a model → respect their choice
-            effectiveModelId = modelId;
+            effectiveModelId = requestedModelId;
         } else {
             const complexity = classifyComplexity({
                 message: lastUserMsg?.content || "",

@@ -10,6 +10,8 @@ import {
     selectModel,
     selectModelParams,
 } from "@/lib/ai-router";
+import { getExplicitOllamaModelId } from "@/lib/ai-models";
+import { compactAIMessageHistory } from "@/lib/ai-message-history";
 
 // ── Compressed system prompts ──────────────────────────────────
 // ~50% fewer tokens vs original → faster time-to-first-token
@@ -55,10 +57,11 @@ export async function POST(request: NextRequest) {
         // ── Smart Routing ──────────────────────────────────
         const lastUserMsg = messages.filter((m: { role: string }) => m.role === "user").pop();
         const ollamaConfig = getOllamaConfig();
+        const requestedModelId = getExplicitOllamaModelId(modelId);
 
         let effectiveModelId: string;
-        if (modelId) {
-            effectiveModelId = modelId;
+        if (requestedModelId) {
+            effectiveModelId = requestedModelId;
         } else {
             const complexity = classifyComplexity({
                 message: lastUserMsg?.content || "",
@@ -88,15 +91,15 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Truncate long assistant messages to reduce prompt tokens → faster inference
-        const MAX_MSG_LEN = 1500;
-        for (const msg of messages) {
+        const compactMessages = compactAIMessageHistory(messages, {
+            maxMessages: 8,
+            maxUserChars: 1800,
+            maxAssistantChars: 900,
+        });
+
+        for (const msg of compactMessages) {
             if (msg.role === "user" || msg.role === "assistant") {
-                const content =
-                    msg.role === "assistant" && msg.content.length > MAX_MSG_LEN
-                        ? msg.content.slice(0, MAX_MSG_LEN) + "...[đã cắt bớt]"
-                        : msg.content;
-                ollamaMessages.push({ role: msg.role, content });
+                ollamaMessages.push({ role: msg.role, content: msg.content });
             }
         }
 

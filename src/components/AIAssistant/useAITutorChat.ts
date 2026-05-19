@@ -3,6 +3,8 @@
 import { useState, useCallback, useRef } from "react";
 import type { AIChatMessage } from "@/types/ai";
 import type { LearningContext } from "@/contexts/AITutorContext";
+import { getExplicitOllamaModelId } from "@/lib/ai-models";
+import { parseSSEChunk } from "@/lib/sse-stream";
 import { usePreWarmAIModel } from "./usePreWarmAIModel";
 
 function generateId(): string {
@@ -85,8 +87,9 @@ export function useAITutorChat(
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const explicitModelId = getExplicitOllamaModelId(options.modelId);
 
-    usePreWarmAIModel(options.modelId);
+    usePreWarmAIModel(explicitModelId);
 
     const suggestions = getSuggestions(options.learningContext);
 
@@ -153,7 +156,7 @@ export function useAITutorChat(
                     body: JSON.stringify({
                         messages: contextMessages,
                         learningContext: options.learningContext,
-                        modelId: options.modelId,
+                        modelId: explicitModelId,
                     }),
                     signal: abortController.signal,
                 });
@@ -170,6 +173,7 @@ export function useAITutorChat(
 
                 const decoder = new TextDecoder();
                 let buffer = "";
+                let streamDone = false;
 
                 // ── Optimized UI update: use rAF batching ──
                 // Instead of updating state on every SSE chunk, we accumulate
@@ -231,41 +235,34 @@ export function useAITutorChat(
                     }
 
                     const text = decoder.decode(value, { stream: true });
-                    buffer += text;
-                    const lines = buffer.split("\n");
-                    buffer = lines.pop() || "";
+                    const parsed = parseSSEChunk<{
+                        content?: string;
+                        done?: boolean;
+                        error?: string;
+                    }>(buffer, text);
+                    buffer = parsed.buffer;
 
-                    for (const line of lines) {
-                        const trimmed = line.trim();
-                        if (trimmed.startsWith("data: ")) {
-                            try {
-                                const data = JSON.parse(trimmed.slice(6));
+                    for (const data of parsed.events) {
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
 
-                                if (data.error) {
-                                    throw new Error(data.error);
-                                }
+                        if (data.content) {
+                            fullContent += data.content;
+                            // Schedule batched UI update via rAF
+                            scheduleUpdate();
+                        }
 
-                                if (data.content) {
-                                    fullContent += data.content;
-                                    // Schedule batched UI update via rAF
-                                    scheduleUpdate();
-                                }
-
-                                if (data.done) break;
-                            } catch (parseError) {
-                                if (
-                                    parseError instanceof Error &&
-                                    parseError.message !==
-                                        "Unexpected end of JSON input"
-                                ) {
-                                    if (!String(parseError).includes("JSON")) {
-                                        throw parseError;
-                                    }
-                                }
-                            }
+                        if (data.done) {
+                            streamDone = true;
+                            break;
                         }
                     }
+
+                    if (streamDone) break;
                 }
+
+                if (activityTimer) clearTimeout(activityTimer);
 
                 // Final flush — show complete content without cursor
                 if (rafId) cancelAnimationFrame(rafId);
@@ -331,7 +328,7 @@ export function useAITutorChat(
             messages,
             isLoading,
             options.learningContext,
-            options.modelId,
+            explicitModelId,
             options.onError,
             saveHistory,
         ],
