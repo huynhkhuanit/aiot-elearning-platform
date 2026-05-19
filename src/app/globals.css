@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./tiptap.css";
+@source "../../node_modules/streamdown/dist/*.js";
 /* PrismJS Dracula Theme - Official Dracula Color Palette */
 /* https://draculatheme.com/ */
 code[class*="language-"],

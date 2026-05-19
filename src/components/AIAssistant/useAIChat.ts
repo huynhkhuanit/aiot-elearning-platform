@@ -107,9 +107,9 @@ export function useAIChat(options: UseAIChatOptions = {}): UseAIChatReturn {
             let fullContent = "";
 
             try {
-                // Build messages for API (only send last 10 messages for context window)
+                // Build messages for API (only send last 6 messages for faster inference)
                 const contextMessages = updatedMessages
-                    .slice(-10)
+                    .slice(-6)
                     .map((msg) => ({
                         role: msg.role,
                         content: msg.content,

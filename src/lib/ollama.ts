@@ -690,7 +690,8 @@ export async function getChatCompletionStream(
         options: {
             temperature: options?.temperature ?? 0.3,
             num_predict: options?.maxTokens ?? 1024,
-            top_p: 0.9,
+            top_p: 0.85,
+            top_k: 40,
             num_ctx: options?.num_ctx ?? 4096,
             ...(options?.repeat_penalty ? { repeat_penalty: options.repeat_penalty } : {}),
         },

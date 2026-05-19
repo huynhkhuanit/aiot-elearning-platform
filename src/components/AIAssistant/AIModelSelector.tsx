@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
     BotIcon,
     BrainCircuitIcon,
+    CheckIcon,
     ChevronsUpDownIcon,
     Code2Icon,
     CpuIcon,
@@ -120,11 +121,11 @@ export default function AIModelSelector({
                                     >
                                         <ModelIcon
                                             aria-hidden="true"
-                                            className="text-muted-foreground group-data-selected/command-item:text-foreground"
+                                            className={isActive ? "text-foreground" : "text-muted-foreground"}
                                         />
 
                                         <div className="min-w-0 flex-1">
-                                            <ModelSelectorName className="block">
+                                            <ModelSelectorName className={isActive ? "block font-medium" : "block"}>
                                                 {model.name}
                                             </ModelSelectorName>
                                             {model.description && (
@@ -140,6 +141,12 @@ export default function AIModelSelector({
                                         >
                                             {model.provider}
                                         </Badge>
+
+                                        {isActive ? (
+                                            <CheckIcon className="ml-1 size-4 shrink-0 text-emerald-500" />
+                                        ) : (
+                                            <div className="ml-1 size-4 shrink-0" />
+                                        )}
                                     </ModelSelectorItem>
                                 );
                             })}

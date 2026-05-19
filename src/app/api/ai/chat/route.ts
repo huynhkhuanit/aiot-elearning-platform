@@ -26,7 +26,9 @@ QUY TẮC:
 - Dùng markdown (## tiêu đề, - bullet, code blocks)
 - Không viết code hoàn chỉnh cho bài tập — hướng dẫn từng bước
 - Trả lời trực tiếp, không xuất chain-of-thought/reasoning hoặc thẻ <think>
-- Focus câu hỏi chính, tránh lan man`;
+- Đưa ra câu trả lời đầy đủ, chi tiết, có ví dụ minh họa khi cần
+- Giải thích rõ ràng từng bước, tránh trả lời quá ngắn hoặc thiếu sót
+- Focus câu hỏi chính, tránh lan man nhưng phải đủ ý`;
 
 const SYSTEM_PROMPT_LITE =
     "Bạn là coding assistant. Tiếng Việt. Ngắn gọn. Markdown code blocks. Không xuất chain-of-thought/reasoning hoặc thẻ <think>.";
@@ -92,9 +94,9 @@ export async function POST(request: NextRequest) {
         }
 
         const compactMessages = compactAIMessageHistory(messages, {
-            maxMessages: 8,
-            maxUserChars: 1800,
-            maxAssistantChars: 900,
+            maxMessages: 6,
+            maxUserChars: 1500,
+            maxAssistantChars: 600,
         });
 
         for (const msg of compactMessages) {
@@ -115,7 +117,7 @@ export async function POST(request: NextRequest) {
             temperature: routerParams.temperature,
             modelId: effectiveModelId,
             num_ctx: routerParams.num_ctx,
-            repeat_penalty: 1.1,
+            repeat_penalty: 1.15,
         };
 
         try {

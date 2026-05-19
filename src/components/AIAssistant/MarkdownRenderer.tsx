@@ -5,11 +5,13 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import AIAgentCodeBlock from "./AIAgentCodeBlock";
+import { prepareAssistantMarkdownContent } from "./streaming-display";
 
 interface MarkdownRendererProps {
     content: string;
     theme?: "light" | "dark";
     className?: string;
+    isStreaming?: boolean;
 }
 
 const remarkPlugins = [remarkGfm];
@@ -25,13 +27,13 @@ function MarkdownRendererInner({
     content,
     theme = "dark",
     className,
+    isStreaming = false,
 }: MarkdownRendererProps) {
     const isDark = theme === "dark";
 
-    // Strip trailing streaming cursor before rendering
     const cleanContent = useMemo(
-        () => content.replace(/▌$/, ""),
-        [content],
+        () => prepareAssistantMarkdownContent(content, isStreaming),
+        [content, isStreaming],
     );
 
     const components = useMemo(
@@ -41,7 +43,10 @@ function MarkdownRendererInner({
                 className: codeClassName,
                 children,
                 ...rest
-            }: ComponentPropsWithoutRef<"code"> & { inline?: boolean; node?: unknown }) {
+            }: ComponentPropsWithoutRef<"code"> & {
+                inline?: boolean;
+                node?: unknown;
+            }) {
                 const match = /language-(\w+)/.exec(codeClassName || "");
                 const codeText = String(children).replace(/\n$/, "");
 

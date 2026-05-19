@@ -1,10 +1,80 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+    getChatCompletion,
+    getChatCompletionStream,
     getChatCompletionWithTools,
     getChatCompletionWithToolsStream,
 } from "@/lib/ollama";
 import { PLAYGROUND_TOOLS } from "@/lib/agent-tools";
-import { buildAgentSystemPrompt } from "@/lib/agent-prompt";
+import {
+    buildAgentAnswerSystemPrompt,
+    buildAgentSystemPrompt,
+} from "@/lib/agent-prompt";
+import { shouldUseAgentTools } from "@/lib/agent-routing";
+
+type AgentMessage =
+    | { role: "user" | "assistant" | "system"; content: string }
+    | {
+          role: "assistant";
+          content?: string;
+          tool_calls?: Array<{
+              type: "function";
+              function: {
+                  index?: number;
+                  name: string;
+                  arguments?: string | Record<string, unknown>;
+              };
+          }>;
+      }
+    | { role: "tool"; tool_name: string; content: string };
+
+function buildCodeContext(code: unknown, useTools: boolean): string | null {
+    if (!code || typeof code !== "object") return null;
+
+    const state = code as {
+        html?: unknown;
+        css?: unknown;
+        javascript?: unknown;
+    };
+    const htmlLimit = useTools ? 3000 : 1200;
+    const cssLimit = useTools ? 2000 : 800;
+    const jsLimit = useTools ? 3000 : 1200;
+
+    return `[CODE HIỆN TẠI TRONG PLAYGROUND]
+HTML:
+\`\`\`html
+${String(state.html || "").slice(0, htmlLimit)}
+\`\`\`
+CSS:
+\`\`\`css
+${String(state.css || "").slice(0, cssLimit)}
+\`\`\`
+JavaScript:
+\`\`\`javascript
+${String(state.javascript || "").slice(0, jsLimit)}
+\`\`\``;
+}
+
+function toChatMessages(
+    messages: AgentMessage[],
+): Array<{ role: "user" | "assistant" | "system"; content: string }> {
+    return messages
+        .filter(
+            (
+                message,
+            ): message is {
+                role: "user" | "assistant" | "system";
+                content: string;
+            } =>
+                message.role !== "tool" &&
+                "content" in message &&
+                !("tool_calls" in message),
+        )
+        .map((message) => ({
+            role: message.role,
+            content: message.content,
+        }));
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -18,43 +88,25 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Build Ollama messages
-        const ollamaMessages: Array<
-            | { role: "user" | "assistant" | "system"; content: string }
-            | {
-                  role: "assistant";
-                  content?: string;
-                  tool_calls?: Array<{
-                      type: "function";
-                      function: {
-                          index?: number;
-                          name: string;
-                          arguments?: string | Record<string, unknown>;
-                      };
-                  }>;
-              }
-            | { role: "tool"; tool_name: string; content: string }
-        > = [{ role: "system", content: buildAgentSystemPrompt() }];
+        const lastUserMessage = [...messages]
+            .reverse()
+            .find((msg) => msg.role === "user" && msg.content);
+        const useTools = shouldUseAgentTools(lastUserMessage?.content || "");
 
-        // Inject current code so model can edit directly; also instruct to use read_code if unsure
-        if (code && typeof code === "object") {
-            const codeCtx = `[CODE HIỆN TẠI TRONG PLAYGROUND - dùng read_code để đọc hoặc edit_code để sửa]
-HTML:
-\`\`\`
-${String(code.html || "").slice(0, 3000)}
-\`\`\`
-CSS:
-\`\`\`
-${String(code.css || "").slice(0, 2000)}
-\`\`\`
-JavaScript:
-\`\`\`
-${String(code.javascript || "").slice(0, 3000)}
-\`\`\``;
-            ollamaMessages.push({ role: "system", content: codeCtx });
+        const ollamaMessages: AgentMessage[] = [
+            {
+                role: "system",
+                content: useTools
+                    ? buildAgentSystemPrompt()
+                    : buildAgentAnswerSystemPrompt(),
+            },
+        ];
+
+        const codeContext = buildCodeContext(code, useTools);
+        if (codeContext) {
+            ollamaMessages.push({ role: "system", content: codeContext });
         }
 
-        // Map incoming messages to Ollama format
         for (const msg of messages) {
             if (msg.role === "user" && msg.content) {
                 ollamaMessages.push({ role: "user", content: msg.content });
@@ -80,20 +132,93 @@ ${String(code.javascript || "").slice(0, 3000)}
             }
         }
 
-        // Agent tools require a model that supports tool calling.
-        // Qwen 2.5 Coder outputs tool calls as text (we parse them).
         const agentModel =
             modelId && String(modelId).includes("qwen")
                 ? modelId
                 : "qwen2.5-coder:7b-instruct";
-
         const opts = {
             modelId: agentModel,
-            maxTokens: 2048,
-            temperature: 0.2,
+            maxTokens: useTools ? 2048 : 1024,
+            temperature: useTools ? 0.2 : 0.25,
         };
 
-        // Prefer streaming for lower latency; fallback to non-streaming on failure
+        const encoder = new TextEncoder();
+        const toSSE = (obj: object) =>
+            encoder.encode(`data: ${JSON.stringify(obj)}\n\n`);
+
+        if (!useTools) {
+            let answerStream: ReadableStream<string>;
+            const chatMessages = toChatMessages(ollamaMessages);
+
+            try {
+                answerStream = await getChatCompletionStream(
+                    chatMessages,
+                    opts,
+                );
+            } catch (streamErr) {
+                const errMsg =
+                    streamErr instanceof Error
+                        ? streamErr.message
+                        : String(streamErr);
+                if (
+                    errMsg.includes("405") ||
+                    errMsg.includes("method not allowed")
+                ) {
+                    const result = await getChatCompletion(chatMessages, opts);
+                    answerStream = new ReadableStream({
+                        start(controller) {
+                            if (result.content) {
+                                controller.enqueue(result.content);
+                            }
+                            controller.close();
+                        },
+                    });
+                } else {
+                    throw streamErr;
+                }
+            }
+
+            const sseStream = new ReadableStream({
+                async start(controller) {
+                    const reader = answerStream.getReader();
+                    try {
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            controller.enqueue(
+                                toSSE({ content: value, done: false }),
+                            );
+                        }
+                        controller.enqueue(
+                            toSSE({
+                                content: "",
+                                toolCalls: null,
+                                done: true,
+                            }),
+                        );
+                    } catch (error) {
+                        const msg =
+                            error instanceof Error
+                                ? error.message
+                                : "Stream error";
+                        controller.enqueue(
+                            toSSE({ content: "", done: true, error: msg }),
+                        );
+                    }
+                    controller.close();
+                },
+            });
+
+            return new Response(sseStream, {
+                headers: {
+                    "Content-Type": "text/event-stream",
+                    "Cache-Control": "no-cache",
+                    Connection: "keep-alive",
+                    "X-Accel-Buffering": "no",
+                },
+            });
+        }
+
         let stream: ReadableStream<import("@/lib/ollama").ToolsStreamChunk>;
         try {
             stream = await getChatCompletionWithToolsStream(
@@ -124,10 +249,6 @@ ${String(code.javascript || "").slice(0, 3000)}
             }
             throw streamErr;
         }
-
-        const encoder = new TextEncoder();
-        const toSSE = (obj: object) =>
-            encoder.encode(`data: ${JSON.stringify(obj)}\n\n`);
 
         const sseStream = new ReadableStream({
             async start(controller) {

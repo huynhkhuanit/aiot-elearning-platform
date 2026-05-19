@@ -100,30 +100,19 @@ export default function AIAgentPanel({
         hasAgentContext ? chatModel : autoModel,
     );
 
-    useEffect(() => {
-        if (
-            hasAgentContext &&
-            mode === "agent" &&
-            selectedModel.id !== chatModel.id
-        ) {
-            setSelectedModel(chatModel);
-        }
-    }, [chatModel, hasAgentContext, mode, selectedModel.id]);
-
+    // Only suggest a model when the user changes *mode*, not when they
+    // explicitly pick a model.  The old useEffect watched selectedModel.id
+    // and immediately reverted every user selection in agent mode.
     const handleModeChange = useCallback(
         (newMode: AIAgentMode) => {
             setMode(newMode);
-            if (newMode === "agent" && selectedModel.id !== chatModel.id) {
+            if (newMode === "agent") {
                 setSelectedModel(chatModel);
-            } else if (
-                newMode === "ask" &&
-                hasAgentContext &&
-                selectedModel.id === chatModel.id
-            ) {
+            } else if (newMode === "ask" && hasAgentContext) {
                 setSelectedModel(autoModel);
             }
         },
-        [autoModel, chatModel, hasAgentContext, selectedModel.id],
+        [autoModel, chatModel, hasAgentContext],
     );
 
     const {

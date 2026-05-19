@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
     getAssistantDisplayContent,
+    prepareAssistantMarkdownContent,
+    shouldRenderAssistantMarkdown,
     shouldReplayAssistantTypewriter,
 } from "./streaming-display";
 
@@ -14,4 +16,20 @@ test("streaming assistant content renders the received text immediately", () => 
 test("completed API response content is not replayed with a delayed typewriter", () => {
     assert.equal(shouldReplayAssistantTypewriter(true, "Xin chao"), false);
     assert.equal(shouldReplayAssistantTypewriter(false, "Xin chao"), false);
+});
+
+test("streaming markdown is still rendered through the markdown renderer", () => {
+    const content =
+        "```javascript\nbutton.addEventListener('click', onClick);\n```\u258c";
+
+    assert.equal(shouldRenderAssistantMarkdown(content), true);
+});
+
+test("streaming markdown content closes an unfinished code fence for rendering", () => {
+    const content = "```javascript\nbutton.addEventListener('click', onClick);";
+
+    assert.equal(
+        prepareAssistantMarkdownContent(content, true),
+        "```javascript\nbutton.addEventListener('click', onClick);\n```",
+    );
 });

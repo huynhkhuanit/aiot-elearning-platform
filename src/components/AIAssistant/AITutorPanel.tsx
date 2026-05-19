@@ -129,7 +129,11 @@ function MessageBubble({
                 </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-                <MarkdownRenderer content={rawContent} theme={theme} />
+                <MarkdownRenderer
+                    content={rawContent}
+                    theme={theme}
+                    isStreaming={streaming || !!isStreaming}
+                />
 
                 {(streaming || isStreaming) && (
                     <span
@@ -438,14 +442,22 @@ export default function AITutorPanel({
                                             !message.content
                                         ),
                                 )
-                                .map((message) => (
-                                    <MessageBubble
-                                        key={message.id}
-                                        content={message.content}
-                                        role={message.role}
-                                        theme={theme}
-                                    />
-                                ))}
+                                .map((message) => {
+                                    const isLastAssistant =
+                                        isLoading &&
+                                        message === messages[messages.length - 1] &&
+                                        message.role === "assistant" &&
+                                        !!message.content;
+                                    return (
+                                        <MessageBubble
+                                            key={message.id}
+                                            content={message.content}
+                                            role={message.role}
+                                            isStreaming={isLastAssistant}
+                                            theme={theme}
+                                        />
+                                    );
+                                })}
 
                             {isLoading &&
                                 messages.length > 0 &&

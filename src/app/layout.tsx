@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
@@ -14,6 +15,59 @@ const inter = Inter({
     preload: true,
     adjustFontFallback: true,
 });
+
+const extensionHydrationGuard = `
+(() => {
+  const shouldStrip = (name) =>
+    name === "bis_skin_checked" ||
+    name === "bis_register" ||
+    name.startsWith("__processed_");
+
+  const stripAttributes = (node) => {
+    if (!node || node.nodeType !== 1) return;
+    for (const attribute of Array.from(node.attributes)) {
+      if (shouldStrip(attribute.name)) {
+        node.removeAttribute(attribute.name);
+      }
+    }
+  };
+
+  const sweep = (root) => {
+    if (!root) return;
+    if (root.nodeType === 1) stripAttributes(root);
+    const scope = root.nodeType === 9 ? root.documentElement : root;
+    if (!scope || !scope.querySelectorAll) return;
+    for (const node of scope.querySelectorAll("*")) {
+      stripAttributes(node);
+    }
+  };
+
+  sweep(document);
+
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === "attributes") {
+        stripAttributes(mutation.target);
+      } else if (mutation.type === "childList") {
+        for (const node of mutation.addedNodes) {
+          sweep(node);
+        }
+      }
+    }
+  });
+
+  observer.observe(document.documentElement, {
+    attributes: true,
+    childList: true,
+    subtree: true,
+  });
+
+  window.addEventListener("load", () => {
+    sweep(document);
+    window.setTimeout(() => observer.disconnect(), 5000);
+  });
+})();
+`;
 
 export const metadata: Metadata = {
     title: "CodeSense AI | Nền tảng học lập trình nâng cao tích hợp AI",
@@ -42,8 +96,16 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="vi" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
-            <head />
-            <body className="antialiased">
+            <head>
+                <Script
+                    id="extension-hydration-guard"
+                    strategy="beforeInteractive"
+                    dangerouslySetInnerHTML={{
+                        __html: extensionHydrationGuard,
+                    }}
+                />
+            </head>
+            <body className="antialiased" suppressHydrationWarning>
                 <CSRFInterceptor />
                 <ToastProvider>
                     <AuthProvider>

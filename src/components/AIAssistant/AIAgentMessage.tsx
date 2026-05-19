@@ -1,18 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Check, Copy, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { AIChatMessage } from "@/types/ai";
 import { getAITheme } from "./theme";
 import MarkdownRenderer from "./MarkdownRenderer";
-import { useTypewriterText } from "./useTypewriterText";
 import {
     getAssistantDisplayContent,
     isAssistantStreamingContent,
+    shouldRenderAssistantMarkdown,
     shouldReplayAssistantTypewriter,
 } from "./streaming-display";
+import { useTypewriterText } from "./useTypewriterText";
 
 interface AIAgentMessageProps {
     message: AIChatMessage;
@@ -24,7 +25,7 @@ interface AIAgentMessageProps {
 
 export default function AIAgentMessage({
     message,
-    onInsertCode,
+    onInsertCode: _onInsertCode,
     theme = "dark",
     animateWords = false,
 }: AIAgentMessageProps) {
@@ -52,7 +53,6 @@ export default function AIAgentMessage({
         setTimeout(() => setCopied(false), 2000);
     };
 
-    /* ── User message: right-aligned, muted bubble ── */
     if (isUser) {
         return (
             <div className="flex justify-end px-4 py-2">
@@ -68,7 +68,6 @@ export default function AIAgentMessage({
         );
     }
 
-    /* ── Assistant message: left-aligned, no bubble, clean prose ── */
     return (
         <div
             className="group px-4 py-3"
@@ -76,7 +75,13 @@ export default function AIAgentMessage({
             onMouseLeave={() => setHovered(false)}
         >
             <div className={cn("max-w-full", themed.textBody)}>
-                <MarkdownRenderer content={rawContent} theme={theme} />
+                {shouldRenderAssistantMarkdown(message.content) && (
+                    <MarkdownRenderer
+                        content={rawContent}
+                        theme={theme}
+                        isStreaming={isStreaming}
+                    />
+                )}
 
                 {isStreaming && (
                     <span
@@ -90,7 +95,6 @@ export default function AIAgentMessage({
                 )}
             </div>
 
-            {/* Action bar — appears on hover */}
             <div
                 className={cn(
                     "mt-2 flex items-center gap-1 transition-opacity duration-150",

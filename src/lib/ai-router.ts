@@ -88,21 +88,21 @@ export function selectModelParams(
     const is1B = /[:\-](0\.5|1|1\.3|1\.5)b/i.test(modelId);
 
     if (is1B) {
-        return { num_ctx: 2048, num_predict: 256, temperature: 0.2 };
+        return { num_ctx: 2048, num_predict: 512, temperature: 0.2 };
     }
 
     if (is3B) {
         return {
             num_ctx: complexity === "simple" ? 2048 : 4096,
-            num_predict: complexity === "simple" ? 512 : 1024,
+            num_predict: complexity === "simple" ? 768 : 1536,
             temperature: 0.25,
         };
     }
 
     // 7B+ models
     return {
-        num_ctx: complexity === "simple" ? 4096 : 8192,
-        num_predict: complexity === "simple" ? 1024 : 4096,
-        temperature: 0.3,
+        num_ctx: complexity === "simple" ? 3072 : 8192,
+        num_predict: complexity === "simple" ? 1536 : 6144,
+        temperature: 0.25,
     };
 }

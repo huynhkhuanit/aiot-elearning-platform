@@ -50,8 +50,8 @@ function buildTutorSystemPrompt(
     const base =
         "Bạn là AI Tutor trên CodeSense AI. " +
         "Trả lời tiếng Việt. Dùng markdown. " +
-        "Giải thích rõ ràng, từng bước. Khuyến khích tư duy. " +
-        "Code kèm comment ngắn.";
+        "Giải thích rõ ràng, từng bước, có ví dụ minh họa. Khuyến khích tư duy. " +
+        "Code kèm comment ngắn. Trả lời đầy đủ, chi tiết, tránh quá ngắn.";
 
     const memoryBlock = memorySummary
         ? `\nTutor memory:\n${memorySummary}`
@@ -171,7 +171,7 @@ function buildTutorRequest(
     return {
         ollamaMessages,
         options: {
-            maxTokens: small ? 512 : routerParams.num_predict,
+            maxTokens: small ? 768 : routerParams.num_predict,
             temperature: routerParams.temperature,
             modelId,
             num_ctx: routerParams.num_ctx,
