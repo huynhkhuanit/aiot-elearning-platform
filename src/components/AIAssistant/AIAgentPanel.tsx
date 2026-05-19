@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useState, useMemo } from "react";
+import { useRef, useCallback, useState, useMemo } from "react";
 import { AlertCircle, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ import AIAgentMessage from "./AIAgentMessage";
 import AIAgentStreamingPlaceholder from "./AIAgentStreamingPlaceholder";
 import AIAgentWelcome from "./AIAgentWelcome";
 import AIAgentConversationList from "./AIAgentConversationList";
+import { useFollowScroll } from "./useFollowScroll";
 import type {
     AIAgentPanelProps,
     AIServerStatus,
@@ -75,7 +76,11 @@ export default function AIAgentPanel({
     aiServerStatus = "checking",
 }: ExtendedAIAgentPanelProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    // Follow-scroll keeps the message list pinned to the bottom while the AI
+    // is typing. The hook respects the user's scroll: if they scroll up to
+    // re-read something, auto-scroll pauses until they return near the bottom.
+    const { containerRef: scrollContainerRef, scrollToBottom: pinToBottom } =
+        useFollowScroll<HTMLDivElement>({ threshold: 80 });
     const themed = getAITheme(theme);
     const [showScrollBottom, setShowScrollBottom] = useState(false);
 
@@ -156,10 +161,11 @@ export default function AIAgentPanel({
         stopGeneration,
     } = useAgentMode ? agentChat : normalChat;
 
-    /* ── Auto-scroll ── */
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+    /* ── Auto-scroll: handled by useFollowScroll above. ──
+     * The hook listens for DOM mutations inside the scroll container so each
+     * typewriter tick automatically nudges the view to the bottom — provided
+     * the user hasn't scrolled up to read earlier content.
+     */
 
     /* ── Show scroll-to-bottom button ── */
     const handleScroll = useCallback(() => {
@@ -168,11 +174,12 @@ export default function AIAgentPanel({
         const distanceFromBottom =
             el.scrollHeight - el.scrollTop - el.clientHeight;
         setShowScrollBottom(distanceFromBottom > 100);
-    }, []);
+    }, [scrollContainerRef]);
 
     const scrollToBottom = useCallback(() => {
+        pinToBottom();
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, []);
+    }, [pinToBottom]);
 
     const handleSendMessage = useCallback(
         async (content: string) => {

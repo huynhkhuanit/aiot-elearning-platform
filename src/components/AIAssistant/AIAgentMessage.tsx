@@ -45,11 +45,11 @@ export default function AIAgentMessage({
 
     // Typewriter runs at the component level, with its own setTimeout chain,
     // so it isn't affected by React 18 automatic batching at the chat hook.
-    // intervalMs=12 ≈ 80 chars/sec — fast enough not to lag, slow enough to
-    // clearly look like typing.
+    // intervalMs=28 ≈ 36 ticks/s — comfortable reading pace, similar to what
+    // ChatGPT shows on a slow connection.
     const visibleContent = useTypewriterText(message.content, {
         enabled: animateWords && !isUser && isStreaming,
-        intervalMs: 12,
+        intervalMs: 28,
     });
 
     const visibleClean = getAssistantDisplayContent(visibleContent);

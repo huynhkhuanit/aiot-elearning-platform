@@ -27,7 +27,7 @@ interface UseTypewriterTextOptions {
  */
 export function useTypewriterText(
     content: string,
-    { enabled, intervalMs = 14 }: UseTypewriterTextOptions,
+    { enabled, intervalMs = 28 }: UseTypewriterTextOptions,
 ): string {
     const targetText = stripStreamingCursor(content);
 

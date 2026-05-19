@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useCallback, useState } from "react";
 import {
     AlertCircle,
     ArrowDown,
@@ -28,6 +28,7 @@ import AIModelSelector from "./AIModelSelector";
 import type { AIModel } from "./types";
 import { AI_MODELS } from "./types";
 import { useTypewriterText } from "./useTypewriterText";
+import { useFollowScroll } from "./useFollowScroll";
 import {
     getAssistantDisplayContent,
     isAssistantStreamingContent,
@@ -93,11 +94,11 @@ function MessageBubble({
 
     // Run the typewriter at the message-component level so its setTimeout
     // chain is isolated from any state batching happening at the hook above.
-    // intervalMs=12 ≈ 80 chars/s — fast enough not to lag behind the model
-    // but slow enough to feel like typing.
+    // intervalMs=28 ≈ 36 ticks/s — slow enough for the user to comfortably
+    // read along while the AI types.
     const visibleContent = useTypewriterText(content, {
         enabled: streaming,
-        intervalMs: 12,
+        intervalMs: 28,
     });
 
     // Strip the cursor marker before rendering. The cursor is only used as a
@@ -177,7 +178,10 @@ export default function AITutorPanel({
 }: AITutorPanelProps) {
     const { learningContext } = useAITutor();
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    // Follow-scroll keeps the chat pinned to the bottom while the typewriter
+    // reveals new characters, but pauses if the user scrolls up to read.
+    const { containerRef: scrollContainerRef, scrollToBottom: pinToBottom } =
+        useFollowScroll<HTMLDivElement>({ threshold: 80 });
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [showScrollBottom, setShowScrollBottom] = useState(false);
     const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
@@ -217,9 +221,10 @@ export default function AITutorPanel({
         modelId: getExplicitOllamaModelId(selectedModel.id),
     });
 
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+    /* ── Auto-scroll handled by useFollowScroll above. ──
+     * Each typewriter mutation triggers a MutationObserver inside the hook,
+     * which keeps the view pinned to the bottom unless the user scrolls up.
+     */
 
     const handleScroll = useCallback(() => {
         const el = scrollContainerRef.current;
@@ -227,11 +232,12 @@ export default function AITutorPanel({
         const distanceFromBottom =
             el.scrollHeight - el.scrollTop - el.clientHeight;
         setShowScrollBottom(distanceFromBottom > 100);
-    }, []);
+    }, [scrollContainerRef]);
 
     const scrollToBottom = useCallback(() => {
+        pinToBottom();
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, []);
+    }, [pinToBottom]);
 
     const handleSend = useCallback(
         async (content: string) => {

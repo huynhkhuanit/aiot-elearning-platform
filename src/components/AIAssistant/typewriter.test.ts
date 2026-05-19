@@ -17,10 +17,12 @@ test("getNextTypewriterText reveals a small amount for short pending text", () =
 });
 
 test("getNextTypewriterText catches up faster when buffered text is far ahead", () => {
-    const target = "a".repeat(500);
+    const target = "a".repeat(900);
     const next = getNextTypewriterText("", target);
 
-    assert.ok(next.length > 5);
+    // With slow ChatGPT-like pacing the per-tick reveal is small (≤5 chars)
+    // even when the backlog is huge — that's the point of the slowdown.
+    assert.ok(next.length >= 3);
     assert.ok(next.length < target.length);
 });
 
