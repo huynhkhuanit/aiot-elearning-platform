@@ -3,6 +3,7 @@ Groq Service - Handles communication with Groq API for Llama 3 models
 """
 
 import json
+import re
 import time
 from typing import Dict, Any, Tuple
 
@@ -37,11 +38,40 @@ def get_groq_client_for_fill() -> AsyncGroq:
 
 class GroqAPIError(Exception):
     """Custom exception for Groq API errors with detailed info"""
-    def __init__(self, message: str, status_code: int = 500, error_type: str = "unknown"):
+    def __init__(
+        self,
+        message: str,
+        status_code: int = 500,
+        error_type: str = "unknown",
+        retry_after_s: float = 0.0,
+    ):
         self.message = message
         self.status_code = status_code
         self.error_type = error_type
+        # Optional cooldown hint propagated from Groq's 429 response. Callers
+        # can use this to wait the exact amount Groq tells us instead of
+        # picking an arbitrary fixed cooldown.
+        self.retry_after_s = retry_after_s
         super().__init__(self.message)
+
+
+_GROQ_RETRY_AFTER_RE = re.compile(r"try again in\s+([\d.]+)s", re.IGNORECASE)
+
+
+def _extract_retry_after_seconds(message: str, fallback: float = 0.0) -> float:
+    """
+    Pull the "try again in X.Ys" hint out of a Groq 429 error message.
+    Returns the float seconds, or fallback when not found.
+    """
+    if not message:
+        return fallback
+    match = _GROQ_RETRY_AFTER_RE.search(message)
+    if not match:
+        return fallback
+    try:
+        return float(match.group(1))
+    except (TypeError, ValueError):
+        return fallback
 
 
 async def generate_roadmap_json(user_prompt: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
@@ -445,10 +475,13 @@ async def generate_fill_nodes_json(
                 max_tokens=fallback,
             )
         elif status_code == 429:
+            err_text = str(getattr(e, "message", "")) or str(e)
+            retry_after = _extract_retry_after_seconds(err_text, fallback=15.0)
             raise GroqAPIError(
                 message="Groq rate limit during incremental fill.",
                 status_code=429,
                 error_type="rate_limit",
+                retry_after_s=retry_after,
             )
         else:
             raise GroqAPIError(
@@ -456,11 +489,14 @@ async def generate_fill_nodes_json(
                 status_code=status_code or 500,
                 error_type="api_error",
             )
-    except RateLimitError:
+    except RateLimitError as e:
+        err_text = str(getattr(e, "message", "")) or str(e)
+        retry_after = _extract_retry_after_seconds(err_text, fallback=15.0)
         raise GroqAPIError(
             message="Groq rate limit during incremental fill.",
             status_code=429,
             error_type="rate_limit",
+            retry_after_s=retry_after,
         )
     except APIConnectionError:
         raise GroqAPIError(

@@ -26,7 +26,11 @@ from app.models import (
     UserProfileRequest,
 )
 from app.prompts import build_user_prompt
-from app.services.groq_service import generate_roadmap_json, generate_fill_nodes_json
+from app.services.groq_service import (
+    generate_roadmap_json,
+    generate_fill_nodes_json,
+    GroqAPIError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -981,15 +985,15 @@ def _collect_structural_issues(roadmap: GeneratedRoadmap) -> List[str]:
 
 # Each fill chunk targets a small slice of subsections so the LLM stays
 # focused and the output stays comfortably under Groq's TPM budget.
-# Smaller chunks = smaller per-call output = less likely to trip TPM, and
-# the 8b-instant model (used by the fill pipeline) is fast enough that
-# making 4-5 small calls is faster end-to-end than 2-3 big ones that hit 429.
-_FILL_CHUNK_SIZE = 4
-_FILL_MAX_ROUNDS = 5
-_FILL_OUTPUT_MAX_TOKENS = 2800
-# Local backoff if a fill round itself returns 429. Much shorter than the
-# 60s the Groq SDK would otherwise wait, because the 8b bucket recovers fast.
-_FILL_RATE_LIMIT_COOLDOWN_S = 15
+# IMPORTANT: llama-3.1-8b-instant has TPM=6000 on the free tier (NOT 14400
+# as some docs suggest). Each call uses ~1500 input + max_tokens output,
+# so we keep output ≤2000 to fit ~1.7 calls per minute. Smaller chunks +
+# more rounds means we stay below TPM and skip the SDK's 60s wait entirely.
+_FILL_CHUNK_SIZE = 5
+_FILL_MAX_ROUNDS = 6
+_FILL_OUTPUT_MAX_TOKENS = 2000
+# Local backoff baseline if we somehow have to wait without a Groq hint.
+_FILL_RATE_LIMIT_COOLDOWN_S = 12
 
 
 def _subsections_needing_fill(
@@ -1256,18 +1260,23 @@ async def _incremental_fill_roadmap(
                 max_tokens_override=_FILL_OUTPUT_MAX_TOKENS,
             )
         except GroqAPIError as exc:
-            # 429 from the fill model: wait a short period and retry the same
-            # chunk once. Total worst case is _FILL_RATE_LIMIT_COOLDOWN_S +
-            # one more call (~3-4s), still much faster than letting the SDK
-            # block on its 60s default retry.
-            if exc.error_type == "rate_limit" and rate_limit_recoveries < 2:
+            # 429 from the fill model: wait the exact period Groq tells us
+            # (parsed from "try again in X.Ys" in the error message), then
+            # retry the same chunk once. Total worst case ≈ 35-40s, still
+            # much faster than letting the SDK block on a 60s default retry.
+            if exc.error_type == "rate_limit" and rate_limit_recoveries < 3:
                 rate_limit_recoveries += 1
+                # Add 1.5s buffer so we wake up just after the window opens
+                # rather than right on the boundary (which sometimes still
+                # 429s).
+                wait_s = max(_FILL_RATE_LIMIT_COOLDOWN_S, exc.retry_after_s + 1.5)
                 logger.warning(
-                    "Fill round %d hit 429; waiting %ds and retrying once.",
+                    "Fill round %d hit 429; waiting %.1fs (Groq hint: %.1fs) and retrying once.",
                     round_index + 1,
-                    _FILL_RATE_LIMIT_COOLDOWN_S,
+                    wait_s,
+                    exc.retry_after_s,
                 )
-                await asyncio.sleep(_FILL_RATE_LIMIT_COOLDOWN_S)
+                await asyncio.sleep(wait_s)
                 try:
                     fill_data = await generate_fill_nodes_json(
                         fill_user_prompt,
