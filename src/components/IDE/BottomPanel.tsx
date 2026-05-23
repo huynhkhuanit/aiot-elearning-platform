@@ -80,11 +80,48 @@ function ProblemsList({ issues }: { issues: RuntimeIssue[] }) {
                     key={`${issue.code ?? issue.message}-${index}`}
                     className={`ide-problem-row ${issue.severity}`}
                 >
-                    <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span className="font-medium">{issue.source ?? "Runtime"}</span>
-                    <span className="flex-1">{issue.message}</span>
+                    <AlertTriangle
+                        className="w-3.5 h-3.5 flex-shrink-0"
+                        style={{
+                            color:
+                                issue.severity === "error"
+                                    ? "#f87171"
+                                    : issue.severity === "warning"
+                                      ? "#facc15"
+                                      : "var(--ide-text-muted)",
+                        }}
+                    />
+                    <span
+                        className="font-medium"
+                        style={{
+                            color:
+                                issue.severity === "error"
+                                    ? "#f87171"
+                                    : issue.severity === "warning"
+                                      ? "#facc15"
+                                      : "var(--ide-text-muted)",
+                        }}
+                    >
+                        {issue.source ?? "Runtime"}
+                    </span>
+                    <span
+                        className="flex-1"
+                        style={{
+                            color:
+                                issue.severity === "error"
+                                    ? "#f87171"
+                                    : issue.severity === "warning"
+                                      ? "#facc15"
+                                      : "var(--ide-text-muted)",
+                        }}
+                    >
+                        {issue.message}
+                    </span>
                     {issue.line && (
-                        <span className="text-[var(--ide-text-muted)]">
+                        <span
+                            className="text-[var(--ide-text-muted)]"
+                            style={{ color: "var(--ide-text-muted)" }}
+                        >
                             {issue.line}:{issue.column ?? 1}
                         </span>
                     )}
@@ -347,7 +384,17 @@ export default function BottomPanel({
                                             log.timestamp,
                                         ).toLocaleTimeString("vi-VN")}
                                     </span>
-                                    <span className="whitespace-pre-wrap break-all">
+                                    <span
+                                        className="whitespace-pre-wrap break-all ide-console-message"
+                                        style={{
+                                            color:
+                                                log.type === "error"
+                                                    ? "#f87171"
+                                                    : log.type === "warn"
+                                                      ? "#facc15"
+                                                      : "var(--ide-text)",
+                                        }}
+                                    >
                                         {log.message}
                                     </span>
                                 </div>

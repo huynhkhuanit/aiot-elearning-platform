@@ -574,6 +574,12 @@
     gap: 8px;
     padding: 4px 8px;
     border-bottom: 1px solid var(--ide-border);
+    color: var(--ide-text);
+}
+
+.ide-console-message,
+.ide-problem-row span {
+    color: inherit;
 }
 
 .ide-console-row.error,
