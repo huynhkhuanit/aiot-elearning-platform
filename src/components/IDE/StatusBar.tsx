@@ -1,6 +1,8 @@
 "use client";
 
 import { Wifi, WifiOff } from "lucide-react";
+import { getEditorThemeOption, type EditorThemeId } from "../CodePlayground/editorThemes";
+import { getLanguageConfig } from "../CodePlayground/languages";
 import type { LanguageType } from "./useIDEState";
 
 interface StatusBarProps {
@@ -8,31 +10,27 @@ interface StatusBarProps {
     line: number;
     column: number;
     theme: "light" | "dark";
+    editorThemeId: EditorThemeId;
     aiStatus?: "connected" | "checking" | "disconnected";
     autoSaveStatus: string;
 }
-
-const LANG_LABELS: Record<LanguageType, string> = {
-    html: "HTML",
-    css: "CSS",
-    javascript: "JavaScript",
-    cpp: "C++",
-};
 
 export default function StatusBar({
     language,
     line,
     column,
-    theme,
+    editorThemeId,
     aiStatus = "checking",
     autoSaveStatus,
 }: StatusBarProps) {
+    const languageConfig = getLanguageConfig(language);
+
     return (
         <div className="ide-statusbar">
             {/* Left */}
             <div className="flex items-center">
                 <div className="status-item">
-                    <span>{LANG_LABELS[language]}</span>
+                    <span>{languageConfig.label}</span>
                 </div>
                 <div className="status-item">
                     <span>
@@ -44,6 +42,9 @@ export default function StatusBar({
                 </div>
                 <div className="status-item">
                     <span>UTF-8</span>
+                </div>
+                <div className="status-item">
+                    <span>{getEditorThemeOption(editorThemeId).label}</span>
                 </div>
             </div>
 

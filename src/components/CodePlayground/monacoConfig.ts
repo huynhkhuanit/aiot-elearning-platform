@@ -1,17 +1,54 @@
 // Monaco Editor configuration and IntelliSense setup
 
 import type { OnMount } from "@monaco-editor/react"
+import { PLAYGROUND_LANGUAGE_IDS } from "./languages"
+import {
+  getEditorThemeOption,
+  type EditorThemeId,
+} from "./editorThemes"
 
 // Extract editor type from OnMount callback
 export type MonacoEditor = Parameters<OnMount>[0]
 
 // Track registered disposables to prevent duplicate registrations
 let aiCompletionDisposable: any = null
+let languageProvidersConfigured = false
+let extendedLanguagesConfigured = false
 
 /**
  * Configure Monaco Editor with enhanced IntelliSense
  */
-export function configureMonacoEditor(monaco: any, theme: "light" | "dark") {
+export function configureMonacoEditor(
+  monaco: any,
+  theme: "light" | "dark" | EditorThemeId = "dark"
+) {
+  registerEditorThemes(monaco)
+
+  if (!languageProvidersConfigured) {
+    configureHTMLIntelliSense(monaco)
+    configureCSSIntelliSense(monaco)
+    configureJavaScriptIntelliSense(monaco)
+    languageProvidersConfigured = true
+  }
+
+  if (!extendedLanguagesConfigured) {
+    configureExtendedLanguageSyntax(monaco)
+    extendedLanguagesConfigured = true
+  }
+
+  monaco.editor.setTheme(resolveMonacoThemeName(theme))
+
+  // Configure AI inline code completion
+  configureAIInlineCompletion(monaco)
+}
+
+function resolveMonacoThemeName(theme: "light" | "dark" | EditorThemeId) {
+  if (theme === "light") return "codeplayground-light"
+  if (theme === "dark") return "codeplayground-dark"
+  return getEditorThemeOption(theme).monacoTheme
+}
+
+function registerEditorThemes(monaco: any) {
   // Define custom VSCode-like dark theme
   monaco.editor.defineTheme("codeplayground-dark", {
     base: "vs-dark",
@@ -72,23 +109,34 @@ export function configureMonacoEditor(monaco: any, theme: "light" | "dark") {
     },
   })
 
-  // Set the theme
-  monaco.editor.setTheme(theme === "dark" ? "codeplayground-dark" : "codeplayground-light")
-
-  // Configure HTML IntelliSense
-  configureHTMLIntelliSense(monaco)
-
-  // Configure CSS IntelliSense
-  configureCSSIntelliSense(monaco)
-
-  // Configure JavaScript IntelliSense
-  configureJavaScriptIntelliSense(monaco)
-
-  // Configure C++ syntax highlighting
-  configureCppSyntax(monaco)
-
-  // Configure AI inline code completion
-  configureAIInlineCompletion(monaco)
+  monaco.editor.defineTheme("codeplayground-monokai", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [
+      { token: "comment", foreground: "75715e", fontStyle: "italic" },
+      { token: "keyword", foreground: "f92672" },
+      { token: "string", foreground: "e6db74" },
+      { token: "number", foreground: "ae81ff" },
+      { token: "type", foreground: "66d9ef" },
+      { token: "class", foreground: "a6e22e" },
+      { token: "function", foreground: "a6e22e" },
+    ],
+    colors: {
+      "editor.background": "#272822",
+      "editor.foreground": "#f8f8f2",
+      "editor.lineHighlightBackground": "#3e3d32",
+      "editor.selectionBackground": "#49483e",
+      "editor.inactiveSelectionBackground": "#3b3a32",
+      "editorIndentGuide.background": "#3b3a32",
+      "editorIndentGuide.activeBackground": "#75715e",
+      "editor.lineNumber.foreground": "#90908a",
+      "editor.lineNumber.activeForeground": "#f8f8f2",
+      "editorCursor.foreground": "#f8f8f0",
+      "editorWhitespace.foreground": "#464741",
+      "editorBracketMatch.background": "#49483e",
+      "editorBracketMatch.border": "#a6e22e",
+    },
+  })
 }
 
 /**
@@ -264,6 +312,21 @@ function configureJavaScriptIntelliSense(monaco: any) {
     diagnosticCodesToIgnore: [1108, 1005],
   })
 
+  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+    target: monaco.languages.typescript.ScriptTarget.ES2020,
+    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+    module: monaco.languages.typescript.ModuleKind.ESNext,
+    noEmit: true,
+    strict: true,
+    esModuleInterop: true,
+    lib: ["ES2020", "DOM", "DOM.Iterable"],
+  })
+
+  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+    noSemanticValidation: false,
+    noSyntaxValidation: false,
+  })
+
   // Enhanced type definitions with full DOM and Browser APIs
   monaco.languages.typescript.javascriptDefaults.setExtraLibs([
     {
@@ -273,12 +336,24 @@ function configureJavaScriptIntelliSense(monaco: any) {
   ])
 }
 
+function ensureLanguageRegistered(monaco: any, id: string) {
+  const exists = monaco.languages
+    .getLanguages()
+    .some((language: { id: string }) => language.id === id)
+
+  if (!exists) {
+    monaco.languages.register({ id })
+  }
+}
+
 /**
- * Configure C++ syntax highlighting
+ * Configure syntax highlighting for languages Monaco does not fully register by default.
  */
-function configureCppSyntax(monaco: any) {
-  monaco.languages.register({ id: "cpp" })
-  monaco.languages.setMonarchTokensProvider("cpp", {
+function configureExtendedLanguageSyntax(monaco: any) {
+  const cLikeLanguages = ["c", "cpp", "java", "csharp", "go", "rust"]
+  cLikeLanguages.forEach((languageId) => {
+    ensureLanguageRegistered(monaco, languageId)
+    monaco.languages.setMonarchTokensProvider(languageId, {
     tokenizer: {
       root: [
         [/\/\/.*$/, "comment"],
@@ -294,6 +369,11 @@ function configureCppSyntax(monaco: any) {
         [/["'].*?["']/, "string"],
       ],
     },
+  })
+  })
+
+  ;["python", "php", "typescript"].forEach((languageId) => {
+    ensureLanguageRegistered(monaco, languageId)
   })
 }
 
@@ -558,7 +638,7 @@ declare function decodeURIComponent(encodedURIComponent: string): string;
 export function getEditorOptions() {
   return {
     // Display & Layout
-    minimap: { enabled: false },
+    minimap: { enabled: true, maxColumn: 88, renderCharacters: false },
     fontSize: 14,
     fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace",
     wordWrap: "on" as const,
@@ -709,7 +789,7 @@ function configureAIInlineCompletion(monaco: any) {
     aiCompletionDisposable = null
   }
 
-  const languages = ["html", "css", "javascript", "typescript", "cpp", "python"]
+  const languages = PLAYGROUND_LANGUAGE_IDS
 
   aiCompletionDisposable = monaco.languages.registerInlineCompletionsProvider(
     languages.map((lang) => ({ language: lang })),

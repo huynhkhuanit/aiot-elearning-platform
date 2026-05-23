@@ -1,5 +1,6 @@
 // Utility functions for CodePlayground
 
+import { LANGUAGE_CONFIGS } from "./languages"
 import type { CodeState } from "./types"
 
 /**
@@ -91,29 +92,31 @@ export function validateHTML(html: string): ValidationResult {
       }
     })
 
-    // Use DOMParser to validate HTML structure
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(html, "text/html")
-    
-    // Check for parser errors
-    const parserErrors = doc.querySelectorAll("parsererror")
-    if (parserErrors.length > 0) {
-      parserErrors.forEach((error) => {
-        const errorText = error.textContent || "HTML parsing error"
-        // Only add if not already detected as incomplete tag
-        if (!errorText.includes("Tag is not closed")) {
-          // Try to extract line number from error message
-          const lineMatch = errorText.match(/line (\d+)/i)
-          const line = lineMatch ? parseInt(lineMatch[1]) : 1
-          errors.push({
-            message: errorText,
-            line: line,
-            column: 1,
-            severity: "error",
-            code: "HTML_PARSE_ERROR"
-          })
-        }
-      })
+    if (typeof DOMParser !== "undefined") {
+      // Use DOMParser to validate HTML structure when running in the browser.
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(html, "text/html")
+
+      // Check for parser errors
+      const parserErrors = doc.querySelectorAll("parsererror")
+      if (parserErrors.length > 0) {
+        parserErrors.forEach((error) => {
+          const errorText = error.textContent || "HTML parsing error"
+          // Only add if not already detected as incomplete tag
+          if (!errorText.includes("Tag is not closed")) {
+            // Try to extract line number from error message
+            const lineMatch = errorText.match(/line (\d+)/i)
+            const line = lineMatch ? parseInt(lineMatch[1]) : 1
+            errors.push({
+              message: errorText,
+              line: line,
+              column: 1,
+              severity: "error",
+              code: "HTML_PARSE_ERROR"
+            })
+          }
+        })
+      }
     }
 
     // Basic validation: check for common unclosed tags
@@ -338,6 +341,8 @@ export function sanitizeHTML(html: string): string {
     const wrappedHTML = `<div id="user-content">${html}</div>`
     
     // Parse and re-serialize to fix basic issues
+    if (typeof DOMParser === "undefined") return html
+
     const parser = new DOMParser()
     const doc = parser.parseFromString(wrappedHTML, "text/html")
     
@@ -370,6 +375,7 @@ export function generatePreviewHTML(
 
   // Sanitize HTML
   const safeHTML = sanitizeHTML(htmlCode)
+  const safeJS = escapeScriptContent(jsCode)
 
   // Simple, minimal error indicator (VSCode-style) - only show if errors exist
   let errorHTML = ""
@@ -445,6 +451,14 @@ export function generatePreviewHTML(
       <script>
         // Send execution ID with each message
         const EXECUTION_ID = ${executionId};
+        const sendRuntimeMessage = function(status, message) {
+          window.parent.postMessage({
+            type: 'runtime',
+            executionId: EXECUTION_ID,
+            status,
+            message
+          }, '*');
+        };
         
         // Capture console logs and send to parent
         (function() {
@@ -504,7 +518,8 @@ export function generatePreviewHTML(
           
           // Capture runtime errors
           window.addEventListener('error', function(e) {
-            console.error('Runtime Error:', e.message);
+            const location = e.filename ? ' at ' + e.filename + ':' + e.lineno + ':' + e.colno : '';
+            console.error('Runtime Error:', e.message + location);
           });
           
           // Capture unhandled promise rejections
@@ -515,9 +530,11 @@ export function generatePreviewHTML(
         
         // Execute user JavaScript
         try {
-          ${jsCode}
+          ${safeJS}
+          sendRuntimeMessage('success', 'Preview executed');
         } catch (error) {
           console.error('JavaScript Error:', error.message);
+          sendRuntimeMessage('runtime_error', error.message);
         }
       </script>
     </body>
@@ -532,6 +549,10 @@ export function escapeHTML(text: string): string {
   const div = document.createElement("div")
   div.textContent = text
   return div.innerHTML
+}
+
+function escapeScriptContent(script: string): string {
+  return script.replace(/<\/script/gi, "<\\/script")
 }
 
 /**
@@ -577,18 +598,12 @@ export function createMonacoMarkerData(errors: ValidationError[]): Array<{
  * Download code as file
  */
 export function downloadCode(code: string, language: string): void {
-  const extensions: Record<string, string> = {
-    html: "html",
-    css: "css",
-    javascript: "js",
-    cpp: "cpp",
-  }
-
+  const extension = LANGUAGE_CONFIGS[language as keyof typeof LANGUAGE_CONFIGS]?.extension || "txt"
   const blob = new Blob([code], { type: "text/plain" })
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  a.download = `code.${extensions[language] || "txt"}`
+  a.download = `code.${extension}`
   a.click()
   URL.revokeObjectURL(url)
 }

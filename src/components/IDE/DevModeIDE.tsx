@@ -36,6 +36,7 @@ export default function DevModeIDE({
         code,
         activeTab,
         theme,
+        editorThemeId,
         bottomTab,
         consoleLogs,
         setActiveTab,
@@ -153,6 +154,7 @@ export default function DevModeIDE({
                     code={code[activeTab]}
                     language={activeTab}
                     theme={theme || "dark"}
+                    editorThemeId={editorThemeId}
                     onChange={updateCode}
                     onCursorChange={() => {}}
                     editorRef={editorRef}

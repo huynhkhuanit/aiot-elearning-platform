@@ -61,6 +61,18 @@
     grid-template-columns: 48px 1fr clamp(400px, 32vw, 460px);
 }
 
+.ide-grid.sidebar-open {
+    grid-template-areas:
+        "titlebar   titlebar   titlebar   titlebar"
+        "activity   sidebar    editor     agent"
+        "statusbar  statusbar  statusbar  statusbar";
+    grid-template-columns: 48px 260px 1fr 0px;
+}
+
+.ide-grid.sidebar-open.agent-open {
+    grid-template-columns: 48px 260px 1fr clamp(400px, 32vw, 460px);
+}
+
 .ide-grid .ide-titlebar {
     grid-area: titlebar;
 }
@@ -69,6 +81,9 @@
 }
 .ide-grid .ide-editor {
     grid-area: editor;
+}
+.ide-grid .ide-sidebar {
+    grid-area: sidebar;
 }
 .ide-grid .ide-agent {
     grid-area: agent;
@@ -86,6 +101,77 @@
     padding: 0 12px;
     user-select: none;
     -webkit-app-region: drag;
+}
+
+.ide-titlebar button,
+.ide-titlebar select {
+    -webkit-app-region: no-drag;
+}
+
+.ide-titlebar-icon {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: var(--ide-text-muted);
+    transition:
+        color 0.12s,
+        background 0.12s,
+        transform 0.12s;
+}
+
+.ide-titlebar-icon:hover {
+    color: var(--ide-text);
+    background: var(--ide-bg-hover);
+}
+
+.ide-titlebar-icon:active {
+    transform: translateY(1px);
+}
+
+.ide-titlebar-center {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 160px;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--ide-text);
+}
+
+.ide-titlebar-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.ide-titlebar-select {
+    height: 26px;
+    max-width: 116px;
+    border: 1px solid var(--ide-border);
+    border-radius: 4px;
+    background: var(--ide-bg-alt);
+    color: var(--ide-text);
+    font-size: 12px;
+    padding: 0 8px;
+    outline: none;
+}
+
+.ide-titlebar-select:focus {
+    border-color: var(--ide-accent);
+}
+
+.ide-save-state {
+    font-size: 10px;
+    color: var(--ide-text-muted);
+}
+
+.ide-save-state.saved {
+    color: #4ec9b0;
 }
 
 /* --- Activity Bar --- */
@@ -126,6 +212,130 @@
     width: 2px;
     background: var(--ide-accent);
     border-radius: 0 1px 1px 0;
+}
+
+/* --- Sidebar --- */
+.ide-sidebar {
+    background: var(--ide-bg-alt);
+    border-right: 1px solid var(--ide-border);
+    color: var(--ide-text);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.ide-sidebar-title {
+    height: 35px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--ide-text-muted);
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--ide-border);
+}
+
+.ide-sidebar-section {
+    border-bottom: 1px solid var(--ide-border);
+    padding: 8px 0;
+}
+
+.ide-sidebar-section-title {
+    padding: 4px 14px 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--ide-text-muted);
+    letter-spacing: 0.04em;
+}
+
+.ide-file-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.ide-file-row {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+    padding: 0 10px 0 16px;
+    color: var(--ide-text-muted);
+    font-size: 13px;
+    text-align: left;
+}
+
+.ide-file-row:hover {
+    background: var(--ide-bg-hover);
+    color: var(--ide-text);
+}
+
+.ide-file-row.active {
+    background: var(--ide-bg-active);
+    color: var(--ide-text);
+}
+
+.ide-runtime-badge {
+    border: 1px solid var(--ide-border);
+    border-radius: 999px;
+    color: var(--ide-text-muted);
+    font-size: 9px;
+    line-height: 1;
+    padding: 3px 5px;
+    text-transform: uppercase;
+}
+
+.ide-runtime-summary {
+    display: grid;
+    gap: 6px;
+    padding: 0 16px 4px;
+    font-size: 12px;
+    color: var(--ide-text-muted);
+}
+
+.ide-setting-group {
+    display: grid;
+    gap: 6px;
+    padding: 12px 16px;
+}
+
+.ide-setting-group label {
+    color: var(--ide-text-muted);
+    font-size: 12px;
+}
+
+.ide-setting-group select,
+.ide-search-box input {
+    width: 100%;
+    height: 30px;
+    border: 1px solid var(--ide-border);
+    border-radius: 4px;
+    background: var(--ide-bg);
+    color: var(--ide-text);
+    padding: 0 8px;
+    outline: none;
+    font-size: 13px;
+}
+
+.ide-setting-group select:focus,
+.ide-search-box input:focus {
+    border-color: var(--ide-accent);
+}
+
+.ide-search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    color: var(--ide-text-muted);
+}
+
+.ide-sidebar-empty {
+    padding: 6px 16px;
+    color: var(--ide-text-muted);
+    font-size: 12px;
 }
 
 /* --- Status Bar --- */
@@ -183,6 +393,9 @@
         background 0.1s,
         color 0.1s;
     position: relative;
+    border-top: 0;
+    border-left: 0;
+    border-bottom: 0;
 }
 
 .ide-tab:hover {
@@ -259,6 +472,126 @@
     transition: color 0.1s;
 }
 
+.ide-tab-count {
+    margin-left: 6px;
+    min-width: 18px;
+    height: 16px;
+    border-radius: 999px;
+    background: var(--ide-bg-active);
+    color: var(--ide-text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    font-size: 10px;
+}
+
+.ide-bottom-runtime {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ide-text-muted);
+    font-size: 11px;
+}
+
+.ide-run-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 4px;
+    background: var(--ide-bg-active);
+    color: var(--ide-text);
+}
+
+.ide-run-button:hover:not(:disabled) {
+    background: var(--ide-bg-hover);
+}
+
+.ide-run-button:disabled {
+    opacity: 0.65;
+    cursor: default;
+}
+
+.ide-console-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: var(--ide-text-muted);
+}
+
+.ide-console-toggle:hover,
+.ide-icon-button:hover {
+    color: var(--ide-text);
+    background: var(--ide-bg-hover);
+}
+
+.ide-icon-button {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: var(--ide-text-muted);
+}
+
+.ide-runtime-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    border: 1px solid var(--ide-border);
+    border-radius: 6px;
+    background: var(--ide-bg-alt);
+    color: var(--ide-text-muted);
+    padding: 10px;
+    margin: 4px;
+}
+
+.ide-runtime-notice pre {
+    white-space: pre-wrap;
+    margin: 0;
+    font-family:
+        "JetBrains Mono", "Fira Code", Consolas, Monaco, monospace;
+    font-size: 12px;
+}
+
+.ide-runtime-notice.compile_error,
+.ide-runtime-notice.runtime_error,
+.ide-runtime-notice.timeout {
+    border-color: rgba(248, 81, 73, 0.45);
+    color: #f87171;
+}
+
+.ide-console-row,
+.ide-problem-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--ide-border);
+}
+
+.ide-console-row.error,
+.ide-problem-row.error {
+    color: #f87171;
+    background: rgba(248, 81, 73, 0.06);
+}
+
+.ide-console-row.warn,
+.ide-problem-row.warning {
+    color: #facc15;
+    background: rgba(250, 204, 21, 0.06);
+}
+
+.ide-problem-row.info {
+    color: var(--ide-text-muted);
+}
+
 .ide-bottom-tab:hover {
     color: var(--ide-text);
 }
@@ -275,6 +608,10 @@
     background: transparent;
     transition: background 0.2s;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ide-text-muted);
 }
 
 .ide-resize-handle:hover,
@@ -316,4 +653,27 @@
 .ide-agent {
     animation: ide-slide-in-right 0.2s ease-out;
     border-left: 1px solid var(--ide-border);
+}
+
+@media (max-width: 900px) {
+    .ide-grid.sidebar-open,
+    .ide-grid.sidebar-open.agent-open {
+        grid-template-areas:
+            "titlebar   titlebar   titlebar"
+            "activity   editor     agent"
+            "statusbar  statusbar  statusbar";
+        grid-template-columns: 48px 1fr 0px;
+    }
+
+    .ide-grid.agent-open {
+        grid-template-columns: 48px 1fr minmax(280px, 70vw);
+    }
+
+    .ide-sidebar {
+        display: none;
+    }
+
+    .ide-titlebar-select {
+        max-width: 92px;
+    }
 }

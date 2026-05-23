@@ -51,7 +51,10 @@ export default function ActivityBar({
             </div>
             <div className="pb-2">
                 <button
-                    className="w-[48px] h-[48px] flex items-center justify-center text-[var(--ide-text-muted)] hover:text-[var(--ide-text)] transition-colors"
+                    onClick={() => onToggleView("settings")}
+                    className={`w-[48px] h-[48px] flex items-center justify-center text-[var(--ide-text-muted)] hover:text-[var(--ide-text)] transition-colors ${
+                        activeView === "settings" ? "active" : ""
+                    }`}
                     title="Settings"
                 >
                     <Settings className="w-5 h-5" />

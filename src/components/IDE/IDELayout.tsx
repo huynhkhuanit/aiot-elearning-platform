@@ -5,6 +5,7 @@ import { useIDEState, type LanguageType } from "./useIDEState";
 import { useAutoSave } from "./useAutoSave";
 import TitleBar from "./TitleBar";
 import ActivityBar from "./ActivityBar";
+import SidePanel from "./SidePanel";
 import TabBar from "./TabBar";
 import EditorPanel, { type MonacoEditor } from "./EditorPanel";
 import BottomPanel from "./BottomPanel";
@@ -12,13 +13,7 @@ import StatusBar from "./StatusBar";
 import { AIAgentPanel, AIErrorBoundary } from "../AIAssistant";
 import type { ConsoleLog } from "./useIDEState";
 import "./ide.css";
-
-const LANGUAGE_LABELS: Record<LanguageType, string> = {
-    html: "HTML",
-    css: "CSS",
-    javascript: "JavaScript",
-    cpp: "C++",
-};
+import { getLanguageConfig } from "../CodePlayground/languages";
 
 interface IDELayoutProps {
     lessonId?: string;
@@ -37,6 +32,8 @@ export default function IDELayout({
         code,
         activeTab,
         theme,
+        editorThemeId,
+        iconThemeId,
         panels,
         activeView,
         bottomTab,
@@ -49,6 +46,8 @@ export default function IDELayout({
         updateCode,
         updateCodeByTab,
         toggleTheme,
+        setEditorThemeId,
+        setIconThemeId,
         togglePanel,
         toggleActivityView,
         setBottomTab,
@@ -128,14 +127,24 @@ export default function IDELayout({
         [updateCodeByTab, setActiveTab],
     );
 
+    const showSidePanel = Boolean(activeView && activeView !== "ai");
+
     return (
         <div className={`ide-root ${theme === "light" ? "light" : ""}`}>
-            <div className={`ide-grid ${panels.agent ? "agent-open" : ""}`}>
+            <div
+                className={`ide-grid ${panels.agent ? "agent-open" : ""} ${
+                    showSidePanel ? "sidebar-open" : ""
+                }`}
+            >
                 {/* Title Bar */}
                 <TitleBar
                     activeTab={activeTab}
                     theme={theme}
+                    editorThemeId={editorThemeId}
+                    iconThemeId={iconThemeId}
                     onToggleTheme={toggleTheme}
+                    onEditorThemeChange={setEditorThemeId}
+                    onIconThemeChange={setIconThemeId}
                     autoSaveStatus={autoSaveStatus}
                     onBack={onBack}
                 />
@@ -148,16 +157,34 @@ export default function IDELayout({
                     hideAIAgent={hideAIAgent}
                 />
 
+                {showSidePanel && activeView && activeView !== "ai" && (
+                    <SidePanel
+                        activeView={activeView}
+                        activeTab={activeTab}
+                        code={code}
+                        editorThemeId={editorThemeId}
+                        iconThemeId={iconThemeId}
+                        onTabChange={setActiveTab}
+                        onEditorThemeChange={setEditorThemeId}
+                        onIconThemeChange={setIconThemeId}
+                    />
+                )}
+
                 {/* Editor Area */}
                 <div className="ide-editor flex flex-col overflow-hidden bg-[var(--ide-bg)]">
                     {/* Tab Bar */}
-                    <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+                    <TabBar
+                        activeTab={activeTab}
+                        iconThemeId={iconThemeId}
+                        onTabChange={setActiveTab}
+                    />
 
                     {/* Editor */}
                     <EditorPanel
                         code={code[activeTab]}
                         language={activeTab}
                         theme={theme}
+                        editorThemeId={editorThemeId}
                         onChange={updateCode}
                         onCursorChange={(line, col) =>
                             setCursorPosition({ line, column: col })
@@ -169,6 +196,7 @@ export default function IDELayout({
                     {panels.bottom && (
                         <BottomPanel
                             activeTab={bottomTab}
+                            activeLanguage={activeTab}
                             onTabChange={setBottomTab}
                             consoleLogs={consoleLogs}
                             onClearLogs={clearConsoleLogs}
@@ -188,7 +216,7 @@ export default function IDELayout({
                         <AIErrorBoundary fallbackMessage="AI Agent tạm thời không hoạt động.">
                             <AIAgentPanel
                                 codeContext={code[activeTab]}
-                                language={LANGUAGE_LABELS[activeTab]}
+                                language={getLanguageConfig(activeTab).label}
                                 onInsertCode={handleInsertCode}
                                 code={code}
                                 onEditCode={handleEditCode}
@@ -205,6 +233,7 @@ export default function IDELayout({
                     line={cursorPosition.line}
                     column={cursorPosition.column}
                     theme={theme}
+                    editorThemeId={editorThemeId}
                     aiStatus={aiServerStatus}
                     autoSaveStatus={autoSaveStatus}
                 />

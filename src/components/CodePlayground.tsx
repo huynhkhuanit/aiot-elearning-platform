@@ -1,12 +1,13 @@
 "use client";
 
 import DevModeIDE from "./IDE/DevModeIDE";
+import type { LanguageId } from "./CodePlayground/languages";
 
 interface CodePlaygroundProps {
     isOpen: boolean;
     onClose: () => void;
     lessonId: string;
-    initialLanguage?: "html" | "css" | "javascript" | "cpp";
+    initialLanguage?: LanguageId;
     sidebarOpen: boolean;
 }
 

@@ -6,6 +6,8 @@ import {
     configureMonacoEditor,
     getEditorOptions,
 } from "../CodePlayground/monacoConfig";
+import { getEditorThemeOption, type EditorThemeId } from "../CodePlayground/editorThemes";
+import { getLanguageConfig } from "../CodePlayground/languages";
 import type { LanguageType } from "./useIDEState";
 
 // Monaco Editor là 1 thư viện rất nặng (~1MB+ gzipped). Lazy load để
@@ -27,29 +29,24 @@ interface EditorPanelProps {
     code: string;
     language: LanguageType;
     theme: "light" | "dark";
+    editorThemeId: EditorThemeId;
     onChange: (value: string) => void;
     onCursorChange: (line: number, column: number) => void;
     editorRef: React.MutableRefObject<MonacoEditor | null>;
 }
 
-const MONACO_LANG_MAP: Record<LanguageType, string> = {
-    html: "html",
-    css: "css",
-    javascript: "javascript",
-    cpp: "cpp",
-};
-
 export default function EditorPanel({
     code,
     language,
     theme,
+    editorThemeId,
     onChange,
     onCursorChange,
     editorRef,
 }: EditorPanelProps) {
     const handleEditorDidMount: OnMount = (editor, monaco) => {
         editorRef.current = editor;
-        configureMonacoEditor(monaco, theme);
+        configureMonacoEditor(monaco, editorThemeId);
 
         // Track cursor position
         editor.onDidChangeCursorPosition((e) => {
@@ -61,45 +58,12 @@ export default function EditorPanel({
         <div className="flex-1 min-h-0 overflow-hidden">
             <Editor
                 height="100%"
-                language={MONACO_LANG_MAP[language]}
+                language={getLanguageConfig(language).monacoLanguage}
                 value={code}
-                theme={
-                    theme === "dark"
-                        ? "codeplayground-dark"
-                        : "codeplayground-light"
-                }
+                theme={getEditorThemeOption(editorThemeId).monacoTheme}
                 onChange={(value) => onChange(value || "")}
                 onMount={handleEditorDidMount}
-                options={{
-                    fontSize: 13,
-                    fontFamily:
-                        "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-                    lineHeight: 20,
-                    minimap: { enabled: true, maxColumn: 80 },
-                    scrollBeyondLastLine: false,
-                    automaticLayout: true,
-                    tabSize: 2,
-                    wordWrap: "on",
-                    bracketPairColorization: { enabled: true },
-                    guides: { bracketPairs: true, indentation: true },
-                    renderLineHighlight: "all",
-                    cursorBlinking: "smooth",
-                    cursorSmoothCaretAnimation: "on",
-                    smoothScrolling: true,
-                    padding: { top: 8 },
-                    suggest: {
-                        showMethods: true,
-                        showFunctions: true,
-                        showConstructors: true,
-                    },
-                    parameterHints: { enabled: true },
-                    formatOnPaste: true,
-                    formatOnType: true,
-                    linkedEditing: true,
-                    autoClosingBrackets: "always",
-                    autoClosingQuotes: "always",
-                    autoIndent: "full",
-                }}
+                options={getEditorOptions()}
                 loading={
                     <div className="h-full flex items-center justify-center bg-[var(--ide-bg)]">
                         <div className="text-[var(--ide-text-muted)] text-sm">

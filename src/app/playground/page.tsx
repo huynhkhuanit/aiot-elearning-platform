@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { IDELayout } from "@/components/IDE";
 import PageLoading from "@/components/PageLoading";
+import { normalizeLanguageId } from "@/components/CodePlayground/languages";
 
 function PlaygroundContent() {
     const searchParams = useSearchParams();
@@ -14,9 +15,7 @@ function PlaygroundContent() {
     const [ready, setReady] = useState(false);
 
     const lessonId = searchParams.get("lesson") || "";
-    const lang =
-        (searchParams.get("lang") as "html" | "css" | "javascript" | "cpp") ||
-        "html";
+    const lang = normalizeLanguageId(searchParams.get("lang"));
 
     useEffect(() => {
         if (isLoading) return;

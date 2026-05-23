@@ -1,24 +1,33 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
+import {
+    DEFAULT_PLAYGROUND_LANGUAGE_ID,
+    getDefaultCodeState,
+    normalizeLanguageId,
+    type LanguageId,
+    type PlaygroundCodeState,
+} from "../CodePlayground/languages";
+import {
+    DEFAULT_EDITOR_THEME_ID,
+    DEFAULT_ICON_THEME_ID,
+    getEditorThemeOption,
+    normalizeEditorThemeId,
+    normalizeIconThemeId,
+    type EditorThemeId,
+    type IconThemeId,
+} from "../CodePlayground/editorThemes";
 
-export type LanguageType = "html" | "css" | "javascript" | "cpp";
-
-export interface CodeState {
-    html: string;
-    css: string;
-    javascript: string;
-    cpp: string;
-}
+export type LanguageType = LanguageId;
+export type CodeState = PlaygroundCodeState;
 
 export interface IDEPanels {
     bottom: boolean;
     agent: boolean;
-    explorer: boolean;
 }
 
 export type BottomTab = "preview" | "console" | "problems";
-export type ActivityView = "explorer" | "search" | "ai" | null;
+export type ActivityView = "explorer" | "search" | "settings" | "ai" | null;
 
 export interface ConsoleLog {
     type: "log" | "error" | "warn" | "info";
@@ -26,71 +35,76 @@ export interface ConsoleLog {
     timestamp: number;
 }
 
-const DEFAULT_CODE: CodeState = {
-    html: '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>My Page</title>\n</head>\n<body>\n  <h1>Hello World!</h1>\n</body>\n</html>',
-    css: "body {\n  font-family: sans-serif;\n  margin: 0;\n  padding: 20px;\n  background: #f0f0f0;\n}\n\nh1 {\n  color: #333;\n}",
-    javascript:
-        '// JavaScript\nconsole.log("Hello from JavaScript!");\n\nfunction greet(name) {\n  return `Hello, ${name}!`;\n}\n\nconsole.log(greet("World"));',
-    cpp: '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, C++!" << endl;\n    return 0;\n}',
-};
-
 const STORAGE_KEY_PREFIX = "ide_playground_";
+
+function loadSavedCode(lessonId: string): CodeState {
+    if (typeof window === "undefined") return getDefaultCodeState();
+
+    try {
+        const saved = localStorage.getItem(
+            `${STORAGE_KEY_PREFIX}code_${lessonId || "scratch"}`,
+        );
+        return saved
+            ? getDefaultCodeState(JSON.parse(saved))
+            : getDefaultCodeState();
+    } catch {
+        return getDefaultCodeState();
+    }
+}
+
+function loadEditorTheme(): EditorThemeId {
+    if (typeof window === "undefined") return DEFAULT_EDITOR_THEME_ID;
+
+    const savedEditorTheme = localStorage.getItem("ide_editor_theme");
+    if (savedEditorTheme) {
+        return normalizeEditorThemeId(savedEditorTheme);
+    }
+
+    const legacyTheme = localStorage.getItem("ide_theme");
+    return legacyTheme === "light" ? "light-plus" : DEFAULT_EDITOR_THEME_ID;
+}
+
+function loadIconTheme(): IconThemeId {
+    if (typeof window === "undefined") return DEFAULT_ICON_THEME_ID;
+    return normalizeIconThemeId(localStorage.getItem("ide_icon_theme"));
+}
 
 export function useIDEState(
     lessonId: string,
-    initialLanguage: LanguageType = "html",
+    initialLanguage: LanguageType = DEFAULT_PLAYGROUND_LANGUAGE_ID,
 ) {
-    // Code state
-    const [code, setCode] = useState<CodeState>(() => {
-        if (typeof window === "undefined") return DEFAULT_CODE;
-        try {
-            const saved = localStorage.getItem(
-                `${STORAGE_KEY_PREFIX}code_${lessonId || "scratch"}`,
-            );
-            return saved ? JSON.parse(saved) : DEFAULT_CODE;
-        } catch {
-            return DEFAULT_CODE;
-        }
-    });
-
-    // Active tab (file)
-    const [activeTab, setActiveTab] = useState<LanguageType>(initialLanguage);
-
-    // Theme
-    const [theme, setTheme] = useState<"light" | "dark">(() => {
-        if (typeof window === "undefined") return "dark";
-        return (
-            (localStorage.getItem("ide_theme") as "light" | "dark") || "dark"
-        );
-    });
-
-    // Panel visibility
+    const [code, setCode] = useState<CodeState>(() => loadSavedCode(lessonId));
+    const [activeTab, setActiveTabState] = useState<LanguageType>(() =>
+        normalizeLanguageId(initialLanguage),
+    );
+    const [editorThemeId, setEditorThemeIdState] =
+        useState<EditorThemeId>(loadEditorTheme);
+    const [iconThemeId, setIconThemeIdState] =
+        useState<IconThemeId>(loadIconTheme);
+    const [theme, setTheme] = useState<"light" | "dark">(
+        () => getEditorThemeOption(loadEditorTheme()).colorMode,
+    );
     const [panels, setPanels] = useState<IDEPanels>({
         bottom: true,
         agent: true,
-        explorer: false,
     });
-
-    // Active activity bar view
-    const [activeView, setActiveView] = useState<ActivityView>(null);
-
-    // Bottom panel tab
+    const [activeView, setActiveView] = useState<ActivityView>("explorer");
     const [bottomTab, setBottomTab] = useState<BottomTab>("preview");
-
-    // Bottom panel height (for resize)
     const [bottomHeight, setBottomHeight] = useState(220);
-
-    // Console logs
     const [consoleLogs, setConsoleLogs] = useState<ConsoleLog[]>([]);
-
-    // Clear logs on each preview update (don't persist - only show latest run)
     const [clearLogsOnUpdate, setClearLogsOnUpdate] = useState(() => {
         if (typeof window === "undefined") return false;
         try {
-            return localStorage.getItem("ide_console_clear_on_update") === "true";
+            return (
+                localStorage.getItem("ide_console_clear_on_update") === "true"
+            );
         } catch {
             return false;
         }
+    });
+    const [cursorPosition, setCursorPosition] = useState({
+        line: 1,
+        column: 1,
     });
 
     const setClearLogsOnUpdateWithStorage = useCallback((value: boolean) => {
@@ -98,17 +112,14 @@ export function useIDEState(
         try {
             localStorage.setItem("ide_console_clear_on_update", String(value));
         } catch {
-            /* ignore */
+            // ignore storage failures
         }
     }, []);
 
-    // Cursor position
-    const [cursorPosition, setCursorPosition] = useState({
-        line: 1,
-        column: 1,
-    });
+    const setActiveTab = useCallback((tab: LanguageType) => {
+        setActiveTabState(normalizeLanguageId(tab));
+    }, []);
 
-    // Update code for active language
     const updateCode = useCallback(
         (value: string) => {
             setCode((prev) => ({ ...prev, [activeTab]: value }));
@@ -116,7 +127,6 @@ export function useIDEState(
         [activeTab],
     );
 
-    // Update code by explicit tab (for AI Agent edit_code tool)
     const updateCodeByTab = useCallback(
         (tab: "html" | "css" | "javascript", value: string) => {
             setCode((prev) => ({ ...prev, [tab]: value }));
@@ -124,21 +134,37 @@ export function useIDEState(
         [],
     );
 
-    // Toggle theme
-    const toggleTheme = useCallback(() => {
-        setTheme((prev) => {
-            const next = prev === "dark" ? "light" : "dark";
-            localStorage.setItem("ide_theme", next);
-            return next;
-        });
+    const setEditorThemeId = useCallback((value: EditorThemeId) => {
+        const nextTheme = normalizeEditorThemeId(value);
+        const themeOption = getEditorThemeOption(nextTheme);
+        setEditorThemeIdState(nextTheme);
+        setTheme(themeOption.colorMode);
+        try {
+            localStorage.setItem("ide_editor_theme", nextTheme);
+            localStorage.setItem("ide_theme", themeOption.colorMode);
+        } catch {
+            // ignore storage failures
+        }
     }, []);
 
-    // Toggle panel
+    const setIconThemeId = useCallback((value: IconThemeId) => {
+        const nextTheme = normalizeIconThemeId(value);
+        setIconThemeIdState(nextTheme);
+        try {
+            localStorage.setItem("ide_icon_theme", nextTheme);
+        } catch {
+            // ignore storage failures
+        }
+    }, []);
+
+    const toggleTheme = useCallback(() => {
+        setEditorThemeId(theme === "dark" ? "light-plus" : "dark-plus");
+    }, [setEditorThemeId, theme]);
+
     const togglePanel = useCallback((panel: keyof IDEPanels) => {
         setPanels((prev) => ({ ...prev, [panel]: !prev[panel] }));
     }, []);
 
-    // Toggle activity bar view
     const toggleActivityView = useCallback((view: ActivityView) => {
         setActiveView((prev) => (prev === view ? null : view));
         if (view === "ai") {
@@ -146,7 +172,6 @@ export function useIDEState(
         }
     }, []);
 
-    // Add console log
     const addConsoleLog = useCallback((log: ConsoleLog) => {
         setConsoleLogs((prev) => [...prev, log]);
     }, []);
@@ -155,9 +180,8 @@ export function useIDEState(
         setConsoleLogs([]);
     }, []);
 
-    // Reset code
     const resetCode = useCallback(() => {
-        setCode(DEFAULT_CODE);
+        setCode(getDefaultCodeState());
         setConsoleLogs([]);
     }, []);
 
@@ -165,6 +189,8 @@ export function useIDEState(
         code,
         activeTab,
         theme,
+        editorThemeId,
+        iconThemeId,
         panels,
         activeView,
         bottomTab,
@@ -177,6 +203,8 @@ export function useIDEState(
         updateCode,
         updateCodeByTab,
         toggleTheme,
+        setEditorThemeId,
+        setIconThemeId,
         togglePanel,
         toggleActivityView,
         setBottomTab,
